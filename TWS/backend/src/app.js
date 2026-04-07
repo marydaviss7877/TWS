@@ -283,9 +283,19 @@ async function loadRoutes() {
   // ── Tenant Module ────────────────────────────────────────────────────────────
   try {
     console.log('📦 Loading Tenant Module...');
-    app.use('/api/tenant/management', modules.tenant.management);
-    app.use('/api/tenant/:tenantSlug/dashboard', modules.tenant.dashboard);
-    app.use('/api/tenant/switching', modules.tenant.switching);
+
+    // Helper: skip routes that failed to load instead of crashing
+    const safeUse = (path, handler) => {
+      if (typeof handler !== 'function') {
+        console.warn(`⚠️  Skipping route ${path} — handler is ${typeof handler} (module may not have loaded)`);
+        return;
+      }
+      app.use(path, handler);
+    };
+
+    safeUse('/api/tenant/management', modules.tenant.management);
+    safeUse('/api/tenant/:tenantSlug/dashboard', modules.tenant.dashboard);
+    safeUse('/api/tenant/switching', modules.tenant.switching);
 
     // Tenant info route (must come before organization for route precedence)
     const Tenant = require('./models/Tenant');
@@ -321,13 +331,13 @@ async function loadRoutes() {
       }
     });
 
-    app.use('/api/tenant/:tenantSlug/organization', modules.tenant.organization);
-    app.use('/api/tenant/:tenantSlug/software-house', modules.tenant.softwareHouse);
-    app.use('/api/tenant/:tenantSlug/permissions', modules.tenant.permissions);
-    app.use('/api/tenant/:tenantSlug/roles', modules.tenant.roles);
-    app.use('/api/tenant/:tenantSlug/departments', modules.tenant.departments);
-    app.use('/api/tenant/:tenantSlug/department-access', modules.tenant.departmentAccess);
-    app.use('/api/tenant/:tenantSlug/audit', modules.tenant.audit);
+    safeUse('/api/tenant/:tenantSlug/organization', modules.tenant.organization);
+    safeUse('/api/tenant/:tenantSlug/software-house', modules.tenant.softwareHouse);
+    safeUse('/api/tenant/:tenantSlug/permissions', modules.tenant.permissions);
+    safeUse('/api/tenant/:tenantSlug/roles', modules.tenant.roles);
+    safeUse('/api/tenant/:tenantSlug/departments', modules.tenant.departments);
+    safeUse('/api/tenant/:tenantSlug/department-access', modules.tenant.departmentAccess);
+    safeUse('/api/tenant/:tenantSlug/audit', modules.tenant.audit);
     console.log('✅ Tenant module routes loaded');
   } catch (error) {
     console.error('❌ Tenant module failed to load:', error.message);
@@ -352,57 +362,67 @@ async function loadRoutes() {
   // ── Business Module ──────────────────────────────────────────────────────────
   try {
     console.log('📦 Loading Business Module...');
+
+    // Helper: skip routes that failed to load instead of crashing
+    const safeBizUse = (path, handler) => {
+      if (typeof handler !== 'function') {
+        console.warn(`⚠️  Skipping route ${path} — handler is ${typeof handler} (module may not have loaded)`);
+        return;
+      }
+      app.use(path, handler);
+    };
+
     // Employee Management
-    app.use('/api/employees', modules.business.employees);
+    safeBizUse('/api/employees', modules.business.employees);
 
     // Attendance Management — single canonical endpoint
-    app.use('/api/attendance', modules.business.attendance);
-    app.use('/api/attendance-integration', modules.business.attendanceIntegration);
+    safeBizUse('/api/attendance', modules.business.attendance);
+    safeBizUse('/api/attendance-integration', modules.business.attendanceIntegration);
 
     // Financial Management
-    app.use('/api/payroll', modules.business.payroll);
-    app.use('/api/finance', modules.business.finance);
-    app.use('/api/billing', modules.business.billing);
+    safeBizUse('/api/payroll', modules.business.payroll);
+    safeBizUse('/api/finance', modules.business.finance);
+    safeBizUse('/api/billing', modules.business.billing);
 
     // Project Management
-    app.use('/api/projects', modules.business.projects);
-    app.use('/api/project-access', modules.business.projectAccess);
-    app.use('/api/tasks', modules.business.tasks);
-    app.use('/api/teams', modules.business.teams);
-    app.use('/api/time-tracking', modules.business.timeTracking);
-    app.use('/api/sprints', modules.business.sprints);
-    app.use('/api/development-metrics', modules.business.developmentMetrics);
+    safeBizUse('/api/projects', modules.business.projects);
+    safeBizUse('/api/project-access', modules.business.projectAccess);
+    safeBizUse('/api/tasks', modules.business.tasks);
+    safeBizUse('/api/teams', modules.business.teams);
+    safeBizUse('/api/time-tracking', modules.business.timeTracking);
+    safeBizUse('/api/sprints', modules.business.sprints);
+    safeBizUse('/api/development-metrics', modules.business.developmentMetrics);
 
     // Client Management
-    app.use('/api/clients', modules.business.clients);
-    app.use('/api/client-portal', modules.business.clientPortal);
+    safeBizUse('/api/clients', modules.business.clients);
+    safeBizUse('/api/client-portal', modules.business.clientPortal);
 
     // Nucleus
-    app.use('/api/nucleus-templates', modules.business.nucleusTemplates);
-    app.use('/api/nucleus-pm', modules.business.nucleusPM);
-    app.use('/api/nucleus-analytics', modules.business.nucleusAnalytics);
-    app.use('/api/nucleus-batch', modules.business.nucleusBatch);
+    safeBizUse('/api/nucleus-templates', modules.business.nucleusTemplates);
+    safeBizUse('/api/nucleus-pm', modules.business.nucleusPM);
+    safeBizUse('/api/nucleus-analytics', modules.business.nucleusAnalytics);
+    safeBizUse('/api/nucleus-batch', modules.business.nucleusBatch);
 
     // Workspace Management
-    app.use('/api/boards', modules.business.boards);
-    app.use('/api/cards', modules.business.cards);
-    app.use('/api/lists', modules.business.lists);
-    app.use('/api/workspaces', modules.business.workspaces);
-    app.use('/api/templates', modules.business.templates);
+    safeBizUse('/api/boards', modules.business.boards);
+    safeBizUse('/api/cards', modules.business.cards);
+    safeBizUse('/api/lists', modules.business.lists);
+    safeBizUse('/api/workspaces', modules.business.workspaces);
+    safeBizUse('/api/templates', modules.business.templates);
 
     // ERP Management
-    app.use('/api/erp-management', modules.business.erpManagement);
-    app.use('/api/erp-templates', modules.business.erpTemplates);
-    app.use('/api/master-erp', modules.business.masterERP);
+    safeBizUse('/api/erp-management', modules.business.erpManagement);
+    safeBizUse('/api/erp-templates', modules.business.erpTemplates);
+    safeBizUse('/api/master-erp', modules.business.masterERP);
 
     // Form & Resource Management
-    app.use('/api/form-management', modules.business.formManagement);
-    app.use('/api/resources', modules.business.resources);
-    app.use('/api/sales', modules.business.sales);
-    app.use('/api/partners', modules.business.partners);
+    safeBizUse('/api/form-management', modules.business.formManagement);
+    safeBizUse('/api/resources', modules.business.resources);
+    safeBizUse('/api/sales', modules.business.sales);
+    safeBizUse('/api/partners', modules.business.partners);
 
     // Software House Specific
-    app.use('/api/software-house-roles', modules.business.softwareHouseRoles);
+    safeBizUse('/api/software-house-roles', modules.business.softwareHouseRoles);
     console.log('✅ Business module routes loaded');
   } catch (error) {
     console.error('❌ Business module failed to load:', error.message);
