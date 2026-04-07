@@ -28,7 +28,7 @@ class BackendConfig {
       NODE_ENV: process.env.NODE_ENV || 'development',
       
       // Database Configuration
-      MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017/tws-dev',
+      MONGO_URI: (process.env.MONGO_URI || 'mongodb://localhost:27017/tws-dev').replace(/\s+/g, ''),
       
       // Redis Configuration
       REDIS_HOST: process.env.REDIS_HOST || 'localhost',

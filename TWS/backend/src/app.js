@@ -8,6 +8,8 @@ const morgan = require('morgan');
 // const rateLimit = require('express-rate-limit'); // Unused while rate limiting is disabled
 const mongoSanitize = require('express-mongo-sanitize');
 const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
+const path = require('path');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
@@ -28,6 +30,10 @@ app.use(express.urlencoded({ extended: true, limit: '5mb' })); // Reduced from 1
 
 // Cookie parser for CSRF protection
 app.use(cookieParser());
+
+// Serve uploaded files (profile pics, org logos, etc.)
+// Use process.cwd() so this matches the same base directory multer uses when saving files.
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Security middleware
 app.use(helmet());
@@ -82,8 +88,8 @@ app.use(morgan('combined'));
 // MongoDB connection
 async function connectToMongoDB() {
   try {
-    const mongoUri = config.get('MONGO_URI');
-    
+    const mongoUri = (config.get('MONGO_URI') || '').replace(/\s+/g, '');
+
     if (!mongoUri) {
       throw new Error('MONGO_URI environment variable is not set');
     }
@@ -150,10 +156,66 @@ async function connectToMongoDB() {
 const io = new Server(server, {
   cors: {
     origin: config.get('SOCKET_CORS_ORIGIN') || 'http://localhost:3000',
-    methods: ['GET', 'POST']
+    methods: ['GET', 'POST'],
+    credentials: true
   },
-  transports: ['websocket', 'polling'],
-  allowEIO3: true
+  transports: ['websocket', 'polling'], // polling kept as fallback for proxies
+  pingInterval: 25000,
+  pingTimeout: 60000,
+  maxHttpBufferSize: 1e6 // 1MB max message size
+});
+
+// Socket.IO JWT authentication middleware
+io.use(async (socket, next) => {
+  try {
+    // Accept token from handshake auth (preferred) or cookie
+    let token = socket.handshake.auth?.token;
+
+    if (!token && socket.handshake.headers.cookie) {
+      const match = socket.handshake.headers.cookie
+        .split(';')
+        .find(c => c.trim().startsWith('accessToken='));
+      if (match) token = match.split('=')[1]?.trim();
+    }
+
+    if (!token) {
+      return next(new Error('Authentication required'));
+    }
+
+    const jwtConfig = config.getJWTConfig();
+    const decoded = jwt.verify(token, jwtConfig.secret, {
+      issuer: 'tws-backend',
+      audience: 'tws-frontend'
+    });
+
+    // Attach decoded user to socket; look up orgId from DB lazily on first room join
+    socket.user = { userId: decoded.userId, orgId: decoded.orgId || null };
+    next();
+  } catch (err) {
+    next(new Error('Invalid or expired token'));
+  }
+});
+
+// On connection: auto-join the user's tenant room for scoped broadcasts
+io.on('connection', async (socket) => {
+  try {
+    // If orgId not in token, fetch from User model
+    if (!socket.user.orgId) {
+      const User = require('./models/User');
+      const user = await User.findById(socket.user.userId).select('orgId').lean();
+      if (user?.orgId) socket.user.orgId = user.orgId.toString();
+    }
+
+    if (socket.user.orgId) {
+      socket.join(`tenant:${socket.user.orgId}`);
+    }
+
+    socket.on('disconnect', () => {
+      // room cleanup is automatic in Socket.IO
+    });
+  } catch (err) {
+    socket.disconnect(true);
+  }
 });
 
 // Basic routes
@@ -181,56 +243,55 @@ app.get('/metrics', (req, res) => {
 // Load routes progressively using new modular structure
 async function loadRoutes() {
   console.log('📦 Loading routes...');
-  
+
+  // modules is required once — if this fails the server cannot serve any routes
+  const modules = require('./modules');
+
+  // ── Auth Module ──────────────────────────────────────────────────────────────
   try {
-    // Import modular routes
-    const modules = require('./modules');
-    
-    // Auth Module Routes
     console.log('📦 Loading Auth Module...');
     app.use('/api/auth', modules.auth.authentication);
     app.use('/api/users', modules.auth.users);
-    
-    // Self-Serve Tenant Signup Routes
+
     const selfServeSignup = require('./routes/selfServeSignup');
     app.use('/api/signup', selfServeSignup);
-    
-    // Email Validation Routes
+
     const emailValidation = require('./routes/emailValidation');
     app.use('/api/email', emailValidation);
-    
+
     app.use('/api/sessions', modules.auth.sessions);
     app.use('/api/tenant-auth', modules.auth.tenantAuth);
     console.log('✅ Auth module routes loaded');
-    
-    // Admin Module Routes
+  } catch (error) {
+    console.error('❌ Auth module failed to load:', error.message);
+  }
+
+  // ── Admin Module ─────────────────────────────────────────────────────────────
+  try {
     console.log('📦 Loading Admin Module...');
     app.use('/api/admin', modules.admin.admin);
     app.use('/api/supra-admin', modules.admin.supraAdmin);
-    // twsAdmin.js removed - routes consolidated into supraAdmin.js
-    // gtsAdmin removed - functionality consolidated into supraAdmin.js
-    // Admin messaging endpoints removed - only supra-admin messaging remains
     app.use('/api/admin/moderation', modules.admin.moderation);
-    // Admin attendance endpoints are now in /api/attendance/admin/*
-    app.use('/api/admin/attendance', modules.business.attendance);
     app.use('/api/admin/attendance-panel', modules.admin.attendancePanel);
-    // Supra admin messaging removed
     app.use('/api/supra-admin/sessions', modules.admin.supraSessions);
     app.use('/api/supra-admin/tenant-erp', modules.admin.supraTenantERP);
     console.log('✅ Admin module routes loaded');
-    
-    // Tenant Module Routes
+  } catch (error) {
+    console.error('❌ Admin module failed to load:', error.message);
+  }
+
+  // ── Tenant Module ────────────────────────────────────────────────────────────
+  try {
     console.log('📦 Loading Tenant Module...');
     app.use('/api/tenant/management', modules.tenant.management);
     app.use('/api/tenant/:tenantSlug/dashboard', modules.tenant.dashboard);
     app.use('/api/tenant/switching', modules.tenant.switching);
-    
-    // Tenant-level info route (before organization routes for precedence)
+
+    // Tenant info route (must come before organization for route precedence)
     const Tenant = require('./models/Tenant');
     const { authenticateToken } = require('./middleware/auth/auth');
     app.get('/api/tenant/:tenantSlug/info', authenticateToken, async (req, res) => {
       try {
-        console.log('📋 GET /api/tenant/:tenantSlug/info called', { tenantSlug: req.params.tenantSlug });
         const { tenantSlug } = req.params;
         let tenant = await Tenant.findOne({ slug: tenantSlug })
           .select('name slug erpCategory erpModules educationConfig status subscription.plan');
@@ -239,10 +300,8 @@ async function loadRoutes() {
             .select('name slug erpCategory erpModules educationConfig status subscription.plan');
         }
         if (!tenant) {
-          console.log('❌ Tenant not found:', tenantSlug);
           return res.status(404).json({ success: false, message: 'Tenant not found' });
         }
-        console.log('✅ Tenant found:', tenant.slug);
         res.json({
           success: true,
           data: {
@@ -261,21 +320,21 @@ async function loadRoutes() {
         res.status(500).json({ success: false, message: 'Error fetching tenant info', error: error.message });
       }
     });
-    
+
     app.use('/api/tenant/:tenantSlug/organization', modules.tenant.organization);
     app.use('/api/tenant/:tenantSlug/software-house', modules.tenant.softwareHouse);
-    
-    // Permissions & Roles Routes
     app.use('/api/tenant/:tenantSlug/permissions', modules.tenant.permissions);
     app.use('/api/tenant/:tenantSlug/roles', modules.tenant.roles);
     app.use('/api/tenant/:tenantSlug/departments', modules.tenant.departments);
-    console.log('✅ Permissions, Roles, and Departments routes loaded');
-    
-    // Client Portal Routes - REMOVED COMPLETELY
-    
+    app.use('/api/tenant/:tenantSlug/department-access', modules.tenant.departmentAccess);
+    app.use('/api/tenant/:tenantSlug/audit', modules.tenant.audit);
     console.log('✅ Tenant module routes loaded');
-    
-    // Core Module Routes
+  } catch (error) {
+    console.error('❌ Tenant module failed to load:', error.message);
+  }
+
+  // ── Core Module ──────────────────────────────────────────────────────────────
+  try {
     console.log('📦 Loading Core Module...');
     app.use('/api/health', modules.core.health);
     app.use('/api/metrics', modules.core.metrics);
@@ -286,40 +345,25 @@ async function loadRoutes() {
     app.use('/api/notifications', modules.core.notifications);
     app.use('/api/webhooks', modules.core.webhooks);
     console.log('✅ Core module routes loaded');
-    
-    // Business Module Routes
+  } catch (error) {
+    console.error('❌ Core module failed to load:', error.message);
+  }
+
+  // ── Business Module ──────────────────────────────────────────────────────────
+  try {
     console.log('📦 Loading Business Module...');
     // Employee Management
     app.use('/api/employees', modules.business.employees);
-    
-    // Attendance Management
-    // All attendance routes consolidated in modules.business.attendance
+
+    // Attendance Management — single canonical endpoint
     app.use('/api/attendance', modules.business.attendance);
-    // Legacy routes maintained for backward compatibility (point to same consolidated route)
-    app.use('/api/employee-attendance', modules.business.attendance);
-    app.use('/api/modern-attendance', modules.business.attendance);
-    app.use('/api/simple-attendance', modules.business.attendance);
-    app.use('/api/software-house-attendance', modules.business.attendance);
-    app.use('/api/calendar-attendance', modules.business.attendance);
     app.use('/api/attendance-integration', modules.business.attendanceIntegration);
-    
+
     // Financial Management
     app.use('/api/payroll', modules.business.payroll);
     app.use('/api/finance', modules.business.finance);
-    
-    // Equity & Cap Table Routes
-    try {
-      if (modules.business.equity) {
-        app.use('/api/equity', modules.business.equity);
-        console.log('✅ Equity & Cap Table routes loaded');
-      } else {
-        console.warn('⚠️ Equity routes module not found');
-      }
-    } catch (error) {
-      console.error('❌ Error loading equity routes:', error.message);
-      console.error(error.stack);
-    }
-    
+    app.use('/api/billing', modules.business.billing);
+
     // Project Management
     app.use('/api/projects', modules.business.projects);
     app.use('/api/project-access', modules.business.projectAccess);
@@ -328,69 +372,65 @@ async function loadRoutes() {
     app.use('/api/time-tracking', modules.business.timeTracking);
     app.use('/api/sprints', modules.business.sprints);
     app.use('/api/development-metrics', modules.business.developmentMetrics);
-    
+
     // Client Management
     app.use('/api/clients', modules.business.clients);
-    // Client Portal Routes - REMOVED COMPLETELY
-    
-    // Nucleus Templates & Onboarding
+    app.use('/api/client-portal', modules.business.clientPortal);
+
+    // Nucleus
     app.use('/api/nucleus-templates', modules.business.nucleusTemplates);
-    
-    // Nucleus PM & Internal Team Routes
     app.use('/api/nucleus-pm', modules.business.nucleusPM);
-    
-    // Nucleus Analytics
     app.use('/api/nucleus-analytics', modules.business.nucleusAnalytics);
-    
-    // Nucleus Batch Operations
     app.use('/api/nucleus-batch', modules.business.nucleusBatch);
-    
-    // Communication
-    // Messaging routes removed - only supra-admin messaging remains
-    
+
     // Workspace Management
     app.use('/api/boards', modules.business.boards);
     app.use('/api/cards', modules.business.cards);
     app.use('/api/lists', modules.business.lists);
     app.use('/api/workspaces', modules.business.workspaces);
     app.use('/api/templates', modules.business.templates);
-    
+
     // ERP Management
     app.use('/api/erp-management', modules.business.erpManagement);
     app.use('/api/erp-templates', modules.business.erpTemplates);
     app.use('/api/master-erp', modules.business.masterERP);
-    
-    // Form Management
+
+    // Form & Resource Management
     app.use('/api/form-management', modules.business.formManagement);
-    
-    // Resource Management
     app.use('/api/resources', modules.business.resources);
     app.use('/api/sales', modules.business.sales);
     app.use('/api/partners', modules.business.partners);
-    
+
     // Software House Specific
     app.use('/api/software-house-roles', modules.business.softwareHouseRoles);
     console.log('✅ Business module routes loaded');
-    
-    // Monitoring Module Routes
+  } catch (error) {
+    console.error('❌ Business module failed to load:', error.message);
+  }
+
+  // ── Monitoring Module ────────────────────────────────────────────────────────
+  try {
     console.log('📦 Loading Monitoring Module...');
     app.use('/api/system-monitoring', modules.monitoring.system);
     app.use('/api/standalone-monitoring', modules.monitoring.standalone);
     console.log('✅ Monitoring module routes loaded');
-    
-    // Integration Module Routes
+  } catch (error) {
+    console.error('❌ Monitoring module failed to load:', error.message);
+  }
+
+  // ── Integration Module ───────────────────────────────────────────────────────
+  try {
     console.log('📦 Loading Integration Module...');
     app.use('/api/integrations', modules.integration.integrations);
     app.use('/api/platform-integration', modules.integration.platform);
     app.use('/api/timezone', modules.integration.timezone);
     app.use('/api/default-contacts', modules.integration.defaultContacts);
-    app.use('/api/webrtc', modules.integration.webrtc);
     console.log('✅ Integration module routes loaded');
-    
   } catch (error) {
-    console.error('❌ Error loading routes:', error.message);
-    throw error;
+    console.error('❌ Integration module failed to load:', error.message);
   }
+
+  console.log('📦 All route modules processed');
 }
 
 // Load middleware safely
@@ -450,10 +490,33 @@ async function startServer() {
     
     // Connect to MongoDB before accepting requests (avoids 503 "Database connection not ready" on login)
     await connectToMongoDB();
-    
+
+    // Start job scheduler (uses node-cron, no Redis required)
+    try {
+      const scheduler = require('./jobs/scheduler');
+      scheduler.start();
+      console.log('✅ Job scheduler started (13 cron jobs active)');
+    } catch (error) {
+      console.warn('⚠️ Job scheduler failed to start:', error.message);
+    }
+
+    // Start BullMQ workers (only when Redis is available)
+    if (process.env.REDIS_DISABLED !== 'true') {
+      try {
+        require('./workers/fileProcessor');
+        require('./workers/notificationWorker');
+        require('./workers/retentionWorker');
+        console.log('✅ Background workers started (fileProcessor, notifications, retention)');
+      } catch (error) {
+        console.warn('⚠️ Background workers failed to start:', error.message);
+      }
+    } else {
+      console.log('ℹ️  Background workers skipped (REDIS_DISABLED=true)');
+    }
+
     // Load routes (these don't require MongoDB connection)
     await loadRoutes();
-    
+
     // Load middleware
     await loadMiddleware();
     
@@ -502,7 +565,16 @@ async function startServer() {
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down server...');
-  
+
+  // Stop job scheduler
+  try {
+    const scheduler = require('./jobs/scheduler');
+    scheduler.stop();
+    console.log('✅ Job scheduler stopped');
+  } catch (error) {
+    console.warn('⚠️ Error stopping job scheduler:', error.message);
+  }
+
   // Shutdown cache service
   try {
     const cacheService = require('./services/core/cache.service');
@@ -511,7 +583,7 @@ process.on('SIGINT', async () => {
   } catch (error) {
     console.warn('⚠️ Error shutting down cache service:', error.message);
   }
-  
+
   await mongoose.disconnect();
   process.exit(0);
 });
