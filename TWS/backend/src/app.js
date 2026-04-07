@@ -610,11 +610,28 @@ process.on('SIGINT', async () => {
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
+  // Redis ECONNREFUSED is expected when REDIS_DISABLED=true — do not crash
+  if (error.code === 'ECONNREFUSED' || (error.errors && error.errors.some && error.errors.some(e => e.code === 'ECONNREFUSED'))) {
+    console.warn('⚠️  Redis connection refused (expected when REDIS_DISABLED=true) — continuing:', error.message);
+    return;
+  }
   console.error('🚨 Uncaught Exception:', error);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
+  const err = reason || {};
+  // Redis / BullMQ ECONNREFUSED errors are expected when Redis is not provisioned.
+  // Log a warning but do NOT crash the server.
+  if (
+    err.code === 'ECONNREFUSED' ||
+    err.name === 'AggregateError' ||
+    (err.errors && Array.isArray(err.errors) && err.errors.some(e => e.code === 'ECONNREFUSED')) ||
+    (typeof err.message === 'string' && err.message.includes('ECONNREFUSED'))
+  ) {
+    console.warn('⚠️  Redis/BullMQ connection refused — server continues without Redis:', err.message || err);
+    return;
+  }
   console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });

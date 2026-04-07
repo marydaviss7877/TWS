@@ -33,7 +33,13 @@ const redisConnection = new Redis({
   maxRetriesPerRequest: null,
   retryDelayOnFailover: 100,
   enableReadyCheck: false,
-  maxLoadingTimeout: 1000
+  maxLoadingTimeout: 1000,
+  lazyConnect: true,
+  retryStrategy: (times) => times > 3 ? null : Math.min(times * 200, 2000)
+});
+// Suppress ECONNREFUSED so it never becomes an unhandled rejection
+redisConnection.on('error', (err) => {
+  if (err.code !== 'ECONNREFUSED') console.warn('⚠️  Notification worker Redis error:', err.message);
 });
 
 // Create queues

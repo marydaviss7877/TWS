@@ -22,19 +22,15 @@ if (process.env.REDIS_DISABLED === 'true') {
     enableOfflineQueue: false,
     connectTimeout: 5000,
     retryStrategy: (times) => {
-      // Stop retrying after 3 attempts
-      if (times > 3) {
-        return null;
-      }
+      if (times > 3) return null; // Stop retrying after 3 attempts
       return Math.min(times * 200, 2000);
     }
   });
 
-  // Handle Redis connection errors gracefully
+  // Handle Redis connection errors gracefully — never let these crash the server
   redis.on('error', (error) => {
     if (!redisErrorLogged) {
       console.warn('⚠️  Redis not available - File processing queue disabled');
-      console.warn('   To enable: Install and start Redis, or set REDIS_DISABLED=true');
       redisErrorLogged = true;
     }
   });
