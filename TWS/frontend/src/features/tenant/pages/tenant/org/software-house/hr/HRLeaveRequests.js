@@ -101,7 +101,7 @@ const HRLeaveRequests = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
+      <div data-tutorial="hr-leave-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
         {statsData.map((stat, index) => (
           <div key={index} className="glass-card-premium p-5 xl:p-6 hover-lift">
             <div className="flex items-center gap-4">
@@ -122,7 +122,7 @@ const HRLeaveRequests = () => {
       </div>
 
       {/* Leave Requests Table */}
-      <div className="glass-card-premium p-6 xl:p-8 hover-glow">
+      <div data-tutorial="hr-leave-table" className="glass-card-premium p-6 xl:p-8 hover-glow">
         <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white mb-6">
           Pending Leave Requests
         </h3>
@@ -139,10 +139,10 @@ const HRLeaveRequests = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow">
-                        <span className="text-white font-bold text-sm">{request.employee.charAt(0)}</span>
+                        <span className="text-white font-bold text-sm">{(request.employee?.fullName || request.employee?.name || request.employee?.email || request.employee || '?').toString().charAt(0)}</span>
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">{request.employee}</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{request.employee?.fullName || request.employee?.name || request.employee?.email || request.employee || 'Unknown'}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">{request.type}</p>
                       </div>
                     </div>

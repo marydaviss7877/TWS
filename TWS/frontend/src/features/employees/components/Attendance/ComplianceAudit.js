@@ -288,7 +288,7 @@ const ComplianceAudit = ({ timeRange }) => {
               <div className="flex items-center justify-between text-xs text-gray-600">
                 <div className="flex items-center">
                   <UserGroupIcon className="h-3 w-3 mr-1" />
-                  {violation.employee} - {violation.department}
+                  {violation.employee?.fullName || violation.employee?.name || violation.employee || 'Unknown'} - {violation.department?.name || violation.department || ''}
                 </div>
                 <div className="flex items-center">
                   <CalendarIcon className="h-3 w-3 mr-1" />

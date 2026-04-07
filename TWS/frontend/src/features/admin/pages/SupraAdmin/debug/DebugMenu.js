@@ -402,7 +402,7 @@ const DebugMenu = () => {
                     <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{log.message}</p>
                     {log.userId && (
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        User: {log.userId} | Tenant: {log.tenant}
+                        User: {log.userId?._id || log.userId?.email || log.userId || ''} | Tenant: {log.tenant?._id || log.tenant?.name || log.tenant || ''}
                       </p>
                     )}
                   </div>

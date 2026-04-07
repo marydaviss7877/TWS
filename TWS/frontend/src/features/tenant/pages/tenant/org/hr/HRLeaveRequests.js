@@ -225,10 +225,10 @@ const HRLeaveRequests = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow">
-                        <span className="text-white font-bold text-sm">{request.employee.charAt(0)}</span>
+                        <span className="text-white font-bold text-sm">{(request.employee?.fullName || request.employee?.name || request.employee?.email || request.employee || '?').toString().charAt(0)}</span>
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">{request.employee}</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{request.employee?.fullName || request.employee?.name || request.employee?.email || request.employee || 'Unknown'}</p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">{request.type} • {request.department}</p>
                       </div>
                     </div>
@@ -309,7 +309,7 @@ const HRLeaveRequests = () => {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <p className="text-sm font-bold text-gray-900 dark:text-white">{request.employee}</p>
+                          <p className="text-sm font-bold text-gray-900 dark:text-white">{request.employee?.fullName || request.employee?.name || request.employee?.email || request.employee || 'Unknown'}</p>
                           <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                             Approved
                           </span>
@@ -321,7 +321,7 @@ const HRLeaveRequests = () => {
                           <span>•</span>
                           <span>{request.days} days</span>
                           <span>•</span>
-                          <span>Approved by {request.approvedBy}</span>
+                          <span>Approved by {request.approvedBy?.fullName || request.approvedBy?.name || request.approvedBy?.email || request.approvedBy || 'N/A'}</span>
                         </div>
                       </div>
                     </div>

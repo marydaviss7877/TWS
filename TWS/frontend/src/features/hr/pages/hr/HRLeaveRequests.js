@@ -39,10 +39,10 @@ const HRLeaveRequests = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">{request.employee.charAt(0)}</span>
+                      <span className="text-white font-bold text-sm">{(request.employee?.fullName || request.employee?.name || request.employee?.email || request.employee || '?').toString().charAt(0)}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white">{request.employee}</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{request.employee?.fullName || request.employee?.name || request.employee?.email || request.employee || 'Unknown'}</p>
                       <p className="text-xs text-gray-600 dark:text-gray-400">{request.type}</p>
                     </div>
                   </div>

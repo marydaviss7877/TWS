@@ -289,12 +289,12 @@ const ModernAttendanceDashboard = () => {
                   <div className="flex items-center">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg mr-4">
                       <span className="text-white font-bold wolfstack-text-small">
-                        {activity.employee.split(' ').map(n => n[0]).join('')}
+                        {(activity.employee?.fullName || activity.employee?.name || activity.employee?.email || activity.employee || '?').toString().split(' ').map(n => n[0]).join('')}
                       </span>
                     </div>
                     <div>
                       <div className="wolfstack-text-small font-semibold text-gray-900 dark:text-gray-100">
-                        {activity.employee}
+                        {activity.employee?.fullName || activity.employee?.name || activity.employee?.email || activity.employee || 'Unknown'}
                       </div>
                       <div className="wolfstack-text-small text-gray-500 dark:text-gray-400">
                         {activity.action}

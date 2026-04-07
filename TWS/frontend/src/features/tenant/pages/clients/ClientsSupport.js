@@ -559,7 +559,7 @@ const ClientsSupport = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {ticket.assignedTo}
+                      {ticket.assignedTo?.fullName || ticket.assignedTo?.name || ticket.assignedTo?.email || ticket.assignedTo || '—'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -703,11 +703,11 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Assigned To</label>
-                  <p className="text-gray-900 dark:text-white">{ticket.assignedTo}</p>
+                  <p className="text-gray-900 dark:text-white">{ticket.assignedTo?.fullName || ticket.assignedTo?.name || ticket.assignedTo?.email || ticket.assignedTo || '—'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Created By</label>
-                  <p className="text-gray-900 dark:text-white">{ticket.createdBy}</p>
+                  <p className="text-gray-900 dark:text-white">{ticket.createdBy?.fullName || ticket.createdBy?.name || ticket.createdBy?.email || ticket.createdBy || '—'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Source</label>

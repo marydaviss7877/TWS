@@ -294,7 +294,7 @@ const FormTemplateManager = ({ onSelectTemplate, onEditTemplate, onDeleteTemplat
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-4">
             <div className="flex items-center gap-1">
               <UserIcon className="w-3 h-3" />
-              <span>{template.createdBy}</span>
+              <span>{template.createdBy?.fullName || template.createdBy?.name || template.createdBy?.email || 'Unknown'}</span>
             </div>
             <div className="flex items-center gap-1">
               <CalendarIcon className="w-3 h-3" />
