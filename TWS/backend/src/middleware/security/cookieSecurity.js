@@ -14,11 +14,11 @@ const getSecureCookieOptions = () => {
   return {
     httpOnly: true, // Prevent JavaScript access (XSS protection)
     secure: isProduction || isHTTPS, // Only send over HTTPS in production
-    sameSite: isProduction ? 'strict' : 'lax', // CSRF protection - use 'lax' in development for cross-origin requests
+    // 'none' required for cross-origin requests (frontend/backend on different Railway subdomains).
+    // 'strict' blocks all cross-origin cookies even on HTTPS.
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge: 15 * 60 * 1000, // 15 minutes for access tokens
     path: '/',
-    // Domain should be set based on your domain configuration
-    // domain: process.env.COOKIE_DOMAIN || undefined
   };
 };
 
@@ -87,7 +87,7 @@ const clearSecureCookie = (res, name) => {
   res.clearCookie(name, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? 'strict' : 'lax',
+    sameSite: isProduction ? 'none' : 'lax',
     path: '/'
   });
 };
