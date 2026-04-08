@@ -95,7 +95,7 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         {
           key: 'finance-invoices',
           label: 'Invoices',
-          path: `/${tenantSlug}/org/finance/accounts-receivable`
+          path: `/${tenantSlug}/org/finance/invoices`
         },
         {
           key: 'finance-budgeting',
@@ -106,11 +106,6 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
           key: 'finance-expense-management',
           label: 'Expense Management',
           path: `/${tenantSlug}/org/finance/time-expenses`
-        },
-        {
-          key: 'finance-equity-cap-table',
-          label: 'Equity & Cap Table',
-          path: `/${tenantSlug}/org/finance/equity-cap-table`
         },
         {
           key: 'finance-financial-reports',
@@ -173,11 +168,25 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
           description: 'Nucleus Project OS - Deliverable Management'
         },
         {
+          key: 'projects-approvals',
+          label: 'Approval Queue',
+          path: `/${tenantSlug}/org/projects/approvals`,
+          icon: ClipboardDocumentCheckIcon,
+          description: 'Nucleus Project OS - Pending your approval'
+        },
+        {
           key: 'projects-change-requests',
           label: 'Change Requests',
           path: `/${tenantSlug}/org/projects/change-requests`,
           icon: ExclamationCircleIcon,
           description: 'Nucleus Project OS - Scope Change Management'
+        },
+        {
+          key: 'projects-analytics',
+          label: 'Nucleus Analytics',
+          path: `/${tenantSlug}/org/projects/analytics`,
+          icon: ChartBarIcon,
+          description: 'Workspace stats, at-risk deliverables, status summary'
         }
       ]
     },
@@ -215,10 +224,20 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
     },
     // Messaging menu item removed - only supra-admin messaging remains
     {
+      key: 'audit',
+      icon: ClipboardDocumentListIcon,
+      label: 'Audit Log',
+      path: `/${tenantSlug}/org/audit`
+    },
+    {
       key: 'settings',
       icon: CogIcon,
       label: 'Settings',
-      path: `/${tenantSlug}/org/settings`
+      path: `/${tenantSlug}/org/settings`,
+      children: [
+        { key: 'settings-org',      label: 'Org Profile',  path: `/${tenantSlug}/org/settings/organization` },
+        { key: 'settings-general',  label: 'General',      path: `/${tenantSlug}/org/settings` },
+      ]
     }
   ];
 
@@ -276,6 +295,11 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
             key: 'departments-create',
             label: 'Create Department',
             path: `/${tenantSlug}/org/departments/create`
+          },
+          {
+            key: 'departments-access',
+            label: 'Manage Access',
+            path: `/${tenantSlug}/org/departments/access`
           }
         ]
       },
@@ -467,7 +491,11 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         key: 'settings',
         icon: CogIcon,
         label: 'Settings',
-        path: `/${tenantSlug}/org/settings`
+        path: `/${tenantSlug}/org/settings`,
+        children: [
+          { key: 'settings-org',     label: 'Org Profile', path: `/${tenantSlug}/org/settings/organization` },
+          { key: 'settings-general', label: 'General',     path: `/${tenantSlug}/org/settings` },
+        ]
       }
     ];
     return [...essentialModules, ...industrySpecific];

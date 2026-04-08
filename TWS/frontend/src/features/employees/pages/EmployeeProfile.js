@@ -42,7 +42,7 @@ const EmployeeProfile = () => {
     try {
       const [employeeRes, attendanceRes, tasksRes, documentsRes] = await Promise.all([
         axios.get(`/employees/${id}`),
-        axios.get(`/attendance/employee/${id}`),
+        axios.get(`/api/attendance?userId=${id}`),
         axios.get(`/tasks/employee/${id}`),
         axios.get(`/documents/employee/${id}`)
       ]);

@@ -88,7 +88,7 @@ const AnalyticsOverview = () => {
 
   return (
     <div className="space-y-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div data-tutorial="ana-header" className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Analytics Overview</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
@@ -96,6 +96,7 @@ const AnalyticsOverview = () => {
           </p>
         </div>
         <button
+          data-tutorial="ana-reports-btn"
           type="button"
           onClick={() => navigate(`/${tenantSlug}/org/analytics/reports`)}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors"
@@ -113,7 +114,7 @@ const AnalyticsOverview = () => {
       )}
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div data-tutorial="ana-kpi" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800/80 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/40">
@@ -163,7 +164,7 @@ const AnalyticsOverview = () => {
       </div>
 
       {/* Charts row 1: Users */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div data-tutorial="ana-charts" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800/80 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
           <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Users by Role</h2>
           {usersByRole.length > 0 ? (

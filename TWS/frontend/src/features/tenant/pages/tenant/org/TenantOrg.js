@@ -9,6 +9,7 @@ import { TenantThemeProvider } from '../../../providers/TenantThemeProvider';
 import DashboardOverview from './dashboard/DashboardOverview';
 import DashboardAnalytics from './dashboard/DashboardAnalytics';
 import DynamicDashboard from './dashboard/DynamicDashboard';
+import AppHome from './dashboard/AppHome';
 
 // My Work Component
 import MyWork from './my-work/MyWork';
@@ -51,9 +52,8 @@ import ProjectCosting from './finance/ProjectCosting';
 import CashFlow from './finance/CashFlow';
 import TimeExpenses from './finance/TimeExpenses';
 import Reporting from './finance/Reporting';
-// Finance Budgeting and Equity Cap Table
+// Finance Budgeting
 import FinanceBudgeting from './finance/FinanceBudgeting';
-import EquityCapTable from './finance/EquityCapTable';
 
 // Project Components
 import ProjectsOverview from './projects/ProjectsOverview';
@@ -77,11 +77,11 @@ import ProjectWorkspaceLayout from '../../../components/ProjectWorkspaceLayout';
 
 // Nucleus Project OS Components
 import ChangeRequestDashboard from './projects/components/changeRequests/ChangeRequestDashboard';
+import ChangeRequestDetailPage from './projects/ChangeRequestDetailPage';
 import DeliverablesPage from './projects/DeliverablesPage';
 import DeliverableDetail from './projects/DeliverableDetail';
-
-// Inventory Components
-import InventoryOverview from './inventory/InventoryOverview';
+import ApprovalsQueuePage from './projects/ApprovalsQueuePage';
+import NucleusAnalyticsPage from './projects/NucleusAnalyticsPage';
 
 // Operations Components
 import OperationsOverview from './operations/OperationsOverview';
@@ -90,6 +90,8 @@ import OperationsOverview from './operations/OperationsOverview';
 
 // Settings Components
 import SettingsOverview from './settings/SettingsOverview';
+import OrgProfile from './settings/OrgProfile';
+import WorkspaceSettingsPage from './settings/WorkspaceSettingsPage';
 
 // Documents (built-in word processor)
 import DocumentsHub from './documents/DocumentsHub';
@@ -121,6 +123,8 @@ import CreateRole from './roles/CreateRole';
 import DepartmentsList from './departments/DepartmentsList';
 import CreateDepartment from './departments/CreateDepartment';
 import DepartmentDashboard from './departments/DepartmentDashboard';
+import DepartmentAccessManagement from './departments/DepartmentAccessManagement';
+import AuditLogPage from './audit/AuditLogPage';
 
 // Smart catch-all component to prevent redirect loops
 const CatchAllRoute = () => {
@@ -136,27 +140,18 @@ const CatchAllRoute = () => {
     }
     
     // Don't redirect valid routes (departments, users, roles, permissions, employee portal, etc.)
-    const validRoutes = ['/departments', '/users', '/roles', '/permissions', '/projects', '/hr', '/finance', '/analytics', '/settings', '/clients', '/inventory', '/operations', '/documents', '/software-house', '/employee-portal'];
+    const validRoutes = ['/departments', '/users', '/roles', '/permissions', '/projects', '/hr', '/finance', '/analytics', '/settings', '/clients', '/operations', '/documents', '/software-house', '/employee-portal', '/audit'];
     if (validRoutes.some(route => pathname.includes(route))) {
       return;
     }
     
-    // If we're already on a dashboard path with multiple /dashboard segments, clean it up
-    if (pathname.includes('/dashboard/dashboard')) {
-      // Extract the base path up to the first dashboard
-      const dashboardIndex = pathname.indexOf('/dashboard');
-      const cleanPath = pathname.substring(0, dashboardIndex + '/dashboard'.length);
-      navigate(cleanPath, { replace: true });
+    // If path already ends with /home or /dashboard, don't redirect (prevent loop)
+    if (pathname.endsWith('/home') || pathname.endsWith('/dashboard')) {
       return;
     }
-    
-    // If path already ends with /dashboard, don't redirect (prevent loop)
-    if (pathname.endsWith('/dashboard')) {
-      return;
-    }
-    
-    // Otherwise, redirect to org dashboard (relative path)
-    navigate('dashboard', { replace: true });
+
+    // Otherwise, redirect to home
+    navigate('home', { replace: true });
   }, [location.pathname, navigate]);
   
   return null; // This component only handles redirects
@@ -171,7 +166,8 @@ const TenantOrg = () => {
         <TenantOrgLayout>
           <Routes>
           {/* Dashboard Routes */}
-          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<AppHome />} />
           <Route path="dashboard" element={<DynamicDashboard />} />
           <Route path="dashboard/analytics" element={<DashboardAnalytics />} />
 
@@ -198,7 +194,11 @@ const TenantOrg = () => {
           {/* Departments Routes */}
           <Route path="departments" element={<DepartmentsList />} />
           <Route path="departments/create" element={<CreateDepartment />} />
+          <Route path="departments/access" element={<DepartmentAccessManagement />} />
           <Route path="departments/:departmentId/dashboard" element={<DepartmentDashboard />} />
+
+          {/* Audit log (Phase 2) — CEO / owner / admin */}
+          <Route path="audit" element={<AuditLogPage />} />
 
           {/* HR Routes - Support both /hr and /software-house/hr paths */}
           <Route path="hr" element={<Navigate to="software-house/hr" replace />} />
@@ -236,17 +236,15 @@ const TenantOrg = () => {
           <Route path="finance/invoices" element={<AccountsReceivable />} />
           <Route path="finance/budgeting" element={<FinanceBudgeting />} />
           <Route path="finance/time-expenses" element={<TimeExpenses />} />
-          <Route path="finance/equity-cap-table" element={<EquityCapTable />} />
           <Route path="finance/reporting" element={<Reporting />} />
           <Route path="finance/banking" element={<BankingManagement />} />
           <Route path="finance/billing-engine" element={<BillingEngine />} />
           <Route path="finance/project-costing" element={<ProjectCosting />} />
           <Route path="finance/cash-flow" element={<CashFlow />} />
 
-          {/* Workspace routes - Redirect to projects (deprecated) */}
+          {/* Workspace routes - Redirect to projects (deprecated workspace nav) */}
           <Route path="workspaces" element={<Navigate to="../projects" replace />} />
           <Route path="workspaces/*" element={<Navigate to="../projects" replace />} />
-          <Route path="workspace/*" element={<Navigate to="../projects" replace />} />
           
           {/* Project Routes - literals first so they are not matched as :projectId */}
           <Route path="projects" element={<ProjectsOverview />} />
@@ -258,6 +256,9 @@ const TenantOrg = () => {
           <Route path="projects/sprints" element={<SprintManagement />} />
           <Route path="projects/gantt" element={<ProjectGanttStandalone />} />
           <Route path="projects/change-requests" element={<ChangeRequestDashboard />} />
+          <Route path="projects/change-requests/:changeRequestId" element={<ChangeRequestDetailPage />} />
+          <Route path="projects/approvals" element={<ApprovalsQueuePage />} />
+          <Route path="projects/analytics" element={<NucleusAnalyticsPage />} />
           <Route path="projects/deliverables" element={<DeliverablesPage />} />
           <Route path="projects/deliverables/:deliverableId" element={<DeliverableDetail />} />
           {/* Project workspace: single dashboard for a project (sidebar disclosed) */}
@@ -266,7 +267,7 @@ const TenantOrg = () => {
             <Route path="overview" element={<ProjectDashboard />} />
             <Route path="dashboard" element={<Navigate to="../overview" replace />} />
             <Route path="board" element={<ProjectBoardView />} />
-            <Route path="list" element={<ProjectListView />} />
+            <Route path="list" element={<Navigate to="../board" replace />} />
             <Route path="gantt" element={<ProjectGantt />} />
             <Route path="team" element={<ProjectResources />} />
             <Route path="calendar" element={<ProjectCalendarView />} />
@@ -276,9 +277,6 @@ const TenantOrg = () => {
             <Route path="table" element={<ProjectTableView />} />
           </Route>
 
-          {/* Inventory Routes */}
-          <Route path="inventory" element={<InventoryOverview />} />
-
           {/* Operations Routes */}
           <Route path="operations" element={<OperationsOverview />} />
 
@@ -286,6 +284,8 @@ const TenantOrg = () => {
 
           {/* Settings Routes */}
           <Route path="settings" element={<SettingsOverview />} />
+          <Route path="settings/organization" element={<OrgProfile />} />
+          <Route path="settings/workspace" element={<WorkspaceSettingsPage />} />
 
           {/* Documents (built-in word processor) */}
           <Route path="documents" element={<DocumentsHub />} />

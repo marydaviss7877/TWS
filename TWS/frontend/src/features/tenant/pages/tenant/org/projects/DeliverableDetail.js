@@ -15,12 +15,17 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ClockIcon,
-  UserIcon
+  UserIcon,
+  LinkIcon,
+  XMarkIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import tenantProjectApiService from './services/tenantProjectApiService';
 import { handleApiError } from './utils/errorHandler';
+import { showSuccess, showError } from './utils/toastNotifications';
 import { DeliverableForm } from './components/deliverables';
 import { ApprovalProgress } from './components/approvals';
+import ApprovalChainSetup from './components/approvals/ApprovalChainSetup';
 import { DateValidationForm } from './components/deliverables';
 import { ChangeRequestAuditTrail } from './components/changeRequests';
 import DeliverableCardSkeleton from './components/deliverables/DeliverableCardSkeleton';
@@ -32,12 +37,22 @@ const DeliverableDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [showValidationForm, setShowValidationForm] = useState(false);
+  const [showChainSetup, setShowChainSetup] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [projectTasks, setProjectTasks] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
 
   useEffect(() => {
     if (deliverableId && tenantSlug) {
       fetchDeliverable();
     }
   }, [deliverableId, tenantSlug]);
+
+  useEffect(() => {
+    if (deliverable?.project_id) {
+      fetchProjectTasks(deliverable.project_id?._id || deliverable.project_id);
+    }
+  }, [deliverable?.project_id]);
 
   const fetchDeliverable = async () => {
     try {
@@ -57,6 +72,74 @@ const DeliverableDetail = () => {
   const handleValidationSuccess = () => {
     setShowValidationForm(false);
     fetchDeliverable();
+  };
+
+  const fetchProjectTasks = async (projectId) => {
+    if (!projectId || !tenantSlug) return;
+    try {
+      setTasksLoading(true);
+      const res = await tenantProjectApiService.getProjectTasks(tenantSlug, { projectId });
+      const tasks = res?.data ?? res ?? [];
+      setProjectTasks(Array.isArray(tasks) ? tasks : []);
+    } catch (err) {
+      console.error('Error fetching project tasks:', err);
+    } finally {
+      setTasksLoading(false);
+    }
+  };
+
+  const handleStatusTransition = async (newStatus) => {
+    try {
+      setStatusLoading(true);
+      if (newStatus === 'shipped') {
+        await tenantProjectApiService.shipDeliverable(tenantSlug, deliverableId);
+      } else {
+        await tenantProjectApiService.updateDeliverableStatus(tenantSlug, deliverableId, newStatus);
+      }
+      showSuccess(`Status updated to ${newStatus.replace('_', ' ')}`);
+      await fetchDeliverable();
+    } catch (err) {
+      showError(handleApiError(err).message || 'Failed to update status');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  const handleCriterionToggle = async (index, met) => {
+    if (!deliverable) return;
+    const updated = deliverable.acceptance_criteria.map((c, i) =>
+      i === index ? { ...c, met } : c
+    );
+    setDeliverable({ ...deliverable, acceptance_criteria: updated });
+    try {
+      await tenantProjectApiService.updateDeliverable(tenantSlug, deliverableId, {
+        acceptance_criteria: updated
+      });
+    } catch (err) {
+      // Rollback on error
+      setDeliverable({ ...deliverable });
+      showError('Failed to save criterion');
+    }
+  };
+
+  const handleLinkTask = async (taskId) => {
+    try {
+      await tenantProjectApiService.linkTaskToDeliverable(tenantSlug, deliverableId, taskId);
+      showSuccess('Task linked');
+      await fetchDeliverable();
+    } catch (err) {
+      showError(handleApiError(err).message || 'Failed to link task');
+    }
+  };
+
+  const handleUnlinkTask = async (taskId) => {
+    try {
+      await tenantProjectApiService.unlinkTaskFromDeliverable(tenantSlug, deliverableId, taskId);
+      showSuccess('Task unlinked');
+      await fetchDeliverable();
+    } catch (err) {
+      showError(handleApiError(err).message || 'Failed to unlink task');
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -203,6 +286,42 @@ const DeliverableDetail = () => {
             )}
           </div>
 
+          {/* Status Actions */}
+          {!['shipped'].includes(deliverable.status) && (
+            <div className="glass-card-premium p-6">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Status Actions</h2>
+              <div className="flex flex-wrap gap-3">
+                {deliverable.status === 'created' && (
+                  <button
+                    onClick={() => handleStatusTransition('in_dev')}
+                    disabled={statusLoading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg"
+                  >
+                    {statusLoading ? 'Updating…' : 'Start Development'}
+                  </button>
+                )}
+                {(deliverable.status === 'in_dev' || deliverable.status === 'in_rework') && (
+                  <button
+                    onClick={() => handleStatusTransition('ready_approval')}
+                    disabled={statusLoading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 rounded-lg"
+                  >
+                    {statusLoading ? 'Updating…' : deliverable.status === 'in_rework' ? 'Resubmit for Approval' : 'Submit for Approval'}
+                  </button>
+                )}
+                {deliverable.status === 'approved' && (
+                  <button
+                    onClick={() => handleStatusTransition('shipped')}
+                    disabled={statusLoading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded-lg"
+                  >
+                    {statusLoading ? 'Shipping…' : 'Ship Deliverable'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Acceptance Criteria */}
           {deliverable.acceptance_criteria && deliverable.acceptance_criteria.length > 0 && (
             <div className="glass-card-premium p-6">
@@ -213,8 +332,8 @@ const DeliverableDetail = () => {
                     <input
                       type="checkbox"
                       checked={criterion.met || false}
-                      disabled
-                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      onChange={(e) => handleCriterionToggle(index, e.target.checked)}
+                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                     />
                     <span className={`flex-1 text-sm ${criterion.met ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>
                       {criterion.description || criterion}
@@ -225,9 +344,69 @@ const DeliverableDetail = () => {
             </div>
           )}
 
+          {/* Linked Tasks */}
+          <div className="glass-card-premium p-6">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <LinkIcon className="w-5 h-5" />
+              Linked Tasks
+            </h2>
+            {deliverable.tasks && deliverable.tasks.length > 0 ? (
+              <ul className="space-y-2 mb-4">
+                {deliverable.tasks.map((task) => {
+                  const taskObj = typeof task === 'object' ? task : { _id: task, title: 'Task' };
+                  return (
+                    <li key={taskObj._id || task} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
+                      <span className="text-sm text-gray-900 dark:text-white">{taskObj.title || 'Task'}</span>
+                      <button
+                        onClick={() => handleUnlinkTask(taskObj._id || task)}
+                        className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded text-red-500"
+                        title="Unlink task"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">No tasks linked yet</p>
+            )}
+            {!tasksLoading && projectTasks.filter(t =>
+              !deliverable.tasks?.map(lt => (lt._id || lt).toString()).includes(t._id?.toString())
+            ).length > 0 && (
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Add from project tasks:</p>
+                <div className="max-h-40 overflow-y-auto space-y-1">
+                  {projectTasks
+                    .filter(t => !deliverable.tasks?.map(lt => (lt._id || lt).toString()).includes(t._id?.toString()))
+                    .map(task => (
+                      <button
+                        key={task._id}
+                        onClick={() => handleLinkTask(task._id)}
+                        className="w-full text-left px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg flex items-center gap-2"
+                      >
+                        <PlusIcon className="w-3 h-3 flex-shrink-0" />
+                        {task.title}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Approval Progress */}
           <div className="glass-card-premium p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Approval Progress</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Approval Progress</h2>
+              {deliverable.status !== 'shipped' && (!deliverable.approvals || deliverable.approvals.length === 0) && (
+                <button
+                  onClick={() => setShowChainSetup(true)}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
+                >
+                  Create Approval Chain
+                </button>
+              )}
+            </div>
             <ApprovalProgress
               deliverableId={deliverable._id || deliverable.id}
               onApprovalChange={fetchDeliverable}
@@ -325,6 +504,18 @@ const DeliverableDetail = () => {
           deliverableId={deliverable._id || deliverable.id}
           onSuccess={handleValidationSuccess}
           onCancel={() => setShowValidationForm(false)}
+        />
+      )}
+
+      {/* Approval Chain Setup Modal */}
+      {showChainSetup && (
+        <ApprovalChainSetup
+          deliverableId={deliverable._id || deliverable.id}
+          onSuccess={() => {
+            setShowChainSetup(false);
+            fetchDeliverable();
+          }}
+          onCancel={() => setShowChainSetup(false)}
         />
       )}
     </div>

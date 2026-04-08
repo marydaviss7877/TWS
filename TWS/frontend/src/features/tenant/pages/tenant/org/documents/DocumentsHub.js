@@ -362,7 +362,7 @@ const DocumentsHub = () => {
 
   return (
     <div className="min-h-full bg-[var(--tenant-bg)] text-[var(--tenant-text)]">
-      <header className="border-b border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)]">
+      <header data-tutorial="doc-header" className="border-b border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -387,6 +387,7 @@ const DocumentsHub = () => {
                 {uploading ? 'Uploading…' : 'Upload'}
               </label>
               <button
+                data-tutorial="doc-create-btn"
                 type="button"
                 onClick={() => setTemplateModalOpen(true)}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-white bg-[var(--tenant-primary)] hover:opacity-95 transition-opacity focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)] focus:ring-offset-2 focus:ring-offset-[var(--tenant-bg)] shrink-0"
@@ -677,7 +678,7 @@ const DocumentsHub = () => {
             </div>
           </div>
         ) : viewMode === 'table' ? (
-          <div className="rounded-xl border border-[var(--tenant-border)] overflow-hidden bg-[var(--tenant-bg-elevated)]">
+          <div data-tutorial="doc-list" className="rounded-xl border border-[var(--tenant-border)] overflow-hidden bg-[var(--tenant-bg-elevated)]">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-[var(--tenant-border)] bg-[var(--tenant-bg)]">

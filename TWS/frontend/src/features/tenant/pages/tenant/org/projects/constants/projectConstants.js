@@ -257,6 +257,7 @@ export const API_ENDPOINTS = {
   TASK_DEPENDENCY_DELETE: (tenantSlug, taskId, dependencyId) => `/api/tenant/${tenantSlug}/organization/projects/tasks/${taskId}/dependencies/${dependencyId}`,
   TASK_RESCHEDULE: (tenantSlug, taskId) => `/api/tenant/${tenantSlug}/organization/projects/tasks/${taskId}/reschedule`,
   // Nucleus Project OS - Approval endpoints
+  APPROVALS_PENDING: (tenantSlug) => `/api/tenant/${tenantSlug}/organization/approvals/pending`,
   APPROVALS_FOR_DELIVERABLE: (tenantSlug, deliverableId) => `/api/tenant/${tenantSlug}/organization/approvals/deliverable/${deliverableId}`,
   APPROVAL_APPROVE: (tenantSlug, approvalId) => `/api/tenant/${tenantSlug}/organization/approvals/${approvalId}/approve`,
   APPROVAL_REJECT: (tenantSlug, approvalId) => `/api/tenant/${tenantSlug}/organization/approvals/${approvalId}/reject`,

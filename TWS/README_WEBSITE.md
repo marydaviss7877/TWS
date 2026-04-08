@@ -119,11 +119,6 @@ Simply add new sections following the existing pattern in `index.html`.
 2. Or connect your GitHub repository
 3. Automatic deployment
 
-### Vercel
-1. Install Vercel CLI: `npm i -g vercel`
-2. Run `vercel` in the project directory
-3. Follow the prompts
-
 ## 📝 Notes
 
 - All images/icons use emojis for easy display (no external dependencies)

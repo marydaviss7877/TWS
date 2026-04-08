@@ -217,7 +217,7 @@ const ProjectCosting = () => {
       // Fetch all detail data in parallel
       const [costs, profitability, budgetVsActual, forecast, resourceAllocation] = await Promise.all([
         tenantApiService.getProjectCosts(tenantSlug, project._id).catch(() => null),
-        tenantApiService.getProjectProfitabilityByProject(tenantSlug, project._id).catch(() => null),
+        tenantApiService.getProjectProfitability(tenantSlug, project._id).catch(() => null),
         tenantApiService.getBudgetVsActual(tenantSlug, project._id).catch(() => null),
         tenantApiService.getProjectForecast(tenantSlug, project._id).catch(() => null),
         tenantApiService.getResourceAllocation(tenantSlug, project._id).catch(() => null)

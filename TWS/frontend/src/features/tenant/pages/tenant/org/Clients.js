@@ -634,7 +634,7 @@ const Clients = () => {
     <ErrorBoundary message="Failed to load clients. Please refresh the page.">
       <div className="space-y-8">
         {/* Header Section - Premium Wolfstack Style */}
-        <div className="glass-card-premium p-8 text-center wolfstack-animate-fadeIn">
+        <div data-tutorial="cli-header" className="glass-card-premium p-8 text-center wolfstack-animate-fadeIn">
           <h1 className="text-4xl font-bold font-heading text-gray-900 dark:text-white tracking-tight mb-4">
             Client Management
           </h1>
@@ -647,7 +647,7 @@ const Clients = () => {
         <ClientMetrics metrics={clientMetrics} />
 
         {/* Clients Management Section - Premium Wolfstack Style */}
-        <div className="glass-card-premium p-8 wolfstack-animate-fadeIn">
+        <div data-tutorial="cli-table" className="glass-card-premium p-8 wolfstack-animate-fadeIn">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
             <div>
               <h2 className="text-2xl font-bold font-heading text-gray-900 dark:text-white tracking-tight mb-2">
@@ -658,6 +658,7 @@ const Clients = () => {
               </p>
             </div>
             <button
+              data-tutorial="cli-add-btn"
               onClick={() => {
                 resetForm();
                 setIsClientModalOpen(true);
@@ -670,7 +671,7 @@ const Clients = () => {
           </div>
 
           {/* Enhanced Filters - Premium Wolfstack Style */}
-          <div className="glass-card p-6 mb-8">
+          <div data-tutorial="cli-filters" className="glass-card p-6 mb-8">
             <div className="flex flex-col lg:flex-row gap-4">
               {/* Search */}
               <div className="flex-1">
@@ -796,449 +797,464 @@ const Clients = () => {
                   <XCircleIcon className="h-6 w-6" />
                 </button>
               </div>
-                
-              <form onSubmit={handleSubmit} className="p-6">
-                <div className="space-y-8">
-                  {/* Basic Information */}
-                  <div>
-                    <h4 className="text-lg font-bold font-heading text-gray-900 dark:text-white mb-4 flex items-center">
-                      <BuildingOfficeIcon className="h-5 w-5 mr-2 text-indigo-600" />
-                      Basic Information
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Client Name *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="glass-input w-full"
-                          placeholder="Enter client name"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Status
-                        </label>
-                        <select 
-                          value={formData.status} 
-                          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                          className="glass-input w-full"
-                        >
-                          <option value="active">Active</option>
-                          <option value="inactive">Inactive</option>
-                          <option value="prospect">Prospect</option>
-                        </select>
-                      </div>
+
+              <form onSubmit={handleSubmit} className="p-8 space-y-8">
+
+                {/* ── Section 1: Basic Information ── */}
+                <div className="glass-card p-6 space-y-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                      <BuildingOfficeIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold font-heading text-gray-900 dark:text-white">Basic Information</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Core details about this client</p>
                     </div>
                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Client Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="glass-input w-full px-4 py-3 rounded-xl"
+                        placeholder="Enter client name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Status
+                      </label>
+                      <select
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                        className="glass-input w-full px-4 py-3 rounded-xl"
+                      >
+                        <option value="active">Active</option>
+                        <option value="prospect">Prospect</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
 
-                  {/* Company Information */}
-                  <div>
-                    <h4 className="text-lg font-bold font-heading text-gray-900 dark:text-white mb-4 flex items-center">
-                      <BriefcaseIcon className="h-5 w-5 mr-2 text-indigo-600" />
-                      Company Information
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Company Name
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.company.name}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            company: { ...formData.company, name: e.target.value } 
-                          })}
-                          className="glass-input w-full"
-                          placeholder="Enter company name"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Website
-                        </label>
+                {/* ── Section 2: Company Information ── */}
+                <div className="glass-card p-6 space-y-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                      <BriefcaseIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold font-heading text-gray-900 dark:text-white">Company Information</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Company profile and details</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Company Name
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.company.name}
+                        onChange={(e) => setFormData({ ...formData, company: { ...formData.company, name: e.target.value } })}
+                        className="glass-input w-full px-4 py-3 rounded-xl"
+                        placeholder="Company name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Website
+                      </label>
+                      <div className="relative">
+                        <GlobeAltIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
                           type="url"
                           value={formData.company.website}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            company: { ...formData.company, website: e.target.value } 
-                          })}
-                          className="glass-input w-full"
+                          onChange={(e) => setFormData({ ...formData, company: { ...formData.company, website: e.target.value } })}
+                          className="glass-input w-full pl-9 pr-4 py-3 rounded-xl"
                           placeholder="https://example.com"
                         />
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Industry
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.company.industry}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            company: { ...formData.company, industry: e.target.value } 
-                          })}
-                          className="glass-input w-full"
-                          placeholder="e.g., Technology, Finance, Healthcare"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Company Size
-                        </label>
-                        <select
-                          value={formData.company.size}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            company: { ...formData.company, size: e.target.value } 
-                          })}
-                          className="glass-input w-full"
-                        >
-                          <option value="">Select size</option>
-                          <option value="1-10">1-10 employees</option>
-                          <option value="11-50">11-50 employees</option>
-                          <option value="51-200">51-200 employees</option>
-                          <option value="201-500">201-500 employees</option>
-                          <option value="501-1000">501-1000 employees</option>
-                          <option value="1000+">1000+ employees</option>
-                        </select>
-                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Industry
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.company.industry}
+                        onChange={(e) => setFormData({ ...formData, company: { ...formData.company, industry: e.target.value } })}
+                        className="glass-input w-full px-4 py-3 rounded-xl"
+                        placeholder="e.g. Technology, Finance, Healthcare"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Company Size
+                      </label>
+                      <select
+                        value={formData.company.size}
+                        onChange={(e) => setFormData({ ...formData, company: { ...formData.company, size: e.target.value } })}
+                        className="glass-input w-full px-4 py-3 rounded-xl"
+                      >
+                        <option value="">Select size</option>
+                        <option value="1-10">1–10 employees</option>
+                        <option value="11-50">11–50 employees</option>
+                        <option value="51-200">51–200 employees</option>
+                        <option value="201-500">201–500 employees</option>
+                        <option value="501-1000">501–1000 employees</option>
+                        <option value="1000+">1000+ employees</option>
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Company Description
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={formData.company.description}
+                        onChange={(e) => setFormData({ ...formData, company: { ...formData.company, description: e.target.value } })}
+                        className="glass-input w-full px-4 py-3 rounded-xl resize-none"
+                        placeholder="Brief description of what this company does..."
+                      />
                     </div>
                   </div>
+                </div>
 
-                  {/* Primary Contact */}
-                  <div>
-                    <h4 className="text-lg font-bold font-heading text-gray-900 dark:text-white mb-4 flex items-center">
-                      <UserCircleIcon className="h-5 w-5 mr-2 text-indigo-600" />
-                      Primary Contact
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Contact Name
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.contact.primary.name}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            contact: { 
-                              ...formData.contact, 
-                              primary: { ...formData.contact.primary, name: e.target.value } 
-                            } 
-                          })}
-                          className="glass-input w-full"
-                          placeholder="Full name"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Title
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.contact.primary.title}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            contact: { 
-                              ...formData.contact, 
-                              primary: { ...formData.contact.primary, title: e.target.value } 
-                            } 
-                          })}
-                          className="glass-input w-full"
-                          placeholder="Job title"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Email *
-                        </label>
+                {/* ── Section 3: Primary Contact ── */}
+                <div className="glass-card p-6 space-y-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                      <UserCircleIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold font-heading text-gray-900 dark:text-white">Primary Contact</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Main point of contact for this client</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Contact Name
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.contact.primary.name}
+                        onChange={(e) => setFormData({ ...formData, contact: { ...formData.contact, primary: { ...formData.contact.primary, name: e.target.value } } })}
+                        className="glass-input w-full px-4 py-3 rounded-xl"
+                        placeholder="Full name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Job Title
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.contact.primary.title}
+                        onChange={(e) => setFormData({ ...formData, contact: { ...formData.contact, primary: { ...formData.contact.primary, title: e.target.value } } })}
+                        className="glass-input w-full px-4 py-3 rounded-xl"
+                        placeholder="e.g. CEO, Project Manager"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Email <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
                           type="email"
                           required
                           value={formData.contact.primary.email}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            contact: { 
-                              ...formData.contact, 
-                              primary: { ...formData.contact.primary, email: e.target.value } 
-                            } 
-                          })}
-                          className="glass-input w-full"
+                          onChange={(e) => setFormData({ ...formData, contact: { ...formData.contact, primary: { ...formData.contact.primary, email: e.target.value } } })}
+                          className="glass-input w-full pl-9 pr-4 py-3 rounded-xl"
                           placeholder="email@example.com"
                         />
                       </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Phone
-                        </label>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Phone
+                      </label>
+                      <div className="relative">
+                        <PhoneIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
                           type="tel"
                           value={formData.contact.primary.phone}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            contact: { 
-                              ...formData.contact, 
-                              primary: { ...formData.contact.primary, phone: e.target.value } 
-                            } 
-                          })}
-                          className="glass-input w-full"
+                          onChange={(e) => setFormData({ ...formData, contact: { ...formData.contact, primary: { ...formData.contact.primary, phone: e.target.value } } })}
+                          className="glass-input w-full pl-9 pr-4 py-3 rounded-xl"
                           placeholder="+1 (555) 123-4567"
                         />
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Billing Information */}
-                  <div>
-                    <h4 className="text-lg font-bold font-heading text-gray-900 dark:text-white mb-4 flex items-center">
-                      <CurrencyDollarIcon className="h-5 w-5 mr-2 text-indigo-600" />
-                      Billing Information
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Currency
-                        </label>
-                        <select
-                          value={formData.billing.currency}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            billing: { ...formData.billing, currency: e.target.value } 
-                          })}
-                          className="glass-input w-full"
-                        >
-                          <option value="USD">USD - US Dollar</option>
-                          <option value="EUR">EUR - Euro</option>
-                          <option value="GBP">GBP - British Pound</option>
-                          <option value="CAD">CAD - Canadian Dollar</option>
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Payment Terms
-                        </label>
-                        <select
-                          value={formData.billing.paymentTerms}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            billing: { ...formData.billing, paymentTerms: e.target.value } 
-                          })}
-                          className="glass-input w-full"
-                        >
-                          <option value="net_15">Net 15</option>
-                          <option value="net_30">Net 30</option>
-                          <option value="net_45">Net 45</option>
-                          <option value="net_60">Net 60</option>
-                          <option value="due_on_receipt">Due on Receipt</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Tax Rate (%)
-                        </label>
+                {/* ── Section 4: Billing ── */}
+                <div className="glass-card p-6 space-y-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                      <CurrencyDollarIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold font-heading text-gray-900 dark:text-white">Billing</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Billing contact and payment preferences</p>
+                    </div>
+                  </div>
+                  {/* Billing Contact Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b border-gray-200/50 dark:border-white/10">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Billing Contact Name
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.contact.billing.name}
+                        onChange={(e) => setFormData({ ...formData, contact: { ...formData.contact, billing: { ...formData.contact.billing, name: e.target.value } } })}
+                        className="glass-input w-full px-4 py-3 rounded-xl"
+                        placeholder="Billing contact name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Billing Email
+                      </label>
+                      <div className="relative">
+                        <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="100"
-                          value={formData.billing.taxRate}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            billing: { ...formData.billing, taxRate: parseFloat(e.target.value) || 0 } 
-                          })}
-                          className="glass-input w-full"
-                          placeholder="0.00"
+                          type="email"
+                          value={formData.contact.billing.email}
+                          onChange={(e) => setFormData({ ...formData, contact: { ...formData.contact, billing: { ...formData.contact.billing, email: e.target.value } } })}
+                          className="glass-input w-full pl-9 pr-4 py-3 rounded-xl"
+                          placeholder="billing@example.com"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Billing Phone
+                      </label>
+                      <div className="relative">
+                        <PhoneIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                          type="tel"
+                          value={formData.contact.billing.phone}
+                          onChange={(e) => setFormData({ ...formData, contact: { ...formData.contact, billing: { ...formData.contact.billing, phone: e.target.value } } })}
+                          className="glass-input w-full pl-9 pr-4 py-3 rounded-xl"
+                          placeholder="+1 (555) 000-0000"
                         />
                       </div>
                     </div>
                   </div>
+                  {/* Payment Settings Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Currency
+                      </label>
+                      <select
+                        value={formData.billing.currency}
+                        onChange={(e) => setFormData({ ...formData, billing: { ...formData.billing, currency: e.target.value } })}
+                        className="glass-input w-full px-4 py-3 rounded-xl"
+                      >
+                        <option value="USD">USD — US Dollar</option>
+                        <option value="EUR">EUR — Euro</option>
+                        <option value="GBP">GBP — British Pound</option>
+                        <option value="CAD">CAD — Canadian Dollar</option>
+                        <option value="PKR">PKR — Pakistani Rupee</option>
+                        <option value="AED">AED — UAE Dirham</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Payment Terms
+                      </label>
+                      <select
+                        value={formData.billing.paymentTerms}
+                        onChange={(e) => setFormData({ ...formData, billing: { ...formData.billing, paymentTerms: e.target.value } })}
+                        className="glass-input w-full px-4 py-3 rounded-xl"
+                      >
+                        <option value="due_on_receipt">Due on Receipt</option>
+                        <option value="net_15">Net 15</option>
+                        <option value="net_30">Net 30</option>
+                        <option value="net_45">Net 45</option>
+                        <option value="net_60">Net 60</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Tax Rate (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={formData.billing.taxRate}
+                        onChange={(e) => setFormData({ ...formData, billing: { ...formData.billing, taxRate: parseFloat(e.target.value) || 0 } })}
+                        className="glass-input w-full px-4 py-3 rounded-xl"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                </div>
 
-                  {/* Address */}
-                  <div>
-                    <h4 className="text-lg font-bold font-heading text-gray-900 dark:text-white mb-4 flex items-center">
-                      <MapPinIcon className="h-5 w-5 mr-2 text-indigo-600" />
-                      Address
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Street Address
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.address.street}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            address: { ...formData.address, street: e.target.value } 
-                          })}
-                          className="glass-input w-full"
-                          placeholder="Street address"
-                        />
-                      </div>
-                      
+                {/* ── Section 5: Address ── */}
+                <div className="glass-card p-6 space-y-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                      <MapPinIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold font-heading text-gray-900 dark:text-white">Address</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Client's physical location</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Street Address
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.address.street}
+                        onChange={(e) => setFormData({ ...formData, address: { ...formData.address, street: e.target.value } })}
+                        className="glass-input w-full px-4 py-3 rounded-xl"
+                        placeholder="123 Main Street, Suite 100"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          City
-                        </label>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">City</label>
                         <input
                           type="text"
                           value={formData.address.city}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            address: { ...formData.address, city: e.target.value } 
-                          })}
-                          className="glass-input w-full"
+                          onChange={(e) => setFormData({ ...formData, address: { ...formData.address, city: e.target.value } })}
+                          className="glass-input w-full px-4 py-3 rounded-xl"
                           placeholder="City"
                         />
                       </div>
-                      
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          State/Province
-                        </label>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">State / Province</label>
                         <input
                           type="text"
                           value={formData.address.state}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            address: { ...formData.address, state: e.target.value } 
-                          })}
-                          className="glass-input w-full"
-                          placeholder="State"
+                          onChange={(e) => setFormData({ ...formData, address: { ...formData.address, state: e.target.value } })}
+                          className="glass-input w-full px-4 py-3 rounded-xl"
+                          placeholder="State / Province"
                         />
                       </div>
-                      
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Zip/Postal Code
-                        </label>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Zip / Postal Code</label>
                         <input
                           type="text"
                           value={formData.address.zipCode}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            address: { ...formData.address, zipCode: e.target.value } 
-                          })}
-                          className="glass-input w-full"
-                          placeholder="Zip code"
+                          onChange={(e) => setFormData({ ...formData, address: { ...formData.address, zipCode: e.target.value } })}
+                          className="glass-input w-full px-4 py-3 rounded-xl"
+                          placeholder="12345"
                         />
                       </div>
-                      
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Country
-                        </label>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Country</label>
                         <input
                           type="text"
                           value={formData.address.country}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            address: { ...formData.address, country: e.target.value } 
-                          })}
-                          className="glass-input w-full"
+                          onChange={(e) => setFormData({ ...formData, address: { ...formData.address, country: e.target.value } })}
+                          className="glass-input w-full px-4 py-3 rounded-xl"
                           placeholder="Country"
                         />
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Tags */}
+                {/* ── Section 6: Tags & Notes ── */}
+                <div className="glass-card p-6 space-y-6">
                   <div>
-                    <h4 className="text-lg font-bold font-heading text-gray-900 dark:text-white mb-4 flex items-center">
-                      <TagIcon className="h-5 w-5 mr-2 text-indigo-600" />
-                      Tags
-                    </h4>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {formData.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800"
-                        >
-                          {tag}
-                          <button
-                            type="button"
-                            onClick={() => removeTag(tag)}
-                            className="ml-2 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
-                          >
-                            <XCircleIcon className="h-4 w-4" />
-                          </button>
-                        </span>
-                      ))}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
+                        <TagIcon className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold font-heading text-gray-900 dark:text-white">Tags</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Labels to categorise this client</p>
+                      </div>
                     </div>
+                    {formData.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {formData.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800"
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => removeTag(tag)}
+                              className="text-indigo-500 hover:text-red-500 transition-colors"
+                            >
+                              <XCircleIcon className="h-3.5 w-3.5" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <input
                         type="text"
                         value={tagInput}
                         onChange={(e) => setTagInput(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addTag();
-                          }
-                        }}
-                        className="glass-input flex-1"
-                        placeholder="Add a tag and press Enter"
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
+                        className="glass-input flex-1 px-4 py-3 rounded-xl"
+                        placeholder="Type a tag and press Enter…"
                       />
-                      <button
-                        type="button"
-                        onClick={addTag}
-                        className="wolfstack-button-secondary"
-                      >
-                        Add Tag
+                      <button type="button" onClick={addTag} className="glass-button px-5 py-3 rounded-xl font-medium hover-scale">
+                        Add
                       </button>
                     </div>
                   </div>
 
-                  {/* Notes */}
+                  <div className="border-t border-gray-200/50 dark:border-white/10" />
+
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                       Notes
                     </label>
                     <textarea
-                      rows={4}
+                      rows={3}
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      className="glass-input w-full resize-none"
-                      placeholder="Enter any additional notes about this client..."
+                      className="glass-input w-full px-4 py-3 rounded-xl resize-none"
+                      placeholder="Any additional notes about this client…"
                     />
                   </div>
                 </div>
-                
-                <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200/50 dark:border-white/10">
+
+                {/* ── Form Actions ── */}
+                <div className="flex items-center justify-end gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsClientModalOpen(false);
-                      setEditingClient(null);
-                      resetForm();
-                    }}
-                    className="wolfstack-button-secondary"
+                    onClick={() => { setIsClientModalOpen(false); setEditingClient(null); resetForm(); }}
+                    className="glass-button px-6 py-3 rounded-xl font-semibold hover-scale"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="wolfstack-button-primary"
+                    className="glass-button px-8 py-3 rounded-xl font-semibold hover-scale bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0 shadow-lg shadow-indigo-500/25"
                   >
-                    {editingClient ? 'Update Client' : 'Create Client'}
+                    {editingClient ? 'Save Changes' : 'Create Client'}
                   </button>
                 </div>
+
               </form>
             </div>
           </div>

@@ -139,10 +139,11 @@ const ProjectDetailView = ({ project, onBack, onApproval }) => {
 
   const fetchDeliverables = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/projects/${project._id}/deliverables`, {
+      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${baseUrl}/api/client-portal/projects/${project._id}/deliverables`, {
         credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setDeliverables(data.data || []);

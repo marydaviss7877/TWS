@@ -33,10 +33,17 @@ const Breadcrumbs = ({ items, separator = '/', className = '' }) => {
     const pathSegments = location.pathname.split('/').filter(Boolean);
     const breadcrumbs = [];
 
-    // Add home
+    // For tenant portal routes (/:tenantSlug/org/...), skip slug + 'org'
+    const orgIdx = pathSegments.indexOf('org');
+    const skipBefore = orgIdx !== -1 ? orgIdx : 0; // skip everything up to and including 'org'
+
+    // Add home pointing to dashboard if in tenant portal, otherwise root
+    const homePath = orgIdx !== -1
+      ? `/${pathSegments.slice(0, orgIdx + 1).join('/')}/dashboard`
+      : '/';
     breadcrumbs.push({
       label: 'Home',
-      path: '/',
+      path: homePath,
       icon: HomeIcon
     });
 
@@ -44,9 +51,9 @@ const Breadcrumbs = ({ items, separator = '/', className = '' }) => {
     let currentPath = '';
     pathSegments.forEach((segment, index) => {
       currentPath += `/${segment}`;
-      
-      // Skip tenant slug and org segments for cleaner breadcrumbs
-      if (segment === 'tenant' || segment === 'org') {
+
+      // Skip tenant slug, 'org', and 'tenant' layout segments
+      if (index <= skipBefore || segment === 'tenant') {
         return;
       }
 

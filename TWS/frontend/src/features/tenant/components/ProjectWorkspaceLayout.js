@@ -27,6 +27,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import tenantProjectApiService from '../pages/tenant/org/projects/services/tenantProjectApiService';
+import ProjectSettingsModal from '../pages/tenant/org/projects/components/ProjectSettingsModal';
 import '../styles/tenant-theme.css';
 import '../styles/tenant-tokens.css';
 import './TenantOrgLayout.css';
@@ -39,7 +40,6 @@ export { PROJECT_WORKSPACE_EVENTS };
 
 const VIEW_TABS = [
   { key: 'overview', label: 'Overview', path: 'overview', icon: ChartBarIcon, iconColor: 'text-indigo-500' },
-  { key: 'list', label: 'List', path: 'list', icon: ListBulletIcon, iconColor: 'text-slate-600 dark:text-slate-400' },
   { key: 'board', label: 'Board', path: 'board', icon: Squares2X2Icon, iconColor: 'text-blue-500' },
   { key: 'team', label: 'Team', path: 'team', icon: UserGroupIcon, iconColor: 'text-emerald-500' },
   { key: 'calendar', label: 'Calendar', path: 'calendar', icon: CalendarIcon, iconColor: 'text-amber-500' },
@@ -58,6 +58,7 @@ const ProjectWorkspaceLayout = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   const basePath = `/${tenantSlug}/org/projects/${projectId}`;
 
@@ -200,9 +201,9 @@ const ProjectWorkspaceLayout = () => {
             </button>
             <button
               type="button"
-              onClick={() => navigate(`${basePath}/overview`)}
+              onClick={() => setSettingsModalOpen(true)}
               className="glass-button p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              title="Project settings (overview)"
+              title="Project settings"
             >
               <Cog6ToothIcon className="w-5 h-5" />
             </button>
@@ -267,6 +268,25 @@ const ProjectWorkspaceLayout = () => {
       <div className="flex-1 min-h-0 overflow-auto glass-scrollbar">
         <Outlet />
       </div>
+
+      {/* Project settings modal – opened from gear button */}
+      <ProjectSettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        project={project}
+        projectId={projectId}
+        onSaved={async () => {
+          try {
+            const response = await tenantProjectApiService.getProject(tenantSlug, projectId);
+            const data = response?.data ?? response;
+            if (data && typeof data === 'object' && !Array.isArray(data)) {
+              setProject(data);
+            }
+          } catch (err) {
+            console.error('Failed to refresh project after save:', err);
+          }
+        }}
+      />
     </div>
   );
 };

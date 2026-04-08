@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useFullscreen } from '../hooks/useFullscreen';
 import {
   HomeIcon,
   BuildingOffice2Icon,
@@ -151,53 +152,26 @@ const SupraAdminLayout = ({ children }) => {
     });
     return initialExpanded;
   });
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  // useFullscreen hook — replaces 95-line copy-pasted fullscreen boilerplate
+  const { isFullscreen, requestFullscreen, exitFullscreen, toggleFullscreen } = useFullscreen();
   const [searchQuery, setSearchQuery] = useState('');
   const themeMenuRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  // Handle fullscreen API
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      const isCurrentlyFullscreen = !!(
-        document.fullscreenElement ||
-        document.webkitFullscreenElement ||
-        document.mozFullScreenElement ||
-        document.msFullscreenElement
-      );
-      setIsFullscreen(isCurrentlyFullscreen);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-    };
-  }, []);
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event) => {
-      // Cmd/Ctrl + K for search
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault();
         searchInputRef.current?.focus();
       }
-      // ESC key to exit fullscreen
       if (event.key === 'Escape' && isFullscreen) {
         exitFullscreen();
       }
     };
-
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isFullscreen]);
+  }, [isFullscreen, exitFullscreen]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -212,46 +186,9 @@ const SupraAdminLayout = ({ children }) => {
         setShowNotifications(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu, showNotifications]);
-
-  // Fullscreen API functions
-  const requestFullscreen = async () => {
-    try {
-      const element = document.documentElement;
-      if (element.requestFullscreen) {
-        await element.requestFullscreen();
-      } else if (element.webkitRequestFullscreen) {
-        await element.webkitRequestFullscreen();
-      } else if (element.mozRequestFullScreen) {
-        await element.mozRequestFullScreen();
-      } else if (element.msRequestFullscreen) {
-        await element.msRequestFullscreen();
-      }
-    } catch (error) {
-      console.error('Error entering fullscreen:', error);
-    }
-  };
-
-  const exitFullscreen = async () => {
-    try {
-      if (document.exitFullscreen) {
-        await document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        await document.webkitExitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        await document.mozCancelFullScreen();
-      } else if (document.msExitFullscreen) {
-        await document.msExitFullscreen();
-      }
-    } catch (error) {
-      console.error('Error exiting fullscreen:', error);
-    }
-  };
 
   // Utility functions for breadcrumbs and page title
   const getPageTitle = () => {

@@ -7,9 +7,6 @@ yarn-error.log*
 # Production builds
 build/
 dist/
-
-# Vercel
-.vercel/
 *.tgz
 *.tar.gz
 
@@ -95,8 +92,9 @@ jspm_packages/
 .nuxt
 dist
 
-# Gatsby files (do not ignore CRA frontend/public)
+# Gatsby files
 .cache/
+public
 
 # Storybook build outputs
 .out

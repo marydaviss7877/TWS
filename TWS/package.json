@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\" --names \"backend,frontend\" --prefix-colors \"blue,magenta\" --kill-others-on-fail",
-    "start:backend": "cd backend && node server.js",
+    "start:backend": "cd backend && npm run dev",
     "start:frontend": "cd frontend && set BROWSER=none&& npm start",
     "start:simple": "node start.js",
     "dev": "npm start",
@@ -37,7 +37,8 @@
   "author": "The Wolf Stack",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "typescript": "^5.9.3"
   },
   "workspaces": [
     "backend",

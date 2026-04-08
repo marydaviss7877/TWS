@@ -38,7 +38,6 @@ const GanttChart = ({ projectId: propProjectId }) => {
   const [dateRange, setDateRange] = useState({ start: null, end: null });
   
   const ganttContainerRef = useRef(null);
-  const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
 
   // Calculate date range from tasks
   useEffect(() => {
@@ -62,291 +61,6 @@ const GanttChart = ({ projectId: propProjectId }) => {
     }
   }, [tasks]);
 
-  // Generate comprehensive sample data for software house projects (DEPRECATED - no longer used)
-  const generateSampleData_DEPRECATED = () => {
-    const today = new Date();
-    const sampleTasks = [
-      // Phase 1: Planning & Requirements
-      {
-        _id: 'sample-1',
-        title: 'Project Kickoff & Requirements Gathering',
-        startDate: new Date(today.getTime() - 21 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000),
-        status: 'completed',
-        priority: 'high',
-        progress: 100,
-        assignee: { name: 'Project Manager', email: 'pm@example.com' },
-        category: 'planning',
-        estimatedHours: 40,
-        actualHours: 38,
-        dependencies: { predecessors: [], successors: [{ taskId: 'sample-2', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      {
-        _id: 'sample-2',
-        title: 'Technical Architecture Design',
-        startDate: new Date(today.getTime() - 13 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000),
-        status: 'completed',
-        priority: 'critical',
-        progress: 100,
-        assignee: { name: 'Tech Lead', email: 'techlead@example.com' },
-        category: 'design',
-        estimatedHours: 32,
-        actualHours: 30,
-        dependencies: { predecessors: [{ taskId: 'sample-1', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [{ taskId: 'sample-3', dependencyType: 'finish-to-start', lagTime: 0 }, { taskId: 'sample-4', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      {
-        _id: 'sample-3',
-        title: 'UI/UX Design & Wireframes',
-        startDate: new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
-        status: 'in_progress',
-        priority: 'high',
-        progress: 75,
-        assignee: { name: 'UI/UX Designer', email: 'designer@example.com' },
-        category: 'design',
-        estimatedHours: 60,
-        actualHours: 45,
-        dependencies: { predecessors: [{ taskId: 'sample-2', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [{ taskId: 'sample-5', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      {
-        _id: 'sample-4',
-        title: 'Database Schema Design',
-        startDate: new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000),
-        status: 'in_progress',
-        priority: 'high',
-        progress: 80,
-        assignee: { name: 'Backend Developer', email: 'backend@example.com' },
-        category: 'backend',
-        estimatedHours: 24,
-        actualHours: 19,
-        dependencies: { predecessors: [{ taskId: 'sample-2', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [{ taskId: 'sample-6', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      // Phase 2: Development
-      {
-        _id: 'sample-5',
-        title: 'Frontend Development - Sprint 1',
-        startDate: new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 22 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 22 * 24 * 60 * 60 * 1000),
-        status: 'in_progress',
-        priority: 'critical',
-        progress: 35,
-        assignee: { name: 'Frontend Developer 1', email: 'frontend1@example.com' },
-        category: 'frontend',
-        estimatedHours: 80,
-        actualHours: 28,
-        sprint: 'Sprint 1',
-        dependencies: { predecessors: [{ taskId: 'sample-3', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [{ taskId: 'sample-7', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      {
-        _id: 'sample-6',
-        title: 'Backend API Development - Sprint 1',
-        startDate: new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 18 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 18 * 24 * 60 * 60 * 1000),
-        status: 'in_progress',
-        priority: 'critical',
-        progress: 45,
-        assignee: { name: 'Backend Developer', email: 'backend@example.com' },
-        category: 'backend',
-        estimatedHours: 100,
-        actualHours: 45,
-        sprint: 'Sprint 1',
-        dependencies: { predecessors: [{ taskId: 'sample-4', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [{ taskId: 'sample-8', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      {
-        _id: 'sample-7',
-        title: 'Frontend Development - Sprint 2',
-        startDate: new Date(today.getTime() + 23 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 37 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 37 * 24 * 60 * 60 * 1000),
-        status: 'todo',
-        priority: 'critical',
-        progress: 0,
-        assignee: { name: 'Frontend Developer 2', email: 'frontend2@example.com' },
-        category: 'frontend',
-        estimatedHours: 80,
-        actualHours: 0,
-        sprint: 'Sprint 2',
-        dependencies: { predecessors: [{ taskId: 'sample-5', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [{ taskId: 'sample-10', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      {
-        _id: 'sample-8',
-        title: 'Backend API Development - Sprint 2',
-        startDate: new Date(today.getTime() + 19 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 33 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 33 * 24 * 60 * 60 * 1000),
-        status: 'todo',
-        priority: 'critical',
-        progress: 0,
-        assignee: { name: 'Backend Developer', email: 'backend@example.com' },
-        category: 'backend',
-        estimatedHours: 100,
-        actualHours: 0,
-        sprint: 'Sprint 2',
-        dependencies: { predecessors: [{ taskId: 'sample-6', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [{ taskId: 'sample-11', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      {
-        _id: 'sample-9',
-        title: 'Third-Party Integrations',
-        startDate: new Date(today.getTime() + 10 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 24 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 24 * 24 * 60 * 60 * 1000),
-        status: 'in_progress',
-        priority: 'high',
-        progress: 25,
-        assignee: { name: 'Integration Specialist', email: 'integration@example.com' },
-        category: 'integration',
-        estimatedHours: 56,
-        actualHours: 14,
-        dependencies: { predecessors: [{ taskId: 'sample-6', dependencyType: 'start-to-start', lagTime: 5 }], successors: [{ taskId: 'sample-11', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      // Phase 3: Testing
-      {
-        _id: 'sample-10',
-        title: 'Frontend Unit & Integration Testing',
-        startDate: new Date(today.getTime() + 38 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 45 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 45 * 24 * 60 * 60 * 1000),
-        status: 'todo',
-        priority: 'high',
-        progress: 0,
-        assignee: { name: 'QA Engineer', email: 'qa@example.com' },
-        category: 'testing',
-        estimatedHours: 40,
-        actualHours: 0,
-        dependencies: { predecessors: [{ taskId: 'sample-7', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [{ taskId: 'sample-13', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      {
-        _id: 'sample-11',
-        title: 'Backend API Testing',
-        startDate: new Date(today.getTime() + 34 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 41 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 41 * 24 * 60 * 60 * 1000),
-        status: 'todo',
-        priority: 'high',
-        progress: 0,
-        assignee: { name: 'QA Engineer', email: 'qa@example.com' },
-        category: 'testing',
-        estimatedHours: 32,
-        actualHours: 0,
-        dependencies: { predecessors: [{ taskId: 'sample-8', dependencyType: 'finish-to-start', lagTime: 0 }, { taskId: 'sample-9', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [{ taskId: 'sample-13', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      {
-        _id: 'sample-12',
-        title: 'End-to-End Testing',
-        startDate: new Date(today.getTime() + 46 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 53 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 53 * 24 * 60 * 60 * 1000),
-        status: 'todo',
-        priority: 'critical',
-        progress: 0,
-        assignee: { name: 'QA Lead', email: 'qalead@example.com' },
-        category: 'testing',
-        estimatedHours: 48,
-        actualHours: 0,
-        dependencies: { predecessors: [{ taskId: 'sample-10', dependencyType: 'finish-to-start', lagTime: 0 }, { taskId: 'sample-11', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [{ taskId: 'sample-14', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      // Phase 4: Deployment & Documentation
-      {
-        _id: 'sample-13',
-        title: 'Performance Optimization',
-        startDate: new Date(today.getTime() + 42 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 49 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 49 * 24 * 60 * 60 * 1000),
-        status: 'todo',
-        priority: 'medium',
-        progress: 0,
-        assignee: { name: 'DevOps Engineer', email: 'devops@example.com' },
-        category: 'optimization',
-        estimatedHours: 24,
-        actualHours: 0,
-        dependencies: { predecessors: [{ taskId: 'sample-10', dependencyType: 'finish-to-start', lagTime: 0 }, { taskId: 'sample-11', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [] }
-      },
-      {
-        _id: 'sample-14',
-        title: 'Staging Environment Deployment',
-        startDate: new Date(today.getTime() + 54 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 56 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 56 * 24 * 60 * 60 * 1000),
-        status: 'todo',
-        priority: 'critical',
-        progress: 0,
-        assignee: { name: 'DevOps Engineer', email: 'devops@example.com' },
-        category: 'deployment',
-        estimatedHours: 16,
-        actualHours: 0,
-        dependencies: { predecessors: [{ taskId: 'sample-12', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [{ taskId: 'sample-15', dependencyType: 'finish-to-start', lagTime: 2 }] }
-      },
-      {
-        _id: 'sample-15',
-        title: 'User Acceptance Testing (UAT)',
-        startDate: new Date(today.getTime() + 59 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 66 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 66 * 24 * 60 * 60 * 1000),
-        status: 'todo',
-        priority: 'high',
-        progress: 0,
-        assignee: { name: 'Client Representative', email: 'client@example.com' },
-        category: 'testing',
-        estimatedHours: 40,
-        actualHours: 0,
-        dependencies: { predecessors: [{ taskId: 'sample-14', dependencyType: 'finish-to-start', lagTime: 2 }], successors: [{ taskId: 'sample-16', dependencyType: 'finish-to-start', lagTime: 0 }] }
-      },
-      {
-        _id: 'sample-16',
-        title: 'Production Deployment',
-        startDate: new Date(today.getTime() + 67 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 69 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 69 * 24 * 60 * 60 * 1000),
-        status: 'todo',
-        priority: 'critical',
-        progress: 0,
-        assignee: { name: 'DevOps Engineer', email: 'devops@example.com' },
-        category: 'deployment',
-        estimatedHours: 16,
-        actualHours: 0,
-        dependencies: { predecessors: [{ taskId: 'sample-15', dependencyType: 'finish-to-start', lagTime: 0 }], successors: [] }
-      },
-      {
-        _id: 'sample-17',
-        title: 'Technical Documentation',
-        startDate: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 40 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 40 * 24 * 60 * 60 * 1000),
-        status: 'in_progress',
-        priority: 'medium',
-        progress: 50,
-        assignee: { name: 'Technical Writer', email: 'writer@example.com' },
-        category: 'documentation',
-        estimatedHours: 64,
-        actualHours: 32,
-        dependencies: { predecessors: [], successors: [] }
-      },
-      {
-        _id: 'sample-18',
-        title: 'User Manual & Training Materials',
-        startDate: new Date(today.getTime() + 35 * 24 * 60 * 60 * 1000),
-        endDate: new Date(today.getTime() + 50 * 24 * 60 * 60 * 1000),
-        dueDate: new Date(today.getTime() + 50 * 24 * 60 * 60 * 1000),
-        status: 'todo',
-        priority: 'medium',
-        progress: 0,
-        assignee: { name: 'Technical Writer', email: 'writer@example.com' },
-        category: 'documentation',
-        estimatedHours: 40,
-        actualHours: 0,
-        dependencies: { predecessors: [{ taskId: 'sample-17', dependencyType: 'start-to-start', lagTime: 30 }], successors: [] }
-      }
-    ];
-    return sampleTasks;
-  };
 
   // Fetch Gantt data
   useEffect(() => {
@@ -362,21 +76,41 @@ const GanttChart = ({ projectId: propProjectId }) => {
       try {
         setLoading(true);
         setError(null);
-        
-        const response = await tenantProjectApiService.getGanttTimeline(tenantSlug, projectId);
-        
-        if (response.success && response.data) {
-          const fetchedTasks = response.data.tasks || [];
-          setTasks(fetchedTasks);
-          setCriticalPath(response.data.criticalPath || []);
-          if (response.data.settings) {
-            setSettings(prev => ({ ...prev, ...response.data.settings }));
+
+        let ganttTasks = [];
+        let ganttCriticalPath = [];
+
+        try {
+          const response = await tenantProjectApiService.getGanttTimeline(tenantSlug, projectId);
+          if (response.success && response.data && response.data.tasks?.length > 0) {
+            ganttTasks = response.data.tasks;
+            ganttCriticalPath = response.data.criticalPath || [];
+            if (response.data.settings) {
+              setSettings(prev => ({ ...prev, ...response.data.settings }));
+            }
           }
-        } else {
-          // No data available
-          setTasks([]);
-          setCriticalPath([]);
+        } catch (_) {
+          // Gantt endpoint unavailable — fall through to task fallback
         }
+
+        // Fallback: pull from regular tasks endpoint and adapt for Gantt display
+        if (ganttTasks.length === 0) {
+          const tasksRes = await tenantProjectApiService.getProjectTasks(tenantSlug, { projectId });
+          const raw = tasksRes?.data?.tasks ?? tasksRes?.tasks;
+          const list = Array.isArray(raw) ? raw : (raw ? Object.values(raw).flat() : []);
+          ganttTasks = list
+            .filter(t => t.startDate || t.dueDate)
+            .map(t => ({
+              ...t,
+              startDate:    t.startDate || t.createdAt,
+              endDate:      t.dueDate || t.startDate,
+              progress:     t.status === 'completed' ? 100 : t.status === 'in_progress' ? 50 : 0,
+              dependencies: t.dependencies || { predecessors: [], successors: [] },
+            }));
+        }
+
+        setTasks(ganttTasks);
+        setCriticalPath(ganttCriticalPath);
       } catch (err) {
         console.error('Error fetching Gantt data:', err);
         handleApiError(err, 'Failed to load Gantt chart data');
@@ -399,11 +133,6 @@ const GanttChart = ({ projectId: propProjectId }) => {
   // Handle zoom change
   const handleZoomChange = useCallback((zoomLevel) => {
     setSettings(prev => ({ ...prev, zoomLevel }));
-  }, []);
-
-  // Handle filter change
-  const handleFilterChange = useCallback((newFilters) => {
-    setFilters(newFilters);
   }, []);
 
   // Filter tasks based on current filters
@@ -452,39 +181,37 @@ const GanttChart = ({ projectId: propProjectId }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-gray-500">Loading Gantt chart...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mx-auto" />
+          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Loading Gantt chart…</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-red-500">Error: {error}</div>
-      </div>
-    );
-  }
-
-  if (tasks.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-center h-96 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-800/40">
         <div className="text-center">
-          <p className="text-gray-500 dark:text-gray-400 mb-2">No tasks found for this project</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500">
-            Add tasks with start and end dates to see them on the Gantt chart
-          </p>
+          <p className="text-red-600 dark:text-red-400 font-semibold">Failed to load Gantt chart</p>
+          <p className="text-sm text-red-400 dark:text-red-500 mt-1">{error}</p>
         </div>
       </div>
     );
   }
 
-  if (!dateRange.start || !dateRange.end) {
+  if (tasks.length === 0 || !dateRange.start || !dateRange.end) {
     return (
-      <div className="flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-        <div className="text-center">
-          <p className="text-gray-500 dark:text-gray-400 mb-2">No tasks with dates available</p>
+      <div className="flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-900 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+        <div className="text-center px-6">
+          <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mx-auto mb-3">
+            <svg className="w-6 h-6 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+            </svg>
+          </div>
+          <p className="text-gray-600 dark:text-gray-300 font-semibold mb-1">No Gantt data yet</p>
           <p className="text-sm text-gray-400 dark:text-gray-500">
-            Tasks need start and end dates to be displayed on the Gantt chart
+            Add tasks with start and due dates to see them on the Gantt chart
           </p>
         </div>
       </div>

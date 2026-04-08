@@ -103,7 +103,7 @@ export const logWarn = (message, context = {}) => {
  * @param {Object} context - Additional context (optional)
  */
 export const logInfo = (message, context = {}) => {
-  const _logPayload = {
+  const logData = {
     level: LOG_LEVELS.INFO,
     message,
     context,

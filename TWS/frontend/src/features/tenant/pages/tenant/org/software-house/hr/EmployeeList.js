@@ -1,21 +1,117 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  UserGroupIcon, 
+import {
+  UserGroupIcon,
   PlusIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   UserIcon,
-  EyeIcon
+  EyeIcon,
+  EnvelopeIcon,
+  XMarkIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthContext';
+
+// Lightweight inline invite modal — no extra file needed
+const InviteModal = ({ tenantSlug, onClose }) => {
+  const [form, setForm] = useState({ email: '', fullName: '', erpRole: '', hrSubRole: '' });
+  const [sending, setSending] = useState(false);
+  const [done, setDone] = useState(null);
+  const [err, setErr] = useState(null);
+
+  const handleChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (!form.email) { setErr('Email is required'); return; }
+    setSending(true); setErr(null);
+    try {
+      const res = await tenantApiService.inviteEmployee(tenantSlug, form);
+      setDone(res);
+    } catch (ex) {
+      setErr(ex.message || 'Failed to send invite');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="glass-card-premium w-full max-w-md p-6 rounded-2xl shadow-2xl relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+          <XMarkIcon className="w-6 h-6" />
+        </button>
+        <h2 className="text-xl font-bold font-heading text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+          <EnvelopeIcon className="w-6 h-6 text-primary-500" />
+          Invite Team Member
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+          Send an invite link — no pre-setup required. They'll set their own password.
+        </p>
+
+        {done ? (
+          <div className="flex flex-col items-center gap-4 py-4">
+            <CheckCircleIcon className="w-12 h-12 text-green-500" />
+            <p className="font-bold text-green-700 dark:text-green-300">Invitation sent to {done.email}</p>
+            <button onClick={onClose} className="glass-button px-6 py-2 rounded-xl font-medium">Close</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSend} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email <span className="text-red-500">*</span></label>
+              <input type="email" name="email" value={form.email} onChange={handleChange} required
+                className="glass-input w-full px-4 py-2.5 rounded-xl" placeholder="colleague@company.com" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name (optional)</label>
+              <input type="text" name="fullName" value={form.fullName} onChange={handleChange}
+                className="glass-input w-full px-4 py-2.5 rounded-xl" placeholder="Jane Smith" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Portal Role</label>
+              <select name="erpRole" value={form.erpRole} onChange={handleChange} className="glass-input w-full px-4 py-2.5 rounded-xl">
+                <option value="">Employee (default)</option>
+                <option value="manager">Manager</option>
+                <option value="project_manager">Project Manager</option>
+                <option value="hr">HR</option>
+                <option value="admin">Admin</option>
+                <option value="contractor">Contractor</option>
+              </select>
+            </div>
+            {form.erpRole === 'hr' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">HR Sub-Role</label>
+                <select name="hrSubRole" value={form.hrSubRole} onChange={handleChange} className="glass-input w-full px-4 py-2.5 rounded-xl">
+                  <option value="">HR Manager (default)</option>
+                  <option value="manager">HR Manager</option>
+                  <option value="executive">HR Executive</option>
+                  <option value="payroll_officer">Payroll Officer</option>
+                </select>
+              </div>
+            )}
+            {err && <p className="text-sm text-red-600 dark:text-red-400">{err}</p>}
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={onClose} className="flex-1 glass-button px-4 py-2.5 rounded-xl font-medium">Cancel</button>
+              <button type="submit" disabled={sending}
+                className="flex-1 glass-button px-4 py-2.5 rounded-xl font-medium bg-gradient-to-r from-primary-500 to-accent-500 text-white disabled:opacity-50">
+                {sending ? 'Sending…' : 'Send Invite'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const EmployeeList = () => {
   const { tenantSlug } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useTenantAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState([]);
   const [stats, setStats] = useState({
@@ -113,8 +209,11 @@ const EmployeeList = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {showInviteModal && (
+        <InviteModal tenantSlug={tenantSlug} onClose={() => setShowInviteModal(false)} />
+      )}
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div data-tutorial="hr-emp-header" className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
             Employee Management
@@ -129,6 +228,14 @@ const EmployeeList = () => {
             <span className="font-medium">Filter</span>
           </button>
           <button
+            onClick={() => setShowInviteModal(true)}
+            className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2"
+          >
+            <EnvelopeIcon className="w-5 h-5" />
+            <span className="font-medium">Invite by Email</span>
+          </button>
+          <button
+            data-tutorial="hr-add-btn"
             onClick={() => navigate(`/${tenantSlug}/org/software-house/hr/employees/create`)}
             className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white"
           >
@@ -139,7 +246,7 @@ const EmployeeList = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
+      <div data-tutorial="hr-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
         {statsData.map((stat, index) => (
           <div key={index} className="glass-card-premium p-5 xl:p-6 hover-lift">
             <div className="flex items-center gap-4">
@@ -160,7 +267,7 @@ const EmployeeList = () => {
       </div>
 
       {/* Search */}
-      <div className="glass-card-premium p-6 hover-glow">
+      <div data-tutorial="hr-search" className="glass-card-premium p-6 hover-glow">
         <div className="relative">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
           <input
@@ -174,7 +281,7 @@ const EmployeeList = () => {
       </div>
 
       {/* Employee List */}
-      <div className="glass-card-premium p-6 xl:p-8 hover-glow">
+      <div data-tutorial="hr-table" className="glass-card-premium p-6 xl:p-8 hover-glow">
         <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white mb-6">
           All Employees ({filteredEmployees.length})
         </h3>

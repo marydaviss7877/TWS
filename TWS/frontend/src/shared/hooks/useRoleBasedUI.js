@@ -24,7 +24,7 @@ const ROLE_CONFIG = {
   },
   admin: {
     level: 2,
-    permissions: ['finance:manage', 'projects:manage', 'operations:manage', 'clients:manage', 'inventory:manage', 'reports:manage', 'roles:manage'],
+    permissions: ['finance:manage', 'projects:manage', 'operations:manage', 'clients:manage', 'reports:manage', 'roles:manage'],
     modules: ['dashboard', 'finance', 'projects', 'operations', 'clients', 'reports', 'attendance', 'communication', 'role_management', 'system_admin'],
     dashboardWidgets: ['overview', 'finance', 'projects', 'operations', 'clients', 'reports'],
     color: 'blue'

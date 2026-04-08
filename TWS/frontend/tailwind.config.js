@@ -10,6 +10,8 @@ module.exports = {
         'sans': ['Inter', 'system-ui', 'sans-serif'],
         'heading': ['Geist', 'Inter', 'system-ui', 'sans-serif'],
         'mono': ['JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', 'monospace'],
+        'sora': ['Sora', 'system-ui', 'sans-serif'],
+        'dm-sans': ['DM Sans', 'system-ui', 'sans-serif'],
       },
       colors: {
         // Premium Color Palette
@@ -126,6 +128,7 @@ module.exports = {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'fade-in-fast': 'fadeIn 0.3s ease-in-out',
         'slide-in': 'slideIn 0.3s ease-out',
+        'slide-in-right': 'slideInRight 0.3s ease-out',
         'slide-up': 'slideUp 0.4s ease-out',
         'bounce-in': 'bounceIn 0.6s ease-out',
         'glow': 'glow 2s ease-in-out infinite',
@@ -143,6 +146,10 @@ module.exports = {
         },
         slideIn: {
           '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
+        slideInRight: {
+          '0%': { transform: 'translateX(100%)' },
           '100%': { transform: 'translateX(0)' },
         },
         slideUp: {
@@ -203,5 +210,13 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Hide scrollbar but keep scrollability (used by sub-nav tabs, AppGrid)
+    function ({ addUtilities }) {
+      addUtilities({
+        '.no-scrollbar::-webkit-scrollbar': { display: 'none' },
+        '.no-scrollbar': { '-ms-overflow-style': 'none', 'scrollbar-width': 'none' },
+      });
+    },
+  ],
 }

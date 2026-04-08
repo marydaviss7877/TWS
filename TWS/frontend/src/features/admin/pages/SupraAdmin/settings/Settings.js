@@ -31,7 +31,7 @@ const Settings = () => {
     try {
       setLoading(true);
       // SECURITY FIX: Use credentials: 'include' to send HttpOnly cookies
-      const response = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:5000') + '/api/gts-admin/settings', {
+      const response = await fetch('http://localhost:5000/api/gts-admin/settings', {
         method: 'GET',
         credentials: 'include', // SECURITY FIX: Include cookies (HttpOnly tokens)
         headers: {
@@ -66,7 +66,6 @@ const Settings = () => {
           fromEmail: 'noreply@tws.com'
         },
         securitySettings: {
-          twoFactorRequired: false,
           passwordMinLength: 8,
           sessionTimeout: 24,
           ipWhitelist: []
@@ -87,7 +86,7 @@ const Settings = () => {
     try {
       setSaving(true);
       // SECURITY FIX: Use credentials: 'include' to send HttpOnly cookies
-      const response = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:5000') + '/api/gts-admin/settings', {
+      const response = await fetch('http://localhost:5000/api/gts-admin/settings', {
         method: 'PUT',
         credentials: 'include', // SECURITY FIX: Include cookies
         headers: {
@@ -320,19 +319,6 @@ const Settings = () => {
 
               {activeTab === 'security' && (
                 <div className="space-y-6">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="twoFactorRequired"
-                      checked={settings?.securitySettings?.twoFactorRequired || false}
-                      onChange={(e) => updateSetting('securitySettings.twoFactorRequired', e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="twoFactorRequired" className="ml-2 block text-sm text-gray-900">
-                      Require Two-Factor Authentication
-                    </label>
-                  </div>
-                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Minimum Password Length</label>
                     <input

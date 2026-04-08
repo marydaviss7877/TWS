@@ -84,6 +84,36 @@ export const TenantAuthProvider = ({ children }) => {
     }
   }, [tenantSlug, location.pathname]); // Include location.pathname to detect redirects
 
+  // Fetch fresh tenant data from the server and merge into state + localStorage.
+  // Called after every successful auth confirmation so data is always up-to-date
+  // regardless of device or deployment. localStorage is only a fast-render cache.
+  const refreshTenantFromServer = async (slug) => {
+    try {
+      const res = await fetch(`/api/tenant/${slug}/organization/profile`, { credentials: 'include' });
+      if (!res.ok) return;
+      const json = await res.json();
+      const fresh = json.data?.tenant;
+      if (!fresh) return;
+      const freshFields = {
+        id: fresh._id || fresh.id,
+        _id: fresh._id || fresh.id,
+        name: fresh.name,
+        slug: fresh.slug,
+        status: fresh.status || 'active',
+        plan: fresh.subscription?.plan || fresh.plan,
+        erpModules: fresh.erpModules || [],
+        erpCategory: fresh.erpCategory || 'software_house',
+        logoUrl: fresh.branding?.logo || null,
+      };
+      setTenant(prev => prev ? { ...prev, ...freshFields } : freshFields);
+      // Sync localStorage so the next same-device load is also fast
+      try {
+        const stored = JSON.parse(localStorage.getItem('tenantData') || '{}');
+        localStorage.setItem('tenantData', JSON.stringify({ ...stored, ...freshFields, branding: fresh.branding }));
+      } catch { /* ignore */ }
+    } catch { /* non-critical — best-effort server refresh */ }
+  };
+
   const initializeAuth = async () => {
     // Helper: get redirect path (FR2: path is /<slug>/org/dashboard)
     // Defined before try so it's in scope for catch block
@@ -184,7 +214,8 @@ export const TenantAuthProvider = ({ children }) => {
                     erpModules: tenantData.erpModules || [],
                     erpCategory: tenantData.erpCategory || 'software_house',
                     orgId: tenantData.orgId || null,
-                    owner: tenantData.owner
+                    owner: tenantData.owner,
+                    logoUrl: tenantData.branding?.logo || tenantData.logoUrl || null,
                   });
                   setUser({
                     id: mainUser._id || mainUser.id,
@@ -200,6 +231,7 @@ export const TenantAuthProvider = ({ children }) => {
                   });
                   setIsAuthenticated(true);
                   setLoading(false);
+                  refreshTenantFromServer(tenantSlug); // non-blocking: updates logo/branding from server
                   return;
                 }
               }
@@ -224,14 +256,57 @@ export const TenantAuthProvider = ({ children }) => {
       let tenantDataStr = localStorage.getItem('tenantData');
       
       if (!tenantDataStr) {
-        // Only redirect to login if we're not already authenticated via main auth
-        // and we're not on a login page
+        // No localStorage data — new device or cleared storage.
+        // If the session cookie is valid, fetch tenant data directly from the server.
+        if (isMainAuth && tenantSlug) {
+          try {
+            const res = await fetch(`/api/tenant/${tenantSlug}/organization/profile`, { credentials: 'include' });
+            if (res.ok) {
+              const json = await res.json();
+              const fresh = json.data?.tenant;
+              if (fresh) {
+                const freshTenant = {
+                  id: fresh._id || fresh.id,
+                  _id: fresh._id || fresh.id,
+                  name: fresh.name,
+                  slug: fresh.slug,
+                  status: fresh.status || 'active',
+                  plan: fresh.subscription?.plan || fresh.plan,
+                  erpModules: fresh.erpModules || [],
+                  erpCategory: fresh.erpCategory || 'software_house',
+                  logoUrl: fresh.branding?.logo || null,
+                };
+                setTenant(freshTenant);
+                // Cache for future same-device fast loads
+                localStorage.setItem('tenantData', JSON.stringify({ ...freshTenant, branding: fresh.branding }));
+                // Set user from mainUser if available
+                if (mainUser) {
+                  setUser({
+                    id: mainUser._id || mainUser.id,
+                    _id: mainUser._id || mainUser.id,
+                    username: mainUser.email,
+                    email: mainUser.email,
+                    fullName: mainUser.fullName,
+                    role: mainUser.role || 'owner',
+                    profilePicUrl: mainUser.profilePicUrl,
+                    phone: mainUser.phone,
+                    department: mainUser.department,
+                    jobTitle: mainUser.jobTitle
+                  });
+                }
+                setIsAuthenticated(true);
+                setLoading(false);
+                return;
+              }
+            }
+          } catch { /* fall through to login redirect */ }
+        }
+        // No auth or server fetch failed → redirect to login
         if (!isMainAuth && !isOnLoginPage && !redirectAttempted.current) {
           console.log('No tenant data found and no main auth token, redirecting to login');
-          redirectAttempted.current = true; // Prevent multiple redirects
+          redirectAttempted.current = true;
           setLoading(false);
           setIsAuthenticated(false);
-          // Redirect based on tenant type (FR2: path is /<slug>/org/...)
           const redirectPath = getRedirectPath();
           if (navigate) {
             navigate(redirectPath);
@@ -268,7 +343,8 @@ export const TenantAuthProvider = ({ children }) => {
             erpModules: tenantData.erpModules || [],
             erpCategory: tenantData.erpCategory || 'software_house',
             orgId: tenantData.orgId || null,
-            owner: tenantData.owner
+            owner: tenantData.owner,
+            logoUrl: tenantData.branding?.logo || tenantData.logoUrl || null,
           });
           
           // Set user from tenant owner data or main user data
@@ -307,7 +383,8 @@ export const TenantAuthProvider = ({ children }) => {
           }
           
           setIsAuthenticated(true);
-          setLoading(false); // Ensure loading is false after setting authenticated
+          setLoading(false);
+          refreshTenantFromServer(tenantSlug); // non-blocking: always sync logo/branding from server
         } else {
           console.error('Tenant slug mismatch or invalid tenant data');
           setLoading(false);
@@ -435,6 +512,30 @@ export const TenantAuthProvider = ({ children }) => {
     setUser(prev => (prev ? { ...prev, ...userData } : userData));
   };
 
+  const updateTenant = (tenantData) => {
+    setTenant(prev => {
+      if (!prev) return prev;
+      // Deep-merge branding so a partial { logo } update doesn't wipe other branding fields
+      const mergedBranding = tenantData.branding
+        ? { ...(prev.branding || {}), ...tenantData.branding }
+        : prev.branding;
+      const updated = { ...prev, ...tenantData, branding: mergedBranding };
+      // Keep localStorage in sync
+      try {
+        const stored = JSON.parse(localStorage.getItem('tenantData') || '{}');
+        const mergedStoredBranding = tenantData.branding
+          ? { ...(stored.branding || {}), ...tenantData.branding }
+          : stored.branding;
+        localStorage.setItem('tenantData', JSON.stringify({
+          ...stored,
+          ...tenantData,
+          branding: mergedStoredBranding,
+        }));
+      } catch { /* ignore */ }
+      return updated;
+    });
+  };
+
   const value = {
     tenant,
     user,
@@ -442,7 +543,8 @@ export const TenantAuthProvider = ({ children }) => {
     isAuthenticated,
     login,
     logout,
-    updateUser
+    updateUser,
+    updateTenant,
   };
 
   return (

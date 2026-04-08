@@ -399,3 +399,12 @@
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
 }
+
+/* Story landing: hide scrollbar on browser tab strip */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

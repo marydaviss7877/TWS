@@ -37,13 +37,6 @@ const applyThemeToDOMSync = (themeData) => {
   const secondaryShades = generateColorShades(secondaryColor);
   const accentShades = generateColorShades(accentColor);
 
-  console.log('🎨 applyThemeToDOMSync - Setting variables on :root', {
-    primaryColor,
-    secondaryColor,
-    accentColor,
-    primaryShades: Object.keys(primaryShades).length
-  });
-
   // Apply primary color shades to :root
   Object.keys(primaryShades).forEach(shade => {
     root.style.setProperty(`--tenant-primary-${shade}`, primaryShades[shade]);
@@ -109,11 +102,8 @@ export const TenantThemeProvider = ({ children, tenantSlug }) => {
   // Apply theme synchronously on mount if we have cached theme
   useEffect(() => {
     if (tenantSlug && isTenantPortalRoute && theme) {
-      console.log('🎨 Initial theme application on mount:', { tenantSlug, theme, isTenantPortalRoute });
       applyThemeToDOM(theme);
       hasAppliedTheme.current = true;
-    } else {
-      console.log('🎨 Theme not applied on mount:', { tenantSlug, isTenantPortalRoute, hasTheme: !!theme });
     }
   }, []); // Run only once on mount
 
@@ -130,7 +120,6 @@ export const TenantThemeProvider = ({ children, tenantSlug }) => {
         // Tokens are in HttpOnly cookies, not accessible via JavaScript
         
         // Fetch from API to get latest theme from database
-        console.log('🎨 Loading theme from API for tenant:', tenantSlug);
         const response = await fetch(`/api/tenant/${tenantSlug}/organization/settings/theme`, {
           method: 'GET',
           credentials: 'include', // SECURITY FIX: Include cookies
@@ -139,11 +128,8 @@ export const TenantThemeProvider = ({ children, tenantSlug }) => {
           }
         });
 
-        console.log('🎨 Theme API response status:', response.status, response.statusText);
-
         if (response.ok) {
           const data = await response.json();
-          console.log('🎨 Theme API response data:', data);
           
           if (data.success && data.data?.theme) {
             const themeData = {
@@ -153,21 +139,15 @@ export const TenantThemeProvider = ({ children, tenantSlug }) => {
               customColors: data.data.theme.customColors || {}
             };
             
-            console.log('🎨 Parsed theme data:', themeData);
-            
             // Only update if theme changed (to prevent unnecessary re-renders)
             const themeChanged = JSON.stringify(themeData) !== JSON.stringify(theme);
             if (themeChanged) {
-              console.log('🎨 Theme changed, applying new theme');
               setTheme(themeData);
               applyThemeToDOM(themeData);
               // Update both cache keys with database version
               localStorage.setItem(`tenant-theme-${tenantSlug}`, JSON.stringify(themeData));
               localStorage.setItem(`tenant-theme-persist-${tenantSlug}`, JSON.stringify(themeData));
-              console.log('🎨 Theme cached to localStorage');
               hasAppliedTheme.current = true;
-            } else {
-              console.log('🎨 Theme unchanged, skipping update');
             }
           } else {
             console.warn('🎨 Invalid theme response structure:', data);
@@ -207,39 +187,9 @@ export const TenantThemeProvider = ({ children, tenantSlug }) => {
 
   // Apply theme to DOM using CSS custom properties
   const applyThemeToDOM = (themeData) => {
-    if (!isTenantPortalRoute) {
-      console.log('🎨 Theme not applied - not in tenant portal route', { tenantSlug, pathname: location?.pathname, isTenantPortalRoute });
-      return;
-    }
-    
-    console.log('🎨 Applying theme to DOM:', { 
-      themeData, 
-      tenantSlug, 
-      pathname: location?.pathname,
-      primaryColor: themeData.customColors?.primary || themeData.colors?.primary,
-      secondaryColor: themeData.customColors?.secondary || themeData.colors?.secondary,
-      accentColor: themeData.customColors?.accent || themeData.colors?.accent
-    });
-    
+    if (!isTenantPortalRoute) return;
     // Use the sync version which does all the work
     applyThemeToDOMSync(themeData);
-    
-    // Verify CSS variables were set
-    const root = document.documentElement;
-    const primaryVar = root.style.getPropertyValue('--tenant-primary');
-    const primary600Var = root.style.getPropertyValue('--tenant-primary-600');
-    const computedPrimary = getComputedStyle(root).getPropertyValue('--theme-primary-600');
-    
-    console.log('🎨 CSS Variable verification:', { 
-      '--tenant-primary (set)': primaryVar,
-      '--tenant-primary-600 (set)': primary600Var,
-      '--theme-primary-600 (computed)': computedPrimary,
-      '--tenant-secondary': root.style.getPropertyValue('--tenant-secondary'),
-      '--tenant-accent': root.style.getPropertyValue('--tenant-accent'),
-      'All primary shades': ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'].map(s => 
-        root.style.getPropertyValue(`--tenant-primary-${s}`)
-      )
-    });
   };
 
   // Update theme (called when theme is changed in settings)
@@ -256,8 +206,6 @@ export const TenantThemeProvider = ({ children, tenantSlug }) => {
         customColors: newTheme.customColors || {}
       };
 
-      console.log('🎨 Updating theme via API:', { tenantSlug, themePayload });
-      
       const response = await fetch(`/api/tenant/${tenantSlug}/organization/settings/theme`, {
         method: 'PUT',
         credentials: 'include', // SECURITY FIX: Include cookies
@@ -267,8 +215,6 @@ export const TenantThemeProvider = ({ children, tenantSlug }) => {
         body: JSON.stringify(themePayload)
       });
 
-      console.log('🎨 Theme update response status:', response.status, response.statusText);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('❌ Theme update failed:', errorData);
@@ -276,7 +222,6 @@ export const TenantThemeProvider = ({ children, tenantSlug }) => {
       }
 
       const data = await response.json();
-      console.log('🎨 Theme update response data:', data);
       
       if (data.success && data.data?.theme) {
         const themeData = {
@@ -310,7 +255,6 @@ export const TenantThemeProvider = ({ children, tenantSlug }) => {
   // Apply theme whenever it changes
   useEffect(() => {
     if (isTenantPortalRoute && theme) {
-      console.log('🎨 Theme changed, reapplying:', { theme, tenantSlug, pathname: location?.pathname });
       applyThemeToDOM(theme);
       hasAppliedTheme.current = true;
     }

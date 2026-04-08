@@ -1,4 +1,19 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * MyWork — personal task hub for the logged-in user.
+ *
+ * Features:
+ *  • Filter tabs: All / Due Today / This Week / Overdue / by Status
+ *  • Live search (title) + Priority filter
+ *  • View toggle: Flat list | Grouped by Status | Grouped by Project
+ *  • Inline status update (no page navigation required)
+ *  • Show-more pagination (no hard 8-task cap)
+ *  • Refresh button + auto-refresh on window focus
+ *  • Overdue alert banner
+ *  • Context-aware Quick Actions (software-house vs general tenant)
+ *  • Pending approvals widget
+ */
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ClipboardDocumentCheckIcon,
@@ -8,419 +23,756 @@ import {
   ArrowRightIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  UserIcon,
-  CurrencyDollarIcon,
-  BuildingOfficeIcon,
-  ChartBarIcon
+  MagnifyingGlassIcon,
+  ArrowPathIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
+  FunnelIcon,
+  ChevronDownIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import tenantProjectApiService from '../projects/services/tenantProjectApiService';
 import CreateTaskModal from '../projects/components/CreateTaskModal';
-import { CARD_STATUS } from '../projects/constants/projectConstants';
+import { CARD_STATUS, API_ENDPOINTS } from '../projects/constants/projectConstants';
 
-const MyWork = () => {
-  const { tenantSlug } = useParams();
-  const navigate = useNavigate();
-  const { user } = useTenantAuth();
-  const [loading, setLoading] = useState(true);
-  const [myTasks, setMyTasks] = useState({
-    todo: [],
-    in_progress: [],
-    under_review: [],
-    completed: []
-  });
-  const [recentProjects, setRecentProjects] = useState([]);
-  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
-  const [stats, setStats] = useState({
-    totalTasks: 0,
-    completedTasks: 0,
-    inProgressTasks: 0,
-    overdueTasks: 0
-  });
+// ── Constants ─────────────────────────────────────────────────────────────────
+const PRIORITY_STYLES = {
+  urgent: 'bg-red-100    text-red-700    dark:bg-red-900/30    dark:text-red-300',
+  high:   'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  low:    'bg-blue-100   text-blue-700   dark:bg-blue-900/30   dark:text-blue-300',
+};
 
-  useEffect(() => {
-    if (tenantSlug && user?.id) {
-      fetchMyTasks();
-      fetchRecentProjects();
-    }
-  }, [tenantSlug, user?.id]);
+const STATUS_STYLES = {
+  [CARD_STATUS.TODO]:         'bg-gray-100   text-gray-700   dark:bg-gray-800      dark:text-gray-300',
+  [CARD_STATUS.IN_PROGRESS]:  'bg-blue-100   text-blue-700   dark:bg-blue-900/30   dark:text-blue-300',
+  [CARD_STATUS.UNDER_REVIEW]: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  [CARD_STATUS.COMPLETED]:    'bg-green-100  text-green-700  dark:bg-green-900/30  dark:text-green-300',
+};
 
-  const fetchMyTasks = async () => {
-    if (!user?.id) {
-      setLoading(false);
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      // Fetch tasks assigned to current user
-      const params = {
-        groupBy: 'status',
-        assigneeId: user.id // Filter by current user
-      };
-      
-      const data = await tenantProjectApiService.getProjectTasks(tenantSlug, params);
-      
-      if (data && data.tasks) {
-        const tasksByStatus = {
-          todo: data.tasks[CARD_STATUS.TODO] || [],
-          in_progress: data.tasks[CARD_STATUS.IN_PROGRESS] || [],
-          under_review: data.tasks[CARD_STATUS.UNDER_REVIEW] || [],
-          completed: data.tasks[CARD_STATUS.COMPLETED] || []
-        };
-        setMyTasks(tasksByStatus);
-        
-        // Calculate stats
-        const total = Object.values(tasksByStatus).flat().length;
-        const completed = tasksByStatus.completed.length;
-        const inProgress = tasksByStatus.in_progress.length;
-        const overdue = Object.values(tasksByStatus)
-          .flat()
-          .filter(task => {
-            if (!task.dueDate) return false;
-            return new Date(task.dueDate) < new Date() && task.status !== CARD_STATUS.COMPLETED;
-          }).length;
-        
-        setStats({
-          totalTasks: total,
-          completedTasks: completed,
-          inProgressTasks: inProgress,
-          overdueTasks: overdue
-        });
-      } else if (Array.isArray(data)) {
-        // Handle array response
-        const userTasks = data.filter(task => 
-          task.assigneeId === user.id || 
-          task.assignee?.id === user.id ||
-          task.assignee?._id === user.id
-        );
-        
-        const grouped = userTasks.reduce((acc, task) => {
-          const status = task.status || CARD_STATUS.TODO;
-          if (!acc[status]) acc[status] = [];
-          acc[status].push(task);
-          return acc;
-        }, {});
-        
-        setMyTasks({
-          todo: grouped[CARD_STATUS.TODO] || [],
-          in_progress: grouped[CARD_STATUS.IN_PROGRESS] || [],
-          under_review: grouped[CARD_STATUS.UNDER_REVIEW] || [],
-          completed: grouped[CARD_STATUS.COMPLETED] || []
-        });
-        
-        const total = userTasks.length;
-        const completed = grouped[CARD_STATUS.COMPLETED]?.length || 0;
-        const inProgress = grouped[CARD_STATUS.IN_PROGRESS]?.length || 0;
-        const overdue = userTasks.filter(task => {
-          if (!task.dueDate) return false;
-          return new Date(task.dueDate) < new Date() && task.status !== CARD_STATUS.COMPLETED;
-        }).length;
-        
-        setStats({ totalTasks: total, completedTasks: completed, inProgressTasks: inProgress, overdueTasks: overdue });
-      }
-    } catch (err) {
-      console.error('Error fetching my tasks:', err);
-      setMyTasks({ todo: [], in_progress: [], under_review: [], completed: [] });
-    } finally {
-      setLoading(false);
-    }
-  };
+const STATUS_LABELS = {
+  [CARD_STATUS.TODO]:         'To Do',
+  [CARD_STATUS.IN_PROGRESS]:  'In Progress',
+  [CARD_STATUS.UNDER_REVIEW]: 'Under Review',
+  [CARD_STATUS.COMPLETED]:    'Completed',
+};
 
-  const fetchRecentProjects = async () => {
-    if (!user?.id) {
-      setRecentProjects([]);
-      return;
-    }
-    
-    try {
-      const data = await tenantProjectApiService.getProjects(tenantSlug);
-      const projects = Array.isArray(data) ? data : (data.projects || []);
-      // Get projects where user is assigned or involved
-      const userProjects = projects.filter(project => 
-        project.teamMembers?.some(member => 
-          member.userId === user.id || member.user?._id === user.id || member.user?.id === user.id
-        ) || project.createdBy === user.id
-      ).slice(0, 5);
-      setRecentProjects(userProjects);
-    } catch (err) {
-      console.error('Error fetching recent projects:', err);
-      setRecentProjects([]);
-    }
-  };
+const FILTER_TABS = [
+  { id: 'all',                      label: 'All' },
+  { id: 'today',                    label: 'Due Today' },
+  { id: 'week',                     label: 'This Week' },
+  { id: 'overdue',                  label: 'Overdue' },
+  { id: CARD_STATUS.TODO,           label: 'To Do' },
+  { id: CARD_STATUS.IN_PROGRESS,    label: 'In Progress' },
+  { id: CARD_STATUS.UNDER_REVIEW,   label: 'Under Review' },
+  { id: CARD_STATUS.COMPLETED,      label: 'Done' },
+];
 
-  const handleTaskCreated = () => {
-    setIsCreateTaskModalOpen(false);
-    fetchMyTasks();
-  };
+const PRIORITY_OPTIONS = ['', 'urgent', 'high', 'medium', 'low'];
+const PAGE_SIZE = 12;
 
-  const getPriorityColor = (priority) => {
-    const colors = {
-      urgent: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-      high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
-      medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-      low: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-    };
-    return colors[priority] || colors.medium;
-  };
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const isOverdue = (task) =>
+  task.dueDate && new Date(task.dueDate) < new Date() && task.status !== CARD_STATUS.COMPLETED;
 
-  const getStatusColor = (status) => {
-    const colors = {
-      [CARD_STATUS.TODO]: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
-      [CARD_STATUS.IN_PROGRESS]: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-      [CARD_STATUS.UNDER_REVIEW]: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
-      [CARD_STATUS.COMPLETED]: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-    };
-    return colors[status] || colors[CARD_STATUS.TODO];
-  };
+const fmtDate = (d) => {
+  if (!d) return null;
+  const date = new Date(d);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.floor((date - today) / 86400000);
+  if (diff < 0)   return { label: `${Math.abs(diff)}d overdue`, cls: 'text-red-600 dark:text-red-400' };
+  if (diff === 0) return { label: 'Due today',                  cls: 'text-amber-600 dark:text-amber-400' };
+  if (diff === 1) return { label: 'Due tomorrow',               cls: 'text-amber-500 dark:text-amber-300' };
+  return { label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), cls: 'text-gray-400 dark:text-gray-500' };
+};
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary-500 border-t-transparent mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading your work...</p>
-        </div>
+// ── Sub-components ────────────────────────────────────────────────────────────
+const StatCard = ({ label, value, icon: Icon, iconBg, iconColor, valueColor }) => (
+  <div className="glass-card-premium p-4">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+        <p className={`text-2xl font-bold mt-0.5 ${valueColor || 'text-gray-900 dark:text-white'}`}>{value}</p>
       </div>
-    );
-  }
+      <div className={`p-3 ${iconBg} rounded-xl`}>
+        <Icon className={`w-5 h-5 ${iconColor}`} />
+      </div>
+    </div>
+  </div>
+);
 
-  const allMyTasks = [...myTasks.todo, ...myTasks.in_progress, ...myTasks.under_review, ...myTasks.completed];
+const StatusDropdown = ({ taskId, currentStatus, onSelect, updatingId }) => {
+  const statuses = Object.values(CARD_STATUS);
+  return (
+    <div className="absolute left-0 top-full mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-1 min-w-[150px]">
+      {statuses.map(s => (
+        <button
+          key={s}
+          onClick={(e) => { e.stopPropagation(); onSelect(taskId, s); }}
+          disabled={s === currentStatus || updatingId === taskId}
+          className={`w-full text-left px-3 py-1.5 text-xs font-medium transition-colors
+            ${s === currentStatus ? 'opacity-50 cursor-default' : 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'}
+          `}
+        >
+          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${STATUS_STYLES[s]}`}>
+            {STATUS_LABELS[s]}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const TaskCard = ({ task, onStatusChange, statusMenuId, onToggleStatusMenu, updatingId, navigate, tenantSlug }) => {
+  const due      = fmtDate(task.dueDate);
+  const overdue  = isOverdue(task);
+  const updating = updatingId === (task._id || task.id);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
-            My Work
-          </h1>
-          <p className="text-sm xl:text-base text-gray-600 dark:text-gray-300 mt-1">
-            Your tasks, time, and work overview
+    <div
+      className={`glass-card p-4 hover:shadow-md transition-all duration-200 cursor-pointer group relative
+        ${overdue ? 'border-l-2 border-red-400' : ''}
+      `}
+      onClick={() => navigate(`/${tenantSlug}/org/projects/tasks?taskId=${task._id || task.id}`)}
+    >
+      <div className="flex items-start gap-3">
+        {/* Status badge — inline update trigger */}
+        <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
+          <button
+            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium
+              ${STATUS_STYLES[task.status] || STATUS_STYLES[CARD_STATUS.TODO]}
+              ${updating ? 'opacity-60 cursor-wait' : 'hover:opacity-80 cursor-pointer'}
+            `}
+            onClick={() => onToggleStatusMenu(task._id || task.id)}
+            title="Click to change status"
+          >
+            {updating
+              ? <span className="animate-spin h-2.5 w-2.5 border border-current border-t-transparent rounded-full inline-block" />
+              : null
+            }
+            {STATUS_LABELS[task.status] || 'To Do'}
+            <ChevronDownIcon className="w-2.5 h-2.5 opacity-60" />
+          </button>
+          {statusMenuId === (task._id || task.id) && (
+            <StatusDropdown
+              taskId={task._id || task.id}
+              currentStatus={task.status}
+              onSelect={onStatusChange}
+              updatingId={updatingId}
+            />
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate leading-snug">
+            {task.title || task.name}
           </p>
-        </div>
-        <button
-          onClick={() => setIsCreateTaskModalOpen(true)}
-          className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white"
-        >
-          <PlusIcon className="w-5 h-5" />
-          <span className="font-medium">Add Task</span>
-        </button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card-premium p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Total Tasks</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalTasks}</p>
-            </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <ClipboardDocumentCheckIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-        <div className="glass-card-premium p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">In Progress</p>
-              <p className="text-2xl font-bold text-blue-600">{stats.inProgressTasks}</p>
-            </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <ClockIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-        <div className="glass-card-premium p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Completed</p>
-              <p className="text-2xl font-bold text-green-600">{stats.completedTasks}</p>
-            </div>
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <CheckCircleIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
-        <div className="glass-card-premium p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Overdue</p>
-              <p className="text-2xl font-bold text-red-600">{stats.overdueTasks}</p>
-            </div>
-            <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-              <ExclamationTriangleIcon className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* My Tasks */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="glass-card-premium p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">My Tasks</h2>
-              <button
-                onClick={() => navigate(`/${tenantSlug}/org/projects/tasks?assigneeId=${user?.id || ''}`)}
-                className="text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
-              >
-                View all
-                <ArrowRightIcon className="w-4 h-4" />
-              </button>
-            </div>
-            
-            {allMyTasks.length > 0 ? (
-              <div className="space-y-3">
-                {allMyTasks.slice(0, 8).map((task) => (
-                  <div
-                    key={task._id || task.id}
-                    className="glass-card p-4 hover-glow cursor-pointer"
-                    onClick={() => navigate(`/${tenantSlug}/org/projects/tasks?taskId=${task._id || task.id}`)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                          {task.title || task.name}
-                        </h3>
-                        {task.description && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
-                            {task.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(task.status)}`}>
-                            {task.status?.replace('_', ' ') || 'Todo'}
-                          </span>
-                          {task.priority && (
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(task.priority)}`}>
-                              {task.priority}
-                            </span>
-                          )}
-                          {task.dueDate && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                              <CalendarIcon className="w-3 h-3" />
-                              {new Date(task.dueDate).toLocaleDateString()}
-                            </span>
-                          )}
-                          {task.project?.name && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {task.project.name}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <ClipboardDocumentCheckIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 dark:text-gray-400 mb-3">No tasks assigned to you</p>
-                <button
-                  onClick={() => setIsCreateTaskModalOpen(true)}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
-                >
-                  Add Your First Task
-                </button>
-              </div>
+          {task.description && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
+              {task.description}
+            </p>
+          )}
+          <div className="flex items-center gap-2 flex-wrap mt-1.5">
+            {task.priority && (
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium capitalize ${PRIORITY_STYLES[task.priority] || ''}`}>
+                {task.priority}
+              </span>
+            )}
+            {task.project?.name && (
+              <span className="text-[11px] text-gray-400 dark:text-gray-500 truncate max-w-[120px]">
+                {task.project.name}
+              </span>
             )}
           </div>
         </div>
 
-        {/* Quick Actions & Links */}
-        <div className="space-y-4">
-          {/* Quick Actions */}
-          <div className="glass-card-premium p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
+        {/* Due date */}
+        {due && (
+          <div className={`shrink-0 flex items-center gap-1 text-[11px] font-medium ${due.cls}`}>
+            <CalendarIcon className="w-3.5 h-3.5" />
+            {due.label}
+          </div>
+        )}
+
+        {/* Navigate arrow */}
+        <ArrowRightIcon className="w-4 h-4 text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+      </div>
+    </div>
+  );
+};
+
+// ── Main Component ────────────────────────────────────────────────────────────
+const MyWork = () => {
+  const { tenantSlug }  = useParams();
+  const navigate        = useNavigate();
+  const { user, tenant } = useTenantAuth();
+  const isSH            = tenant?.erpCategory === 'software_house';
+
+  // ── Data state ──────────────────────────────────────────────────────────────
+  const [loading,    setLoading]    = useState(true);
+  const [myTasks,    setMyTasks]    = useState({ todo: [], in_progress: [], under_review: [], completed: [] });
+  const [stats,      setStats]      = useState({ totalTasks: 0, completedTasks: 0, inProgressTasks: 0, overdueTasks: 0 });
+  const [projects,   setProjects]   = useState([]);
+  const [approvals,  setApprovals]  = useState([]);
+
+  // ── UI state ────────────────────────────────────────────────────────────────
+  const [filter,       setFilter]       = useState('all');
+  const [search,       setSearch]       = useState('');
+  const [priority,     setPriority]     = useState('');
+  const [viewMode,     setViewMode]     = useState('list');  // 'list' | 'status' | 'project'
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [statusMenu,   setStatusMenu]   = useState(null);
+  const [updatingId,   setUpdatingId]   = useState(null);
+  const [showCreate,   setShowCreate]   = useState(false);
+  const [showPriorityMenu, setShowPriorityMenu] = useState(false);
+
+  const priorityBtnRef = useRef(null);
+
+  // ── Fetch tasks ─────────────────────────────────────────────────────────────
+  const loadTasks = useCallback(async () => {
+    if (!user?.id || !tenantSlug) return;
+    setLoading(true);
+    try {
+      const data = await tenantProjectApiService.getProjectTasks(tenantSlug, {
+        groupBy: 'status',
+        assigneeId: user.id,
+      });
+
+      let grouped = { todo: [], in_progress: [], under_review: [], completed: [] };
+
+      if (data?.tasks) {
+        grouped = {
+          todo:         data.tasks[CARD_STATUS.TODO]         || [],
+          in_progress:  data.tasks[CARD_STATUS.IN_PROGRESS]  || [],
+          under_review: data.tasks[CARD_STATUS.UNDER_REVIEW] || [],
+          completed:    data.tasks[CARD_STATUS.COMPLETED]    || [],
+        };
+      } else if (Array.isArray(data)) {
+        const me = data.filter(t =>
+          t.assigneeId === user.id || t.assignee?.id === user.id || t.assignee?._id === user.id
+        );
+        me.forEach(t => {
+          const s = t.status || CARD_STATUS.TODO;
+          if (grouped[s]) grouped[s].push(t);
+        });
+      }
+
+      setMyTasks(grouped);
+
+      const all       = Object.values(grouped).flat();
+      const completed = grouped.completed.length;
+      const inProg    = grouped.in_progress.length;
+      const overdue   = all.filter(isOverdue).length;
+      setStats({ totalTasks: all.length, completedTasks: completed, inProgressTasks: inProg, overdueTasks: overdue });
+    } catch (e) {
+      console.error('MyWork: failed to load tasks', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [tenantSlug, user?.id]);
+
+  // ── Fetch projects ───────────────────────────────────────────────────────────
+  const loadProjects = useCallback(async () => {
+    if (!user?.id || !tenantSlug) return;
+    try {
+      const data = await tenantProjectApiService.getProjects(tenantSlug);
+      const list  = Array.isArray(data) ? data : (data?.projects || []);
+      const mine  = list.filter(p =>
+        p.teamMembers?.some(m => m.userId === user.id || m.user?._id === user.id || m.user?.id === user.id)
+        || p.createdBy === user.id
+      ).slice(0, 5);
+      setProjects(mine);
+    } catch { /* silent */ }
+  }, [tenantSlug, user?.id]);
+
+  // ── Fetch approvals ──────────────────────────────────────────────────────────
+  const loadApprovals = useCallback(async () => {
+    if (!tenantSlug) return;
+    try {
+      const res  = await fetch(API_ENDPOINTS.APPROVALS_PENDING(tenantSlug), { credentials: 'include' });
+      if (!res.ok) return;
+      const json = await res.json();
+      setApprovals((json.data || json || []).slice(0, 5));
+    } catch { /* silent */ }
+  }, [tenantSlug]);
+
+  // ── Initial load + window focus refresh ─────────────────────────────────────
+  useEffect(() => {
+    loadTasks();
+    loadProjects();
+    loadApprovals();
+  }, [loadTasks, loadProjects, loadApprovals]);
+
+  useEffect(() => {
+    const onFocus = () => { loadTasks(); loadApprovals(); };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [loadTasks, loadApprovals]);
+
+  // ── Close dropdowns on outside click ────────────────────────────────────────
+  useEffect(() => {
+    const handler = () => { setStatusMenu(null); setShowPriorityMenu(false); };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, []);
+
+  // ── Inline status update ─────────────────────────────────────────────────────
+  const handleStatusChange = useCallback(async (taskId, newStatus) => {
+    setUpdatingId(taskId);
+    setStatusMenu(null);
+    try {
+      await tenantProjectApiService.updateTask(tenantSlug, taskId, { status: newStatus });
+      setMyTasks(prev => {
+        const all  = Object.values(prev).flat();
+        const task = all.find(t => (t._id || t.id) === taskId);
+        if (!task) return prev;
+        const next = { ...prev };
+        const old  = task.status || CARD_STATUS.TODO;
+        next[old]      = (next[old] || []).filter(t => (t._id || t.id) !== taskId);
+        next[newStatus] = [...(next[newStatus] || []), { ...task, status: newStatus }];
+        return next;
+      });
+      setStats(prev => {
+        const all = Object.values(myTasks).flat();
+        const overdue = all.map(t => (t._id || t.id) === taskId ? { ...t, status: newStatus } : t).filter(isOverdue).length;
+        return {
+          ...prev,
+          completedTasks:  newStatus === CARD_STATUS.COMPLETED ? prev.completedTasks + 1 : prev.completedTasks - (myTasks.completed.some(t => (t._id || t.id) === taskId) ? 1 : 0),
+          inProgressTasks: newStatus === CARD_STATUS.IN_PROGRESS ? prev.inProgressTasks + 1 : prev.inProgressTasks,
+          overdueTasks: overdue,
+        };
+      });
+    } catch (e) {
+      console.error('Failed to update task status', e);
+    } finally {
+      setUpdatingId(null);
+    }
+  }, [tenantSlug, myTasks]);
+
+  // ── Filtering logic ──────────────────────────────────────────────────────────
+  const allTasks = [
+    ...myTasks.todo,
+    ...myTasks.in_progress,
+    ...myTasks.under_review,
+    ...myTasks.completed,
+  ];
+
+  const today   = new Date(); today.setHours(23, 59, 59, 999);
+  const weekEnd = new Date(); weekEnd.setDate(weekEnd.getDate() + 7); weekEnd.setHours(23, 59, 59, 999);
+
+  const filtered = allTasks
+    .filter(t => search ? (t.title || t.name || '').toLowerCase().includes(search.toLowerCase()) : true)
+    .filter(t => priority ? t.priority === priority : true)
+    .filter(t => {
+      if (filter === 'all')      return true;
+      if (filter === 'today')    return t.dueDate && new Date(t.dueDate) <= today;
+      if (filter === 'week')     return t.dueDate && new Date(t.dueDate) <= weekEnd;
+      if (filter === 'overdue')  return isOverdue(t);
+      return t.status === filter;
+    });
+
+  // ── Grouped views ────────────────────────────────────────────────────────────
+  const byStatus = Object.values(CARD_STATUS).map(s => ({
+    status: s,
+    label:  STATUS_LABELS[s],
+    style:  STATUS_STYLES[s],
+    tasks:  filtered.filter(t => t.status === s),
+  })).filter(g => g.tasks.length > 0);
+
+  const byProject = Object.values(
+    filtered.reduce((acc, t) => {
+      const key = t.project?.name || t.project?._id || '—';
+      if (!acc[key]) acc[key] = { name: t.project?.name || 'No project', tasks: [] };
+      acc[key].tasks.push(t);
+      return acc;
+    }, {})
+  );
+
+  // ── Quick actions (context-aware) ────────────────────────────────────────────
+  const hrBase = isSH ? `/${tenantSlug}/org/software-house/hr` : `/${tenantSlug}/org/hr`;
+  const QUICK_ACTIONS = [
+    { label: 'Log Time',      desc: 'Track hours',        icon: ClockIcon,        color: 'blue',
+      path: isSH ? `/${tenantSlug}/org/software-house/time-tracking` : `/${tenantSlug}/org/hr` },
+    { label: 'Request Leave', desc: 'Submit leave',       icon: CalendarIcon,     color: 'green',
+      path: `${hrBase}/leave-requests` },
+    { label: 'Attendance',    desc: 'Check in / out',     icon: CheckCircleIcon,  color: 'purple',
+      path: `${hrBase}/attendance` },
+  ];
+
+  const MY_LINKS = [
+    { label: 'My Leave',    path: `${hrBase}/leave-requests` },
+    { label: 'My Payroll',  path: `${hrBase}/payroll` },
+    { label: 'My Expenses', path: `/${tenantSlug}/org/finance/time-expenses` },
+    { label: 'My Profile',  path: `/${tenantSlug}/org/users/${user?.id}` },
+  ];
+
+  const handleTaskCreated = () => { setShowCreate(false); loadTasks(); };
+
+  // ── Loading ──────────────────────────────────────────────────────────────────
+  if (loading) return (
+    <div className="flex items-center justify-center py-24">
+      <div className="animate-spin h-10 w-10 rounded-full border-2 border-primary-500 border-t-transparent" />
+    </div>
+  );
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-5 animate-fade-in pb-8" onClick={() => setStatusMenu(null)}>
+
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      <div data-tutorial="mw-header" className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Work</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            {user?.fullName || user?.email || 'Your'} tasks &amp; activity
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { loadTasks(); loadApprovals(); }}
+            className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            title="Refresh"
+          >
+            <ArrowPathIcon className="w-4 h-4" />
+          </button>
+          <button
+            data-tutorial="mw-add-btn"
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-xl font-medium text-sm hover:opacity-90 transition-opacity"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Add Task
+          </button>
+        </div>
+      </div>
+
+      {/* ── Overdue alert ───────────────────────────────────────────────────── */}
+      {stats.overdueTasks > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm">
+          <ExclamationTriangleIcon className="w-4 h-4 text-red-500 shrink-0" />
+          <span className="text-red-700 dark:text-red-300 font-medium">
+            {stats.overdueTasks} task{stats.overdueTasks > 1 ? 's are' : ' is'} overdue
+          </span>
+          <button
+            onClick={() => setFilter('overdue')}
+            className="ml-auto text-red-600 dark:text-red-400 text-xs font-semibold hover:underline"
+          >
+            View overdue →
+          </button>
+        </div>
+      )}
+
+      {/* ── Stats ───────────────────────────────────────────────────────────── */}
+      <div data-tutorial="mw-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label="Total Tasks"  value={stats.totalTasks}     icon={ClipboardDocumentCheckIcon}
+          iconBg="bg-blue-50 dark:bg-blue-900/30"    iconColor="text-blue-600 dark:text-blue-400" />
+        <StatCard label="In Progress"  value={stats.inProgressTasks} icon={ClockIcon}
+          iconBg="bg-indigo-50 dark:bg-indigo-900/30" iconColor="text-indigo-600 dark:text-indigo-400" valueColor="text-indigo-600 dark:text-indigo-400" />
+        <StatCard label="Completed"    value={stats.completedTasks}  icon={CheckCircleIcon}
+          iconBg="bg-green-50 dark:bg-green-900/30"   iconColor="text-green-600 dark:text-green-400"  valueColor="text-green-600 dark:text-green-400" />
+        <StatCard label="Overdue"      value={stats.overdueTasks}    icon={ExclamationTriangleIcon}
+          iconBg="bg-red-50 dark:bg-red-900/30"       iconColor="text-red-600 dark:text-red-400"      valueColor={stats.overdueTasks > 0 ? 'text-red-600 dark:text-red-400' : undefined} />
+      </div>
+
+      {/* ── Main content + sidebar ───────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {/* ── Task panel (left 2/3) ────────────────────────────────────────── */}
+        <div data-tutorial="mw-tasks" className="lg:col-span-2 space-y-4">
+
+          {/* Filter bar */}
+          <div data-tutorial="mw-filterbar" className="glass-card-premium p-3 space-y-3">
+
+            {/* Search + priority + view toggle */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Search */}
+              <div className="relative flex-1 min-w-[160px]">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search tasks…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-8 py-1.5 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 dark:text-gray-100 placeholder-gray-400"
+                />
+                {search && (
+                  <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    <XMarkIcon className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Priority filter */}
+              <div className="relative" ref={priorityBtnRef}>
+                <button
+                  onClick={e => { e.stopPropagation(); setShowPriorityMenu(p => !p); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors
+                    ${priority
+                      ? 'border-primary-400 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                >
+                  <FunnelIcon className="w-3.5 h-3.5" />
+                  {priority ? priority.charAt(0).toUpperCase() + priority.slice(1) : 'Priority'}
+                  <ChevronDownIcon className="w-3 h-3 opacity-60" />
+                </button>
+                {showPriorityMenu && (
+                  <div
+                    onClick={e => e.stopPropagation()}
+                    className="absolute left-0 top-full mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-1 min-w-[120px]"
+                  >
+                    {PRIORITY_OPTIONS.map(p => (
+                      <button
+                        key={p}
+                        onClick={() => { setPriority(p); setShowPriorityMenu(false); }}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+                          ${priority === p ? 'font-semibold text-primary-600 dark:text-primary-400' : 'text-gray-700 dark:text-gray-300'}`}
+                      >
+                        {p ? p.charAt(0).toUpperCase() + p.slice(1) : 'All priorities'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* View toggle */}
+              <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800/60">
+                {[
+                  { id: 'list',    icon: ListBulletIcon,  title: 'List' },
+                  { id: 'status',  icon: Squares2X2Icon,  title: 'By Status' },
+                  { id: 'project', icon: FunnelIcon,      title: 'By Project' },
+                ].map(({ id, icon: Icon, title }) => (
+                  <button
+                    key={id}
+                    onClick={() => setViewMode(id)}
+                    title={title}
+                    className={`p-1.5 transition-colors ${viewMode === id
+                      ? 'bg-primary-600 text-white'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tab filters */}
+            <div className="flex flex-wrap gap-1">
+              {FILTER_TABS.map(tab => {
+                const count = tab.id === 'all'     ? allTasks.length
+                            : tab.id === 'today'   ? allTasks.filter(t => t.dueDate && new Date(t.dueDate) <= today).length
+                            : tab.id === 'week'    ? allTasks.filter(t => t.dueDate && new Date(t.dueDate) <= weekEnd).length
+                            : tab.id === 'overdue' ? stats.overdueTasks
+                            : (myTasks[tab.id] || []).length;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => { setFilter(tab.id); setVisibleCount(PAGE_SIZE); }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5
+                      ${filter === tab.id
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                  >
+                    {tab.label}
+                    {count > 0 && (
+                      <span className={`rounded-full px-1.5 py-0 text-[10px] font-bold
+                        ${filter === tab.id ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}
+                        ${tab.id === 'overdue' && count > 0 && filter !== tab.id ? '!bg-red-100 dark:!bg-red-900/30 !text-red-600 dark:!text-red-400' : ''}
+                      `}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Task list ─────────────────────────────────────────────────── */}
+          {filtered.length === 0 ? (
+            <div className="glass-card-premium py-16 text-center">
+              <ClipboardDocumentCheckIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-gray-400 font-medium">No tasks match this filter</p>
+              <p className="text-xs text-gray-400 dark:text-gray-600 mt-1">Try a different filter or add a new task</p>
+              <button
+                onClick={() => setShowCreate(true)}
+                className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+              >
+                Add Task
+              </button>
+            </div>
+          ) : viewMode === 'list' ? (
+            /* Flat list */
             <div className="space-y-2">
-              <button
-                onClick={() => navigate(`/${tenantSlug}/org/software-house/time-tracking`)}
-                className="w-full glass-card p-4 hover-glow text-left flex items-center gap-3"
-              >
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <ClockIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              {filtered.slice(0, visibleCount).map(task => (
+                <TaskCard
+                  key={task._id || task.id}
+                  task={task}
+                  onStatusChange={handleStatusChange}
+                  statusMenuId={statusMenu}
+                  onToggleStatusMenu={id => { setStatusMenu(prev => prev === id ? null : id); }}
+                  updatingId={updatingId}
+                  navigate={navigate}
+                  tenantSlug={tenantSlug}
+                />
+              ))}
+              {filtered.length > visibleCount && (
+                <button
+                  onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+                  className="w-full py-2.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-xl border border-primary-200 dark:border-primary-800 transition-colors"
+                >
+                  Show more ({filtered.length - visibleCount} remaining)
+                </button>
+              )}
+            </div>
+          ) : viewMode === 'status' ? (
+            /* Grouped by status */
+            <div className="space-y-4">
+              {byStatus.map(group => (
+                <div key={group.status} className="glass-card-premium overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 dark:border-gray-700/60">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${group.style}`}>
+                      {group.label}
+                    </span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{group.tasks.length} task{group.tasks.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    {group.tasks.map(task => (
+                      <TaskCard
+                        key={task._id || task.id}
+                        task={task}
+                        onStatusChange={handleStatusChange}
+                        statusMenuId={statusMenu}
+                        onToggleStatusMenu={id => setStatusMenu(prev => prev === id ? null : id)}
+                        updatingId={updatingId}
+                        navigate={navigate}
+                        tenantSlug={tenantSlug}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">Log Time</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Track your work hours</p>
+              ))}
+            </div>
+          ) : (
+            /* Grouped by project */
+            <div className="space-y-4">
+              {byProject.map(group => (
+                <div key={group.name} className="glass-card-premium overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 dark:border-gray-700/60">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{group.name}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{group.tasks.length}</span>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    {group.tasks.map(task => (
+                      <TaskCard
+                        key={task._id || task.id}
+                        task={task}
+                        onStatusChange={handleStatusChange}
+                        statusMenuId={statusMenu}
+                        onToggleStatusMenu={id => setStatusMenu(prev => prev === id ? null : id)}
+                        updatingId={updatingId}
+                        navigate={navigate}
+                        tenantSlug={tenantSlug}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </button>
-              
-              <button
-                onClick={() => navigate(`/${tenantSlug}/org/software-house/hr/leave-requests`)}
-                className="w-full glass-card p-4 hover-glow text-left flex items-center gap-3"
-              >
-                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                  <CalendarIcon className="w-5 h-5 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">Request Leave</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Submit leave request</p>
-                </div>
-              </button>
-              
-              <button
-                onClick={() => navigate(`/${tenantSlug}/org/software-house/hr/attendance`)}
-                className="w-full glass-card p-4 hover-glow text-left flex items-center gap-3"
-              >
-                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                  <CheckCircleIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">Attendance</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Check in/out</p>
-                </div>
-              </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Sidebar (right 1/3) ──────────────────────────────────────────── */}
+        <div className="space-y-4">
+
+          {/* Pending Approvals */}
+          {approvals.length > 0 && (
+            <div className="glass-card-premium p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  Pending Approvals
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full">
+                    {approvals.length}
+                  </span>
+                </h2>
+              </div>
+              <div className="space-y-2">
+                {approvals.map((a, i) => (
+                  <button
+                    key={a._id || i}
+                    onClick={() => navigate(`/${tenantSlug}/org/projects/approvals`)}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                  >
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{a.title || a.name || 'Approval request'}</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Awaiting your review</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions */}
+          <div className="glass-card-premium p-5">
+            <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-3">Quick Actions</h2>
+            <div className="space-y-2">
+              {QUICK_ACTIONS.map(({ label, desc, icon: Icon, color, path }) => (
+                <button
+                  key={label}
+                  onClick={() => navigate(path)}
+                  className="w-full glass-card p-3 hover:shadow-md text-left flex items-center gap-3 transition-all"
+                >
+                  <div className={`p-2 bg-${color}-100 dark:bg-${color}-900/30 rounded-lg shrink-0`}>
+                    <Icon className={`w-4 h-4 text-${color}-600 dark:text-${color}-400`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{label}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{desc}</p>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 
           {/* My Links */}
-          <div className="glass-card-premium p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">My Links</h2>
-            <div className="space-y-2">
-              <button
-                onClick={() => navigate(`/${tenantSlug}/org/software-house/hr/leave-requests`)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                My Leave Requests
-              </button>
-              <button
-                onClick={() => navigate(`/${tenantSlug}/org/software-house/hr/payroll`)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                My Payroll
-              </button>
-              <button
-                onClick={() => navigate(`/${tenantSlug}/org/finance/time-expenses`)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                My Expenses
-              </button>
-              <button
-                onClick={() => navigate(`/${tenantSlug}/org/profile`)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                My Profile
-              </button>
+          <div className="glass-card-premium p-5">
+            <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-3">My Links</h2>
+            <div className="space-y-1">
+              {MY_LINKS.map(({ label, path }) => (
+                <button
+                  key={label}
+                  onClick={() => navigate(path)}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex items-center justify-between group"
+                >
+                  {label}
+                  <ArrowRightIcon className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              ))}
             </div>
           </div>
 
           {/* Recent Projects */}
-          {recentProjects.length > 0 && (
-            <div className="glass-card-premium p-6">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Recent Projects</h2>
-              <div className="space-y-2">
-                {recentProjects.map((project) => (
+          {projects.length > 0 && (
+            <div className="glass-card-premium p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-gray-900 dark:text-white">My Projects</h2>
+                <button onClick={() => navigate(`/${tenantSlug}/org/projects`)} className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
+                  All →
+                </button>
+              </div>
+              <div className="space-y-1">
+                {projects.map(p => (
                   <button
-                    key={project._id || project.id}
-                    onClick={() => navigate(`/${tenantSlug}/org/projects/${project._id || project.id}/board`)}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex items-center justify-between"
+                    key={p._id || p.id}
+                    onClick={() => navigate(`/${tenantSlug}/org/projects/${p._id || p.id}/board`)}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex items-center justify-between group"
                   >
-                    <span>{project.name || project.title}</span>
-                    <ArrowRightIcon className="w-4 h-4" />
+                    <span className="truncate">{p.name || p.title}</span>
+                    <ArrowRightIcon className="w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 ))}
               </div>
@@ -429,11 +781,11 @@ const MyWork = () => {
         </div>
       </div>
 
-      {/* Create Task Modal */}
-      {isCreateTaskModalOpen && (
+      {/* ── Create Task Modal ──────────────────────────────────────────────── */}
+      {showCreate && (
         <CreateTaskModal
-          isOpen={isCreateTaskModalOpen}
-          onClose={() => setIsCreateTaskModalOpen(false)}
+          isOpen={showCreate}
+          onClose={() => setShowCreate(false)}
           onTaskCreated={handleTaskCreated}
           defaultAssigneeId={user?.id}
         />

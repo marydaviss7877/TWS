@@ -1,0 +1,394 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --supra-accent:      #8b5cf6;
+    --supra-accent-glow: rgba(139, 92, 246, 0.4);
+    --supra-secondary:   #ec4899;
+    --supra-border-dark: rgba(255, 255, 255, 0.10);
+}
+
+/* ── Shell ── */
+.supra-login-container {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    font-family: 'Space Grotesk', sans-serif;
+    transition: background 0.4s ease, color 0.4s ease;
+}
+
+.supra-login-container.dark-mode {
+    background: #050505;
+    color: #ffffff;
+}
+
+.supra-login-container.light-mode {
+    background: #f4f6ff;
+    color: #0f172a;
+}
+
+/* ── Theme Toggle ── */
+.supra-theme-toggle {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.5rem;
+    z-index: 300;
+}
+
+/* ── Left: Form column ── */
+.supra-login-left {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+}
+
+.supra-form-wrapper {
+    width: 100%;
+    max-width: 420px;
+}
+
+/* ── Logo / Brand header ── */
+.supra-logo-area {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-right: 3.5rem;
+}
+
+.supra-logo-icon {
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--supra-accent), var(--supra-secondary));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px var(--supra-accent-glow);
+}
+
+.supra-heading {
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.5rem;
+}
+
+.supra-accent-text {
+    background: linear-gradient(to right, var(--supra-accent), var(--supra-secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* ── Form controls ── */
+.supra-input-group {
+    margin-bottom: 1.25rem;
+}
+
+.supra-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.supra-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.supra-input {
+    width: 100%;
+    padding: 0.9rem 1rem 0.9rem 3rem;
+    border-radius: 12px;
+    border: 1px solid var(--supra-border-dark);
+    background: rgba(255, 255, 255, 0.03);
+    color: inherit;
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: all 0.25s ease;
+}
+
+.light-mode .supra-input {
+    background: #ffffff;
+    border-color: #d8dcf0;
+    color: #0f172a;
+}
+
+.supra-input::placeholder { opacity: 0.4; }
+
+.supra-input:focus {
+    outline: none;
+    border-color: var(--supra-accent);
+    box-shadow: 0 0 0 3px var(--supra-accent-glow);
+}
+
+.supra-input-icon {
+    position: absolute;
+    left: 1rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.supra-submit-btn {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    background: linear-gradient(to right, var(--supra-accent), var(--supra-secondary));
+    color: white;
+    border: none;
+    font-weight: 700;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-top: 0.75rem;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.35);
+    letter-spacing: 0.02em;
+}
+
+.supra-submit-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+}
+
+.supra-submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ── Right panel: The WolfStack brand ── */
+.supra-login-right {
+    width: 400px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.dark-mode .supra-login-right {
+    background: linear-gradient(145deg, #0d0b1e 0%, #110a20 60%, #0a0814 100%);
+    border-left: 1px solid rgba(139, 92, 246, 0.12);
+}
+
+.light-mode .supra-login-right {
+    background: linear-gradient(145deg, #ede9ff 0%, #e8e2ff 60%, #f0ebff 100%);
+    border-left: 1px solid rgba(139, 92, 246, 0.18);
+}
+
+/* ambient glow orbs */
+.supra-login-right::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    right: -100px;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.20) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.supra-login-right::after {
+    content: '';
+    position: absolute;
+    bottom: -80px;
+    left: -80px;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.14) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.supra-right-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Brand block */
+.supra-brand-block {
+    text-align: center;
+}
+
+.supra-brand-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 1.25rem;
+    background: linear-gradient(135deg, var(--supra-accent), var(--supra-secondary));
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.45);
+}
+
+.supra-brand-name {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    margin-bottom: 0.4rem;
+    background: linear-gradient(135deg, var(--supra-accent), var(--supra-secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.supra-brand-tagline {
+    font-size: 0.68rem;
+    opacity: 0.45;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* Stats row */
+.supra-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+}
+
+.supra-stat-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    padding: 0.625rem 0.375rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.light-mode .supra-stat-card {
+    background: rgba(139, 92, 246, 0.06);
+    border-color: rgba(139, 92, 246, 0.12);
+}
+
+.supra-stat-pulse {
+    animation: supra-stat-glow 4s ease infinite;
+}
+
+@keyframes supra-stat-glow {
+    0%, 100% { border-color: rgba(255,255,255,0.07); }
+    50%       { border-color: rgba(139, 92, 246, 0.5); box-shadow: 0 0 8px rgba(139,92,246,0.2); }
+}
+
+.light-mode .supra-stat-pulse {
+    animation: supra-stat-glow-light 4s ease infinite;
+}
+
+@keyframes supra-stat-glow-light {
+    0%, 100% { border-color: rgba(139, 92, 246, 0.12); }
+    50%       { border-color: rgba(139, 92, 246, 0.5); box-shadow: 0 0 10px rgba(139,92,246,0.15); }
+}
+
+.supra-stat-icon {
+    width: 13px;
+    height: 13px;
+    color: var(--supra-accent);
+    opacity: 0.7;
+}
+
+.supra-stat-value {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--supra-accent);
+    line-height: 1;
+}
+
+.supra-stat-label {
+    font-size: 0.52rem;
+    opacity: 0.45;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Features list */
+.supra-features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.supra-feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.77rem;
+    opacity: 0.65;
+    line-height: 1.4;
+}
+
+.supra-feature-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--supra-accent), var(--supra-secondary));
+    flex-shrink: 0;
+}
+
+/* Footer */
+.supra-right-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.4;
+    justify-content: center;
+}
+
+.supra-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e;
+    animation: supra-blink 2s ease infinite;
+    flex-shrink: 0;
+}
+
+@keyframes supra-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+    .supra-login-right { display: none; }
+    .supra-login-left  { justify-content: center; }
+}
+
+@media (max-width: 480px) {
+    .supra-login-left  { padding: 2rem 1rem; }
+    .supra-heading     { font-size: 1.75rem; }
+    .supra-logo-area   { padding-right: 3rem; margin-bottom: 1.25rem; }
+    .supra-input       { padding: 0.8rem 1rem 0.8rem 2.75rem; }
+    .supra-submit-btn  { font-size: 0.78rem; padding: 0.85rem; }
+}

@@ -9,10 +9,13 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthContext';
+import { useTenantPermissions } from '../../../../../contexts/TenantPermissionsContext';
 
 const PayrollManagement = () => {
   const { tenantSlug } = useParams();
   const { isAuthenticated, loading: authLoading } = useTenantAuth();
+  const { hasModulePermission } = useTenantPermissions();
+  const canWritePayroll = hasModulePermission('payroll', 'write');
   const [loading, setLoading] = useState(true);
   const [payrollData, setPayrollData] = useState(null);
 
@@ -120,10 +123,12 @@ const PayrollManagement = () => {
             Manage employee compensation and payroll processing
           </p>
         </div>
-        <button className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2">
-          <ArrowDownTrayIcon className="w-5 h-5" />
-          <span className="font-medium">Export</span>
-        </button>
+        {canWritePayroll && (
+          <button className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2">
+            <ArrowDownTrayIcon className="w-5 h-5" />
+            <span className="font-medium">Export</span>
+          </button>
+        )}
       </div>
 
       {/* Stats Grid */}

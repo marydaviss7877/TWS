@@ -112,6 +112,7 @@ const ProjectsOverview = () => {
   });
 
   const [recentProjects, setRecentProjects] = useState([]);
+  const [allProjects, setAllProjects] = useState([]);
   const [upcomingMilestones, setUpcomingMilestones] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [departmentStats, setDepartmentStats] = useState([]);
@@ -173,9 +174,11 @@ const ProjectsOverview = () => {
       setLoading(true);
       setError(null);
       
-      const [metricsResponse, projectsResponse, milestonesResponse] = await Promise.all([
+      const [metricsResponse, projectsResponse, allProjectsResponse, milestonesResponse] = await Promise.all([
         tenantProjectApiService.getProjectMetrics(tenantSlug).catch(() => ({})),
         tenantProjectApiService.getProjects(tenantSlug, { limit: 6, sort: 'updatedAt' }).catch(() => ({ projects: [] })),
+        // Fetch all projects (no limit) so trend/velocity/health charts use full dataset
+        tenantProjectApiService.getProjects(tenantSlug, { limit: 200, sort: 'createdAt' }).catch(() => ({ projects: [] })),
         tenantApiService.getProjectMilestones(tenantSlug, { upcoming: true, limit: 5 }).catch(() => ({ milestones: [] }))
       ]);
 
@@ -213,12 +216,16 @@ const ProjectsOverview = () => {
         setRecentProjects(overviewData.projects || []);
       }
 
-      // Set projects
+      // Set recent projects (6 items for cards)
       if (projectsResponse?.projects) {
         setRecentProjects(projectsResponse.projects);
       } else if (projectsResponse && Array.isArray(projectsResponse)) {
         setRecentProjects(projectsResponse);
       }
+
+      // Set all projects (full dataset for charts)
+      const allP = allProjectsResponse?.projects || (Array.isArray(allProjectsResponse) ? allProjectsResponse : []);
+      setAllProjects(allP);
 
       // Set milestones
       let milestones = [];
@@ -365,11 +372,21 @@ const ProjectsOverview = () => {
     };
 
     // Project Timeline/Completion Trend (Line Chart)
+    // Count projects completed in each of the last 6 months using real data
+    const completionByMonth = months.map((_, i) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (5 - i));
+      return projects.filter(p => {
+        if ((p.status || '').toLowerCase() !== 'completed') return false;
+        const d = new Date(p.endDate || p.completedAt || p.updatedAt);
+        return !isNaN(d) && d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear();
+      }).length;
+    });
     const completionTrendData = {
       labels: months,
       datasets: [{
         label: 'Projects Completed',
-        data: months.map(() => Math.floor(Math.random() * 5) + 1),
+        data: completionByMonth,
         borderColor: 'rgba(34, 197, 94, 1)',
         backgroundColor: 'rgba(34, 197, 94, 0.1)',
         borderWidth: 3,
@@ -423,20 +440,33 @@ const ProjectsOverview = () => {
       }]
     };
 
-    // Project Health Radar
+    // Project Health Radar — all values derived from real data
+    const totalActive = Math.max(metrics.activeProjects, 1);
+    const totalAll = Math.max(metrics.totalProjects, 1);
+    // On Time: % of active projects that are on track
+    const onTimeScore = Math.round((metrics.onTrackProjects / totalActive) * 100);
+    // Budget: % of budget remaining
+    const budgetScore = metrics.totalBudget > 0
+      ? Math.round(((metrics.totalBudget - metrics.spentBudget) / metrics.totalBudget) * 100)
+      : 0;
+    // Quality: task/deliverable completion rate derived from project completion percentages
+    const qualityScore = projects.length > 0
+      ? Math.round(projects.reduce((sum, p) => sum + (p.completionPercentage || p.progress || 0), 0) / projects.length)
+      : 0;
+    // Team Satisfaction: utilization score (healthy range = high score); penalise >100% overload
+    const util = metrics.utilization || 0;
+    const teamScore = util > 0 ? Math.round(Math.min(util, 100) * (util <= 80 ? 1 : util <= 100 ? 0.9 : 0.7)) : 0;
+    // Client Satisfaction: inverse of at-risk ratio across all projects
+    const clientScore = Math.round((1 - metrics.atRiskProjects / totalAll) * 100);
+    // Scope: inverse of delayed ratio
+    const scopeScore = Math.round((1 - metrics.delayedProjects / totalAll) * 100);
+
     const projectHealthData = {
       labels: ['On Time', 'Budget', 'Quality', 'Team Satisfaction', 'Client Satisfaction', 'Scope'],
       datasets: [
         {
           label: 'Current Performance',
-          data: [
-            metrics.onTrackProjects > 0 ? (metrics.onTrackProjects / metrics.activeProjects) * 100 : 0,
-            metrics.totalBudget > 0 ? ((metrics.totalBudget - metrics.spentBudget) / metrics.totalBudget) * 100 : 0,
-            85,
-            80,
-            75,
-            90
-          ],
+          data: [onTimeScore, budgetScore, qualityScore, teamScore, clientScore, scopeScore],
           backgroundColor: 'rgba(59, 130, 246, 0.2)',
           borderColor: 'rgba(59, 130, 246, 1)',
           borderWidth: 2,
@@ -483,11 +513,25 @@ const ProjectsOverview = () => {
     };
 
     // Project Velocity (Line Chart)
+    // Average completion % of all projects that existed by each month
+    const velocityByMonth = months.map((_, i) => {
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - (5 - i));
+      cutoff.setDate(cutoff.getDate() + 1); // include up to end of that month
+      const activeByMonth = projects.filter(p => {
+        const start = new Date(p.startDate || p.createdAt);
+        return !isNaN(start) && start <= cutoff;
+      });
+      if (!activeByMonth.length) return 0;
+      return Math.round(
+        activeByMonth.reduce((sum, p) => sum + (p.completionPercentage || p.progress || 0), 0) / activeByMonth.length
+      );
+    });
     const projectVelocityData = {
       labels: months,
       datasets: [{
-        label: 'Project Completion Rate',
-        data: months.map(() => Math.floor(Math.random() * 10) + 5),
+        label: 'Avg Completion %',
+        data: velocityByMonth,
         borderColor: 'rgba(168, 85, 247, 1)',
         backgroundColor: 'rgba(168, 85, 247, 0.1)',
         borderWidth: 3,
@@ -512,12 +556,13 @@ const ProjectsOverview = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metrics]);
 
-  // Generate chart data when metrics or projects change
+  // Generate chart data when metrics or projects change — use full dataset for charts
   useEffect(() => {
-    if (!loading && recentProjects.length >= 0) {
-      generateChartData(recentProjects, upcomingMilestones);
+    if (!loading) {
+      const projectsForCharts = allProjects.length > 0 ? allProjects : recentProjects;
+      generateChartData(projectsForCharts, upcomingMilestones);
     }
-  }, [metrics, recentProjects, upcomingMilestones, loading, generateChartData]);
+  }, [metrics, allProjects, recentProjects, upcomingMilestones, loading, generateChartData]);
 
   const stats = [
     { 
@@ -649,7 +694,7 @@ const ProjectsOverview = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div data-tutorial="proj-header" className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
             Projects Overview
@@ -676,6 +721,7 @@ const ProjectsOverview = () => {
             </button>
           )}
           <button
+            data-tutorial="proj-new-btn"
             onClick={() => setIsCreateModalOpen(true)}
             className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white"
           >
@@ -686,7 +732,7 @@ const ProjectsOverview = () => {
       </div>
 
       {/* Stats Grid - Expanded */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div data-tutorial="proj-stats" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div 
             key={index} 
@@ -715,7 +761,7 @@ const ProjectsOverview = () => {
       </div>
 
       {/* Project Health Overview */}
-      <div className="glass-card-premium p-6">
+      <div data-tutorial="proj-health" className="glass-card-premium p-6">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Project Health Overview</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">

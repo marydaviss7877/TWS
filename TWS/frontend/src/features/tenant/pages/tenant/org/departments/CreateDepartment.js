@@ -17,7 +17,8 @@ const CreateDepartment = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      // Code must be uppercase to pass backend validation (/^[A-Z0-9-]+$/)
+      [name]: name === 'code' ? value.toUpperCase().replace(/[^A-Z0-9-]/g, '') : value
     }));
   };
 
@@ -110,7 +111,7 @@ const CreateDepartment = () => {
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white uppercase"
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Unique code for the department (will be converted to uppercase)
+              Uppercase letters, numbers and hyphens only — e.g. ENG, HR, DEV-OPS
             </p>
           </div>
 

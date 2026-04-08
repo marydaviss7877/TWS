@@ -31,10 +31,10 @@ if (typeof window !== 'undefined') {
   // Also suppress uncaught errors
   window.addEventListener('error', (e) => {
     if (e.message && (
-        e.message.includes('share-modal.js') ||
+        e.message.includes('share-modal.js') || 
         e.message.includes('share-modal') ||
         e.message.includes('Cannot read properties of null (reading \'addEventListener\')') ||
-        (e.filename && e.filename.includes('share-modal.js'))
+        e.filename && e.filename.includes('share-modal.js')
     )) {
       e.preventDefault();
       return false;

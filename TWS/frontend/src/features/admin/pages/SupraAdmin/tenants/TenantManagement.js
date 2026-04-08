@@ -218,6 +218,7 @@ const TenantManagement = () => {
       dataIndex: 'plan',
       key: 'plan',
       render: (_, r) => {
+        if (r.erpCategory !== 'software_house') return <Text type="secondary">N/A</Text>;
         const p = (r.plan || r.subscription?.plan || 'Trial').toString();
         return <Tag color={planColors[p.toLowerCase()] || 'default'}>{p}</Tag>;
       },
@@ -423,7 +424,7 @@ const TenantManagement = () => {
             <div><Text strong>Slug:</Text> {selectedTenant.slug || '—'}</div>
             <div><Text strong>Email:</Text> {selectedTenant.email || selectedTenant.contactInfo?.email || '—'}</div>
             <div><Text strong>Category:</Text> {(selectedTenant.erpCategory || 'software_house').replace(/_/g, ' ')}</div>
-            <div><Text strong>Plan:</Text> <Tag color={planColors[(selectedTenant.plan || selectedTenant.subscription?.plan || '').toLowerCase()] || 'default'}>{selectedTenant.plan || selectedTenant.subscription?.plan || '—'}</Tag></div>
+            <div><Text strong>Plan:</Text> {selectedTenant.erpCategory !== 'software_house' ? <Text type="secondary">N/A (non–Software House)</Text> : <Tag color={planColors[(selectedTenant.plan || selectedTenant.subscription?.plan || '').toLowerCase()] || 'default'}>{selectedTenant.plan || selectedTenant.subscription?.plan || '—'}</Tag>}</div>
             <div><Text strong>Status:</Text> {selectedTenant.status || '—'}</div>
             <div><Text strong>Created:</Text> {selectedTenant.createdAt ? moment(selectedTenant.createdAt).format('MMM DD, YYYY') : '—'}</div>
             <div><Text strong>Users:</Text> {selectedTenant.usage?.totalUsers ?? selectedTenant.users ?? '—'}</div>

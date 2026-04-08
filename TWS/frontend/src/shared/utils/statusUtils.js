@@ -5,8 +5,10 @@
 
 import {
   CheckCircleOutlined,
+  ExclamationCircleOutlined,
   CloseCircleOutlined,
   WarningOutlined,
+  ClockCircleOutlined,
   InfoCircleOutlined
 } from '@ant-design/icons';
 

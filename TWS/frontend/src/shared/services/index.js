@@ -33,7 +33,6 @@ export { default as tenantApiService } from './tenant/tenant-api.service';
 // BUSINESS SERVICES - Business logic
 // ============================================================================
 export { default as billingService } from './business/billing.service';
-export { default as equityService } from './business/equity.service';
 export { default as formManagementService } from './business/form-management.service';
 export { default as partnerService } from './business/partner.service';
 export { default as resourceService } from './business/resource.service';
@@ -65,7 +64,6 @@ export const tenant = {
 
 export const business = {
   billingService: () => import('./business/billing.service'),
-  equityService: () => import('./business/equity.service'),
   formManagementService: () => import('./business/form-management.service'),
   partnerService: () => import('./business/partner.service'),
   resourceService: () => import('./business/resource.service'),

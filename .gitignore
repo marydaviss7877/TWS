@@ -1,3 +1,7 @@
+# Claude Code & Cursor
+.claude/
+.cursor/
+
 # Dependencies
 node_modules/
 npm-debug.log*
@@ -91,8 +95,9 @@ jspm_packages/
 .nuxt
 dist
 
-# Gatsby files (do not ignore CRA frontend/public)
+# Gatsby files
 .cache/
+public
 
 # Storybook build outputs
 .out

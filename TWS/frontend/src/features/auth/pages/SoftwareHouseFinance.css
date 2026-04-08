@@ -1,0 +1,245 @@
+/**
+ * Software House Finance — The Wolf of Finance Design System
+ * Focus: Financial Velocity, Immersion, and Technical Precision.
+ */
+
+:root {
+    --sh-finance-bg: #050508;
+    --sh-finance-surface: #0a0a0f;
+    --sh-finance-border: rgba(255, 255, 255, 0.05);
+    --sh-finance-accent: #10B981;
+    /* Emerald Success */
+    --sh-finance-velocity: #3B82F6;
+    /* Nuclear Blue */
+    --sh-finance-text: #F0F0F8;
+    --sh-finance-secondary: #8B8BA8;
+    --sh-flow-start: rgba(16, 185, 129, 0.1);
+    --sh-flow-end: rgba(59, 130, 246, 0.1);
+}
+
+.sh-finance-page {
+    background-color: var(--sh-finance-bg);
+    color: var(--sh-finance-text);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+}
+
+/* Glassmorphism Utilities */
+.sh-finance-glass {
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--sh-finance-border);
+    border-radius: 24px;
+}
+
+/* ========== Hero: The Cash Horizon ========== */
+
+.sh-finance-hero {
+    position: relative;
+    padding: 12rem 0 8rem;
+    overflow: hidden;
+}
+
+.sh-spectral-viz {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 300px;
+    background: linear-gradient(to top, var(--sh-finance-bg), transparent);
+    z-index: 1;
+}
+
+.sh-viz-bar {
+    position: absolute;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to top, var(--sh-finance-velocity), var(--sh-finance-accent));
+    border-radius: 1px 1px 0 0;
+    opacity: 0.3;
+}
+
+.sh-finance-title {
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 2rem;
+}
+
+/* ========== Feature: The Atomic Ledger ========== */
+
+.sh-ledger-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 1.5rem;
+    padding: 2rem 0;
+}
+
+@media (min-width: 768px) {
+    .sh-ledger-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .sh-ledger-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.sh-ledger-card {
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid var(--sh-finance-border);
+    border-radius: 20px;
+    padding: 2rem;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.sh-ledger-card:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: translateY(-5px);
+}
+
+.sh-ledger-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--sh-finance-velocity);
+    opacity: 0.6;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.sh-ledger-metric {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--sh-finance-accent);
+    background: rgba(16, 185, 129, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+}
+
+/* ========== Interactive Console Views ========== */
+
+.sh-console-container {
+    padding: 8rem 0;
+}
+
+.sh-console-view {
+    position: relative;
+    background: #000;
+    border: 1px solid var(--sh-finance-border);
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+}
+
+.sh-console-header {
+    background: #0A0A0F;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--sh-finance-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sh-console-scanner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--sh-finance-velocity), transparent);
+    z-index: 10;
+    opacity: 0.5;
+    animation: sh-scan 4s linear infinite;
+}
+
+@keyframes sh-scan {
+    0% {
+        transform: translateY(0);
+    }
+
+    100% {
+        transform: translateY(600px);
+    }
+}
+
+.sh-finance-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.sh-finance-table th {
+    text-align: left;
+    padding: 1.25rem 2rem;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--sh-finance-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--sh-finance-border);
+}
+
+.sh-finance-table td {
+    padding: 1.25rem 2rem;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.sh-finance-pill {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.sh-pill-velocity {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+}
+
+.sh-pill-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10B981;
+}
+
+.sh-pill-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #F59E0B;
+}
+
+/* ========== Final Ledger (Conversion) ========== */
+
+.sh-final-ledger {
+    background: radial-gradient(circle at bottom, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+    padding: 10rem 0;
+    text-align: center;
+}
+
+.sh-cta-button {
+    background: white;
+    color: black;
+    padding: 1.25rem 3rem;
+    border-radius: 16px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.sh-cta-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 20px 40px rgba(255, 255, 255, 0.1);
+}

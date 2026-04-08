@@ -5,9 +5,8 @@ const BackendHealthCheck = () => {
   const [authStatus, setAuthStatus] = useState('checking');
 
   useEffect(() => {
-    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
     // Check backend health
-    fetch(`${apiBase}/api/health`)
+    fetch('http://localhost:5000/api/health')
       .then(response => response.json())
       .then(data => {
         setBackendStatus('online');
@@ -18,7 +17,7 @@ const BackendHealthCheck = () => {
       });
 
     // Check auth endpoint
-    fetch(`${apiBase}/api/auth/me`, {
+    fetch('http://localhost:5000/api/auth/me', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

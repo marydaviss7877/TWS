@@ -7,14 +7,18 @@
  * - No localStorage token management
  * - Unified token refresh via cookies
  * 
+ * In production (when REACT_APP_API_URL is set), baseURL is the backend
+ * so requests hit the API server. In dev with proxy, baseURL can be '' and proxy forwards.
  * @module shared/utils/axiosInstance
  */
 
 import axios from 'axios';
 
-// Create axios instance with default config
+const getApiBaseUrl = () => process.env.REACT_APP_API_URL || '';
+
+// Use backend URL when set (production); empty in dev so proxy forwards /api/* to backend
 const axiosInstance = axios.create({
-  baseURL: '', // Use relative URLs (proxy will handle forwarding)
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

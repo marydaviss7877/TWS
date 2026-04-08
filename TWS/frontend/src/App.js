@@ -16,12 +16,14 @@ import SupraAdminLogin from './features/auth/pages/SupraAdminLogin';
 import SoftwareHouseSignup from './features/auth/pages/SoftwareHouseSignup';
 import SoftwareHouseLogin from './features/auth/pages/SoftwareHouseLogin';
 import SoftwareHouseLanding from './features/auth/pages/SoftwareHouseLanding';
+import InviteAccept from './features/auth/pages/InviteAccept';
+import FinanceSystemPage from './features/auth/pages/FinanceSystemPage';
+import HRMSystemPage from './features/auth/pages/HRMSystemPage';
+import ProjectSystemPage from './features/auth/pages/ProjectSystemPage';
 
 // Legacy Components (to be gradually replaced)
-import Layout from './shared/components/layout/Layout';
 import RoleGuard from './features/auth/components/RoleGuard';
 import LoadingSpinner from './shared/components/feedback/LoadingSpinner';
-import LandingPage from './shared/pages/LandingPage';
 import PageNotFound from './shared/pages/PageNotFound';
 import BackendHealthCheck from './shared/components/monitoring/BackendHealthCheck';
 import MonitoringSystemStatus from './shared/components/monitoring/MonitoringSystemStatus';
@@ -35,7 +37,6 @@ import Templates from './features/projects/pages/Templates';
 import Employees from './features/employees/pages/Employees';
 import EmployeeProfile from './features/employees/pages/EmployeeProfile';
 import Attendance from './features/employees/pages/Attendance';
-import Settings from './shared/pages/Settings';
 import TenantDashboard from './features/tenant/pages/TenantDashboard';
 import TenantOrg from './features/tenant/pages/tenant/org/TenantOrg';
 
@@ -61,11 +62,6 @@ function App() {
     setupGlobalErrorHandling();
   }, []);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('App render - User ID:', user?.id, 'Role:', user?.role, 'Loading:', loading);
-  }, [user?.id, user?.role, loading]); // Use specific user properties to prevent unnecessary re-renders
-
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -81,10 +77,13 @@ function App() {
           />
           {/* /login redirects to software house login (for employee/admin login links that use /login) */}
           <Route path="/login" element={<Navigate to="/software-house-login" replace />} />
+          {/* Portal invite acceptance — public, no auth required */}
+          <Route path="/invite/accept" element={<InviteAccept />} />
           <Route
             path="/software-house-login"
             element={user ? (() => {
-              // Redirect logged-in software house users to their tenant dashboard
+              // Redirect only when we have tenantSlug (from localStorage or user) so we don't
+              // redirect to "/" before SoftwareHouseLogin has set tenantData after a fresh login
               try {
                 const tenantData = JSON.parse(localStorage.getItem('tenantData'));
                 const tenantSlug = tenantData?.slug ||
@@ -101,7 +100,9 @@ function App() {
               } catch (e) {
                 console.error('Error determining software house redirect:', e);
               }
-              return <Navigate to="/" replace />;
+              // No tenantSlug yet (e.g. login just succeeded and handleSubmit hasn't set localStorage)
+              // Keep showing login so it can complete and navigate
+              return <SoftwareHouseLogin />;
             })() : <SoftwareHouseLogin />}
           />
           <Route
@@ -111,6 +112,18 @@ function App() {
           <Route
             path="/software-house"
             element={<SoftwareHouseLanding />}
+          />
+          <Route
+            path="/software-house/finance"
+            element={<FinanceSystemPage />}
+          />
+          <Route
+            path="/software-house/hrm"
+            element={<HRMSystemPage />}
+          />
+          <Route
+            path="/software-house/projects"
+            element={<ProjectSystemPage />}
           />
           <Route
             path="/access-denied"

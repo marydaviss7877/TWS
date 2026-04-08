@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useParams } from 'react-router-dom';
 import tenantProjectApiService from '../services/tenantProjectApiService';
-import { handleApiError, handleSuccess } from '../utils/errorHandler';
-import { SUCCESS_MESSAGES, PROJECT_PRIORITY, CARD_TYPE, CARD_STATUS } from '../constants/projectConstants';
+import { handleApiError } from '../utils/errorHandler';
+import { PROJECT_PRIORITY, CARD_TYPE, CARD_STATUS } from '../constants/projectConstants';
 import { showSuccess, showError } from '../utils/toastNotifications';
 
 const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultStatus = CARD_STATUS.TODO, defaultAssigneeId = '', initialTask = null }) => {
@@ -18,6 +18,7 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
     projectId: projectId || '',
     departmentId: '',
     assigneeId: defaultAssigneeId || '',
+    startDate: '',
     dueDate: '',
     storyPoints: '',
     labels: ''
@@ -47,6 +48,7 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
           projectId: projectIdVal,
           departmentId,
           assigneeId,
+          startDate: t.startDate ? new Date(t.startDate).toISOString().slice(0, 10) : '',
           dueDate: t.dueDate ? new Date(t.dueDate).toISOString().slice(0, 10) : '',
           storyPoints: t.storyPoints != null ? String(t.storyPoints) : '',
           labels: Array.isArray(t.labels) ? t.labels.join(', ') : (t.labels || '')
@@ -59,13 +61,20 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
         setFormData(prev => ({ ...prev, assigneeId: defaultAssigneeId }));
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, tenantSlug, projectId, defaultAssigneeId, initialTask]);
 
   const fetchProjectDepartment = async (projId) => {
     try {
-      const project = await tenantProjectApiService.getProject(tenantSlug, projId);
-      if (project?.primaryDepartmentId) {
-        setFormData(prev => ({ ...prev, departmentId: project.primaryDepartmentId }));
+      const projectData = await tenantProjectApiService.getProject(tenantSlug, projId);
+      // processResponse returns data.data || data, so the project is at root
+      const proj = projectData?.project || projectData;
+      const firstDept = proj?.departments?.[0];
+      const resolvedDeptId = proj?.primaryDepartmentId
+        || (firstDept && (typeof firstDept === 'object' ? (firstDept._id || firstDept.id) : firstDept));
+      if (resolvedDeptId) {
+        const id = typeof resolvedDeptId === 'object' ? (resolvedDeptId._id || resolvedDeptId.toString()) : resolvedDeptId;
+        setFormData(prev => ({ ...prev, departmentId: id }));
       }
     } catch (err) {
       console.error('Error fetching project department:', err);
@@ -163,11 +172,13 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
     setIsLoading(true);
     
     try {
-      // Validate departmentId is required
-      if (!formData.departmentId) {
-        setErrors({ departmentId: 'Department is required' });
-        return;
+      // Resolve departmentId: form selection → first loaded department → backend will auto-resolve
+      let resolvedDeptId = formData.departmentId;
+      if (!resolvedDeptId && departments.length > 0) {
+        resolvedDeptId = departments[0]._id || departments[0].id;
+        setFormData(prev => ({ ...prev, departmentId: resolvedDeptId }));
       }
+      // If still missing, the backend will auto-resolve from the project — don't block the user
 
       const taskData = {
         title: formData.title.trim(),
@@ -178,8 +189,9 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
         storyPoints: formData.storyPoints ? parseInt(formData.storyPoints, 10) : undefined,
         labels: formData.labels ? formData.labels.split(',').map(l => l.trim()).filter(Boolean) : [],
         projectId: formData.projectId || undefined,
-        departmentId: formData.departmentId,
+        departmentId: resolvedDeptId || undefined,
         assigneeId: formData.assigneeId || undefined,
+        startDate: formData.startDate || undefined,
         dueDate: formData.dueDate || undefined
       };
 
@@ -220,6 +232,7 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
       projectId: projectId || '',
       departmentId: '',
       assigneeId: '',
+      startDate: '',
       dueDate: '',
       storyPoints: '',
       labels: ''
@@ -293,7 +306,7 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Department *
+                  Department <span className="text-gray-400 text-xs">(auto-resolved if blank)</span>
                 </label>
                 <select
                   name="departmentId"
@@ -302,9 +315,8 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
                   className={`w-full glass-input rounded-xl px-4 py-2 ${
                     errors.departmentId ? 'border-red-300 dark:border-red-700' : ''
                   }`}
-                  required
                 >
-                  <option value="">Select department</option>
+                  <option value="">Auto (from project)</option>
                   {departments.map(dept => (
                     <option key={dept._id || dept.id} value={dept._id || dept.id}>
                       {dept.name} {dept.code ? `(${dept.code})` : ''}
@@ -312,9 +324,6 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
                   ))}
                 </select>
                 {errors.departmentId && <p className="text-red-500 text-sm mt-1">{errors.departmentId}</p>}
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Required - Select the department that owns this task
-                </p>
               </div>
 
               <div>
@@ -326,10 +335,14 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
                   value={formData.projectId}
                   onChange={(e) => {
                     handleInputChange(e);
-                    // If project is selected, try to auto-set department from project
+                    // Auto-set department from selected project when not already chosen
                     const selectedProject = projects.find(p => (p._id || p.id) === e.target.value);
-                    if (selectedProject?.primaryDepartmentId && !formData.departmentId) {
-                      setFormData(prev => ({ ...prev, projectId: e.target.value, departmentId: selectedProject.primaryDepartmentId }));
+                    const firstDept = selectedProject?.departments?.[0];
+                    const autoDeptId = selectedProject?.primaryDepartmentId
+                      || (firstDept && (typeof firstDept === 'object' ? (firstDept._id || firstDept.id) : firstDept));
+                    if (autoDeptId && !formData.departmentId) {
+                      const id = typeof autoDeptId === 'object' ? (autoDeptId._id || autoDeptId.toString()) : autoDeptId;
+                      setFormData(prev => ({ ...prev, projectId: e.target.value, departmentId: id }));
                     } else {
                       setFormData(prev => ({ ...prev, projectId: e.target.value }));
                     }
@@ -418,6 +431,20 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Start Date <span className="text-gray-400 text-xs">(for Gantt)</span>
+                </label>
+                <input
+                  type="date"
+                  name="startDate"
+                  value={formData.startDate}
+                  onChange={handleInputChange}
+                  max={formData.dueDate || undefined}
+                  className="w-full glass-input rounded-xl px-4 py-2"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Due Date
                 </label>
                 <input
@@ -425,6 +452,7 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
                   name="dueDate"
                   value={formData.dueDate}
                   onChange={handleInputChange}
+                  min={formData.startDate || undefined}
                   className="w-full glass-input rounded-xl px-4 py-2"
                 />
               </div>

@@ -6,9 +6,18 @@ import {
   PencilIcon,
   TrashIcon,
   ArrowPathIcon,
-  UserIcon
+  UserIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import toast from 'react-hot-toast';
+
+const HR_SUB_ROLES = [
+  { value: '', label: '— None —' },
+  { value: 'manager', label: 'HR Manager (full roster, payroll, leave)' },
+  { value: 'executive', label: 'HR Executive (roster, leave; no payroll)' },
+  { value: 'payroll_officer', label: 'Payroll Officer (payroll only)' }
+];
 
 const UserList = () => {
   const { tenantSlug } = useParams();
@@ -26,6 +35,10 @@ const UserList = () => {
     status: '',
     department: ''
   });
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editUser, setEditUser] = useState(null);
+  const [editHrSubRole, setEditHrSubRole] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -83,6 +96,45 @@ const UserList = () => {
     }
   };
 
+  const openEditModal = async (user) => {
+    setEditUser(user);
+    setEditHrSubRole(user?.hrSubRole ?? '');
+    setEditModalOpen(true);
+    if (user?._id) {
+      try {
+        const full = await tenantApiService.getUserById(tenantSlug, user._id);
+        if (full) {
+          setEditUser(full);
+          setEditHrSubRole(full.hrSubRole ?? '');
+        }
+      } catch (e) {
+        console.warn('Could not load user details', e);
+      }
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditModalOpen(false);
+    setEditUser(null);
+    setEditHrSubRole('');
+  };
+
+  const handleSaveHrSubRole = async () => {
+    if (!editUser?._id || !tenantSlug) return;
+    setSaving(true);
+    try {
+      await tenantApiService.updateUser(tenantSlug, editUser._id, { hrSubRole: editHrSubRole || null });
+      toast.success('User updated');
+      fetchUsers();
+      closeEditModal();
+    } catch (error) {
+      console.error('Update user error:', error);
+      toast.error(error?.message || 'Failed to update user');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const getRoleColor = (role) => {
     const colors = {
       admin: 'bg-red-100 text-red-800',
@@ -105,7 +157,7 @@ const UserList = () => {
   return (
     <div>
       <div className="mb-6">
-        <div className="flex items-center justify-between">
+        <div data-tutorial="users-header" className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
             <p className="text-gray-600">
@@ -113,6 +165,7 @@ const UserList = () => {
             </p>
           </div>
           <button
+            data-tutorial="users-add-btn"
             onClick={() => navigate(`/${tenantSlug}/org/users/create`)}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
           >
@@ -124,7 +177,7 @@ const UserList = () => {
 
       <div className="bg-white rounded-lg shadow">
         {/* Filters */}
-        <div className="p-6 border-b border-gray-200">
+        <div data-tutorial="users-filters" className="p-6 border-b border-gray-200">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <div className="relative">
@@ -173,7 +226,7 @@ const UserList = () => {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div data-tutorial="users-table" className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -250,7 +303,7 @@ const UserList = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => navigate(`/${tenantSlug}/org/users/${user._id}`)}
+                          onClick={() => openEditModal(user)}
                           className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
                           title="Edit User"
                         >
@@ -271,6 +324,51 @@ const UserList = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Edit User Modal (role / HR sub-role) */}
+        {editModalOpen && editUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Edit User</h3>
+                <button onClick={closeEditModal} className="p-1 rounded hover:bg-gray-100">
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                {editUser.fullName} ({editUser.email})
+              </p>
+              <p className="text-sm text-gray-500 mb-2">Role: <span className="font-medium text-gray-700">{editUser.role || '—'}</span></p>
+              {(editUser.role === 'hr' || editUser.role === 'HR') && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">HR sub-role</label>
+                  <select
+                    value={editHrSubRole}
+                    onChange={(e) => setEditHrSubRole(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    {HR_SUB_ROLES.map((opt) => (
+                      <option key={opt.value || 'none'} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Determines payroll vs leave vs roster access.</p>
+                </div>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={closeEditModal} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveHrSubRole}
+                  disabled={saving}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Pagination */}
         {pagination.total > 0 && (

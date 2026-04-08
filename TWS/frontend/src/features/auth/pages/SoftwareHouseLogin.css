@@ -1,0 +1,431 @@
+/* ============================================================
+   Software House Login — Design Tokens
+   ============================================================ */
+:root {
+    --sh-login-bg:           #050508;
+    --sh-login-text:         #FFFFFF;
+    --sh-login-surface:      #0A0A0F;
+    --sh-login-accent:       #06B6D4;
+    --sh-login-secondary:    #8B8BA8;
+    --sh-login-border:       rgba(255,255,255,0.06);
+    --sh-login-input-bg:     rgba(255,255,255,0.04);
+    --sh-login-input-border: rgba(255,255,255,0.10);
+    --sh-login-placeholder:  #52526A;
+}
+
+.sh-login-container.day-mode {
+    --sh-login-bg:           #F4F6FF;
+    --sh-login-text:         #0D0E24;
+    --sh-login-surface:      #ECEFFE;
+    --sh-login-accent:       #0284C7;
+    --sh-login-secondary:    #64748B;
+    --sh-login-border:       rgba(13,14,36,0.08);
+    --sh-login-input-bg:     #FFFFFF;
+    --sh-login-input-border: #D2D6EE;
+    --sh-login-placeholder:  #94A3B8;
+}
+
+/* ============================================================
+   Shell — exact 100vh, no scroll
+   ============================================================ */
+.sh-login-container {
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    background-color: var(--sh-login-bg);
+    color: var(--sh-login-text);
+    font-family: 'DM Sans', sans-serif;
+    transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+/* ============================================================
+   Theme Toggle — fixed corner
+   ============================================================ */
+.sh-theme-toggle {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.5rem;
+    z-index: 300;
+}
+
+/* ============================================================
+   Left — centred, no scroll needed
+   ============================================================ */
+.sh-login-left {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 2.5rem;
+    position: relative;
+}
+
+.sh-form-wrapper {
+    width: 100%;
+    max-width: 420px;
+}
+
+/* ============================================================
+   Logo / header row
+   ============================================================ */
+.sh-logo-area {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding-right: 3.5rem;
+}
+
+.sh-logo-icon {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 9px;
+    background: var(--sh-login-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 14px rgba(6, 182, 212, 0.3);
+}
+
+.sh-heading {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+.sh-accent-text {
+    color: var(--sh-login-accent);
+}
+
+/* ============================================================
+   Portal Selector — compact pills
+   ============================================================ */
+.sh-portal-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.sh-portal-btn {
+    flex: 1;
+    padding: 0.5rem 0.4rem;
+    background: var(--sh-login-input-bg);
+    border: 1px solid var(--sh-login-input-border);
+    border-radius: 9px;
+    color: var(--sh-login-secondary);
+    cursor: pointer;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-align: center;
+    transition: all 0.25s ease;
+    font-family: 'DM Sans', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.sh-portal-btn:hover {
+    border-color: var(--sh-login-accent);
+    color: var(--sh-login-accent);
+}
+
+.sh-portal-btn.active {
+    border-color: var(--sh-login-accent);
+    color: var(--sh-login-accent);
+    background: rgba(6, 182, 212, 0.08);
+}
+
+/* ============================================================
+   Form Controls
+   ============================================================ */
+.sh-input-group {
+    margin-bottom: 0.75rem;
+}
+
+.sh-label {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--sh-login-secondary);
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.sh-error-box {
+    padding: 0.6rem 0.875rem;
+    background: rgba(239,68,68,0.1);
+    border-left: 3px solid #ef4444;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    font-size: 0.78rem;
+    color: #ef4444;
+}
+
+.sh-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.sh-input {
+    width: 100%;
+    padding: 0.7rem 1rem 0.7rem 2.5rem;
+    background: var(--sh-login-input-bg);
+    border: 1px solid var(--sh-login-input-border);
+    border-radius: 10px;
+    color: var(--sh-login-text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    box-sizing: border-box;
+    transition: all 0.25s ease;
+}
+
+.sh-input::placeholder { color: var(--sh-login-placeholder); }
+
+.sh-input:focus {
+    outline: none;
+    border-color: var(--sh-login-accent);
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+}
+
+.sh-input-icon {
+    position: absolute;
+    left: 0.875rem;
+    width: 1rem;
+    height: 1rem;
+    color: var(--sh-login-secondary);
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.sh-submit-btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--sh-login-accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 0.25rem;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.25);
+    letter-spacing: 0.02em;
+}
+
+.sh-submit-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+    filter: brightness(1.08);
+}
+
+.sh-submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ============================================================
+   Footer row
+   ============================================================ */
+.sh-footer-row {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.7rem;
+    color: var(--sh-login-secondary);
+}
+
+.sh-footer-link {
+    color: var(--sh-login-accent);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+.sh-footer-link:hover { text-decoration: underline; }
+
+/* ============================================================
+   Right panel — orbital visualizer (Supra-style)
+   ============================================================ */
+.sh-login-right {
+    flex: 1.1;
+    flex-shrink: 0;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.day-mode .sh-login-right {
+    background: #eceffe;
+}
+
+.sh-visualizer-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, #0c2a3a 0%, #000 100%);
+    opacity: 0.85;
+}
+
+.day-mode .sh-visualizer-bg {
+    background: radial-gradient(circle at center, #06b6d4 0%, #eceffe 100%);
+    opacity: 0.1;
+}
+
+.sh-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(6, 182, 212, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(6, 182, 212, 0.08) 1px, transparent 1px);
+    background-size: 50px 50px;
+    transform: perspective(600px) rotateX(45deg);
+    transform-origin: center;
+    height: 150%;
+    top: -25%;
+    mask-image: radial-gradient(circle at center, black, transparent 80%);
+    -webkit-mask-image: radial-gradient(circle at center, black, transparent 80%);
+}
+
+.day-mode .sh-grid {
+    background-image:
+        linear-gradient(rgba(6, 182, 212, 0.14) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(6, 182, 212, 0.14) 1px, transparent 1px);
+}
+
+/* Orbital rings */
+.sh-core-container {
+    position: relative;
+    z-index: 5;
+    width: min(400px, 80%);
+    height: min(400px, 80vw);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sh-core-ring {
+    position: absolute;
+    inset: 0;
+    border: 1.5px solid var(--sh-login-accent);
+    border-radius: 50%;
+    opacity: 0.15;
+    animation: sh-ring-rotate 12s linear infinite;
+}
+
+.day-mode .sh-core-ring { opacity: 0.1; }
+
+.sh-core-ring:nth-child(2) {
+    inset: 45px;
+    border-color: #3b82f6;
+    animation-duration: 18s;
+    animation-direction: reverse;
+}
+
+.sh-core-ring:nth-child(3) {
+    inset: 90px;
+    border-style: dashed;
+    animation-duration: 28s;
+}
+
+@keyframes sh-ring-rotate {
+    to { transform: rotate(360deg); }
+}
+
+/* Status cards */
+.sh-status-card {
+    position: absolute;
+    padding: 0.75rem 0.875rem;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    width: 155px;
+}
+
+.day-mode .sh-status-card {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(6, 182, 212, 0.15);
+    box-shadow: 0 6px 16px rgba(6, 182, 212, 0.08);
+}
+
+.sh-status-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.5;
+    margin-bottom: 0.2rem;
+    font-family: 'DM Sans', sans-serif;
+}
+
+.day-mode .sh-status-label { opacity: 0.65; color: #475569; }
+
+.sh-status-value {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--sh-login-accent);
+    font-family: 'DM Sans', sans-serif;
+}
+
+.sh-visualizer-icon-wrapper {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.sh-visualizer-icon {
+    width: 4rem;
+    height: 4rem;
+    color: white;
+    opacity: 0.12;
+    filter: drop-shadow(0 0 12px var(--sh-login-accent));
+}
+
+.day-mode .sh-visualizer-icon {
+    color: var(--sh-login-accent);
+    opacity: 0.2;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+
+/* Tablet: hide right panel */
+@media (max-width: 1024px) {
+    .sh-login-right  { display: none; }
+    .sh-login-left   { padding: 2rem 1.75rem; }
+}
+
+/* Large phone */
+@media (max-width: 768px) {
+    .sh-login-left  { padding: 2rem 1.25rem; }
+    .sh-heading     { font-size: 1.75rem; }
+    .sh-logo-area   { padding-right: 3rem; }
+}
+
+/* Small phone */
+@media (max-width: 480px) {
+    .sh-login-left  { padding: 1.5rem 1rem; }
+    .sh-heading     { font-size: 1.5rem; }
+    .sh-logo-area   { padding-right: 2.75rem; }
+    .sh-input       { padding: 0.75rem 1rem 0.75rem 2.5rem; }
+    .sh-submit-btn  { font-size: 0.78rem; padding: 0.8rem; }
+}

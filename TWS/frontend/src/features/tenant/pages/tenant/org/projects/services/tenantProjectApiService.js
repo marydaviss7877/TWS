@@ -317,6 +317,15 @@ class TenantProjectApiService {
    * @param {Object} taskData - Updated task data
    * @returns {Promise} API response
    */
+  async deleteTask(tenantSlug, taskId) {
+    if (!taskId) throw new Error('Task ID is required');
+    try {
+      return await makeRequest(API_ENDPOINTS.PROJECT_TASK(tenantSlug, taskId), { method: 'DELETE' });
+    } catch (error) {
+      throw this.handleError(error, ERROR_MESSAGES.NETWORK_ERROR);
+    }
+  }
+
   async updateTask(tenantSlug, taskId, taskData) {
     if (!taskId) {
       throw new Error('Task ID is required');
@@ -396,6 +405,67 @@ class TenantProjectApiService {
       return await makeRequest(url);
     } catch (error) {
       throw this.handleError(error, ERROR_MESSAGES.NETWORK_ERROR);
+    }
+  }
+
+  // ── Project Members ──────────────────────────────────────────────────────
+
+  async getProjectMembers(tenantSlug, projectId) {
+    try {
+      return await makeRequest(`/api/tenant/${tenantSlug}/organization/projects/${projectId}/members`);
+    } catch (error) {
+      throw this.handleError(error, ERROR_MESSAGES.NETWORK_ERROR);
+    }
+  }
+
+  async addProjectMember(tenantSlug, projectId, data) {
+    try {
+      return await makeRequest(`/api/tenant/${tenantSlug}/organization/projects/${projectId}/members`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+    } catch (error) {
+      throw this.handleError(error, ERROR_MESSAGES.VALIDATION_ERROR);
+    }
+  }
+
+  async updateProjectMember(tenantSlug, projectId, memberId, data) {
+    try {
+      return await makeRequest(`/api/tenant/${tenantSlug}/organization/projects/${projectId}/members/${memberId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      });
+    } catch (error) {
+      throw this.handleError(error, ERROR_MESSAGES.VALIDATION_ERROR);
+    }
+  }
+
+  async removeProjectMember(tenantSlug, projectId, memberId) {
+    try {
+      return await makeRequest(`/api/tenant/${tenantSlug}/organization/projects/${projectId}/members/${memberId}`, {
+        method: 'DELETE'
+      });
+    } catch (error) {
+      throw this.handleError(error, ERROR_MESSAGES.NETWORK_ERROR);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Create a resource (add team member to org pool)
+   * @param {string} tenantSlug - Tenant slug
+   * @param {Object} data - { userId, department, jobTitle, skills? }
+   * @returns {Promise} API response
+   */
+  async createResource(tenantSlug, data) {
+    try {
+      return await makeRequest(API_ENDPOINTS.PROJECT_RESOURCES(tenantSlug), {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+    } catch (error) {
+      throw this.handleError(error, ERROR_MESSAGES.VALIDATION_ERROR);
     }
   }
 
@@ -769,6 +839,20 @@ class TenantProjectApiService {
   // ============================================
 
   /**
+   * Get approval steps pending for the current user (Approval Queue)
+   * @param {string} tenantSlug - Tenant slug
+   * @returns {Promise} List of { _id, step_number, approver_type, deliverable, project }
+   */
+  async getPendingApprovals(tenantSlug) {
+    try {
+      const endpoint = API_ENDPOINTS.APPROVALS_PENDING(tenantSlug);
+      return await makeRequest(endpoint);
+    } catch (error) {
+      throw this.handleError(error, 'Failed to fetch pending approvals');
+    }
+  }
+
+  /**
    * Get approvals for a deliverable
    * @param {string} tenantSlug - Tenant slug
    * @param {string} deliverableId - Deliverable ID
@@ -881,6 +965,21 @@ class TenantProjectApiService {
       return await makeRequest(endpoint);
     } catch (error) {
       throw this.handleError(error, 'Failed to fetch change requests');
+    }
+  }
+
+  /**
+   * Get a single change request by ID
+   * @param {string} tenantSlug - Tenant slug
+   * @param {string} changeRequestId - Change request ID
+   * @returns {Promise} Change request
+   */
+  async getChangeRequestById(tenantSlug, changeRequestId) {
+    try {
+      const endpoint = API_ENDPOINTS.CHANGE_REQUEST(tenantSlug, changeRequestId);
+      return await makeRequest(endpoint);
+    } catch (error) {
+      throw this.handleError(error, 'Failed to fetch change request');
     }
   }
 
@@ -1004,14 +1103,40 @@ class TenantProjectApiService {
   }
 
   async updateDeliverable(tenantSlug, deliverableId, deliverableData) {
-    return this.makeRequest(API_ENDPOINTS.DELIVERABLE(tenantSlug, deliverableId), {
+    return makeRequest(API_ENDPOINTS.DELIVERABLE(tenantSlug, deliverableId), {
       method: 'PUT',
       body: JSON.stringify(deliverableData)
     });
   }
 
   async deleteDeliverable(tenantSlug, deliverableId) {
-    return this.makeRequest(API_ENDPOINTS.DELIVERABLE(tenantSlug, deliverableId), { method: 'DELETE' });
+    return makeRequest(API_ENDPOINTS.DELIVERABLE(tenantSlug, deliverableId), { method: 'DELETE' });
+  }
+
+  async updateDeliverableStatus(tenantSlug, deliverableId, status) {
+    return makeRequest(API_ENDPOINTS.DELIVERABLE(tenantSlug, deliverableId), {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+  }
+
+  async shipDeliverable(tenantSlug, deliverableId) {
+    return makeRequest(API_ENDPOINTS.DELIVERABLE(tenantSlug, deliverableId), {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'shipped' })
+    });
+  }
+
+  async linkTaskToDeliverable(tenantSlug, deliverableId, taskId) {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/deliverables/${deliverableId}/tasks/${taskId}/link`, {
+      method: 'POST'
+    });
+  }
+
+  async unlinkTaskFromDeliverable(tenantSlug, deliverableId, taskId) {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/deliverables/${deliverableId}/tasks/${taskId}`, {
+      method: 'DELETE'
+    });
   }
 
   /**
@@ -1104,6 +1229,6 @@ class TenantProjectApiService {
 }
 
 // Export singleton instance
-const tenantProjectApiServiceInstance = new TenantProjectApiService();
-export default tenantProjectApiServiceInstance;
+const tenantProjectApiService = new TenantProjectApiService();
+export default tenantProjectApiService;
 

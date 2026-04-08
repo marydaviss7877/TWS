@@ -95,7 +95,7 @@ const RolesList = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div data-tutorial="role-header" className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ROLES</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -103,6 +103,7 @@ const RolesList = () => {
           </p>
         </div>
         <button
+          data-tutorial="role-create-btn"
           onClick={() => navigate(`/${tenantSlug}/org/roles/create`)}
           className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
         >
@@ -126,7 +127,7 @@ const RolesList = () => {
       </div>
 
       {/* Roles Table */}
-      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
+      <div data-tutorial="role-table" className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>

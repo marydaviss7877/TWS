@@ -56,7 +56,7 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (user && token) {
-      const socketUrl = process.env.REACT_APP_API_URL || process.env.REACT_APP_WSL_URL || 'http://localhost:5000';
+      const socketUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const newSocket = io(socketUrl, {
         auth: {
           token: token

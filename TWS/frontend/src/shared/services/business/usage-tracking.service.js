@@ -108,7 +108,9 @@ class UsageTrackingService {
       totalOverageCost: this.usageData.totalOverageCost || 0,
       metrics: {},
       alerts: this.checkUsageAlerts(),
-      plan: this.usageData.plan
+      plan: this.usageData.plan,
+      atRisk: !!this.usageData.atRisk,
+      atRiskMetrics: this.usageData.atRiskMetrics || []
     };
 
     Object.entries(usage).forEach(([metric, data]) => {

@@ -245,7 +245,7 @@ sudo certbot --nginx -d your-domain.com
 sudo certbot renew --dry-run
 ```
 
-### **Option 2: Cloud Deployment (Heroku/Railway/Render)**
+### **Option 2: Cloud Deployment (Heroku/Render)**
 
 #### **Heroku Deployment**
 
@@ -272,66 +272,6 @@ git push heroku main
 cd ../frontend
 git push heroku main
 ```
-
-#### **Railway Deployment**
-
-1. **Connect the repo** in Railway (GitHub-connected repo; use the project directory that contains `TWS/` or the repo root).
-
-2. **Backend service – choose one of these:**
-
-   **Option A – Set Root Directory (recommended)**  
-   Railway must build from the backend folder, not the repo root. Otherwise you will see **"Railpack could not determine how to build the app"** and the build logs will show the whole repo (e.g. `TWS/`, `.gitignore`, many `.md` files).
-   - Open your **backend service** → **Settings**.
-   - Set **Root Directory** to **`TWS/backend`** (or `backend` if your connected path is already inside `TWS`). This makes `package.json` and `server.js` the service root.
-   - **Start Command:** `npm start` (or leave empty; `TWS/backend/railway.toml` sets it).
-   - **Health check:** Path `/health`.
-   - Redeploy.
-
-   **Option B – Use Dockerfile from repo root**  
-   If you prefer not to set Root Directory:
-   - In the backend service **Settings**, set **Builder** to **DOCKERFILE**.
-   - Set **Dockerfile path** to **`Dockerfile.backend`** (this file is at the repo root and builds `TWS/backend`).
-   - Leave **Root Directory** blank so the build context is the repo root.
-   - Redeploy.
-
-3. **Environment variables** (set in Railway dashboard or via CLI):
-
-   | Variable | Required | Notes |
-   |----------|----------|--------|
-   | `NODE_ENV` | Yes | `production` |
-   | `MONGO_URI` | Yes | MongoDB connection string (e.g. Atlas) |
-   | `JWT_SECRET` | Yes | Must be set in production (no default) |
-   | `JWT_REFRESH_SECRET` | Yes | Must be set in production |
-   | `ENCRYPTION_MASTER_KEY` | Yes | Must be set in production |
-   | `CORS_ORIGIN` | Recommended | Frontend URL (e.g. `https://your-app.up.railway.app`) |
-   | `SOCKET_CORS_ORIGIN` | Recommended | Same as CORS_ORIGIN for Socket.io |
-   | `REDIS_DISABLED` | **Recommended** | Set to `true` if you are not using Redis (avoids ECONNREFUSED on port 6379). Required when no Redis plugin is added. |
-   | `REDIS_HOST`, `REDIS_PORT` | Optional | Only if using Railway Redis plugin (leave REDIS_DISABLED unset or false). |
-
-   `PORT` is set by Railway automatically; do not set it manually.
-
-4. **Deploy:** Push to the connected branch; Railway builds and runs from the backend root. Confirm logs show "TWS Backend Server running on port &lt;PORT&gt;" and `GET /health` returns 200. Copy the backend’s **public URL** (e.g. `https://your-backend.up.railway.app`) for the frontend.
-
-5. **Frontend service (portal)**  
-   Add a second service in the same Railway project for the React app:
-   - **New Service** → deploy from the **same GitHub repo**.
-   - **Root Directory:** Set to **`TWS/frontend`** (or use **Builder** = **DOCKERFILE** and **Dockerfile path** = **`Dockerfile.frontend`** with Root Directory blank).
-   - **Build Command:** `npm run build` (or leave default; `TWS/frontend/railway.toml` sets it).
-   - **Start Command:** `npm run start:prod` (serves the built app on `PORT`).
-   - **Variables** (required for build):
-     - **`REACT_APP_API_URL`** = your **backend URL** from step 4 (e.g. `https://your-backend.up.railway.app`). No trailing slash.  
-     This is baked in at build time, so set it before the first deploy and redeploy if you change the backend URL.
-     - **`REACT_APP_WSL_URL`** (optional): If Railway suggests it, set it to the **same backend URL** as above. The app uses it as a fallback for API and WebSocket; you can set either or both.
-     - The frontend `railway.toml` uses `CI=false` for the build so lint warnings do not fail the build. If it still fails, add variable **`CI`** = **`false`** in the frontend service.
-   - After deploy, open the frontend service’s **public URL** in the browser to use the portal.
-
-   **Backend CORS:** In the **backend** service variables, set **`CORS_ORIGIN`** and **`SOCKET_CORS_ORIGIN`** to the frontend’s public URL (e.g. `https://your-frontend.up.railway.app`) so the API and Socket.io accept requests from the portal.
-
-**Troubleshooting – "Railpack could not determine how to build the app"**  
-If build logs show this and list repo contents (e.g. `./`, `├── TWS/`, `├── .gitignore`, many `.md` files), Railway is building from the **repo root** and Railpack does not see a Node app. Fix by either: (1) Setting **Root Directory** to **`TWS/backend`** in the backend service Settings (Option A above), or (2) Using **Dockerfile.backend** with Builder = DOCKERFILE (Option B above).
-
-**Troubleshooting – "ECONNREFUSED 127.0.0.1:6379" or "ECONNREFUSED ::1:6379"**  
-The app is trying to connect to Redis on localhost; Railway has no Redis by default. Add variable **`REDIS_DISABLED`** = **`true`** in the backend service and redeploy. The backend will run without Redis (in-memory fallbacks for cache, token blacklist, and rate limiting).
 
 ### **Option 3: Docker Deployment**
 
@@ -542,7 +482,7 @@ Your Education System is now **LIVE** and **PRODUCTION-READY**!
 1. **Advanced Analytics** - AI-powered insights
 2. **Mobile Apps** - Native iOS/Android apps
 3. **Parent Portal** - Re-introduce with RBAC
-4. **Live Classes** - Video conferencing integration
+4. **Live Classes** - (Optional enhancement; video conferencing out of scope)
 5. **AI Tutoring** - Automated homework help
 6. **Blockchain Certificates** - Tamper-proof certificates
 7. **Biometric Attendance** - Face recognition

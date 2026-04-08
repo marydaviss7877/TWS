@@ -1,194 +1,285 @@
 const mongoose = require('mongoose');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const SubscriptionPlan = require('../src/models/SubscriptionPlan');
 
-// Connect to MongoDB
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/tws', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://subhan:U3SNm3nRjvtHMiN7@cluster0.rlfss7x.mongodb.net/wolfstack');
     console.log('MongoDB connected successfully');
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    console.error('MongoDB connection error:', error.message);
+    if (error.message && error.message.includes('ECONNREFUSED')) {
+      console.error('\nTip: MongoDB is not reachable at localhost:27017. Either start MongoDB locally or set MONGODB_URI in .env (e.g. your Atlas or app database URL) and run again.');
+    }
     process.exit(1);
   }
 };
 
-// Seed subscription plans
+const BYTES_2GB = 2 * 1024 * 1024 * 1024;
+const BYTES_5GB = 5 * 1024 * 1024 * 1024;
+const BYTES_10GB = 10 * 1024 * 1024 * 1024;
+
 const seedSubscriptionPlans = async () => {
   try {
-    // Clear existing plans
     await SubscriptionPlan.deleteMany({});
     console.log('Cleared existing subscription plans');
 
-    // Define subscription plans
     const plans = [
       {
-        name: 'Starter',
-        description: 'Perfect for small software houses getting started',
-        tier: 'starter',
-        price: {
-          monthly: 99,
-          yearly: 990
+        name: 'Trial',
+        slug: 'trial',
+        displayName: 'Trial',
+        description: '7-day trial with Starter limits (Software House ERP)',
+        type: 'basic',
+        requiresCustomQuote: false,
+        pricing: { monthly: 0, yearly: 0, currency: 'USD', billingCycle: 'monthly', setupFee: 0, discount: { yearlyDiscount: 0, promotionalDiscount: 0 } },
+        limits: {
+          users: { max: 10, unlimited: false },
+          projects: { max: 20, unlimited: false },
+          storage: { max: BYTES_2GB, unlimited: false },
+          workspaces: { max: 3, unlimited: false },
+          clientAccounts: { max: 10, unlimited: false },
+          apiCalls: { max: 1000, unlimited: false },
+          integrations: { max: 3, unlimited: false },
+          customFields: { max: 5, unlimited: false },
+          automation: { max: 10, unlimited: false }
         },
         features: {
-          maxUsers: 10,
-          maxProjects: 5,
-          maxClients: 20,
-          storage: '10GB',
-          support: 'email',
-          analytics: 'basic',
-          integrations: ['github'],
-          customBranding: false,
+          basicProjectManagement: true,
+          taskManagement: true,
+          teamCollaboration: true,
+          fileSharing: true,
+          advancedAnalytics: false,
+          customFields: false,
+          automation: false,
+          integrations: false,
           apiAccess: false,
+          webhooks: false,
           whiteLabeling: false,
+          sso: false,
+          ldap: false,
+          auditLogs: false,
+          dataExport: false,
           prioritySupport: false,
-          dedicatedAccountManager: false
+          dedicatedSupport: false,
+          sla: false,
+          payroll: false,
+          customRoles: false,
+          reportsAdvanced: false,
+          hrAdvanced: false
         },
+        support: { level: 'email', responseTime: 48, channels: ['email'], businessHours: true, sla: { uptime: 99.5, responseTime: 48 } },
+        status: 'active'
+      },
+      {
+        name: 'Starter',
+        slug: 'starter',
+        displayName: 'Starter',
+        description: 'For small software houses getting started',
+        type: 'starter',
+        requiresCustomQuote: false,
+        pricing: { monthly: 25, yearly: 250, currency: 'USD', billingCycle: 'monthly', setupFee: 0, discount: { yearlyDiscount: 0, promotionalDiscount: 0 } },
         limits: {
-          projects: 5,
-          users: 10,
-          clients: 20,
-          storage: 10737418240, // 10GB in bytes
-          apiCalls: 1000,
-          exports: 10
+          users: { max: 10, unlimited: false },
+          projects: { max: 20, unlimited: false },
+          storage: { max: BYTES_2GB, unlimited: false },
+          workspaces: { max: 3, unlimited: false },
+          clientAccounts: { max: 10, unlimited: false },
+          apiCalls: { max: 1000, unlimited: false },
+          integrations: { max: 3, unlimited: false },
+          customFields: { max: 5, unlimited: false },
+          automation: { max: 10, unlimited: false }
         },
-        isActive: true,
-        isPopular: false
+        features: {
+          basicProjectManagement: true,
+          taskManagement: true,
+          teamCollaboration: true,
+          fileSharing: true,
+          advancedAnalytics: false,
+          customFields: false,
+          automation: false,
+          integrations: false,
+          apiAccess: false,
+          webhooks: false,
+          whiteLabeling: false,
+          sso: false,
+          ldap: false,
+          auditLogs: false,
+          dataExport: false,
+          prioritySupport: false,
+          dedicatedSupport: false,
+          sla: false,
+          payroll: false,
+          customRoles: false,
+          reportsAdvanced: false,
+          hrAdvanced: false
+        },
+        support: { level: 'email', responseTime: 48, channels: ['email'], businessHours: true, sla: { uptime: 99.5, responseTime: 48 } },
+        status: 'active'
+      },
+      {
+        name: 'Growth',
+        slug: 'growth',
+        displayName: 'Growth',
+        description: 'For growing software houses with more projects and clients',
+        type: 'growth',
+        requiresCustomQuote: false,
+        pricing: { monthly: 75, yearly: 750, currency: 'USD', billingCycle: 'monthly', setupFee: 0, discount: { yearlyDiscount: 0, promotionalDiscount: 0 } },
+        limits: {
+          users: { max: 30, unlimited: false },
+          projects: { max: -1, unlimited: true },
+          storage: { max: BYTES_5GB, unlimited: false },
+          workspaces: { max: 10, unlimited: false },
+          clientAccounts: { max: 30, unlimited: false },
+          apiCalls: { max: 5000, unlimited: false },
+          integrations: { max: 5, unlimited: false },
+          customFields: { max: 10, unlimited: false },
+          automation: { max: 25, unlimited: false }
+        },
+        features: {
+          basicProjectManagement: true,
+          taskManagement: true,
+          teamCollaboration: true,
+          fileSharing: true,
+          advancedAnalytics: true,
+          customFields: true,
+          automation: true,
+          integrations: true,
+          apiAccess: false,
+          webhooks: false,
+          whiteLabeling: false,
+          sso: false,
+          ldap: false,
+          auditLogs: false,
+          dataExport: true,
+          prioritySupport: false,
+          dedicatedSupport: false,
+          sla: false,
+          payroll: true,
+          customRoles: true,
+          reportsAdvanced: true,
+          hrAdvanced: true
+        },
+        support: { level: 'email', responseTime: 24, channels: ['email', 'chat'], businessHours: true, sla: { uptime: 99.5, responseTime: 24 } },
+        status: 'active'
       },
       {
         name: 'Professional',
-        description: 'Ideal for growing software houses with multiple projects',
-        tier: 'professional',
-        price: {
-          monthly: 299,
-          yearly: 2990
+        slug: 'professional',
+        displayName: 'Professional',
+        description: 'For established software houses with advanced needs',
+        type: 'professional',
+        requiresCustomQuote: false,
+        pricing: { monthly: 175, yearly: 1750, currency: 'USD', billingCycle: 'monthly', setupFee: 0, discount: { yearlyDiscount: 0, promotionalDiscount: 0 } },
+        limits: {
+          users: { max: 75, unlimited: false },
+          projects: { max: -1, unlimited: true },
+          storage: { max: BYTES_10GB, unlimited: false },
+          workspaces: { max: -1, unlimited: true },
+          clientAccounts: { max: -1, unlimited: true },
+          apiCalls: { max: 50000, unlimited: false },
+          integrations: { max: 10, unlimited: false },
+          customFields: { max: 20, unlimited: false },
+          automation: { max: 50, unlimited: false }
         },
         features: {
-          maxUsers: 50,
-          maxProjects: 25,
-          maxClients: 100,
-          storage: '100GB',
-          support: 'priority',
-          analytics: 'advanced',
-          integrations: ['github', 'jira', 'trello'],
-          customBranding: true,
+          basicProjectManagement: true,
+          taskManagement: true,
+          teamCollaboration: true,
+          fileSharing: true,
+          advancedAnalytics: true,
+          customFields: true,
+          automation: true,
+          integrations: true,
           apiAccess: true,
+          webhooks: true,
           whiteLabeling: false,
+          sso: false,
+          ldap: false,
+          auditLogs: true,
+          dataExport: true,
           prioritySupport: true,
-          dedicatedAccountManager: false
+          dedicatedSupport: false,
+          sla: false,
+          payroll: true,
+          customRoles: true,
+          reportsAdvanced: true,
+          hrAdvanced: true
         },
-        limits: {
-          projects: 25,
-          users: 50,
-          clients: 100,
-          storage: 107374182400, // 100GB in bytes
-          apiCalls: 10000,
-          exports: 100
-        },
-        isActive: true,
-        isPopular: true
+        support: { level: 'priority', responseTime: 4, channels: ['email', 'chat'], businessHours: true, sla: { uptime: 99.5, responseTime: 4 } },
+        status: 'active'
       },
       {
         name: 'Enterprise',
-        description: 'For large software houses with complex needs',
-        tier: 'enterprise',
-        price: {
-          monthly: 799,
-          yearly: 7990
+        slug: 'enterprise',
+        displayName: 'Enterprise',
+        description: 'Custom solutions for large software houses',
+        type: 'enterprise',
+        requiresCustomQuote: true,
+        pricing: { monthly: null, yearly: null, currency: 'USD', billingCycle: 'monthly', setupFee: 0, discount: { yearlyDiscount: 0, promotionalDiscount: 0 } },
+        limits: {
+          users: { max: -1, unlimited: true },
+          projects: { max: -1, unlimited: true },
+          storage: { max: -1, unlimited: true },
+          workspaces: { max: -1, unlimited: true },
+          clientAccounts: { max: -1, unlimited: true },
+          apiCalls: { max: -1, unlimited: true },
+          integrations: { max: -1, unlimited: true },
+          customFields: { max: -1, unlimited: true },
+          automation: { max: -1, unlimited: true }
         },
         features: {
-          maxUsers: 200,
-          maxProjects: 100,
-          maxClients: 500,
-          storage: '1TB',
-          support: 'dedicated',
-          analytics: 'enterprise',
-          integrations: ['github', 'jira', 'trello', 'azure', 'aws'],
-          customBranding: true,
+          basicProjectManagement: true,
+          taskManagement: true,
+          teamCollaboration: true,
+          fileSharing: true,
+          advancedAnalytics: true,
+          customFields: true,
+          automation: true,
+          integrations: true,
           apiAccess: true,
+          webhooks: true,
           whiteLabeling: true,
+          sso: true,
+          ldap: true,
+          auditLogs: true,
+          dataExport: true,
           prioritySupport: true,
-          dedicatedAccountManager: true
+          dedicatedSupport: true,
+          sla: true,
+          payroll: true,
+          customRoles: true,
+          reportsAdvanced: true,
+          hrAdvanced: true
         },
-        limits: {
-          projects: 100,
-          users: 200,
-          clients: 500,
-          storage: 1099511627776, // 1TB in bytes
-          apiCalls: 100000,
-          exports: 1000
-        },
-        isActive: true,
-        isPopular: false
-      },
-      {
-        name: 'Custom',
-        description: 'Tailored solutions for unique requirements',
-        tier: 'custom',
-        price: {
-          monthly: 0, // Custom pricing
-          yearly: 0
-        },
-        features: {
-          maxUsers: -1, // Unlimited
-          maxProjects: -1,
-          maxClients: -1,
-          storage: 'unlimited',
-          support: 'dedicated',
-          analytics: 'enterprise',
-          integrations: ['all'],
-          customBranding: true,
-          apiAccess: true,
-          whiteLabeling: true,
-          prioritySupport: true,
-          dedicatedAccountManager: true
-        },
-        limits: {
-          projects: -1, // Unlimited
-          users: -1,
-          clients: -1,
-          storage: -1,
-          apiCalls: -1,
-          exports: -1
-        },
-        isActive: true,
-        isPopular: false,
-        isCustom: true
+        support: { level: 'dedicated', responseTime: 0, channels: ['email', 'chat', 'phone'], businessHours: false, sla: { uptime: 99.9, responseTime: 0 } },
+        status: 'active'
       }
     ];
 
-    // Insert plans
-    const createdPlans = await SubscriptionPlan.insertMany(plans);
-    console.log(`Successfully created ${createdPlans.length} subscription plans`);
-
-    // Display created plans
-    createdPlans.forEach(plan => {
-      console.log(`- ${plan.name} (${plan.tier}): $${plan.price.monthly}/month`);
-    });
-
+    const created = await SubscriptionPlan.insertMany(plans);
+    console.log(`Created ${created.length} subscription plans: trial, starter, growth, professional, enterprise`);
+    created.forEach(p => console.log(`  - ${p.slug}: ${p.displayName}, storage ${p.limits.storage?.unlimited ? 'unlimited' : (p.limits.storage?.max / (1024**3)) + ' GB'}`));
   } catch (error) {
     console.error('Error seeding subscription plans:', error);
+    throw error;
   }
 };
 
-// Main execution
 const main = async () => {
   await connectDB();
   await seedSubscriptionPlans();
   await mongoose.connection.close();
-  console.log('Database connection closed');
+  console.log('Done.');
   process.exit(0);
 };
 
-// Run if called directly
 if (require.main === module) {
-  main().catch(error => {
-    console.error('Error in main execution:', error);
+  main().catch(err => {
+    console.error(err);
     process.exit(1);
   });
 }
 
 module.exports = { seedSubscriptionPlans };
-

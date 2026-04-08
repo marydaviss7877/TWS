@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   FunnelIcon,
   CheckCircleIcon,
@@ -22,6 +22,7 @@ import ProjectSelector from '../ProjectSelector';
 
 const ChangeRequestDashboard = () => {
   const { tenantSlug } = useParams();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get('projectId');
   const [changeRequests, setChangeRequests] = useState([]);
@@ -170,6 +171,7 @@ const ChangeRequestDashboard = () => {
               changeRequest={changeRequest}
               onAcknowledge={handleAcknowledge}
               onEvaluate={handleEvaluate}
+              onView={() => navigate(String(changeRequest._id || changeRequest.id))}
             />
           ))}
         </div>

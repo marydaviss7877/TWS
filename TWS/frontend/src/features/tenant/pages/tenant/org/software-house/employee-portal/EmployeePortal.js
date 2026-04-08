@@ -170,7 +170,7 @@ const EmployeePortal = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+      <div data-tutorial="ep-header" className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -197,7 +197,7 @@ const EmployeePortal = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
-          <div className="lg:w-64 flex-shrink-0">
+          <div data-tutorial="ep-sidebar" className="lg:w-64 flex-shrink-0">
             <nav className="space-y-1 bg-white rounded-lg shadow-sm p-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;

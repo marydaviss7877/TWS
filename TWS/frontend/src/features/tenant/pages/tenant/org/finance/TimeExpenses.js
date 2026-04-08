@@ -99,7 +99,17 @@ const TimeExpenses = () => {
       // Fetch projects
       try {
         const projectsData = await tenantApiService.getProjects(tenantSlug);
-        setProjects(projectsData || []);
+        if (Array.isArray(projectsData)) {
+          setProjects(projectsData);
+        } else if (projectsData && Array.isArray(projectsData.projects)) {
+          setProjects(projectsData.projects);
+        } else if (projectsData && Array.isArray(projectsData.data)) {
+          setProjects(projectsData.data);
+        } else if (projectsData?.data && Array.isArray(projectsData.data.projects)) {
+          setProjects(projectsData.data.projects);
+        } else {
+          setProjects([]);
+        }
       } catch (err) {
         console.error('Error fetching projects:', err);
         setProjects([]);
@@ -108,7 +118,15 @@ const TimeExpenses = () => {
       // Fetch employees (team members)
       try {
         const employeesData = await tenantApiService.getTeamMembers(tenantSlug);
-        setEmployees(employeesData || []);
+        if (Array.isArray(employeesData)) {
+          setEmployees(employeesData);
+        } else if (employeesData && Array.isArray(employeesData.members)) {
+          setEmployees(employeesData.members);
+        } else if (employeesData && Array.isArray(employeesData.data)) {
+          setEmployees(employeesData.data);
+        } else {
+          setEmployees([]);
+        }
       } catch (err) {
         console.error('Error fetching employees:', err);
         setEmployees([]);

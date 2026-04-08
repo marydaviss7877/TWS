@@ -129,20 +129,6 @@ const SystemAdmin = () => {
           </div>
 
           <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-            <h4 className="font-semibold text-white mb-3">Two-Factor Authentication</h4>
-            <div className="space-y-3">
-              <label className="flex items-center space-x-2">
-                <input type="checkbox" className="rounded" defaultChecked />
-                <span className="text-sm text-gray-200">Enable 2FA for all users</span>
-              </label>
-              <label className="flex items-center space-x-2">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm text-gray-200">Require 2FA for admin accounts</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
             <h4 className="font-semibold text-white mb-3">Session Security</h4>
             <div className="space-y-3">
               <div>

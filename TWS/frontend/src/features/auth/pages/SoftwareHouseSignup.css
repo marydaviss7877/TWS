@@ -1,0 +1,494 @@
+:root {
+    --sh-signup-bg: #050508;
+    --sh-signup-text: #FFFFFF;
+    --sh-signup-surface: #020203;
+    --sh-signup-accent: #06B6D4;
+    --sh-signup-secondary: #8B8BA8;
+    --sh-signup-border: rgba(255, 255, 255, 0.05);
+    --sh-signup-input-bg: rgba(255, 255, 255, 0.03);
+    --sh-signup-input-border: rgba(255, 255, 255, 0.08);
+    --sh-signup-placeholder: #52526A;
+    --sh-signup-mockup-bg: rgba(255, 255, 255, 0.02);
+}
+
+.sh-signup-container.day-mode {
+    --sh-signup-bg: #F8F8FC;
+    --sh-signup-text: #0F172A;
+    --sh-signup-surface: #FFFFFF;
+    --sh-signup-accent: #0891B2;
+    --sh-signup-secondary: #64748B;
+    --sh-signup-border: rgba(0, 0, 0, 0.05);
+    --sh-signup-input-bg: #FFFFFF;
+    --sh-signup-input-border: #E2E8F0;
+    --sh-signup-placeholder: #94A3B8;
+    --sh-signup-mockup-bg: rgba(0, 0, 0, 0.02);
+}
+
+.sh-signup-container {
+    background-color: var(--sh-signup-bg);
+    color: var(--sh-signup-text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    overflow-x: hidden;
+    transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* Theme Toggle Placement */
+.sh-day-mode-toggle {
+    position: absolute;
+    top: 1.75rem;
+    right: 1.75rem;
+    z-index: 100;
+}
+
+/* Left Section - Form Area */
+.sh-signup-left {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+    z-index: 10;
+    background: radial-gradient(circle at 0% 0%, rgba(6, 182, 212, 0.05) 0%, transparent 50%);
+}
+
+.sh-signup-wrapper {
+    max-width: 32rem;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.sh-signup-heading {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+}
+
+.sh-signup-subtext {
+    font-size: 0.875rem;
+    color: var(--sh-signup-secondary);
+    margin-bottom: 2rem;
+}
+
+.sh-signup-error-box {
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    border-left: 4px solid #ef4444;
+    margin-bottom: 1.5rem;
+    color: #ef4444;
+    font-size: 0.875rem;
+    border-radius: 4px;
+}
+
+.sh-signup-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--sh-signup-secondary);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sh-signup-input-wrap {
+    position: relative;
+    margin-bottom: 1.25rem;
+}
+
+.sh-signup-input {
+    width: 100%;
+    padding: 0.875rem 1rem 0.875rem 2.75rem !important;
+    background: var(--sh-signup-input-bg) !important;
+    border: 1px solid var(--sh-signup-input-border) !important;
+    border-radius: 8px !important;
+    color: var(--sh-signup-text) !important;
+    font-size: 0.9375rem !important;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.sh-signup-input:focus {
+    border-color: var(--sh-signup-accent) !important;
+    background: var(--sh-signup-mockup-bg) !important;
+    box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.1) !important;
+    outline: none;
+}
+
+.sh-signup-icon {
+    position: absolute;
+    left: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: var(--sh-signup-secondary);
+    pointer-events: none;
+}
+
+.sh-signup-input-suffix {
+    padding: 0.875rem 1rem;
+    background: var(--sh-signup-mockup-bg);
+    border: 1px solid var(--sh-signup-input-border);
+    border-left: none;
+    color: var(--sh-signup-secondary);
+    font-size: 0.875rem;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.sh-signup-submit-btn {
+    width: 100%;
+    padding: 1rem;
+    background: var(--sh-signup-accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-top: 1rem;
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
+}
+
+.sh-signup-submit-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(6, 182, 212, 0.4);
+    filter: brightness(1.1);
+}
+
+.sh-signup-submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.sh-signup-link {
+    color: var(--sh-signup-accent);
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.sh-signup-link:hover {
+    color: #22d3ee;
+    text-decoration: underline;
+}
+
+.sh-signup-footer {
+    margin-top: 2.5rem;
+    font-size: 0.75rem;
+    color: var(--sh-signup-secondary);
+}
+
+/* Right Section - Premium Showcase */
+.sh-signup-right {
+    flex: 1.2;
+    background: #020203;
+    border-left: 1px solid var(--sh-signup-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.5s ease;
+}
+
+.day-mode .sh-signup-right {
+    background: #F1F5F9;
+}
+
+.sh-signup-right::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 40%);
+    z-index: 1;
+}
+
+.sh-showcase-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 32px;
+    padding: 3.5rem;
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    transition: all 0.5s ease;
+}
+
+.day-mode .sh-showcase-card {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(0, 0, 0, 0.05);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04);
+}
+
+/* Mockup Elements */
+.sh-module-mockup {
+    margin-bottom: 2.5rem;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.sh-mockup-card {
+    background: var(--sh-signup-surface);
+    border: 1px solid var(--sh-signup-border);
+    border-radius: 12px;
+    padding: 1rem;
+    width: 140px;
+    position: absolute;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.day-mode .sh-mockup-card {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+.sh-mockup-board .sh-mockup-card:nth-child(1) {
+    transform: translate(-40px, -20px) scale(0.9);
+    z-index: 1;
+}
+
+.sh-mockup-board .sh-mockup-card:nth-child(2) {
+    transform: translate(0, 0);
+    z-index: 3;
+}
+
+.sh-mockup-board .sh-mockup-card:nth-child(3) {
+    transform: translate(40px, 20px) scale(0.9);
+    z-index: 2;
+}
+
+.sh-mockup-card-header {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: var(--sh-signup-accent);
+    margin-bottom: 12px;
+    opacity: 0.6;
+}
+
+.sh-mockup-card-line {
+    height: 6px;
+    background: var(--sh-signup-secondary);
+    border-radius: 3px;
+    margin-bottom: 8px;
+    opacity: 0.3;
+}
+
+.sh-mockup-progress {
+    height: 4px;
+    background: var(--sh-signup-border);
+    border-radius: 2px;
+    margin-top: 12px;
+    overflow: hidden;
+}
+
+.sh-mockup-progress-fill {
+    height: 100%;
+    background: var(--sh-signup-accent);
+    border-radius: 2px;
+}
+
+/* List Mockup (HR) */
+.sh-mockup-list {
+    width: 100%;
+    max-width: 240px;
+    background: var(--sh-signup-surface);
+    border: 1px solid var(--sh-signup-border);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.sh-mockup-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-bottom: 1px solid var(--sh-signup-border);
+}
+
+.sh-mockup-list-item:last-child {
+    border-bottom: none;
+}
+
+.sh-mockup-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #06B6D4, #3B82F6);
+}
+
+.sh-mockup-item-text {
+    flex: 1;
+}
+
+.sh-mockup-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+}
+
+/* Chart Mockup (Finance) */
+.sh-mockup-chart {
+    width: 100%;
+    max-width: 260px;
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.sh-mockup-chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    height: 100px;
+    padding: 0 12px;
+}
+
+.sh-mockup-chart-bar {
+    flex: 1;
+    background: linear-gradient(to top, var(--sh-signup-accent), #3B82F6);
+    border-radius: 6px 6px 0 0;
+    min-height: 20px;
+    transition: height 1s ease;
+}
+
+/* Grid Mockup (Workspace) */
+.sh-mockup-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 180px;
+}
+
+.sh-mockup-grid-tile {
+    aspect-ratio: 1;
+    background: var(--sh-signup-surface);
+    border: 1px solid var(--sh-signup-border);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.sh-mockup-tile-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: var(--sh-signup-accent);
+    opacity: 0.4;
+}
+
+.sh-showcase-title {
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin-bottom: 1.25rem;
+    color: var(--sh-signup-text);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.sh-showcase-desc {
+    font-size: 1.125rem;
+    color: var(--sh-signup-secondary);
+    line-height: 1.6;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* Animations */
+@keyframes sh-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sh-animate-fade-up {
+    animation: sh-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Success State Styles */
+.sh-success-wrapper {
+    text-align: center;
+    padding: 4rem 0;
+}
+
+.sh-success-icon {
+    width: 64px;
+    height: 64px;
+    color: #22c55e;
+    margin: 0 auto 1.5rem;
+}
+
+/* Responsive Overrides */
+@media (max-width: 1200px) {
+    .sh-signup-heading {
+        font-size: 2.25rem;
+    }
+
+    .sh-showcase-card {
+        padding: 2.5rem;
+    }
+}
+
+@media (max-width: 1024px) {
+    .sh-signup-right {
+        display: none;
+    }
+
+    .sh-signup-container {
+        flex-direction: column;
+    }
+
+    .sh-signup-left {
+        padding: 4rem 2rem;
+    }
+
+    .sh-day-mode-toggle {
+        top: 1.5rem;
+        right: 1.5rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .sh-signup-heading {
+        font-size: 2rem;
+    }
+
+    .sh-signup-left {
+        padding: 2rem 1.5rem;
+    }
+
+    .sh-signup-form-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0 !important;
+    }
+}

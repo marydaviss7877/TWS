@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import axiosInstance from '../../shared/utils/axiosInstance';
+import { buildApiUrl } from '../config/api';
 import { isTenantWorkspacePath } from '../../shared/utils/tenantRoutes';
 import toast from 'react-hot-toast';
 
@@ -62,10 +63,9 @@ export const AuthProvider = ({ children }) => {
     const hasTenantData = isTenantRoute && !!localStorage.getItem('tenantData');
 
     const checkAuth = async () => {
-      // Skip auth check on public routes - user isn't logged in, avoid unnecessary 401
+      // Skip auth check on public routes to avoid unnecessary 401; do NOT clear user/token
+      // so that a successful login() does not get wiped before redirect/navigation
       if (isPublicRoute) {
-        setUser(null);
-        setToken(null);
         setLoading(false);
         return;
       }
@@ -155,29 +155,9 @@ export const AuthProvider = ({ children }) => {
   }, [location.pathname]); // Re-run when route changes (e.g. navigate from signup to dashboard)
 
   const login = useCallback(async (email, password) => {
-    console.log('🔵 LOGIN FUNCTION CALLED:', { email, hasPassword: !!password });
-    
     try {
-      // Normalize email to lowercase for consistent API calls
       const normalizedEmail = (email || '').toLowerCase().trim();
-      
-      console.log('🔵 Login attempt started:', {
-        originalEmail: email,
-        normalizedEmail: normalizedEmail,
-        environment: process.env.NODE_ENV
-      });
-      
-      // SECURITY FIX: Use real API authentication with cookies
-      const loginUrl = '/api/auth/login';
-      
-      console.log('🔵 Frontend Login Attempt:', {
-        email: normalizedEmail,
-        loginUrl: loginUrl,
-        hasPassword: !!password,
-        usingProxy: true,
-        proxyTarget: 'http://localhost:5000',
-        usingCookies: true // SECURITY FIX: Using HttpOnly cookies
-      });
+      const loginUrl = buildApiUrl('/api/auth/login');
       
       // SECURITY FIX: Use fetch with credentials: 'include' to send/receive cookies
       const response = await fetch(loginUrl, {
@@ -212,34 +192,11 @@ export const AuthProvider = ({ children }) => {
         throw new Error(text || `HTTP error! status: ${response.status}`);
       }
       
-      console.log('✅ Login Response:', {
-        status: response.status,
-        success: responseData.success,
-        hasUser: !!responseData.data?.user,
-        tokensInCookies: true // SECURITY FIX: Tokens are in HttpOnly cookies
-      });
-      
       if (response.ok && responseData.success) {
         const { user } = responseData.data;
-        
-        // Ensure id field is set from _id for frontend compatibility
-        if (user._id && !user.id) {
-          user.id = user._id.toString();
-        }
-        
-        console.log('🔍 User data from backend:', {
-          userId: user?.id || user?._id,
-          email: user?.email,
-          role: user?.role,
-          tenantId: user?.tenantId,
-          fullUser: user
-        });
-        
-        // SECURITY FIX: Don't store tokens in localStorage - they're in HttpOnly cookies
-        // No localStorage - always fetch fresh from cloud database
-        setToken('cookie-based'); // Placeholder - actual token is in HttpOnly cookie
+        if (user._id && !user.id) user.id = user._id.toString();
+        setToken('cookie-based');
         setUser(user);
-        
         return { success: true, user };
       } else {
         const errorMessage = responseData.message || 'Login failed';
@@ -248,30 +205,65 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: errorMessage };
       }
     } catch (error) {
-      console.error('❌ Login error:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
-      
       let message = 'Login failed';
-      
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        message = 'Network error. Please check if backend server is running on port 5000.';
+        message = 'Network error. Please check if backend server is running.';
       } else if (error.message) {
         message = error.message;
       }
-      
       toast.error(message);
       return { success: false, error: message };
     }
   }, []);
 
 
+  const loginSupraAdmin = useCallback(async (email, password) => {
+    try {
+      const normalizedEmail = (email || '').toLowerCase().trim();
+      const response = await fetch(buildApiUrl('/api/auth/supra-admin/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail, password }),
+        credentials: 'include'
+      });
+
+      let responseData;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        responseData = await response.json();
+      } else {
+        const text = await response.text();
+        if (response.status === 429) throw new Error('Too many login attempts. Please wait and try again.');
+        throw new Error(text || `HTTP error! status: ${response.status}`);
+      }
+
+      if (response.ok && responseData.success) {
+        const { user } = responseData.data;
+        if (user._id && !user.id) user.id = user._id.toString();
+        setToken('cookie-based');
+        setUser(user);
+        return { success: true, user };
+      } else {
+        const errorMessage = responseData.message || 'Login failed';
+        toast.error(errorMessage);
+        return { success: false, error: errorMessage };
+      }
+    } catch (error) {
+      let message = 'Login failed';
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        message = 'Network error. Please check if backend server is running.';
+      } else if (error.message) {
+        message = error.message;
+      }
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       // SECURITY FIX: Call backend logout endpoint with credentials to clear cookies
-      await fetch('/api/auth/logout', {
+      await fetch(buildApiUrl('/api/auth/logout'), {
         method: 'POST',
         credentials: 'include' // SECURITY FIX: Include cookies
       });
@@ -302,7 +294,7 @@ export const AuthProvider = ({ children }) => {
   const refreshToken = useCallback(async () => {
     try {
       // SECURITY FIX: Refresh token using cookies (credentials: 'include')
-      const response = await fetch('/api/auth/refresh', {
+      const response = await fetch(buildApiUrl('/api/auth/refresh'), {
         method: 'POST',
         credentials: 'include', // SECURITY FIX: Include cookies
         headers: {
@@ -364,13 +356,14 @@ export const AuthProvider = ({ children }) => {
     user: memoizedUser,
     loading,
     login,
+    loginSupraAdmin,
     logout,
     refreshToken,
     updateUser,
     setAuthData,
     hasPermission,
     hasRole
-  }), [memoizedUser, loading, login, logout, refreshToken, updateUser, setAuthData, hasPermission, hasRole]);
+  }), [memoizedUser, loading, login, loginSupraAdmin, logout, refreshToken, updateUser, setAuthData, hasPermission, hasRole]);
 
   return (
     <AuthContext.Provider value={value}>

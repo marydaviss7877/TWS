@@ -128,7 +128,7 @@ const HROverview = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div data-tutorial="hr-header" className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
             HR Management
@@ -146,6 +146,7 @@ const HROverview = () => {
             <span className="font-medium">View All</span>
           </button>
           <button
+            data-tutorial="hr-add-btn"
             onClick={() => navigate(`/${tenantSlug}/org/hr/employees/create`)}
             className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white"
           >
@@ -156,7 +157,7 @@ const HROverview = () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
+      <div data-tutorial="hr-metrics" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-glow-lg">
@@ -207,7 +208,7 @@ const HROverview = () => {
       </div>
 
       {/* Attendance Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div data-tutorial="hr-attendance" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-card-premium p-6 xl:p-8 hover-glow">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white">Attendance Overview</h3>

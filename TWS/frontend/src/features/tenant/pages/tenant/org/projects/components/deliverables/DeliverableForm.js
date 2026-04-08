@@ -34,6 +34,27 @@ const DeliverableForm = ({ isOpen, onClose, deliverable, projectId, onSuccess })
   const [newCriterion, setNewCriterion] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  // Project selector — used when no projectId prop is provided
+  const [selectedProjectId, setSelectedProjectId] = useState(projectId || '');
+  const [projects, setProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+
+  // Fetch projects list when no projectId prop is supplied
+  useEffect(() => {
+    if (isOpen && !projectId && tenantSlug) {
+      setProjectsLoading(true);
+      tenantProjectApiService.getProjects(tenantSlug)
+        .then((data) => {
+          const list = Array.isArray(data) ? data : (data?.data || data?.projects || []);
+          setProjects(list);
+        })
+        .catch(() => setProjects([]))
+        .finally(() => setProjectsLoading(false));
+    }
+    if (projectId) {
+      setSelectedProjectId(projectId);
+    }
+  }, [isOpen, projectId, tenantSlug]);
 
   useEffect(() => {
     if (deliverable) {
@@ -112,10 +133,16 @@ const DeliverableForm = ({ isOpen, onClose, deliverable, projectId, onSuccess })
       return;
     }
 
+    // If no projectId prop and no project selected, ask user to pick one
+    if (!projectId && !selectedProjectId) {
+      setErrors({ project: 'Please select a project for this deliverable' });
+      return;
+    }
+
     setLoading(true);
     try {
       const deliverableData = {
-        project_id: projectId,
+        ...(selectedProjectId ? { project_id: selectedProjectId } : {}),
         name: formData.name.trim(),
         description: formData.description || null,
         start_date: formData.start_date,
@@ -149,9 +176,9 @@ const DeliverableForm = ({ isOpen, onClose, deliverable, projectId, onSuccess })
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-label={deliverable ? 'Edit Deliverable' : 'Create Deliverable'}>
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose}></div>
+        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" aria-hidden="true" onClick={onClose}></div>
 
         <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
           <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
@@ -168,6 +195,36 @@ const DeliverableForm = ({ isOpen, onClose, deliverable, projectId, onSuccess })
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Project Selector — shown only when no projectId prop is passed */}
+              {!projectId && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Project <span className="text-red-500">*</span>
+                  </label>
+                  {projectsLoading ? (
+                    <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 text-sm">
+                      Loading projects…
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedProjectId}
+                      onChange={(e) => setSelectedProjectId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">— Select a project —</option>
+                      {projects.map((p) => (
+                        <option key={p._id || p.id} value={p._id || p.id}>
+                          {p.name || p.title || '(Unnamed)'}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {errors.project && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.project}</p>
+                  )}
+                </div>
+              )}
+
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

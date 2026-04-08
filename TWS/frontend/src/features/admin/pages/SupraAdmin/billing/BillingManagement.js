@@ -140,7 +140,9 @@ const BillingManagement = () => {
         },
         monthlyTrend: data.monthlyTrend || [],
         planDistribution: data.planDistribution || {},
-        topCustomers: data.topCustomers || []
+        topCustomers: data.topCustomers || [],
+        billingEligibleCount: data.billingEligibleCount,
+        totalTenantCount: data.totalTenantCount
       });
     } catch (error) {
       message.error('Failed to fetch billing data');
@@ -802,17 +804,20 @@ const BillingManagement = () => {
 
   const planDistribution = billingData?.planDistribution ? [
     { name: 'Trial', value: billingData.planDistribution.trial },
-    { name: 'Basic', value: billingData.planDistribution.basic },
+    { name: 'Starter', value: billingData.planDistribution.starter },
+    { name: 'Growth', value: billingData.planDistribution.growth },
     { name: 'Professional', value: billingData.planDistribution.professional },
     { name: 'Enterprise', value: billingData.planDistribution.enterprise }
-  ] : [];
+  ].filter((e) => e.value !== undefined && e.value !== null) : [];
+  const billingEligibleCount = billingData?.billingEligibleCount ?? null;
+  const totalTenantCount = billingData?.totalTenantCount ?? null;
 
   return (
     <div style={{ padding: '24px' }}>
-      {/* Pricing Info Banner */}
+      {/* Pricing Info Banner — Software House only */}
       <Alert
-        message="Platform Billing: $10/org • 7 Days Free Trial"
-        description="All tenants and organizations are billed $10/month flat rate. New signups receive 7 days free trial across all categories (Software House, Education, Healthcare, Business, Warehouse)."
+        message="Billing and plans: Software House ERP only"
+        description="Billing and subscription plans apply only to Software House ERP. New Software House tenants receive a 7-day free trial (Starter limits). Other ERP categories are not billed; plan shows N/A. Storage: Starter 2 GB, Growth 5 GB, Professional 10 GB, Enterprise Custom."
         type="info"
         showIcon
         icon={<DollarOutlined />}

@@ -1,0 +1,363 @@
+/**
+ * TWS Finance page — Professional Dark SaaS design system
+ * Scoped under .tws-finance-page so it does not affect the rest of the app.
+ */
+
+.tws-finance-page {
+  --tws-bg-primary: #0A0A0F;
+  --tws-bg-secondary: #111118;
+  --tws-surface: #1A1A24;
+  --tws-border: #2A2A38;
+  --tws-accent: #4F6EF7;
+  --tws-accent-hover: #6B85FF;
+  --tws-text-primary: #F0F0F8;
+  --tws-text-secondary: #8B8BA8;
+  --tws-text-tertiary: #52526A;
+  --tws-success: #22C55E;
+  --tws-warning: #F59E0B;
+  --tws-danger: #EF4444;
+}
+
+/* Subtle dot-grid background */
+.tws-finance-page.tws-dot-grid::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle,
+    var(--tws-border) 1px,
+    transparent 1px
+  );
+  background-size: 32px 32px;
+  opacity: 0.4;
+  z-index: 0;
+}
+
+.tws-finance-page .tws-hero-glow {
+  position: absolute;
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(
+    ellipse,
+    rgba(79, 110, 247, 0.2) 0%,
+    transparent 70%
+  );
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.tws-finance-page .tws-path-tag {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--tws-accent);
+  background: rgba(79, 110, 247, 0.08);
+  border: 1px solid rgba(79, 110, 247, 0.2);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+/* Chart of Accounts screenshot mock — light UI inside dark page */
+.tws-finance-page .tws-coa-screenshot {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-header-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-header-title svg {
+  color: #22c55e;
+  width: 22px;
+  height: 22px;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: #fff;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-row:last-child {
+  border-bottom: none;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-row .tws-coa-expand {
+  color: #94a3b8;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-row .tws-coa-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #475569;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-code {
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  color: #334155;
+  min-width: 44px;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-name {
+  font-weight: 600;
+  color: #0f172a;
+  flex: 1;
+  min-width: 0;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-type-pill {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-type-asset { background: #dcfce7; color: #166534; }
+.tws-finance-page .tws-coa-screenshot .tws-coa-type-liability { background: #fee2e2; color: #991b1b; }
+.tws-finance-page .tws-coa-screenshot .tws-coa-type-equity { background: #dbeafe; color: #1e40af; }
+.tws-finance-page .tws-coa-screenshot .tws-coa-type-revenue { background: #f3e8ff; color: #6b21a8; }
+.tws-finance-page .tws-coa-screenshot .tws-coa-type-expense { background: #ffedd5; color: #c2410c; }
+.tws-finance-page .tws-coa-screenshot .tws-coa-normal {
+  font-size: 12px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-desc {
+  font-size: 13px;
+  color: #64748b;
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-actions button {
+  padding: 4px;
+  border-radius: 6px;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-actions button:hover {
+  color: #64748b;
+  background: #f1f5f9;
+}
+.tws-finance-page .tws-coa-screenshot .tws-coa-actions svg {
+  width: 16px;
+  height: 16px;
+}
+@media (max-width: 768px) {
+  .tws-finance-page .tws-coa-screenshot .tws-coa-row {
+    flex-wrap: wrap;
+  }
+  .tws-finance-page .tws-coa-screenshot .tws-coa-desc {
+    max-width: 100%;
+  }
+}
+
+/* Shared screenshot mock — light UI for AR, AP, Cash Flow, Project Costing */
+.tws-finance-page .tws-screenshot {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+}
+.tws-finance-page .tws-screenshot .tws-ss-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+.tws-finance-page .tws-screenshot .tws-ss-header-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tws-finance-page .tws-screenshot .tws-ss-header-title svg {
+  color: #4F6EF7;
+  width: 20px;
+  height: 20px;
+}
+.tws-finance-page .tws-screenshot .tws-ss-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+.tws-finance-page .tws-screenshot .tws-ss-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 18px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+}
+.tws-finance-page .tws-screenshot .tws-ss-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.tws-finance-page .tws-screenshot .tws-ss-stat-label { color: #64748b; }
+.tws-finance-page .tws-screenshot .tws-ss-stat-value { font-weight: 600; color: #0f172a; }
+.tws-finance-page .tws-screenshot .tws-ss-table-wrap {
+  overflow-x: auto;
+}
+.tws-finance-page .tws-screenshot .tws-ss-table {
+  width: 100%;
+  min-width: 520px;
+  font-size: 13px;
+  border-collapse: collapse;
+}
+.tws-finance-page .tws-screenshot .tws-ss-table th {
+  text-align: left;
+  padding: 10px 14px;
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+}
+.tws-finance-page .tws-screenshot .tws-ss-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+.tws-finance-page .tws-screenshot .tws-ss-table tr:last-child td { border-bottom: none; }
+.tws-finance-page .tws-screenshot .tws-ss-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 9999px;
+}
+.tws-finance-page .tws-screenshot .tws-ss-pill-draft { background: #e2e8f0; color: #475569; }
+.tws-finance-page .tws-screenshot .tws-ss-pill-sent { background: #dbeafe; color: #1e40af; }
+.tws-finance-page .tws-screenshot .tws-ss-pill-paid { background: #dcfce7; color: #166534; }
+.tws-finance-page .tws-screenshot .tws-ss-pill-overdue { background: #fee2e2; color: #991b1b; }
+.tws-finance-page .tws-screenshot .tws-ss-pill-pending { background: #fef3c7; color: #92400e; }
+.tws-finance-page .tws-screenshot .tws-ss-pill-approved { background: #dcfce7; color: #166534; }
+.tws-finance-page .tws-screenshot .tws-ss-pill-inflow { background: #dcfce7; color: #166534; }
+.tws-finance-page .tws-screenshot .tws-ss-pill-outflow { background: #fee2e2; color: #991b1b; }
+.tws-finance-page .tws-screenshot .tws-ss-pill-active { background: #dcfce7; color: #166534; }
+.tws-finance-page .tws-screenshot .tws-ss-actions { display: flex; gap: 4px; color: #94a3b8; }
+.tws-finance-page .tws-screenshot .tws-ss-actions button {
+  padding: 4px; border-radius: 6px; border: none; background: transparent; cursor: default; color: inherit;
+}
+.tws-finance-page .tws-screenshot .tws-ss-actions button:hover { background: #f1f5f9; color: #64748b; }
+.tws-finance-page .tws-screenshot .tws-ss-actions svg { width: 14px; height: 14px; }
+.tws-finance-page .tws-screenshot .tws-ss-positive { color: #166534; }
+.tws-finance-page .tws-screenshot .tws-ss-negative { color: #991b1b; }
+.tws-finance-page .tws-screenshot .tws-ss-mini-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 18px;
+}
+.tws-finance-page .tws-screenshot .tws-ss-mini-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #334155;
+}
+.tws-finance-page .tws-screenshot .tws-ss-mini-card svg { width: 18px; height: 18px; color: #4F6EF7; flex-shrink: 0; }
+
+/* ========== Software House Landing — same design system as Finance ========== */
+.tws-landing-page {
+  --tws-bg-primary: #0A0A0F;
+  --tws-bg-secondary: #111118;
+  --tws-surface: #1A1A24;
+  --tws-border: #2A2A38;
+  --tws-accent: #4F6EF7;
+  --tws-accent-hover: #6B85FF;
+  --tws-text-primary: #F0F0F8;
+  --tws-text-secondary: #8B8BA8;
+  --tws-text-tertiary: #52526A;
+  --tws-success: #22C55E;
+  --tws-warning: #F59E0B;
+  --tws-danger: #EF4444;
+}
+.tws-landing-page.tws-dot-grid::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--tws-border) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.4;
+  z-index: 0;
+}
+.tws-landing-page .tws-timeline-line {
+  background: linear-gradient(to bottom, var(--tws-accent), rgba(79, 110, 247, 0.5));
+}
+.tws-landing-page .tws-timeline-dot {
+  background: var(--tws-accent);
+  border-color: var(--tws-bg-primary);
+}
+.tws-landing-page nav a.tws-nav-link:hover { color: var(--tws-text-primary) !important; }
+.tws-landing-page nav a.tws-nav-link-finance:hover { color: var(--tws-accent) !important; }
+.tws-landing-page nav a.tws-nav-cta:hover { opacity: 0.95; background: var(--tws-accent-hover) !important; }
+
+/* ========== Software House Landing — Day Mode Tokens ========== */
+.tws-landing-page.day-mode {
+  --tws-bg-primary:      #F4F6FF;
+  --tws-bg-secondary:    #EBEEFC;
+  --tws-surface:         #FFFFFF;
+  --tws-border:          #CDD2EE;
+  --tws-accent:          #4F6EF7;
+  --tws-accent-hover:    #3B5AE8;
+  --tws-text-primary:    #0D0E24;
+  --tws-text-secondary:  #48506E;
+  --tws-text-tertiary:   #8890B0;
+  --tws-success:         #16A34A;
+  --tws-warning:         #D97706;
+  --tws-danger:          #DC2626;
+}
+
+.tws-landing-page.day-mode.tws-dot-grid::before {
+  opacity: 0.12;
+}
+
+.tws-landing-page.day-mode .tws-timeline-line {
+  background: linear-gradient(to bottom, var(--tws-accent), rgba(79, 110, 247, 0.3));
+}
+.tws-landing-page.day-mode .tws-timeline-dot {
+  background: var(--tws-accent);
+  border-color: var(--tws-bg-primary);
+}

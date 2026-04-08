@@ -60,10 +60,13 @@ const SENIORITY_LEVELS = [
 ];
 
 // Work model options
+// values must match workSchedule.type enum in Employee schema:
+// ['standard', 'flexible', 'remote', 'hybrid', 'shift']
 const WORK_MODELS = [
   { value: 'remote', label: 'Remote' },
   { value: 'hybrid', label: 'Hybrid' },
-  { value: 'on-site', label: 'On-site' }
+  { value: 'standard', label: 'On-site / Standard' },
+  { value: 'flexible', label: 'Flexible' }
 ];
 
 // Common tech skills for quick selection
@@ -79,7 +82,23 @@ const EmployeeCreate = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [tempPassword, setTempPassword] = useState(null);
   const [skillsInput, setSkillsInput] = useState('');
+  // Departments loaded from API; falls back to the hardcoded list
+  const [departmentOptions, setDepartmentOptions] = useState(SOFTWARE_HOUSE_DEPARTMENTS);
+
+  useEffect(() => {
+    tenantApiService.getDepartments(tenantSlug)
+      .then((depts) => {
+        if (Array.isArray(depts) && depts.length > 0) {
+          const names = depts.map((d) => d.name).filter(Boolean);
+          // Merge API departments with hardcoded ones so neither set is lost
+          const merged = [...new Set([...names, ...SOFTWARE_HOUSE_DEPARTMENTS])];
+          setDepartmentOptions(merged);
+        }
+      })
+      .catch(() => {}); // silent fallback — hardcoded list stays
+  }, [tenantSlug]);
 
   const [formData, setFormData] = useState({
     // Personal Information
@@ -96,6 +115,8 @@ const EmployeeCreate = () => {
     jobTitle: '',
     jobRole: '',
     department: '',
+    erpRole: '',          // ERP portal role (defaults to 'employee' on backend)
+    hrSubRole: '',        // Only relevant when erpRole === 'hr'
     seniorityLevel: 'mid',
     hireDate: '',
     contractType: 'full-time',
@@ -108,7 +129,7 @@ const EmployeeCreate = () => {
     githubUrl: '',
     linkedInUrl: '',
 
-    // Salary Information
+    // Salary Information (optional — backend defaults to 0)
     baseSalary: '',
     currency: 'USD',
     payFrequency: 'monthly',
@@ -152,8 +173,8 @@ const EmployeeCreate = () => {
     setSuccess(false);
 
     try {
-      if (!formData.firstName || !formData.lastName || !formData.email || !formData.jobTitle || !formData.department) {
-        setError('Please fill in all required fields: First Name, Last Name, Email, Job Title, Department.');
+      if (!formData.firstName || !formData.lastName || !formData.email || !formData.jobTitle) {
+        setError('Please fill in all required fields: First Name, Last Name, Email, and Job Title.');
         setLoading(false);
         return;
       }
@@ -165,30 +186,26 @@ const EmployeeCreate = () => {
         return;
       }
 
-      if (!formData.baseSalary || parseFloat(formData.baseSalary) < 0) {
-        setError('Please enter a valid base salary.');
-        setLoading(false);
-        return;
-      }
-
-      const employeeId = formData.employeeId || `EMP${Date.now()}`;
-
       const employeeData = {
-        employeeId,
+        // Send both fullName (combined) and firstName/lastName for backend flexibility
+        fullName: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.trim().toLowerCase(),
         ...(formData.password?.trim() ? { password: formData.password.trim() } : {}),
+        ...(formData.employeeId?.trim() ? { employeeId: formData.employeeId.trim() } : {}),
+        ...(formData.erpRole ? { erpRole: formData.erpRole } : {}),
+        ...(formData.erpRole === 'hr' && formData.hrSubRole ? { hrSubRole: formData.hrSubRole } : {}),
         phone: formData.phone?.trim() || undefined,
         dateOfBirth: formData.dateOfBirth || undefined,
         gender: formData.gender || undefined,
         jobTitle: formData.jobTitle.trim(),
-        department: formData.department.trim(),
+        ...(formData.department?.trim() ? { department: formData.department.trim() } : {}),
         hireDate: formData.hireDate || new Date().toISOString().split('T')[0],
         contractType: formData.contractType,
         workLocation: formData.workLocation?.trim() || undefined,
         salary: {
-          base: parseFloat(formData.baseSalary),
+          base: formData.baseSalary ? parseFloat(formData.baseSalary) : 0,
           currency: formData.currency,
           payFrequency: formData.payFrequency
         },
@@ -196,12 +213,15 @@ const EmployeeCreate = () => {
         employmentStatus: formData.employmentStatus,
         probationPeriod: formData.probationPeriod ? parseInt(formData.probationPeriod) : undefined,
         notes: formData.notes?.trim() || undefined,
-        // Software house specific
         careerDevelopment: {
-          careerLevel: formData.seniorityLevel
+          careerLevel: ['entry', 'junior', 'mid', 'senior', 'lead', 'principal', 'director', 'executive'].includes(formData.seniorityLevel)
+            ? formData.seniorityLevel
+            : 'mid'
         },
         workSchedule: {
-          type: formData.workModel,
+          type: ['standard', 'flexible', 'remote', 'hybrid', 'shift'].includes(formData.workModel)
+            ? formData.workModel
+            : 'hybrid',
           hoursPerWeek: 40,
           workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
           timezone: 'UTC'
@@ -211,26 +231,37 @@ const EmployeeCreate = () => {
           level: 'intermediate',
           category: 'technical'
         })),
-        performanceMetrics: {
-          costPerHour: formData.billingRateHourly ? parseFloat(formData.billingRateHourly) : undefined
-        },
+        ...(formData.billingRateHourly ? {
+          performanceMetrics: {
+            costPerHour: parseFloat(formData.billingRateHourly)
+          }
+        } : {}),
         githubUrl: formData.githubUrl?.trim() || undefined,
         linkedInUrl: formData.linkedInUrl?.trim() || undefined
       };
 
       const response = await tenantApiService.createEmployee(tenantSlug, employeeData);
 
-      if (response) {
+      if (response !== false) {
+        // Show temporary password banner if the backend auto-generated one
+        if (response?.temporaryPassword) {
+          setTempPassword(response.temporaryPassword);
+        }
         setSuccess(true);
-        setTimeout(() => {
-          navigate(`/${tenantSlug}/org/software-house/hr/employees`);
-        }, 2000);
+        if (!response?.temporaryPassword) {
+          // Navigate away immediately only when no temp password needs to be shown
+          setTimeout(() => {
+            navigate(`/${tenantSlug}/org/software-house/hr/employees`);
+          }, 2000);
+        }
       } else {
         setError('Failed to create employee. Please try again.');
       }
     } catch (err) {
       console.error('Error creating employee:', err);
-      setError(err?.message || 'Failed to create employee. Please check your connection and try again.');
+      // Extract the most useful error message from the API response
+      const apiMessage = err?.response?.data?.message || err?.message;
+      setError(apiMessage || 'Failed to create employee. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -258,11 +289,29 @@ const EmployeeCreate = () => {
 
       {success && (
         <div className="glass-card-premium p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-          <div className="flex items-center gap-3">
-            <CheckCircleIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
-            <div>
+          <div className="flex items-start gap-3">
+            <CheckCircleIcon className="w-6 h-6 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
               <p className="font-bold text-green-900 dark:text-green-100">Team member added successfully!</p>
-              <p className="text-sm text-green-700 dark:text-green-300">Redirecting to employee list...</p>
+              {tempPassword ? (
+                <>
+                  <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                    A temporary password was auto-generated. Share it with the new hire — they will be prompted to change it on first login.
+                  </p>
+                  <div className="mt-3 flex items-center gap-3 bg-white dark:bg-gray-800 border border-green-300 dark:border-green-700 rounded-xl px-4 py-3">
+                    <KeyIcon className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
+                    <span className="font-mono font-bold text-lg tracking-widest text-gray-900 dark:text-white">{tempPassword}</span>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/${tenantSlug}/org/software-house/hr/employees`)}
+                    className="mt-3 glass-button px-4 py-2 rounded-xl text-sm font-medium"
+                  >
+                    Go to Employee List
+                  </button>
+                </>
+              ) : (
+                <p className="text-sm text-green-700 dark:text-green-300">Redirecting to employee list...</p>
+              )}
             </div>
           </div>
         </div>
@@ -430,17 +479,16 @@ const EmployeeCreate = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Department / Team <span className="text-red-500">*</span>
+                Department / Team
               </label>
               <select
                 name="department"
                 value={formData.department}
                 onChange={handleChange}
-                required
                 className="glass-input w-full px-4 py-3 rounded-xl"
               >
-                <option value="">Select department</option>
-                {SOFTWARE_HOUSE_DEPARTMENTS.map((dept) => (
+                <option value="">Select department (optional)</option>
+                {departmentOptions.map((dept) => (
                   <option key={dept} value={dept}>
                     {dept}
                   </option>
@@ -492,6 +540,48 @@ const EmployeeCreate = () => {
                 placeholder="Auto-generated if empty"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Portal Access Role
+              </label>
+              <select
+                name="erpRole"
+                value={formData.erpRole}
+                onChange={handleChange}
+                className="glass-input w-full px-4 py-3 rounded-xl"
+              >
+                <option value="">Employee (default)</option>
+                <option value="manager">Manager</option>
+                <option value="project_manager">Project Manager</option>
+                <option value="hr">HR</option>
+                <option value="admin">Admin</option>
+                <option value="contractor">Contractor</option>
+              </select>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Determines what the team member can access in the portal. Can be changed later.
+              </p>
+            </div>
+            {formData.erpRole === 'hr' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  HR Sub-Role
+                </label>
+                <select
+                  name="hrSubRole"
+                  value={formData.hrSubRole}
+                  onChange={handleChange}
+                  className="glass-input w-full px-4 py-3 rounded-xl"
+                >
+                  <option value="">HR Manager (default)</option>
+                  <option value="manager">HR Manager — full HR access + payroll</option>
+                  <option value="executive">HR Executive — leave & attendance only</option>
+                  <option value="payroll_officer">Payroll Officer — payroll read/write</option>
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Fine-tunes payroll and leave access within the HR role.
+                </p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Hire Date <span className="text-red-500">*</span>
@@ -606,7 +696,7 @@ const EmployeeCreate = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Base Salary <span className="text-red-500">*</span>
+                Base Salary
               </label>
               <div className="relative">
                 <CurrencyDollarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -615,11 +705,10 @@ const EmployeeCreate = () => {
                   name="baseSalary"
                   value={formData.baseSalary}
                   onChange={handleChange}
-                  required
                   min="0"
                   step="0.01"
                   className="glass-input w-full pl-10 pr-4 py-3 rounded-xl"
-                  placeholder="0.00"
+                  placeholder="0.00 (can set later)"
                 />
               </div>
             </div>

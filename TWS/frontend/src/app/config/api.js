@@ -1,8 +1,7 @@
 // API Configuration
 // This file centralizes all API endpoints and configuration
 
-// REACT_APP_API_URL = backend API URL. REACT_APP_WSL_URL = same or WebSocket URL (Railway may suggest it).
-const getBaseUrl = () => process.env.REACT_APP_API_URL || process.env.REACT_APP_WSL_URL || 'http://localhost:5000';
+const getBaseUrl = () => process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const API_CONFIG = {
   BASE_URL: getBaseUrl(),

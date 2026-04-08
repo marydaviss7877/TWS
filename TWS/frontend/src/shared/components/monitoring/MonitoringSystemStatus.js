@@ -12,11 +12,9 @@ const MonitoringSystemStatus = () => {
   }, []);
 
   const checkSystemStatus = async () => {
-    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-    const wsBase = (process.env.REACT_APP_WS_URL || apiBase).replace(/^http/, 'ws');
     // Check backend health
     try {
-      const response = await axios.get(`${apiBase}/health`);
+      const response = await axios.get('http://localhost:5000/health');
       if (response.status === 200) {
         setBackendStatus('online');
         console.log('✅ Backend Health:', response.data);
@@ -28,7 +26,7 @@ const MonitoringSystemStatus = () => {
 
     // Check monitoring API
     try {
-      const response = await axios.get(`${apiBase}/api/standalone-monitoring/health`);
+      const response = await axios.get('http://localhost:5000/api/standalone-monitoring/health');
       setMonitoringStatus('online');
     } catch (error) {
       setMonitoringStatus('offline');
@@ -36,7 +34,7 @@ const MonitoringSystemStatus = () => {
 
     // Check WebSocket
     try {
-      const ws = new WebSocket(`${wsBase}/ws/monitoring`);
+      const ws = new WebSocket('ws://localhost:5000/ws/monitoring');
       ws.onopen = () => {
         setWebsocketStatus('online');
         ws.close();
@@ -105,7 +103,7 @@ const MonitoringSystemStatus = () => {
             <p className="text-sm">
               Status: <span className="font-medium">{websocketStatus.toUpperCase()}</span>
             </p>
-            <p className="text-sm mt-1">URL: {(process.env.REACT_APP_WS_URL || (process.env.REACT_APP_API_URL || 'http://localhost:5000').replace(/^http/, 'ws'))}/ws/monitoring</p>
+            <p className="text-sm mt-1">URL: ws://localhost:5000/ws/monitoring</p>
           </div>
 
           <div className={`p-6 rounded-lg border-2 ${getStatusColor(redisStatus)}`}>
