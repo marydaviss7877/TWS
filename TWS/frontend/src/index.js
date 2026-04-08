@@ -6,7 +6,7 @@ import './index.css';
 import App from './App';
 import { AuthProvider } from './app/providers/AuthContext';
 import { SocketProvider } from './app/providers/SocketContext';
-import ErrorBoundary from './shared/components/feedback/ErrorBoundary';
+import ErrorBoundary from './shared/components/ErrorBoundary';
 import { setupGlobalErrorHandling } from './shared/utils/errorHandler';
 import './shared/utils/debugExternalScripts'; // Auto-runs in development
 
