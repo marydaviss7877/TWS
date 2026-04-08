@@ -14,7 +14,10 @@
 
 import axios from 'axios';
 
-const getApiBaseUrl = () => process.env.REACT_APP_API_URL || '';
+// Always use relative URLs — requests go through the proxy (frontend/server.js)
+// so cookies stay on the same origin. Setting REACT_APP_API_URL here used to
+// send requests directly to the backend domain, breaking cookie auth in production.
+const getApiBaseUrl = () => '';
 
 // Use backend URL when set (production); empty in dev so proxy forwards /api/* to backend
 const axiosInstance = axios.create({

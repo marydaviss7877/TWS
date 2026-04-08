@@ -1,7 +1,10 @@
 // API Configuration
 // This file centralizes all API endpoints and configuration
 
-const getBaseUrl = () => process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Always use relative URLs so every request goes through the production proxy
+// (frontend/server.js), which forwards to BACKEND_URL. This keeps all cookies
+// on the same origin and prevents the 401 / auto-logout on portal load.
+const getBaseUrl = () => '';
 
 const API_CONFIG = {
   BASE_URL: getBaseUrl(),
