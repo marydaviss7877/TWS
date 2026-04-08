@@ -634,7 +634,7 @@ const Clients = () => {
     <ErrorBoundary message="Failed to load clients. Please refresh the page.">
       <div className="space-y-8">
         {/* Header Section - Premium Wolfstack Style */}
-        <div data-tutorial="cli-header" className="glass-card-premium p-8 text-center wolfstack-animate-fadeIn">
+        <div className="glass-card-premium p-8 text-center wolfstack-animate-fadeIn">
           <h1 className="text-4xl font-bold font-heading text-gray-900 dark:text-white tracking-tight mb-4">
             Client Management
           </h1>
@@ -647,7 +647,7 @@ const Clients = () => {
         <ClientMetrics metrics={clientMetrics} />
 
         {/* Clients Management Section - Premium Wolfstack Style */}
-        <div data-tutorial="cli-table" className="glass-card-premium p-8 wolfstack-animate-fadeIn">
+        <div className="glass-card-premium p-8 wolfstack-animate-fadeIn">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
             <div>
               <h2 className="text-2xl font-bold font-heading text-gray-900 dark:text-white tracking-tight mb-2">
@@ -658,7 +658,7 @@ const Clients = () => {
               </p>
             </div>
             <button
-              data-tutorial="cli-add-btn"
+             
               onClick={() => {
                 resetForm();
                 setIsClientModalOpen(true);
@@ -671,7 +671,7 @@ const Clients = () => {
           </div>
 
           {/* Enhanced Filters - Premium Wolfstack Style */}
-          <div data-tutorial="cli-filters" className="glass-card p-6 mb-8">
+          <div className="glass-card p-6 mb-8">
             <div className="flex flex-col lg:flex-row gap-4">
               {/* Search */}
               <div className="flex-1">

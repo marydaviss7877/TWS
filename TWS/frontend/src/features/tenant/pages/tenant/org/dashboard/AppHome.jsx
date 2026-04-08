@@ -23,8 +23,6 @@ import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext
 import { useTenantNav } from '../../../../contexts/TenantNavContext';
 import { APP_METADATA } from '../../../../../../constants/navigationConstants';
 import { cn } from '../../../../../../lib/utils';
-import { useTutorial } from '../../../../../tutorial/TutorialContext';
-
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getGreeting() {
   const h = new Date().getHours();
@@ -186,18 +184,8 @@ const AppHome = () => {
   const [search,    setSearch]    = useState('');
   const [mounted,   setMounted]   = useState(false);
   const searchRef = useRef(null);
-  const tutorial  = useTutorial();
 
   useEffect(() => { setMounted(true); }, []);
-
-  // Auto-start product tour on first visit for this user
-  useEffect(() => {
-    if (!user?.id || !tutorial) return;
-    if (!tutorial.isTutorialDone()) {
-      const t = setTimeout(() => tutorial.startTutorial(), 700);
-      return () => clearTimeout(t);
-    }
-  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keyboard shortcut: "/" focuses search
   useEffect(() => {
@@ -347,7 +335,7 @@ const AppHome = () => {
         )}
 
         {/* ── App grid ───────────────────────────────────────────────────────── */}
-        <div data-tutorial="app-grid">
+        <div>
           {q ? (
             /* ── Search results ── */
             visible.length > 0 ? (

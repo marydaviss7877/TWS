@@ -72,7 +72,7 @@
   },
   "scripts": {
     "start": "craco start",
-    "start:prod": "serve -s build -l ${PORT:-3000}",
+    "start:prod": "node server.js",
     "dev": "craco start",
     "build": "craco build",
     "build:ci": "CI=false craco build",

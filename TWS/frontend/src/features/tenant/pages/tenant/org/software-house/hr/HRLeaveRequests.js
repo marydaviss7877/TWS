@@ -101,7 +101,7 @@ const HRLeaveRequests = () => {
       </div>
 
       {/* Stats Grid */}
-      <div data-tutorial="hr-leave-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
         {statsData.map((stat, index) => (
           <div key={index} className="glass-card-premium p-5 xl:p-6 hover-lift">
             <div className="flex items-center gap-4">
@@ -122,7 +122,7 @@ const HRLeaveRequests = () => {
       </div>
 
       {/* Leave Requests Table */}
-      <div data-tutorial="hr-leave-table" className="glass-card-premium p-6 xl:p-8 hover-glow">
+      <div className="glass-card-premium p-6 xl:p-8 hover-glow">
         <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white mb-6">
           Pending Leave Requests
         </h3>

@@ -423,7 +423,7 @@ const MyWork = () => {
     <div className="space-y-5 animate-fade-in pb-8" onClick={() => setStatusMenu(null)}>
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div data-tutorial="mw-header" className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Work</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -439,7 +439,7 @@ const MyWork = () => {
             <ArrowPathIcon className="w-4 h-4" />
           </button>
           <button
-            data-tutorial="mw-add-btn"
+           
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-xl font-medium text-sm hover:opacity-90 transition-opacity"
           >
@@ -466,7 +466,7 @@ const MyWork = () => {
       )}
 
       {/* ── Stats ───────────────────────────────────────────────────────────── */}
-      <div data-tutorial="mw-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Total Tasks"  value={stats.totalTasks}     icon={ClipboardDocumentCheckIcon}
           iconBg="bg-blue-50 dark:bg-blue-900/30"    iconColor="text-blue-600 dark:text-blue-400" />
         <StatCard label="In Progress"  value={stats.inProgressTasks} icon={ClockIcon}
@@ -481,10 +481,10 @@ const MyWork = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
         {/* ── Task panel (left 2/3) ────────────────────────────────────────── */}
-        <div data-tutorial="mw-tasks" className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4">
 
           {/* Filter bar */}
-          <div data-tutorial="mw-filterbar" className="glass-card-premium p-3 space-y-3">
+          <div className="glass-card-premium p-3 space-y-3">
 
             {/* Search + priority + view toggle */}
             <div className="flex flex-wrap items-center gap-2">

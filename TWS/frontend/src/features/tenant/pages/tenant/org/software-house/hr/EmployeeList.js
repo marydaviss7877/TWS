@@ -213,7 +213,7 @@ const EmployeeList = () => {
         <InviteModal tenantSlug={tenantSlug} onClose={() => setShowInviteModal(false)} />
       )}
       {/* Header */}
-      <div data-tutorial="hr-emp-header" className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
             Employee Management
@@ -235,7 +235,7 @@ const EmployeeList = () => {
             <span className="font-medium">Invite by Email</span>
           </button>
           <button
-            data-tutorial="hr-add-btn"
+           
             onClick={() => navigate(`/${tenantSlug}/org/software-house/hr/employees/create`)}
             className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white"
           >
@@ -246,7 +246,7 @@ const EmployeeList = () => {
       </div>
 
       {/* Stats Grid */}
-      <div data-tutorial="hr-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
         {statsData.map((stat, index) => (
           <div key={index} className="glass-card-premium p-5 xl:p-6 hover-lift">
             <div className="flex items-center gap-4">
@@ -267,7 +267,7 @@ const EmployeeList = () => {
       </div>
 
       {/* Search */}
-      <div data-tutorial="hr-search" className="glass-card-premium p-6 hover-glow">
+      <div className="glass-card-premium p-6 hover-glow">
         <div className="relative">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
           <input
@@ -281,7 +281,7 @@ const EmployeeList = () => {
       </div>
 
       {/* Employee List */}
-      <div data-tutorial="hr-table" className="glass-card-premium p-6 xl:p-8 hover-glow">
+      <div className="glass-card-premium p-6 xl:p-8 hover-glow">
         <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white mb-6">
           All Employees ({filteredEmployees.length})
         </h3>

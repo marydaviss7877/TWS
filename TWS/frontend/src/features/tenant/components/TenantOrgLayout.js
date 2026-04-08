@@ -33,27 +33,9 @@ import SidebarNav from '../../../shared/components/navigation/SidebarNav';
 import Breadcrumbs from '../../../shared/components/navigation/Breadcrumbs';
 import { TenantPermissionsProvider } from '../contexts/TenantPermissionsContext';
 import { Sheet, SheetContent } from '../../../components/ui/sheet';
-import { TutorialProvider, useTutorial } from '../../tutorial/TutorialContext';
-import TutorialOverlay from '../../tutorial/TutorialOverlay';
-
 import './TenantOrgLayout.css';
 import '../styles/tenant-theme.css';
 import '../styles/tenant-tokens.css';
-
-// ── ModuleTourAutoTrigger ─────────────────────────────────────────────────────
-// Placed INSIDE TutorialProvider so it can call useTutorial().
-// Watches activeAppKey: when user enters a new module for the first time,
-// fires that module's tutorial after a short delay.
-const ModuleTourAutoTrigger = ({ activeAppKey, userId }) => {
-    const tutorial = useTutorial();
-    useEffect(() => {
-        if (!userId || !activeAppKey || !tutorial) return;
-        if (tutorial.isModuleTourDone(activeAppKey)) return;
-        const t = setTimeout(() => tutorial.startModuleTour(activeAppKey), 1200);
-        return () => clearTimeout(t);
-    }, [activeAppKey, userId]); // eslint-disable-line react-hooks/exhaustive-deps
-    return null;
-};
 
 const TenantOrgLayout = ({ children }) => {
     // ── Router ────────────────────────────────────────────────────────────────
@@ -211,10 +193,7 @@ const TenantOrgLayout = ({ children }) => {
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <TutorialProvider userId={user?.id}>
         <TenantThemeProvider>
-        {/* Auto-fires module tours when user enters each module for the first time */}
-        <ModuleTourAutoTrigger activeAppKey={activeAppKey} userId={user?.id} />
         <div
             className={`tenant-org-layout tenant-portal h-screen flex flex-col relative overflow-hidden bg-gradient-to-br from-clean-light-pure via-clean-light-soft to-primary-50/30 dark:from-glass-dark-deepest dark:via-glass-dark-deep dark:to-glass-dark-base ${themeTransition ? 'theme-transition' : ''}`}
             data-industry={tenant?.erpCategory || 'business'}
@@ -339,9 +318,7 @@ const TenantOrgLayout = ({ children }) => {
                 error:   { duration: 4000, style: { background: '#ef4444', color: '#fff' } },
             }}
         />
-        <TutorialOverlay />
         </TenantThemeProvider>
-        </TutorialProvider>
     );
 };
 

@@ -209,7 +209,7 @@ const TimeTracking = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div data-tutorial="tt-header">
+      <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
           <ClockIcon className="w-8 h-8 text-[#0078d4]" />
           Time Tracking
@@ -220,7 +220,7 @@ const TimeTracking = () => {
       </div>
 
       {/* Today's Summary */}
-      <div data-tutorial="tt-summary" className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -286,7 +286,7 @@ const TimeTracking = () => {
 
       {/* New Time Entry / Start Tracking */}
       {!activeTracking && (
-        <div data-tutorial="tt-log-btn" className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             Start Time Tracking
           </h2>

@@ -35,7 +35,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar';
 import { QUICK_ADD_ACTIONS, APP_METADATA } from '../../../constants/navigationConstants';
 import { cn } from '../../../lib/utils';
-import { useTutorial } from '../../tutorial/TutorialContext';
 
 const MAX_VISIBLE_TABS = 6;
 
@@ -89,9 +88,6 @@ const OdooTopBar = ({
   // Reset error state whenever the logo URL changes (e.g. after a fresh upload)
   useEffect(() => { setLogoError(false); }, [orgLogoUrl]);
 
-  // Tutorial replay hook (TutorialProvider is a parent in TenantOrgLayout)
-  const tutorial = useTutorial();
-
   // ── Sub-nav: split children into visible + overflow ────────────────────────
   const children = activeApp?.children ?? [];
   const visibleTabs  = children.slice(0, MAX_VISIBLE_TABS);
@@ -112,12 +108,11 @@ const OdooTopBar = ({
   const appMeta = activeApp ? (APP_METADATA[activeApp.key] ?? null) : null;
 
   return (
-    <header data-tutorial="top-bar" className="flex h-11 shrink-0 items-center gap-2 border-b border-gray-200 dark:border-gray-700/80 bg-white dark:bg-gray-900 px-2 sm:px-3 shadow-sm z-30 relative">
+    <header className="flex h-11 shrink-0 items-center gap-2 border-b border-gray-200 dark:border-gray-700/80 bg-white dark:bg-gray-900 px-2 sm:px-3 shadow-sm z-30 relative">
 
       {/* ── 1. Home / org logo ──────────────────────────────────────────── */}
       <button
         type="button"
-        data-tutorial="home-btn"
         onClick={() => navigate(`/${tenantSlug}/org/home`)}
         className="flex shrink-0 items-center gap-2 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         aria-label="Go to home"
@@ -239,7 +234,6 @@ const OdooTopBar = ({
 
         {/* Search */}
         <Button
-          data-tutorial="search-btn"
           variant="ghost"
           size="sm"
           onClick={onSearch}
@@ -265,7 +259,7 @@ const OdooTopBar = ({
         {onAddAction && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button data-tutorial="quick-add" size="sm" className="h-7 px-2 gap-1 text-xs">
+              <Button size="sm" className="h-7 px-2 gap-1 text-xs">
                 <PlusIcon className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">New</span>
               </Button>
@@ -309,22 +303,6 @@ const OdooTopBar = ({
           </Button>
         )}
 
-        {/* Replay tour */}
-        {tutorial?.startTutorial && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-gray-400 dark:text-gray-500 hover:text-primary-500 dark:hover:text-primary-400"
-            onClick={tutorial.startTutorial}
-            title="Replay product tour"
-            aria-label="Replay product tour"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM8.94 6.94a.75.75 0 11-1.061-1.061 3 3 0 112.871 5.026v.345a.75.75 0 01-1.5 0v-.5c0-.72.57-1.172 1.081-1.287A1.5 1.5 0 108.94 6.94zM10 15a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-            </svg>
-          </Button>
-        )}
-
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="h-7 w-7 relative" title="Notifications">
           <BellIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
@@ -334,7 +312,7 @@ const OdooTopBar = ({
         {/* Profile dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button data-tutorial="user-menu" variant="ghost" size="icon" className="h-7 w-7 rounded-full" aria-label="User menu">
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" aria-label="User menu">
               <Avatar className="h-6 w-6">
                 {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt={displayName} />}
                 <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary-500 to-accent-500 text-white">

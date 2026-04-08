@@ -157,7 +157,7 @@ const UserList = () => {
   return (
     <div>
       <div className="mb-6">
-        <div data-tutorial="users-header" className="flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
             <p className="text-gray-600">
@@ -165,7 +165,7 @@ const UserList = () => {
             </p>
           </div>
           <button
-            data-tutorial="users-add-btn"
+           
             onClick={() => navigate(`/${tenantSlug}/org/users/create`)}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
           >
@@ -177,7 +177,7 @@ const UserList = () => {
 
       <div className="bg-white rounded-lg shadow">
         {/* Filters */}
-        <div data-tutorial="users-filters" className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <div className="relative">
@@ -226,7 +226,7 @@ const UserList = () => {
         </div>
 
         {/* Table */}
-        <div data-tutorial="users-table" className="overflow-x-auto">
+        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>

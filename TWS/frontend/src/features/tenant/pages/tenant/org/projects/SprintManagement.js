@@ -144,7 +144,7 @@ const SprintManagement = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div data-tutorial="proj-sprint-header" className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
             Sprint Management
@@ -154,7 +154,7 @@ const SprintManagement = () => {
           </p>
         </div>
         <button
-          data-tutorial="proj-sprint-btn"
+         
           onClick={() => setShowCreateModal(true)}
           className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white"
         >
@@ -165,7 +165,7 @@ const SprintManagement = () => {
 
       {/* Active Sprint Overview */}
       {activeSprint && (
-        <div data-tutorial="proj-sprint-card" className="glass-card-premium p-6 hover-glow">
+        <div className="glass-card-premium p-6 hover-glow">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">

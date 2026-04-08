@@ -272,7 +272,7 @@ const tenantApiService = {
   },
 
   // Get project profitability (Software House specific)
-  getProjectProfitability: async (tenantSlug, params = {}) => {
+  getSHProjectProfitability: async (tenantSlug, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
     return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/projects/profitability?${queryParams}`);
   },
@@ -341,14 +341,14 @@ const tenantApiService = {
   },
 
   // Record invoice payment (Software House specific)
-  recordInvoicePayment: async (tenantSlug, invoiceId, paymentData) => {
+  recordSHInvoicePayment: async (tenantSlug, invoiceId, paymentData) => {
     return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/invoices/${invoiceId}/payments`, {
       method: 'POST',
       body: JSON.stringify(paymentData)
     });
   },
 
-  // Record payment (alias for recordInvoicePayment) (Software House specific)
+  // Record payment (alias for recordSHInvoicePayment) (Software House specific)
   recordPayment: async (tenantSlug, invoiceId, paymentData) => {
     return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/invoices/${invoiceId}/payments`, {
       method: 'POST',
@@ -380,7 +380,7 @@ const tenantApiService = {
   },
 
   // Record bill payment (Software House specific)
-  recordBillPayment: async (tenantSlug, billId, paymentData) => {
+  recordSHBillPayment: async (tenantSlug, billId, paymentData) => {
     return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/bills/${billId}/payments`, {
       method: 'POST',
       body: JSON.stringify(paymentData)
@@ -412,21 +412,6 @@ const tenantApiService = {
     return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/clients`, {
       method: 'POST',
       body: JSON.stringify(clientData)
-    });
-  },
-
-  // Update client (Software House specific)
-  updateClient: async (tenantSlug, clientId, clientData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/clients/${clientId}`, {
-      method: 'PUT',
-      body: JSON.stringify(clientData)
-    });
-  },
-
-  // Delete client (Software House specific)
-  deleteClient: async (tenantSlug, clientId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/clients/${clientId}`, {
-      method: 'DELETE'
     });
   },
 
@@ -1097,36 +1082,6 @@ const tenantApiService = {
   getAttendanceReports: async (tenantSlug, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
     return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/attendance/reports?${queryParams}`);
-  },
-
-  // Recruitment
-  getJobPostings: async (tenantSlug, params = {}) => {
-    const queryParams = new URLSearchParams(params).toString();
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/recruitment/jobs?${queryParams}`);
-  },
-
-  createJobPosting: async (tenantSlug, jobData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/recruitment/jobs`, {
-      method: 'POST',
-      body: JSON.stringify(jobData)
-    });
-  },
-
-  getJobApplications: async (tenantSlug, jobId, params = {}) => {
-    const queryParams = new URLSearchParams(params).toString();
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/recruitment/jobs/${jobId}/applications?${queryParams}`);
-  },
-
-  getInterviews: async (tenantSlug, params = {}) => {
-    const queryParams = new URLSearchParams(params).toString();
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/recruitment/interviews?${queryParams}`);
-  },
-
-  createInterview: async (tenantSlug, interviewData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/recruitment/interviews`, {
-      method: 'POST',
-      body: JSON.stringify(interviewData)
-    });
   },
 
   // Performance

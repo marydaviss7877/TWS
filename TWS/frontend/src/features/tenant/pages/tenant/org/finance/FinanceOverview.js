@@ -326,7 +326,7 @@ const FinanceOverview = () => {
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       {/* Hero Section */}
-      <div data-tutorial="fin-hero" className="glass-card-premium">
+      <div className="glass-card-premium">
         <div className="px-6 py-8 sm:p-8">
           <div className="flex items-center justify-between">
             <div>
@@ -379,7 +379,7 @@ const FinanceOverview = () => {
       </div>
 
       {/* Key Metrics Dashboard */}
-      <div data-tutorial="fin-metrics" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center justify-between">
             <div className="flex-1">
@@ -466,7 +466,7 @@ const FinanceOverview = () => {
       </div>
 
       {/* Finance Ecosystem Modules Navigation */}
-      <div data-tutorial="fin-modules" className="glass-card-premium">
+      <div className="glass-card-premium">
         <div className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
           <h2 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white flex items-center">
             <CogIcon className="h-5 w-5 mr-2 text-indigo-600 dark:text-indigo-400" />

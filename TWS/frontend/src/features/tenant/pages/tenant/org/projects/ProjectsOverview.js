@@ -694,7 +694,7 @@ const ProjectsOverview = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div data-tutorial="proj-header" className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
             Projects Overview
@@ -721,7 +721,7 @@ const ProjectsOverview = () => {
             </button>
           )}
           <button
-            data-tutorial="proj-new-btn"
+           
             onClick={() => setIsCreateModalOpen(true)}
             className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white"
           >
@@ -732,7 +732,7 @@ const ProjectsOverview = () => {
       </div>
 
       {/* Stats Grid - Expanded */}
-      <div data-tutorial="proj-stats" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div 
             key={index} 
@@ -761,7 +761,7 @@ const ProjectsOverview = () => {
       </div>
 
       {/* Project Health Overview */}
-      <div data-tutorial="proj-health" className="glass-card-premium p-6">
+      <div className="glass-card-premium p-6">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Project Health Overview</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
