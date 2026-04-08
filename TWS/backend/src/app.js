@@ -40,6 +40,29 @@ app.use(helmet());
 app.use(compression());
 app.use(mongoSanitize());
 
+// Health/metrics routes MUST be registered before verifyTLS so Railway's
+// plain-HTTP internal healthcheck probe gets a 200, not a 301 redirect.
+app.get('/health', (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const dbStatus = dbState === 1 ? 'connected' : dbState === 2 ? 'connecting' : 'disconnected';
+  res.json({
+    status: dbState === 1 ? 'OK' : 'DEGRADED',
+    message: 'TWS Backend Server Running',
+    timestamp: new Date().toISOString(),
+    environment: config.get('NODE_ENV') || 'development',
+    database: { status: dbStatus, readyState: dbState }
+  });
+});
+
+app.get('/metrics', (req, res) => {
+  res.json({
+    status: 'OK',
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // TLS verification for HIPAA compliance
 const { verifyTLS, checkTLSConfiguration } = require('./middleware/security/tlsVerification');
 app.use(verifyTLS);
@@ -216,28 +239,6 @@ io.on('connection', async (socket) => {
   } catch (err) {
     socket.disconnect(true);
   }
-});
-
-// Basic routes
-app.get('/health', (req, res) => {
-  const dbState = mongoose.connection.readyState;
-  const dbStatus = dbState === 1 ? 'connected' : dbState === 2 ? 'connecting' : 'disconnected';
-  res.json({ 
-    status: dbState === 1 ? 'OK' : 'DEGRADED', 
-    message: 'TWS Backend Server Running',
-    timestamp: new Date().toISOString(),
-    environment: config.get('NODE_ENV') || 'development',
-    database: { status: dbStatus, readyState: dbState }
-  });
-});
-
-app.get('/metrics', (req, res) => {
-  res.json({
-    status: 'OK',
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    timestamp: new Date().toISOString()
-  });
 });
 
 // Load routes progressively using new modular structure
