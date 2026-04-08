@@ -1,11 +1,12 @@
 const express = require('express');
-const { requirePermission } = require('../../../middleware/auth/rbac');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
+const teamsRead = requireErpAccess({ module: 'teams', action: 'read', checkRevocation: false });
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 
 const router = express.Router();
 
 // Placeholder routes for teams module
-router.get('/', requirePermission('teams:read'), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/', teamsRead, ErrorHandler.asyncHandler(async (req, res) => {
   res.json({
     success: true,
     message: 'Teams module - Coming soon',

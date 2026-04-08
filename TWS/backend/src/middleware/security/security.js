@@ -210,19 +210,36 @@ const sanitizeInput = (req, res, next) => {
   next();
 };
 
+// Helpers shared by encrypt/decrypt middleware (AES-256-CBC + random IV)
+function _encryptValue(value, keyStr) {
+  const key = crypto.scryptSync(keyStr, 'twssalt', 32);
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+  return iv.toString('hex') + ':' + cipher.update(value, 'utf8', 'hex') + cipher.final('hex');
+}
+
+function _decryptValue(stored, keyStr) {
+  const colonIdx = stored.indexOf(':');
+  if (colonIdx === 32) {
+    const iv = Buffer.from(stored.slice(0, 32), 'hex');
+    const data = stored.slice(33);
+    const key = crypto.scryptSync(keyStr, 'twssalt', 32);
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    return decipher.update(data, 'hex', 'utf8') + decipher.final('utf8');
+  }
+  return stored; // legacy unencrypted or unknown format — pass through
+}
+
 // Encryption middleware for sensitive data
 const encryptSensitiveData = (fields) => {
   return async (req, res, next) => {
     try {
       if (req.body && fields.length > 0) {
         const encryptionKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
-        
+
         for (const field of fields) {
           if (req.body[field]) {
-            const cipher = crypto.createCipher('aes-256-cbc', encryptionKey);
-            let encrypted = cipher.update(req.body[field], 'utf8', 'hex');
-            encrypted += cipher.final('hex');
-            req.body[field] = encrypted;
+            req.body[field] = _encryptValue(req.body[field], encryptionKey);
           }
         }
       }
@@ -243,7 +260,7 @@ const decryptSensitiveData = (fields) => {
     try {
       if (res.locals.data && fields.length > 0) {
         const encryptionKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
-        
+
         const decrypt = (obj) => {
           if (Array.isArray(obj)) {
             return obj.map(decrypt);
@@ -252,10 +269,7 @@ const decryptSensitiveData = (fields) => {
             fields.forEach(field => {
               if (decrypted[field] && typeof decrypted[field] === 'string') {
                 try {
-                  const decipher = crypto.createDecipher('aes-256-cbc', encryptionKey);
-                  let decryptedField = decipher.update(decrypted[field], 'hex', 'utf8');
-                  decryptedField += decipher.final('utf8');
-                  decrypted[field] = decryptedField;
+                  decrypted[field] = _decryptValue(decrypted[field], encryptionKey);
                 } catch (error) {
                   // If decryption fails, keep original value
                   console.warn(`Failed to decrypt field ${field}:`, error.message);
@@ -299,27 +313,6 @@ const logSecurityEvent = async (eventType, severity, description, details = {}, 
   } catch (error) {
     console.error('Security event logging failed:', error);
   }
-};
-
-// Two-factor authentication check
-const requireTwoFactor = (req, res, next) => {
-  if (!req.user.twoFactorEnabled) {
-    return res.status(403).json({
-      success: false,
-      message: 'Two-factor authentication required',
-      requiresTwoFactor: true
-    });
-  }
-  
-  if (!req.user.twoFactorVerified) {
-    return res.status(403).json({
-      success: false,
-      message: 'Two-factor authentication not verified',
-      requiresTwoFactorVerification: true
-    });
-  }
-  
-  next();
 };
 
 // Session security middleware
@@ -376,7 +369,6 @@ module.exports = {
   encryptSensitiveData,
   decryptSensitiveData,
   logSecurityEvent,
-  requireTwoFactor,
   secureSession,
   secureExport
 };

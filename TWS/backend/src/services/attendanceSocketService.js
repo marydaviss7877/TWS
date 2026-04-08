@@ -1,22 +1,25 @@
-const { Server } = require('socket.io');
-
 class AttendanceSocketService {
   constructor(io) {
     this.io = io;
     this.setupSocketHandlers();
   }
 
+  // Helper: broadcast only to sockets in the same tenant
+  _toTenant(orgId) {
+    return this.io.to(`tenant:${orgId}`);
+  }
+
   setupSocketHandlers() {
     this.io.on('connection', (socket) => {
-      console.log('User connected to attendance socket:', socket.id);
+      // orgId is set by the Socket.IO JWT auth middleware in app.js
+      const orgId = socket.user?.orgId;
 
       // Handle employee check-in
       socket.on('attendanceCheckIn', async (data) => {
         try {
-          console.log('Employee check-in received:', data);
-          
-          // Broadcast to admin panel
-          this.io.emit('adminAttendanceUpdate', {
+          if (!orgId) return socket.emit('error', { message: 'Not authenticated' });
+
+          this._toTenant(orgId).emit('adminAttendanceUpdate', {
             type: 'checkIn',
             userId: data.userId,
             employeeId: data.employeeId,
@@ -27,8 +30,7 @@ class AttendanceSocketService {
             message: `Employee ${data.employeeId} checked in at ${new Date(data.timestamp).toLocaleTimeString()}`
           });
 
-          // Notify team members
-          this.io.emit('teamActivityUpdate', {
+          this._toTenant(orgId).emit('teamActivityUpdate', {
             type: 'checkIn',
             userId: data.userId,
             employeeId: data.employeeId,
@@ -36,7 +38,6 @@ class AttendanceSocketService {
             workMode: data.workMode,
             currentProject: data.currentProject
           });
-
         } catch (error) {
           console.error('Error handling check-in:', error);
           socket.emit('error', { message: 'Failed to process check-in' });
@@ -46,10 +47,9 @@ class AttendanceSocketService {
       // Handle employee check-out
       socket.on('attendanceCheckOut', async (data) => {
         try {
-          console.log('Employee check-out received:', data);
-          
-          // Broadcast to admin panel
-          this.io.emit('adminAttendanceUpdate', {
+          if (!orgId) return socket.emit('error', { message: 'Not authenticated' });
+
+          this._toTenant(orgId).emit('adminAttendanceUpdate', {
             type: 'checkOut',
             userId: data.userId,
             employeeId: data.employeeId,
@@ -58,14 +58,12 @@ class AttendanceSocketService {
             message: `Employee ${data.employeeId} checked out at ${new Date(data.timestamp).toLocaleTimeString()}`
           });
 
-          // Notify team members
-          this.io.emit('teamActivityUpdate', {
+          this._toTenant(orgId).emit('teamActivityUpdate', {
             type: 'checkOut',
             userId: data.userId,
             employeeId: data.employeeId,
             timestamp: data.timestamp
           });
-
         } catch (error) {
           console.error('Error handling check-out:', error);
           socket.emit('error', { message: 'Failed to process check-out' });
@@ -75,16 +73,15 @@ class AttendanceSocketService {
       // Handle break start/end
       socket.on('attendanceBreakUpdate', async (data) => {
         try {
-          console.log('Break update received:', data);
-          
-          this.io.emit('teamActivityUpdate', {
+          if (!orgId) return socket.emit('error', { message: 'Not authenticated' });
+
+          this._toTenant(orgId).emit('teamActivityUpdate', {
             type: data.action, // 'breakStart' or 'breakEnd'
             userId: data.userId,
             employeeId: data.employeeId,
             timestamp: data.timestamp,
             duration: data.duration
           });
-
         } catch (error) {
           console.error('Error handling break update:', error);
           socket.emit('error', { message: 'Failed to process break update' });
@@ -94,16 +91,15 @@ class AttendanceSocketService {
       // Handle focus mode toggle
       socket.on('focusModeToggle', async (data) => {
         try {
-          console.log('Focus mode toggle received:', data);
-          
-          this.io.emit('teamActivityUpdate', {
+          if (!orgId) return socket.emit('error', { message: 'Not authenticated' });
+
+          this._toTenant(orgId).emit('teamActivityUpdate', {
             type: 'focusMode',
             userId: data.userId,
             employeeId: data.employeeId,
             enabled: data.enabled,
             timestamp: data.timestamp
           });
-
         } catch (error) {
           console.error('Error handling focus mode toggle:', error);
           socket.emit('error', { message: 'Failed to process focus mode toggle' });
@@ -113,16 +109,15 @@ class AttendanceSocketService {
       // Handle admin notifications
       socket.on('adminNotification', (data) => {
         try {
-          console.log('Admin notification sent:', data);
-          
-          // Send to specific user if userId is provided
+          if (!orgId) return;
+
           if (data.userId) {
+            // Specific user within the tenant room
             this.io.to(data.userId).emit('adminNotification', data);
           } else {
-            // Broadcast to all connected users
-            this.io.emit('adminNotification', data);
+            // All users in this tenant only
+            this._toTenant(orgId).emit('adminNotification', data);
           }
-
         } catch (error) {
           console.error('Error sending admin notification:', error);
         }
@@ -131,86 +126,75 @@ class AttendanceSocketService {
       // Handle admin attendance approval/rejection
       socket.on('adminAttendanceAction', async (data) => {
         try {
-          console.log('Admin attendance action received:', data);
-          
-          // Notify the specific employee
+          // Notify specific employee (user-room, already scoped by userId)
           this.io.to(data.userId).emit('attendanceAction', {
             type: data.action, // 'approved', 'rejected', 'modified'
             attendanceId: data.attendanceId,
             message: data.message,
             timestamp: new Date()
           });
-
         } catch (error) {
           console.error('Error handling admin attendance action:', error);
           socket.emit('error', { message: 'Failed to process attendance action' });
         }
       });
 
-      // Handle real-time attendance monitoring
-      socket.on('joinAttendanceMonitoring', (data) => {
+      // Handle real-time attendance monitoring — join tenant-scoped room
+      socket.on('joinAttendanceMonitoring', () => {
         try {
-          console.log('User joined attendance monitoring:', data);
-          
-          // Join specific room for attendance monitoring
-          socket.join('attendance-monitoring');
-          
-          // Send current attendance status
+          if (!orgId) return socket.emit('error', { message: 'Not authenticated' });
+
+          socket.join(`tenant:${orgId}:attendance-monitoring`);
           socket.emit('attendanceStatusUpdate', {
             type: 'initial',
             message: 'Connected to attendance monitoring'
           });
-
         } catch (error) {
           console.error('Error joining attendance monitoring:', error);
           socket.emit('error', { message: 'Failed to join attendance monitoring' });
         }
       });
 
-      // Handle team activity monitoring
-      socket.on('joinTeamActivity', (data) => {
+      // Handle team activity monitoring — join tenant-scoped room
+      socket.on('joinTeamActivity', () => {
         try {
-          console.log('User joined team activity monitoring:', data);
-          
-          // Join team activity room
-          socket.join('team-activity');
-          
+          if (!orgId) return socket.emit('error', { message: 'Not authenticated' });
+
+          socket.join(`tenant:${orgId}:team-activity`);
           socket.emit('teamActivityStatus', {
             type: 'initial',
             message: 'Connected to team activity monitoring'
           });
-
         } catch (error) {
           console.error('Error joining team activity:', error);
           socket.emit('error', { message: 'Failed to join team activity monitoring' });
         }
       });
 
-      // Handle disconnect
       socket.on('disconnect', () => {
-        console.log('User disconnected from attendance socket:', socket.id);
+        // Socket.IO cleans up rooms automatically on disconnect
       });
     });
   }
 
-  // Method to broadcast attendance updates to all connected clients
-  broadcastAttendanceUpdate(updateData) {
-    this.io.emit('attendanceUpdate', updateData);
+  // Broadcast attendance updates to a specific tenant only
+  broadcastAttendanceUpdate(orgId, updateData) {
+    this._toTenant(orgId).emit('attendanceUpdate', updateData);
   }
 
-  // Method to send notification to specific user
+  // Send notification to a specific user (by userId room)
   sendNotificationToUser(userId, notification) {
     this.io.to(userId).emit('notification', notification);
   }
 
-  // Method to broadcast team activity updates
-  broadcastTeamActivity(activityData) {
-    this.io.to('team-activity').emit('teamActivityUpdate', activityData);
+  // Broadcast team activity to a specific tenant's team-activity room
+  broadcastTeamActivity(orgId, activityData) {
+    this.io.to(`tenant:${orgId}:team-activity`).emit('teamActivityUpdate', activityData);
   }
 
-  // Method to broadcast admin updates
-  broadcastAdminUpdate(adminData) {
-    this.io.to('attendance-monitoring').emit('adminAttendanceUpdate', adminData);
+  // Broadcast admin updates to a specific tenant's attendance-monitoring room
+  broadcastAdminUpdate(orgId, adminData) {
+    this.io.to(`tenant:${orgId}:attendance-monitoring`).emit('adminAttendanceUpdate', adminData);
   }
 }
 

@@ -24,7 +24,7 @@ const erpTemplateSchema = new mongoose.Schema({
     // Default ERP modules for this category
     defaultModules: [{
       type: String,
-      enum: ['hr', 'finance', 'projects', 'operations', 'inventory', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles']
+      enum: ['hr', 'finance', 'projects', 'operations', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles']
     }],
     
     // Software House specific configuration
@@ -103,7 +103,6 @@ const erpTemplateSchema = new mongoose.Schema({
           finance: { type: Boolean, default: false },
           projects: { type: Boolean, default: true },
           operations: { type: Boolean, default: false },
-          inventory: { type: Boolean, default: false },
           reports: { type: Boolean, default: false },
           time_attendance: { type: Boolean, default: true },
           communication: { type: Boolean, default: true },

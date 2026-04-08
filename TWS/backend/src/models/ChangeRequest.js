@@ -8,7 +8,7 @@ const Schema = mongoose.Schema;
 const ChangeRequestSchema = new Schema({
   deliverable_id: {
     type: Schema.Types.ObjectId,
-    ref: 'Milestone', // or 'Deliverable' if separate model
+    ref: 'Deliverable',
     required: true,
     index: true
   },
@@ -100,11 +100,11 @@ ChangeRequestSchema.index({ tenantId: 1, status: 1 });
 
 /**
  * Method to acknowledge change request (PM action)
+ * Note: evaluated_by / evaluated_at are intentionally left for the evaluate() step.
+ * The audit trail (ChangeRequestAudit) records who acknowledged and when.
  */
 ChangeRequestSchema.methods.acknowledge = async function(acknowledgedBy) {
   this.status = 'acknowledged';
-  this.evaluated_by = acknowledgedBy;
-  this.evaluated_at = new Date();
   return this.save();
 };
 

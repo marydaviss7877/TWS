@@ -33,7 +33,7 @@ const masterERPSchema = new mongoose.Schema({
     // Core modules that all industries get
     coreModules: [{
       type: String,
-      enum: ['hr', 'finance', 'projects', 'operations', 'inventory', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles']
+      enum: ['hr', 'finance', 'projects', 'operations', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles']
     }],
     
     // Industry-specific modules

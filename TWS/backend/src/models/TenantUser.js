@@ -97,7 +97,14 @@ const tenantUserSchema = new mongoose.Schema({
     enum: ['active', 'inactive', 'suspended', 'pending'],
     default: 'pending'
   },
-  
+
+  // HR sub-role (Plan Phase 2): only when primary role is 'hr'. Determines payroll vs leave vs roster access.
+  // Intentionally no default: when omitted the field stays undefined and enum validation is skipped (non-HR roles do not set hrSubRole).
+  hrSubRole: {
+    type: String,
+    enum: ['manager', 'executive', 'payroll_officer']
+  },
+
   // Access control
   accessLevel: {
     type: String,

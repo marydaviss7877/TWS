@@ -139,7 +139,6 @@ const tenantSchema = new mongoose.Schema({
     },
     // Pharmacy-specific settings
     pharmacySettings: {
-      inventoryManagementEnabled: { type: Boolean, default: true },
       prescriptionFulfillmentEnabled: { type: Boolean, default: true },
       medicationTrackingEnabled: { type: Boolean, default: true }
     }
@@ -148,7 +147,7 @@ const tenantSchema = new mongoose.Schema({
     type: String,
     enum: [
       // Common modules
-      'hr', 'finance', 'projects', 'operations', 'inventory', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles',
+      'hr', 'finance', 'projects', 'operations', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles',
       // Healthcare modules
       'patients', 'doctors', 'appointments', 'medical_records', 'prescriptions', 'departments', 'billing',
       // Education modules (for schools)
@@ -192,9 +191,9 @@ const tenantSchema = new mongoose.Schema({
     // Development Settings
     developmentSettings: {
       defaultSprintDuration: { type: Number, default: 14 }, // days
-      storyPointScale: { 
-        type: String, 
-        enum: ['fibonacci', 'linear', 'custom'], 
+      storyPointScale: {
+        type: String,
+        enum: ['fibonacci', 'linear', 'powers_of_2', 'shirt_sizes', 'custom'],
         default: 'fibonacci',
         required: false // Make optional
       },
@@ -243,7 +242,7 @@ const tenantSchema = new mongoose.Schema({
   subscription: {
     plan: {
       type: String,
-      enum: ['trial', 'basic', 'professional', 'enterprise', 'custom'],
+      enum: ['trial', 'starter', 'growth', 'basic', 'professional', 'enterprise', 'custom'],
       default: 'trial'
     },
     status: {
@@ -272,6 +271,18 @@ const tenantSchema = new mongoose.Schema({
     autoRenew: {
       type: Boolean,
       default: true
+    },
+    // Billing failure: set when payment fails; after 7-day grace, set readOnlyMode
+    paymentFailedAt: Date,
+    readOnlyMode: {
+      type: Boolean,
+      default: false
+    },
+    // Add-ons: effective limit = plan limit + addOn (only for Software House)
+    addOns: {
+      extraUsers: { type: Number, default: 0 },
+      extraStorageGB: { type: Number, default: 0 },
+      extraWorkspaces: { type: Number, default: 0 }
     }
   },
   
@@ -288,6 +299,14 @@ const tenantSchema = new mongoose.Schema({
     maxStorage: {
       type: Number, // in GB
       default: 1
+    },
+    maxWorkspaces: {
+      type: Number,
+      default: 3
+    },
+    maxClientAccounts: {
+      type: Number,
+      default: 10
     },
     integrations: {
       type: Boolean,

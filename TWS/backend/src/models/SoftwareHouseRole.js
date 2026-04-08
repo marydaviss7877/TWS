@@ -125,7 +125,6 @@ const SoftwareHouseRoleSchema = new mongoose.Schema({
     finance: { type: Boolean, default: false },
     projects: { type: Boolean, default: true },
     operations: { type: Boolean, default: false },
-    inventory: { type: Boolean, default: false },
     reports: { type: Boolean, default: false },
     time_attendance: { type: Boolean, default: true },
     communication: { type: Boolean, default: true },
@@ -268,7 +267,7 @@ SoftwareHouseRoleSchema.methods.setDefaultPermissions = function() {
       analyticsAccess: { canViewProjectAnalytics: true, canViewTeamAnalytics: true, canViewClientAnalytics: true, canViewFinancialAnalytics: true, canExportReports: true },
       hrAccess: { canViewTeam: true, canManageTeam: true, canViewPerformance: true, canManagePerformance: true },
       systemAccess: { canManageUsers: true, canManageRoles: true, canManageSettings: true, canViewLogs: true },
-      moduleAccess: { hr_management: true, finance: true, projects: true, operations: true, inventory: true, reports: true, time_attendance: true, communication: true, role_management: true, system_settings: true, clients: true }
+      moduleAccess: { hr_management: true, finance: true, projects: true, operations: true, reports: true, time_attendance: true, communication: true, role_management: true, system_settings: true, clients: true }
     }
   };
   

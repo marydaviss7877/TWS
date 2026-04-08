@@ -2,9 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
+const { checkFeatureAccessSoftwareHouseOnly } = require('../../../middleware/common/featureGate');
 const SoftwareHouseRole = require('../../../models/SoftwareHouseRole');
 const ProjectAccess = require('../../../models/ProjectAccess');
 const User = require('../../../models/User');
+
+// Plan feature gate: custom roles only for Software House plans that include it
+router.use(authenticateToken, checkFeatureAccessSoftwareHouseOnly('customRoles'));
 
 // Get all software house roles for organization
 router.get('/', authenticateToken, requireRole(['owner', 'admin']), ErrorHandler.asyncHandler(async (req, res) => {

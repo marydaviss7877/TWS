@@ -17,7 +17,9 @@ class MigrationRunner {
     files.forEach(file => {
       if (file.endsWith('.js') && file !== 'migrate.js') {
         const migration = require(path.join(migrationsDir, file));
-        this.migrations.push(migration);
+        if (migration && typeof migration.version === 'string') {
+          this.migrations.push(migration);
+        }
       }
     });
     

@@ -68,8 +68,30 @@ const notificationPreferenceSchema = new mongoose.Schema({
       }
     }
   },
-  // REMOVED: Push notification preferences (simplified - email only)
-  // REMOVED: SMS notification preferences (simplified - email only)
+  // In-app notifications (FR18)
+  inApp: {
+    enabled: {
+      type: Boolean,
+      default: true
+    }
+  },
+  // Per-event-type preferences (FR18 trigger matrix)
+  eventTypes: {
+    task_assigned: { type: Boolean, default: true },
+    leave_approved: { type: Boolean, default: true },
+    leave_rejected: { type: Boolean, default: true },
+    invoice_overdue: { type: Boolean, default: true },
+    deliverable_rejected: { type: Boolean, default: true },
+    budget_warning: { type: Boolean, default: true },
+    project_delayed: { type: Boolean, default: true },
+    critical_bug: { type: Boolean, default: true },
+    dept_access_granted: { type: Boolean, default: true },
+    dept_access_revoked: { type: Boolean, default: true },
+    emergency_offboard: { type: Boolean, default: true },
+    document_submitted: { type: Boolean, default: true },
+    document_approved: { type: Boolean, default: true },
+    document_rejected: { type: Boolean, default: true }
+  },
   // Quiet hours settings
   quietHours: {
     enabled: {
@@ -134,8 +156,15 @@ notificationPreferenceSchema.methods.shouldSendEmail = function(type, chatId = n
     }
   }
 
-  // Check type-specific preferences
-  return this.email.types[type] !== false;
+  // Check type-specific preferences (legacy types)
+  if (this.email.types && this.email.types[type] === false) {
+    return false;
+  }
+  // FR18 event types (optional; may be missing on existing docs)
+  if (this.eventTypes && this.eventTypes[type] === false) {
+    return false;
+  }
+  return true;
 };
 
 // REMOVED: shouldSendPush method (push notifications removed - email only)

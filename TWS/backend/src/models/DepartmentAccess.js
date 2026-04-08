@@ -93,11 +93,7 @@ const departmentAccessSchema = new mongoose.Schema({
       blockedIPs: [String]
     },
     deviceRestrictions: {
-      allowedDevices: [String],
-      requireTwoFactor: {
-        type: Boolean,
-        default: false
-      }
+      allowedDevices: [String]
     }
   },
   

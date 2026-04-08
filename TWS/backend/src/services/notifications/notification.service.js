@@ -1,5 +1,7 @@
 const Notification = require('../../models/Notification');
 const User = require('../../models/User');
+const NotificationPreference = require('../../models/NotificationPreference');
+const emailService = require('../integrations/email.service');
 
 class NotificationService {
   // Create and send notification
@@ -20,8 +22,7 @@ class NotificationService {
       const userIdsArray = Array.isArray(userIds) ? userIds : [userIds];
 
       for (const userId of userIdsArray) {
-        // Check user's notification preferences
-        const user = await User.findById(userId).select('preferences organization');
+        const user = await User.findById(userId).select('preferences organization orgId email fullName');
         if (!user) continue;
 
         // Determine orgId: use provided orgId, or get from user, or derive from related entities
@@ -103,13 +104,11 @@ class NotificationService {
           continue;
         }
 
-        const preferences = user.preferences || {};
-        const notificationTypes = preferences.notificationTypes || {};
-
-        // Check if user wants this type of notification
-        if (notificationTypes[type] === false) {
-          continue;
+        const pref = await NotificationPreference.getOrCreate(userId, finalOrgId);
+        if (pref.shouldSendEmail && pref.shouldSendEmail(type) === false && sendEmail) {
+          // User disabled this event type for email; still create in-app if inApp enabled
         }
+        const skipInApp = pref.inApp && pref.inApp.enabled === false;
 
         const notification = new Notification({
           userId,
@@ -124,10 +123,11 @@ class NotificationService {
         });
 
         await notification.save();
-        notifications.push(notification);
+        if (!skipInApp) {
+          notifications.push(notification);
+        }
 
-        // Send email if enabled and user has email notifications on
-        if (sendEmail && preferences.emailNotifications !== false) {
+        if (sendEmail && pref.shouldSendEmail(type)) {
           await this.sendEmailNotification(user, notification);
         }
       }
@@ -139,19 +139,24 @@ class NotificationService {
     }
   }
 
-  // Send email notification
+  // Send email notification via email.service
   static async sendEmailNotification(user, notification) {
     try {
-      // TODO: Implement actual email sending using nodemailer or similar
-      // For now, just log the notification
-      console.log(`Email notification for ${user.email}: ${notification.title} - ${notification.message}`);
-      
-      // In a real implementation, you would:
-      // 1. Use nodemailer or similar email service
-      // 2. Create email templates
-      // 3. Send the email
-      // 4. Handle email delivery status
-      
+      const email = user.email || (user._id && (await User.findById(user._id).select('email').lean())?.email);
+      if (!email) return false;
+      const subject = notification.title || 'Notification';
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #6366f1; padding: 16px; text-align: center;">
+            <h2 style="color: white; margin: 0;">${subject}</h2>
+          </div>
+          <div style="padding: 24px; background: #f9fafb;">
+            <p style="font-size: 14px; color: #374151;">${(notification.message || '').replace(/\n/g, '<br>')}</p>
+            <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">TWS ERP Notification</p>
+          </div>
+        </div>
+      `;
+      await emailService.sendEmail(email, subject, html);
       return true;
     } catch (error) {
       console.error('Error sending email notification:', error);
@@ -310,24 +315,70 @@ class NotificationService {
   }
 
   static async notifyInvoiceOverdue(invoice) {
-    const projectMembers = await this.getProjectMembers(invoice.projectId);
-    
+    let userIds = [];
+    if (invoice.projectId) {
+      const projectMembers = await this.getProjectMembers(invoice.projectId);
+      userIds = projectMembers.map(m => m.userId);
+    }
+    if (userIds.length === 0 && invoice.orgId) {
+      const User = require('../../models/User');
+      const financeUsers = await User.find({ orgId: invoice.orgId, role: { $in: ['owner', 'admin', 'accountant', 'finance'] } })
+        .select('_id')
+        .limit(10)
+        .lean();
+      userIds = financeUsers.map(u => u._id);
+    }
+    if (userIds.length === 0) return [];
     return await this.createNotification({
-      userIds: projectMembers.map(member => member.userId),
-      type: 'deadlineReminders',
+      userIds,
+      type: 'invoice_overdue',
       title: 'Invoice Overdue',
       message: `Invoice ${invoice.invoiceNumber} is overdue.`,
       relatedEntityType: 'invoice',
       relatedEntityId: invoice._id,
+      orgId: invoice.orgId,
+      sendEmail: true
+    });
+  }
+
+  static async notifyBudget80Warning(project, orgId) {
+    let userIds = [];
+    const projectMembers = await this.getProjectMembers(project._id);
+    userIds = projectMembers.filter(m => m.userId).map(m => m.userId);
+    if (userIds.length === 0 && orgId) {
+      const User = require('../../models/User');
+      const admins = await User.find({ orgId, role: { $in: ['owner', 'admin'] } }).select('_id').limit(10).lean();
+      userIds = admins.map(u => u._id);
+    }
+    if (userIds.length === 0) return [];
+    const spent = project.budget?.spent ?? project.spent ?? 0;
+    const total = project.budget?.total ?? project.budget ?? 0;
+    const pct = total > 0 ? Math.round((spent / total) * 100) : 0;
+    return await this.createNotification({
+      userIds,
+      type: 'budget_warning',
+      title: 'Budget 80% Warning',
+      message: `Project "${project.name}" has used ${pct}% of budget (${spent} / ${total}).`,
+      relatedEntityType: 'project',
+      relatedEntityId: project._id,
+      orgId: orgId || project.orgId,
       sendEmail: true
     });
   }
 
   // Helper methods
   static async getProjectMembers(projectId) {
-    // This would typically query a ProjectMember model
-    // For now, return empty array
-    return [];
+    if (!projectId) return [];
+    try {
+      const ProjectMember = require('../../models/ProjectMember');
+      const members = await ProjectMember.find({ projectId, status: 'active' })
+        .select('userId')
+        .lean();
+      return members.map(m => ({ userId: m.userId }));
+    } catch (e) {
+      console.error('getProjectMembers error:', e);
+      return [];
+    }
   }
 
   static async getClientById(clientId) {

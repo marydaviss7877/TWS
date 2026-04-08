@@ -58,17 +58,22 @@ class BillingService {
         { $sort: { '_id.year': 1, '_id.month': 1 } }
       ]);
 
-      // Get tenants by plan (subscription.plan)
+      // Get tenants by plan (subscription.plan) — Software House only (billing applies to software_house only)
       let tenantsByPlan = [];
+      let billingEligibleCount = 0;
+      let totalTenantCount = 0;
       try {
+        totalTenantCount = await Tenant.countDocuments({});
+        billingEligibleCount = await Tenant.countDocuments({ erpCategory: 'software_house' });
         tenantsByPlan = await Tenant.aggregate([
+          { $match: { erpCategory: 'software_house' } },
           { $group: { _id: '$subscription.plan', count: { $sum: 1 } } }
         ]);
       } catch (tenantErr) {
         console.warn('Tenant plan aggregation failed (non-critical):', tenantErr.message);
       }
 
-      // Get top customers by revenue (simplified - avoid $lookup if it causes issues)
+      // Get top customers by revenue — only Software House tenants
       let topCustomers = [];
       try {
         const topCustomersRaw = await Billing.aggregate([
@@ -77,14 +82,15 @@ class BillingService {
           { $sort: { revenue: -1 } },
           { $limit: 10 }
         ]);
-        // Populate tenant names separately to avoid $lookup issues
         for (const c of topCustomersRaw) {
-          const tenant = await Tenant.findById(c._id).select('name').lean();
-          topCustomers.push({
-            name: tenant?.name || 'Unknown',
-            revenue: c.revenue,
-            totalRevenue: c.revenue
-          });
+          const tenant = await Tenant.findById(c._id).select('name erpCategory').lean();
+          if (tenant?.erpCategory === 'software_house') {
+            topCustomers.push({
+              name: tenant?.name || 'Unknown',
+              revenue: c.revenue,
+              totalRevenue: c.revenue
+            });
+          }
         }
       } catch (topErr) {
         console.warn('Top customers aggregation failed (non-critical):', topErr.message);
@@ -112,6 +118,8 @@ class BillingService {
           acc[item._id || 'trial'] = item.count;
           return acc;
         }, {}),
+        billingEligibleCount,
+        totalTenantCount,
         topCustomers
       };
     } catch (error) {

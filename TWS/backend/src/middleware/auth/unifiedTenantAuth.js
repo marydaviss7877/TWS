@@ -497,12 +497,27 @@ const unifiedTenantAuth = (options = {}) => {
       // ============================================
       // STEP 8: Set request context
       // ============================================
+
+      // F8: Resolve per-tenant role from TenantUser (mirrors verifyERPToken Step 10.5)
+      let roleForRequest = userContext.role;
+      let hrSubRole = null;
+      try {
+        const TenantUser = require('../../models/TenantUser');
+        const tu = await TenantUser.findOne({ userId: userContext._id, tenantId: tenant._id, status: 'active' }).lean();
+        if (tu?.roles?.length > 0) {
+          const pr = tu.roles[0].role;
+          roleForRequest = pr === 'manager' ? 'project_manager' : pr;
+          if (pr === 'hr' && tu.hrSubRole) hrSubRole = tu.hrSubRole;
+        }
+      } catch (_) { /* fallback to global User.role */ }
+
       req.user = {
         _id: userContext._id,
         id: userContext._id,
         email: userContext.email,
         fullName: userContext.fullName,
-        role: userContext.role, // FROM DATABASE, not token
+        role: roleForRequest,
+        hrSubRole,
         orgId: orgId,
         tenantId: tenant._id.toString(),
         ...(requireWorkspace ? { workspaceRole: userContext.workspaceRole } : {})

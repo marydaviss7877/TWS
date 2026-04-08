@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, query } = require('express-validator');
-const { requirePermission } = require('../../../middleware/auth/rbac');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
 const Attendance = require('../../../models/Attendance');
@@ -8,10 +8,12 @@ const Employee = require('../../../models/Employee');
 const csv = require('csv-writer').createObjectCsvWriter;
 
 const router = express.Router();
+const attendanceRead = requireErpAccess({ module: 'attendance', action: 'read', checkRevocation: false });
+const attendanceWrite = requireErpAccess({ module: 'attendance', action: 'write', checkRevocation: false });
 
 // Get attendance records for admin panel
 router.get('/records', [
-  requirePermission('attendance:read'),
+  attendanceRead,
   query('date').optional().isISO8601(),
   query('status').optional().isIn(['present', 'absent', 'late', 'pending']),
   query('workMode').optional().isIn(['office', 'remote', 'hybrid']),
@@ -71,7 +73,7 @@ router.get('/records', [
 
 // Get attendance statistics for admin panel
 router.get('/stats', [
-  requirePermission('attendance:read'),
+  attendanceRead,
   query('date').optional().isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
@@ -123,7 +125,7 @@ router.get('/stats', [
 
 // Approve attendance record
 router.post('/approve/:recordId', [
-  requirePermission('attendance:write')
+  attendanceWrite
 ], ErrorHandler.asyncHandler(async (req, res) => {
   try {
     const { recordId } = req.params;
@@ -161,7 +163,7 @@ router.post('/approve/:recordId', [
 
 // Reject attendance record
 router.post('/reject/:recordId', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('reason').optional().notEmpty()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
@@ -202,7 +204,7 @@ router.post('/reject/:recordId', [
 
 // Bulk action on attendance records
 router.post('/bulk-action', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('recordIds').isArray().notEmpty(),
   body('action').isIn(['approve', 'reject', 'delete'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -263,7 +265,7 @@ router.post('/bulk-action', [
 
 // Export attendance data
 router.get('/export', [
-  requirePermission('attendance:read'),
+  attendanceRead,
   query('date').optional().isISO8601(),
   query('status').optional().isIn(['present', 'absent', 'late', 'pending']),
   query('workMode').optional().isIn(['office', 'remote', 'hybrid']),
@@ -331,7 +333,7 @@ router.get('/export', [
 
 // Get real-time attendance updates
 router.get('/realtime-updates', [
-  requirePermission('attendance:read')
+  attendanceRead
 ], ErrorHandler.asyncHandler(async (req, res) => {
   try {
     // This endpoint can be used for polling if WebSocket is not available

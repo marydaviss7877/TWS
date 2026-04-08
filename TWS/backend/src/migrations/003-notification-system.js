@@ -1,5 +1,17 @@
 const mongoose = require('mongoose');
 
+// Create index; ignore if already exists or has conflicting options (e.g. unique)
+async function ensureIndex(collection, spec, options = {}) {
+  try {
+    await collection.createIndex(spec, options);
+  } catch (e) {
+    if (e.code === 85 || e.code === 86 || (e.codeName && (e.codeName === 'IndexOptionsConflict' || e.codeName === 'IndexKeySpecsConflict'))) {
+      return;
+    }
+    throw e;
+  }
+}
+
 const migration = {
   version: '003',
   name: 'notification-system',
@@ -27,11 +39,14 @@ const migration = {
       updatedAt: { type: Date, default: Date.now }
     };
 
-    await db.createCollection('devicetokens');
-    await db.collection('devicetokens').createIndex({ userId: 1, platform: 1 });
-    await db.collection('devicetokens').createIndex({ token: 1 });
-    await db.collection('devicetokens').createIndex({ isActive: 1 });
-    await db.collection('devicetokens').createIndex({ lastUsed: -1 });
+    if (!(await db.listCollections({ name: 'devicetokens' }).hasNext())) {
+      await db.createCollection('devicetokens');
+    }
+    const devicetokens = db.collection('devicetokens');
+    await ensureIndex(devicetokens, { userId: 1, platform: 1 });
+    await ensureIndex(devicetokens, { token: 1 }, { unique: true });
+    await ensureIndex(devicetokens, { isActive: 1 });
+    await ensureIndex(devicetokens, { lastUsed: -1 });
 
     // Create NotificationPreference collection
     const notificationPreferenceSchema = {
@@ -95,9 +110,12 @@ const migration = {
       updatedAt: { type: Date, default: Date.now }
     };
 
-    await db.createCollection('notificationpreferences');
-    await db.collection('notificationpreferences').createIndex({ userId: 1 });
-    await db.collection('notificationpreferences').createIndex({ organization: 1 });
+    if (!(await db.listCollections({ name: 'notificationpreferences' }).hasNext())) {
+      await db.createCollection('notificationpreferences');
+    }
+    const notificationpreferences = db.collection('notificationpreferences');
+    await ensureIndex(notificationpreferences, { userId: 1 });
+    await ensureIndex(notificationpreferences, { organization: 1 });
 
     // Create NotificationQueue collection
     const notificationQueueSchema = {
@@ -126,12 +144,15 @@ const migration = {
       updatedAt: { type: Date, default: Date.now }
     };
 
-    await db.createCollection('notificationqueues');
-    await db.collection('notificationqueues').createIndex({ status: 1, scheduledFor: 1 });
-    await db.collection('notificationqueues').createIndex({ userId: 1, type: 1, status: 1 });
-    await db.collection('notificationqueues').createIndex({ batchKey: 1, status: 1 });
-    await db.collection('notificationqueues').createIndex({ nextRetryAt: 1 });
-    await db.collection('notificationqueues').createIndex({ organization: 1, type: 1 });
+    if (!(await db.listCollections({ name: 'notificationqueues' }).hasNext())) {
+      await db.createCollection('notificationqueues');
+    }
+    const notificationqueues = db.collection('notificationqueues');
+    await ensureIndex(notificationqueues, { status: 1, scheduledFor: 1 });
+    await ensureIndex(notificationqueues, { userId: 1, type: 1, status: 1 });
+    await ensureIndex(notificationqueues, { batchKey: 1, status: 1 });
+    await ensureIndex(notificationqueues, { nextRetryAt: 1 });
+    await ensureIndex(notificationqueues, { organization: 1, type: 1 });
 
     console.log('Notification system migration completed successfully');
   },

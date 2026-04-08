@@ -22,6 +22,7 @@ const { idempotencyMiddleware } = require('../../../middleware/common/idempotenc
 // Client Portal - REMOVED COMPLETELY
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { tokenVerificationLimiter } = require('../../../middleware/rateLimiting/rateLimiter');
+const { checkUsageLimitSoftwareHouseOnly, checkReadOnlySoftwareHouseOnly } = require('../../../middleware/common/featureGate');
 
 // SECURITY FIX: Input validation middleware for project creation
 const validateProjectCreation = [
@@ -110,11 +111,8 @@ const validateProjectCreation = [
   }
 ];
 
-// Auth: verifyERPToken is applied by parent organization router (/api/tenant/:tenantSlug/organization)
-// So we only need to pass through - no duplicate auth (avoids 401 from unifiedSoftwareHouseAuth)
-const conditionalAuth = (req, res, next) => next();
-
-router.get('/', conditionalAuth, (req, res, next) => {
+// Auth: verifyERPToken applied here so routes are protected even if mounted elsewhere
+router.get('/', verifyERPToken, (req, res, next) => {
   console.log('🔵 Projects router GET / hit - calling getProjects controller');
   console.log('🔵 Request params:', req.params);
   console.log('🔵 Request query:', req.query);
@@ -132,8 +130,10 @@ const { validateResourceAccess } = require('../../../middleware/security/resourc
 
 // Clients endpoints - MUST come before /:id route
 router.get('/clients', projectController.getClients);
-router.post('/clients', 
-  conditionalAuth,
+router.post('/clients',
+  verifyERPToken,
+  checkReadOnlySoftwareHouseOnly,
+  checkUsageLimitSoftwareHouseOnly('clientAccounts', 1),
   [
     body('name').notEmpty().trim().isLength({ min: 1, max: 255 }).withMessage('Client name is required'),
     body('type').optional().isIn(['company', 'individual']).withMessage('Invalid client type'),
@@ -151,22 +151,23 @@ router.post('/clients',
   projectController.createClient);
 // ✅ IDOR Fix: Validate resource access
 router.patch('/clients/:id', 
-  conditionalAuth,
+  verifyERPToken,
   validateResourceAccess('Client', 'id'),
   projectController.updateClient);
 router.delete('/clients/:id', 
-  conditionalAuth,
+  verifyERPToken,
   validateResourceAccess('Client', 'id'),
   projectController.deleteClient);
 
 // Tasks endpoints - MUST come before /:id route
 router.get('/tasks', projectController.getTasks);
+router.get('/tasks/:taskId', projectController.getTask);
 router.post('/tasks', 
-  conditionalAuth,
+  verifyERPToken,
   [
     body('title').notEmpty().trim().isLength({ min: 1, max: 255 }).withMessage('Task title is required'),
     body('projectId').notEmpty().isMongoId().withMessage('Valid project ID is required'),
-    body('departmentId').notEmpty().isMongoId().withMessage('Valid department ID is required'),
+    body('departmentId').optional({ nullable: true, checkFalsy: true }).isMongoId().withMessage('Invalid department ID format'),
     body('status').optional().isIn(['todo', 'in_progress', 'under_review', 'completed', 'cancelled']).withMessage('Invalid status'),
     body('priority').optional().isIn(['low', 'medium', 'high', 'critical', 'urgent']).withMessage('Invalid priority'),
     (req, res, next) => {
@@ -181,18 +182,18 @@ router.post('/tasks',
   projectController.createTask);
 // ✅ IDOR Fix: Validate resource access
 router.patch('/tasks/:id', 
-  conditionalAuth,
+  verifyERPToken,
   validateResourceAccess('Task', 'id'),
   projectController.updateTask);
 router.delete('/tasks/:id', 
-  conditionalAuth,
+  verifyERPToken,
   validateResourceAccess('Task', 'id'),
   projectController.deleteTask);
 
 // Milestones endpoints
 router.get('/milestones', projectController.getMilestones);
 router.post('/milestones', 
-  conditionalAuth,
+  verifyERPToken,
   [
     body('title').notEmpty().trim().isLength({ min: 1, max: 255 }).withMessage('Milestone title is required'),
     body('projectId').optional().isMongoId().withMessage('Invalid project ID format'),
@@ -214,7 +215,7 @@ router.delete('/milestones/:id', projectController.deleteMilestone);
 // Resources endpoints
 router.get('/resources', projectController.getResources);
 router.post('/resources', 
-  conditionalAuth,
+  verifyERPToken,
   [
     body('userId').notEmpty().isMongoId().withMessage('Valid user ID is required'),
     body('department').notEmpty().trim().isLength({ min: 1, max: 255 }).withMessage('Department is required'),
@@ -232,11 +233,11 @@ router.post('/resources',
   projectController.createResource);
 // ✅ IDOR Fix: Validate resource access
 router.patch('/resources/:id', 
-  conditionalAuth,
+  verifyERPToken,
   validateResourceAccess('Resource', 'id'),
   projectController.updateResource);
 router.delete('/resources/:id', 
-  conditionalAuth,
+  verifyERPToken,
   validateResourceAccess('Resource', 'id'),
   projectController.deleteResource);
 router.post('/resources/:resourceId/allocate', projectController.allocateResource);
@@ -244,7 +245,7 @@ router.post('/resources/:resourceId/allocate', projectController.allocateResourc
 // Timesheets endpoints
 router.get('/timesheets', projectController.getTimesheets);
 router.post('/timesheets', 
-  conditionalAuth,
+  verifyERPToken,
   [
     body('date').notEmpty().isISO8601().withMessage('Valid date is required'),
     body('memberId').notEmpty().isMongoId().withMessage('Valid member ID is required'),
@@ -266,7 +267,7 @@ router.delete('/timesheets/:id', projectController.deleteTimesheet);
 // Sprints endpoints
 router.get('/sprints', projectController.getSprints);
 router.post('/sprints', 
-  conditionalAuth,
+  verifyERPToken,
   [
     body('name').notEmpty().trim().isLength({ min: 1, max: 255 }).withMessage('Sprint name is required'),
     body('startDate').notEmpty().isISO8601().withMessage('Valid start date is required'),
@@ -285,11 +286,11 @@ router.post('/sprints',
   projectController.createSprint);
 // ✅ IDOR Fix: Validate resource access
 router.patch('/sprints/:id', 
-  conditionalAuth,
+  verifyERPToken,
   validateResourceAccess('Sprint', 'id'),
   projectController.updateSprint);
 router.delete('/sprints/:id', 
-  conditionalAuth,
+  verifyERPToken,
   validateResourceAccess('Sprint', 'id'),
   projectController.deleteSprint);
 router.patch('/sprints/:id/velocity', projectController.calculateVelocity);
@@ -312,6 +313,18 @@ router.get('/:projectId/dashboard', projectController.getProjectDashboard);
 router.get('/:projectId/tasks-with-context', projectController.getTasksWithContext);
 router.get('/:projectId/integration-status', projectController.getIntegrationStatus);
 
+// Project Member routes - must be before generic /:id to avoid route conflict
+router.get('/:projectId/members', verifyERPToken, projectController.getProjectMembers);
+router.post('/:projectId/members',
+  verifyERPToken,
+  requireRole(['admin', 'super_admin', 'org_manager', 'project_manager', 'pmo', 'owner']),
+  projectController.addProjectMember);
+router.patch('/:projectId/members/:memberId', verifyERPToken, projectController.updateProjectMember);
+router.delete('/:projectId/members/:memberId',
+  verifyERPToken,
+  requireRole(['admin', 'super_admin', 'org_manager', 'project_manager', 'pmo', 'owner']),
+  projectController.removeProjectMember);
+
 // Generic parameterized routes - MUST come LAST to avoid conflicts with specific routes
 // This will match any remaining paths, but we validate ObjectId format in the controller
 router.get('/:id', projectController.getProject);
@@ -319,8 +332,10 @@ router.get('/:id', projectController.getProject);
 // SECURITY: Add comprehensive security middleware for project creation
 // Only admins, project managers, and org managers can create projects
 // NOTE: CSRF removed - JWT authentication provides sufficient protection
-router.post('/', 
-  conditionalAuth, // ✅ Unified authentication middleware
+router.post('/',
+  verifyERPToken, // ✅ Unified authentication middleware
+  checkReadOnlySoftwareHouseOnly,
+  checkUsageLimitSoftwareHouseOnly('projects', 1),
   validateRequestSize('1mb'), // SECURITY: Request size limit (prevent DoS)
   (req, res, next) => {
     // SECURITY: Validate Content-Type header
@@ -347,11 +362,11 @@ router.post('/',
 // Update and delete project routes - MUST come after specific routes but before other parameterized routes
 // ✅ IDOR Fix: Validate resource access before allowing update/delete
 router.patch('/:id', 
-  conditionalAuth,
+  verifyERPToken,
   validateResourceAccess('Project', 'id'),
   projectController.updateProject);
 router.delete('/:id', 
-  conditionalAuth,
+  verifyERPToken,
   validateResourceAccess('Project', 'id'),
   projectController.deleteProject);
 
@@ -360,7 +375,7 @@ router.delete('/:id',
  * POST /api/tenant/:tenantSlug/organization/projects/:id/archive
  */
 router.post('/:id/archive',
-  conditionalAuth,
+  verifyERPToken,
   requireRole(['admin', 'super_admin', 'org_manager', 'project_manager', 'pmo', 'owner']),
   ErrorHandler.asyncHandler(async (req, res) => {
     const Project = require('../../../models/Project');
@@ -398,7 +413,9 @@ router.post('/:id/archive',
  * POST /api/tenant/:tenantSlug/organization/projects/:id/restore
  */
 router.post('/:id/restore',
-  conditionalAuth,
+  verifyERPToken,
+  checkReadOnlySoftwareHouseOnly,
+  checkUsageLimitSoftwareHouseOnly('projects', 1),
   requireRole(['admin', 'super_admin', 'org_manager', 'project_manager', 'pmo', 'owner']),
   ErrorHandler.asyncHandler(async (req, res) => {
     const Project = require('../../../models/Project');

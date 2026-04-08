@@ -17,8 +17,8 @@ async function createTenantRecord(tenantData, session, createdBy = null) {
     
     const industryModules = {
       software_house: ['development_methodology', 'tech_stack', 'project_types', 'time_tracking', 'code_quality', 'client_portal', 'projects', 'tasks', 'clients', 'hr', 'finance'],
-      business: ['hr', 'finance', 'projects', 'operations', 'inventory', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles'],
-      warehouse: ['inventory', 'warehouse', 'logistics', 'suppliers', 'purchasing', 'shipping', 'quality', 'maintenance', 'safety']
+      business: ['hr', 'finance', 'projects', 'operations', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles'],
+      warehouse: ['warehouse', 'logistics', 'suppliers', 'purchasing', 'shipping', 'quality', 'maintenance', 'safety']
     };
     
     // Get industry-specific modules for the selected category

@@ -10,6 +10,7 @@ const ProjectList = require('../../../models/List');
 const Card = require('../../../models/Card');
 const ProjectTemplate = require('../../../models/ProjectTemplate');
 const Activity = require('../../../models/Activity');
+const Milestone = require('../../../models/Milestone');
 
 // Get all projects for organization
 router.get('/', authenticateToken, async (req, res) => {
@@ -86,13 +87,8 @@ router.get('/metrics', authenticateToken, ErrorHandler.asyncHandler(async (req, 
     { $project: { status: '$_id', count: 1, _id: 0 } }
   ]);
 
-  // Team utilization (simplified - would need more complex logic in real implementation)
-  const utilization = [
-    { department: 'Development', percentage: 85 },
-    { department: 'Design', percentage: 70 },
-    { department: 'Marketing', percentage: 60 },
-    { department: 'Project Management', percentage: 90 }
-  ];
+  // Team utilization: not yet implemented (requires ProjectMember/department capacity data)
+  const utilization = [];
 
   // Revenue metrics
   const revenueMetrics = await Project.aggregate([
@@ -138,6 +134,65 @@ router.get('/metrics', authenticateToken, ErrorHandler.asyncHandler(async (req, 
       performance,
       atRiskProjects
     }
+  });
+}));
+
+// Manager cockpit dashboard (stub structure for frontend compatibility)
+router.get('/manager/cockpit', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+  const orgId = req.user?.orgId;
+  const activeCount = await Project.countDocuments({ orgId, status: 'active' });
+  res.json({
+    success: true,
+    data: {
+      todayDeliverables: [],
+      teamStatus: [],
+      clientAlerts: [],
+      budgetStatus: [],
+      riskIndicators: [],
+      quickStats: {
+        activeProjects: activeCount,
+        teamMembers: 0,
+        overdueTasks: 0,
+        budgetBurnRate: 0
+      }
+    }
+  });
+}));
+
+// Project templates list (org-scoped; frontend compatibility)
+router.get('/templates', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+  const orgId = req.user?.orgId;
+  const templates = await ProjectTemplate.find({ $or: [{ orgId }, { isPublic: true }] })
+    .select('name description category')
+    .lean();
+  res.json({
+    success: true,
+    data: templates.map(t => ({
+      ...t,
+      category: t.category || 'other',
+      usageCount: 0,
+      rating: 0
+    }))
+  });
+}));
+
+// Upcoming milestones (org-scoped)
+router.get('/milestones/upcoming', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+  const orgId = req.user?.orgId;
+  const now = new Date();
+  const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const milestones = await Milestone.find({
+    orgId,
+    dueDate: { $gte: now, $lte: thirtyDays },
+    status: { $in: ['pending', 'in_progress'] }
+  })
+    .populate('projectId', 'name')
+    .sort({ dueDate: 1 })
+    .limit(20)
+    .lean();
+  res.json({
+    success: true,
+    data: milestones
   });
 }));
 

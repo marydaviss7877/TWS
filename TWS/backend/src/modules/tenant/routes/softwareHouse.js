@@ -21,6 +21,7 @@ const timeTrackingService = require('../../../services/softwareHouse/timeTrackin
 // Single middleware that handles all authentication, tenant context, and orgId resolution
 // Performance: 1-2 queries instead of 8-17 queries
 const unifiedSoftwareHouseAuth = require('../../../middleware/auth/unifiedSoftwareHouseAuth');
+const { checkUsageLimitSoftwareHouseOnly, checkReadOnlySoftwareHouseOnly } = require('../../../middleware/common/featureGate');
 
 // Get tenant software house configuration
 router.get('/config', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin']), ErrorHandler.asyncHandler(async (req, res) => {
@@ -490,7 +491,8 @@ router.put('/development', unifiedSoftwareHouseAuth, requireRole(['owner', 'admi
       ...developmentSettings
     };
   }
-  
+
+  tenant.markModified('softwareHouseConfig');
   await tenant.save();
   
   res.json({
@@ -794,38 +796,28 @@ router.get('/dashboard', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin'
   const { tenantSlug } = req.params;
 
   try {
-    let tenant = await Tenant.findOne({ slug: tenantSlug });
-    if (!tenant && /^[0-9a-f]{24}$/i.test(tenantSlug)) {
-      tenant = await Tenant.findById(tenantSlug);
-    }
-    if (!tenant) {
-      return res.status(404).json({
-        success: false,
-        message: 'Tenant not found'
-      });
-    }
-
-    const tenantId = tenant._id;
-    const orgId = tenant.organizationId || tenant.orgId || req.user?.orgId;
-    if (!orgId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Tenant organization not configured'
-      });
-    }
-
-    const orgIdObj = (orgId && mongoose.Types.ObjectId.isValid(orgId)) ? new mongoose.Types.ObjectId(orgId) : orgId;
-
-    const tenantInfo = await Tenant.findOne({ _id: tenantId, $or: [{ organizationId: orgIdObj }, { orgId: orgIdObj }] })
-      .select('name erpCategory softwareHouseConfig erpModules')
+    // Single tenant query — fetch all needed fields at once (was two sequential queries before)
+    let tenantInfo = await Tenant.findOne({ slug: tenantSlug })
+      .select('name _id erpCategory softwareHouseConfig erpModules organizationId orgId')
       .lean();
-
-    if (!tenantInfo || tenantInfo.erpCategory !== 'software_house') {
-      return res.status(400).json({
-        success: false,
-        message: 'Tenant is not configured as a software house'
-      });
+    if (!tenantInfo && /^[0-9a-f]{24}$/i.test(tenantSlug)) {
+      tenantInfo = await Tenant.findById(tenantSlug)
+        .select('name _id erpCategory softwareHouseConfig erpModules organizationId orgId')
+        .lean();
     }
+    if (!tenantInfo) {
+      return res.status(404).json({ success: false, message: 'Tenant not found' });
+    }
+    if (tenantInfo.erpCategory !== 'software_house') {
+      return res.status(400).json({ success: false, message: 'Tenant is not configured as a software house' });
+    }
+
+    const orgId = tenantInfo.organizationId || tenantInfo.orgId || req.user?.orgId;
+    if (!orgId) {
+      return res.status(400).json({ success: false, message: 'Tenant organization not configured' });
+    }
+
+    const orgIdObj = mongoose.Types.ObjectId.isValid(orgId) ? new mongoose.Types.ObjectId(orgId) : orgId;
 
     const safeDefaults = {
       projects: { totalProjects: 0, activeProjects: 0, completedProjects: 0, onTrackProjects: 0, atRiskProjects: 0, delayedProjects: 0, totalBudget: 0, spentBudget: 0 },
@@ -834,97 +826,77 @@ router.get('/dashboard', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin'
       team: { totalTeamMembers: 0 }
     };
 
-    let recentProjects = [];
-    let activeSprints = [];
-    let projectMetrics = [];
-    let sprintMetrics = [];
-    let devMetrics = [];
-    let teamMetrics = [];
-
-    try {
-      recentProjects = await Project.find({ orgId: orgIdObj })
+    // Run all 6 data queries in parallel — previously sequential (each waited for the last)
+    const [
+      recentProjectsResult,
+      activeSprintsResult,
+      projectMetricsResult,
+      sprintMetricsResult,
+      devMetricsResult,
+      teamMetricsResult,
+    ] = await Promise.allSettled([
+      Project.find({ orgId: orgIdObj })
         .populate('clientId', 'name email')
         .select('name description status projectType methodology techStack budget timeline team clientId')
         .sort({ updatedAt: -1 })
         .limit(5)
-        .lean();
-    } catch (e) {
-      console.warn('Dashboard recentProjects:', e?.message);
-    }
+        .lean(),
 
-    try {
-      activeSprints = await Sprint.find({ orgId: orgIdObj, status: 'active' })
+      Sprint.find({ orgId: orgIdObj, status: 'active' })
         .populate('projectId', 'name clientId')
         .select('name projectId startDate endDate status goal capacity metrics team')
         .sort({ startDate: -1 })
         .limit(3)
-        .lean();
-    } catch (e) {
-      console.warn('Dashboard activeSprints:', e?.message);
-    }
+        .lean(),
 
-    try {
-      projectMetrics = await Project.aggregate([
+      Project.aggregate([
         { $match: { orgId: orgIdObj } },
-        {
-          $group: {
-            _id: null,
-            totalProjects: { $sum: 1 },
-            activeProjects: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } },
-            completedProjects: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
-            onTrackProjects: { $sum: 0 },
-            atRiskProjects: { $sum: 0 },
-            delayedProjects: { $sum: 0 },
-            totalBudget: { $sum: { $ifNull: ['$budget.total', 0] } },
-            spentBudget: { $sum: { $ifNull: ['$budget.spent', 0] } }
-          }
-        }
-      ]);
-    } catch (e) {
-      console.warn('Dashboard projectMetrics:', e?.message);
-    }
+        { $group: {
+          _id: null,
+          totalProjects: { $sum: 1 },
+          activeProjects: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } },
+          completedProjects: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+          onTrackProjects: { $sum: 0 },
+          atRiskProjects: { $sum: 0 },
+          delayedProjects: { $sum: 0 },
+          totalBudget: { $sum: { $ifNull: ['$budget.total', 0] } },
+          spentBudget: { $sum: { $ifNull: ['$budget.spent', 0] } }
+        }}
+      ]),
 
-    try {
-      sprintMetrics = await Sprint.aggregate([
+      Sprint.aggregate([
         { $match: { orgId: orgIdObj } },
-        {
-          $group: {
-            _id: null,
-            activeSprints: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } },
-            completedSprints: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
-            totalVelocity: { $avg: '$velocity' }
-          }
-        }
-      ]);
-    } catch (e) {
-      console.warn('Dashboard sprintMetrics:', e?.message);
-    }
+        { $group: {
+          _id: null,
+          activeSprints: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } },
+          completedSprints: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+          totalVelocity: { $avg: '$velocity' }
+        }}
+      ]),
 
-    try {
-      devMetrics = await DevelopmentMetrics.aggregate([
+      DevelopmentMetrics.aggregate([
         { $match: { orgId: orgIdObj } },
-        {
-          $group: {
-            _id: null,
-            avgCodeCoverage: { $avg: { $ifNull: ['$codeQuality.codeCoverage', 0] } },
-            avgClientSatisfaction: { $avg: { $ifNull: ['$clientSatisfaction.overallRating', 0] } },
-            totalBugs: { $sum: { $ifNull: ['$bugs.totalBugs', 0] } },
-            totalFeatures: { $sum: { $ifNull: ['$features.featuresDelivered', 0] } }
-          }
-        }
-      ]);
-    } catch (e) {
-      console.warn('Dashboard devMetrics:', e?.message);
-    }
+        { $group: {
+          _id: null,
+          avgCodeCoverage: { $avg: { $ifNull: ['$codeQuality.codeCoverage', 0] } },
+          avgClientSatisfaction: { $avg: { $ifNull: ['$clientSatisfaction.overallRating', 0] } },
+          totalBugs: { $sum: { $ifNull: ['$bugs.totalBugs', 0] } },
+          totalFeatures: { $sum: { $ifNull: ['$features.featuresDelivered', 0] } }
+        }}
+      ]),
 
-    try {
-      teamMetrics = await SoftwareHouseRole.aggregate([
+      SoftwareHouseRole.aggregate([
         { $match: { orgId: orgIdObj, isActive: true } },
         { $group: { _id: null, totalTeamMembers: { $sum: 1 } } }
-      ]);
-    } catch (e) {
-      console.warn('Dashboard teamMetrics:', e?.message);
-    }
+      ]),
+    ]);
+
+    const recentProjects   = recentProjectsResult.status  === 'fulfilled' ? recentProjectsResult.value  : [];
+    const activeSprints    = activeSprintsResult.status   === 'fulfilled' ? activeSprintsResult.value   : [];
+    const projectMetrics   = projectMetricsResult.status  === 'fulfilled' ? projectMetricsResult.value  : [];
+    const sprintMetrics    = sprintMetricsResult.status   === 'fulfilled' ? sprintMetricsResult.value   : [];
+    const devMetrics       = devMetricsResult.status      === 'fulfilled' ? devMetricsResult.value      : [];
+    const teamMetrics      = teamMetricsResult.status     === 'fulfilled' ? teamMetricsResult.value     : [];
 
     const dashboardData = {
       tenant: {
@@ -955,6 +927,39 @@ router.get('/dashboard', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin'
       error: error.message
     });
   }
+}));
+
+// ==================== SOFTWARE-HOUSE FINANCE: CLIENTS ====================
+// Used by tenant finance UI (Accounts Receivable, client management)
+const buildTenantContext = (req) => ({
+  orgId: req.user.orgId,
+  tenantId: req.user.tenantId,
+  hasSeparateDatabase: false
+});
+
+router.get('/finance/clients', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager', 'hr']), ErrorHandler.asyncHandler(async (req, res) => {
+  const tenantContext = buildTenantContext(req);
+  const options = { status: req.query.status };
+  const { clients } = await tenantOrgService.getClients(tenantContext, options);
+  res.json({ success: true, data: clients || [] });
+}));
+
+router.post('/finance/clients', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager', 'hr']), ErrorHandler.asyncHandler(async (req, res) => {
+  const tenantContext = buildTenantContext(req);
+  const client = await tenantOrgService.createClient(tenantContext, req.body);
+  res.status(201).json({ success: true, data: client });
+}));
+
+router.put('/finance/clients/:clientId', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager', 'hr']), ErrorHandler.asyncHandler(async (req, res) => {
+  const tenantContext = buildTenantContext(req);
+  const client = await tenantOrgService.updateClient(tenantContext, req.params.clientId, req.body);
+  res.json({ success: true, data: client });
+}));
+
+router.delete('/finance/clients/:clientId', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager', 'hr']), ErrorHandler.asyncHandler(async (req, res) => {
+  const tenantContext = buildTenantContext(req);
+  const client = await tenantOrgService.deleteClient(tenantContext, req.params.clientId);
+  res.json({ success: true, data: client });
 }));
 
 // Employee Portal: Get user's workspaces and projects
@@ -1077,7 +1082,7 @@ router.get('/employee-portal/workspaces', unifiedSoftwareHouseAuth, requireRole(
 }));
 
 // Employee Portal: Create personal workspace (if doesn't exist)
-router.post('/employee-portal/workspaces/personal', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager', 'employee', 'contractor']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/employee-portal/workspaces/personal', unifiedSoftwareHouseAuth, checkReadOnlySoftwareHouseOnly, checkUsageLimitSoftwareHouseOnly('workspaces', 1), requireRole(['owner', 'admin', 'project_manager', 'employee', 'contractor']), ErrorHandler.asyncHandler(async (req, res) => {
   try {
     const userId = req.user.id || req.user._id;
     const orgId = req.user.orgId;

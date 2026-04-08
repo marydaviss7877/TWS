@@ -3,17 +3,20 @@ const router = express.Router();
 const Deliverable = require('../../../models/Deliverable');
 const Milestone = require('../../../models/Milestone');
 const Project = require('../../../models/Project');
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const Task = require('../../../models/Task');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
+const { requireRole } = require('../../../middleware/auth/rbac');
 // Use standardized orgId helper utility
 const { ensureOrgId, getTenantFilter } = require('../../../utils/orgIdHelper');
+
+// Roles allowed to create/modify/delete deliverables
+const DELIVERABLE_WRITE_ROLES = ['admin', 'super_admin', 'org_manager', 'project_manager', 'pmo', 'owner'];
 
 /**
  * GET /deliverables
  * Get all deliverables for a project (or all projects)
  */
 router.get('/',
-  authenticateToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     // Use standardized orgId utility
     const orgId = await ensureOrgId(req);
@@ -40,11 +43,49 @@ router.get('/',
 );
 
 /**
+ * GET /deliverables/needing-validation
+ * Get deliverables that need date validation (14+ days since last validation)
+ * NOTE: Must be registered BEFORE /:id to avoid Express matching "needing-validation" as an id
+ */
+router.get('/needing-validation',
+  ErrorHandler.asyncHandler(async (req, res) => {
+    const orgId = await ensureOrgId(req);
+    const { daysThreshold = 14 } = req.query;
+
+    const deliverables = await Deliverable.findNeedingValidation(orgId, parseInt(daysThreshold));
+
+    const thresholdDate = new Date();
+    thresholdDate.setDate(thresholdDate.getDate() - parseInt(daysThreshold));
+
+    const milestones = await Milestone.find({
+      orgId,
+      $or: [
+        { last_date_validation: { $lt: thresholdDate } },
+        { last_date_validation: { $exists: false } }
+      ],
+      status: { $in: ['pending', 'in_progress'] }
+    }).populate('projectId', 'name');
+
+    const allItems = [
+      ...deliverables.map(d => ({ ...d.toObject(), type: 'deliverable' })),
+      ...milestones.map(m => ({
+        ...m.toObject(),
+        type: 'milestone',
+        name: m.title,
+        target_date: m.dueDate,
+        progress_percentage: m.progress
+      }))
+    ];
+
+    res.json({ success: true, data: allItems });
+  })
+);
+
+/**
  * GET /deliverables/:id
  * Get a single deliverable by ID
  */
 router.get('/:id',
-  authenticateToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     // Use standardized orgId utility
     const orgId = await ensureOrgId(req);
@@ -97,40 +138,49 @@ router.get('/:id',
  * Create a new deliverable
  */
 router.post('/',
-  authenticateToken,
+  requireRole(DELIVERABLE_WRITE_ROLES),
   ErrorHandler.asyncHandler(async (req, res) => {
     // Use standardized orgId utility
     const orgId = await ensureOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id?.toString();
-    const { project_id, name, description, start_date, target_date, status, acceptance_criteria } = req.body;
-    
-    // Validate project exists and belongs to org
-    const project = await Project.findOne({
-      _id: project_id,
-      orgId
-    });
-    
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: 'Project not found'
-      });
+    const { project_id, name, description, start_date, target_date, status, acceptance_criteria, blocking_criteria_met } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Deliverable name is required' });
     }
-    
+    if (!start_date) {
+      return res.status(400).json({ success: false, message: 'Start date is required' });
+    }
+    if (!target_date) {
+      return res.status(400).json({ success: false, message: 'Target date is required' });
+    }
+
+    // Only validate project if project_id is supplied
+    if (project_id) {
+      const project = await Project.findOne({ _id: project_id, orgId });
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: 'Project not found or does not belong to your organization'
+        });
+      }
+    }
+
     const deliverable = new Deliverable({
-      project_id,
-      name,
-      description,
+      ...(project_id ? { project_id } : {}),
+      name: name.trim(),
+      description: description || null,
       start_date: new Date(start_date),
       target_date: new Date(target_date),
       status: status || 'created',
       acceptance_criteria: acceptance_criteria || [],
+      blocking_criteria_met: blocking_criteria_met || false,
       orgId,
       tenantId
     });
-    
+
     await deliverable.save();
-    
+
     res.status(201).json({
       success: true,
       data: deliverable,
@@ -144,7 +194,7 @@ router.post('/',
  * Update a deliverable
  */
 router.put('/:id',
-  authenticateToken,
+  requireRole(DELIVERABLE_WRITE_ROLES),
   ErrorHandler.asyncHandler(async (req, res) => {
     // Use standardized orgId utility
     const orgId = await ensureOrgId(req);
@@ -189,7 +239,7 @@ router.put('/:id',
  * Delete a deliverable
  */
 router.delete('/:id',
-  authenticateToken,
+  requireRole(DELIVERABLE_WRITE_ROLES),
   ErrorHandler.asyncHandler(async (req, res) => {
     // Use standardized orgId utility
     const orgId = await ensureOrgId(req);
@@ -220,7 +270,6 @@ router.delete('/:id',
  * PM validates deliverable date and sets confidence
  */
 router.post('/:id/validate-date',
-  authenticateToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     // Use standardized orgId utility
     const orgId = await ensureOrgId(req);
@@ -281,51 +330,76 @@ router.post('/:id/validate-date',
 );
 
 /**
- * GET /deliverables/needing-validation
- * Get deliverables that need date validation (14+ days since last validation)
+ * POST /deliverables/:id/tasks/:taskId/link
+ * Link a task to a deliverable
  */
-router.get('/needing-validation',
-  authenticateToken,
+router.post('/:id/tasks/:taskId/link',
   ErrorHandler.asyncHandler(async (req, res) => {
-    await buildTenantContext(req);
-    const { orgId } = req.tenantContext;
-    const { daysThreshold = 14 } = req.query;
-    
-    // Get Deliverables needing validation
-    const deliverables = await Deliverable.findNeedingValidation(orgId, parseInt(daysThreshold));
-    
-    // Also check Milestones (if using Milestones as Deliverables)
-    const thresholdDate = new Date();
-    thresholdDate.setDate(thresholdDate.getDate() - parseInt(daysThreshold));
-    
-    const milestones = await Milestone.find({
-      orgId,
-      $or: [
-        { last_date_validation: { $lt: thresholdDate } },
-        { last_date_validation: { $exists: false } }
-      ],
-      status: { $in: ['pending', 'in_progress'] }
-    }).populate('projectId', 'name');
-    
-    // Combine and format
-    const allItems = [
-      ...deliverables.map(d => ({
-        ...d.toObject(),
-        type: 'deliverable'
-      })),
-      ...milestones.map(m => ({
-        ...m.toObject(),
-        type: 'milestone',
-        name: m.title,
-        target_date: m.dueDate,
-        progress_percentage: m.progress
-      }))
-    ];
-    
-    res.json({
-      success: true,
-      data: allItems
-    });
+    const orgId = await ensureOrgId(req);
+    const tenantId = req.tenantId || req.tenant?._id?.toString();
+
+    const deliverable = await Deliverable.findOne({ _id: req.params.id, orgId, tenantId });
+    if (!deliverable) {
+      return res.status(404).json({ success: false, message: 'Deliverable not found' });
+    }
+
+    const task = await Task.findOne({ _id: req.params.taskId, projectId: deliverable.project_id });
+    if (!task) {
+      return res.status(404).json({ success: false, message: 'Task not found or does not belong to this project' });
+    }
+
+    if (!deliverable.tasks.map(String).includes(req.params.taskId)) {
+      deliverable.tasks.push(req.params.taskId);
+      await deliverable.save();
+    }
+
+    task.milestoneId = deliverable._id;
+    await task.save();
+
+    // Recalculate progress
+    const linkedTasks = await Task.find({ _id: { $in: deliverable.tasks } });
+    const completed = linkedTasks.filter(t => t.status === 'completed').length;
+    deliverable.progress_percentage = linkedTasks.length > 0
+      ? Math.round((completed / linkedTasks.length) * 100)
+      : 0;
+    await deliverable.save();
+
+    res.json({ success: true, message: 'Task linked to deliverable', data: deliverable });
+  })
+);
+
+/**
+ * DELETE /deliverables/:id/tasks/:taskId
+ * Unlink a task from a deliverable
+ */
+router.delete('/:id/tasks/:taskId',
+  ErrorHandler.asyncHandler(async (req, res) => {
+    const orgId = await ensureOrgId(req);
+    const tenantId = req.tenantId || req.tenant?._id?.toString();
+
+    const deliverable = await Deliverable.findOne({ _id: req.params.id, orgId, tenantId });
+    if (!deliverable) {
+      return res.status(404).json({ success: false, message: 'Deliverable not found' });
+    }
+
+    deliverable.tasks = deliverable.tasks.filter(t => t.toString() !== req.params.taskId);
+    await deliverable.save();
+
+    const task = await Task.findById(req.params.taskId);
+    if (task && task.milestoneId?.toString() === req.params.id) {
+      task.milestoneId = null;
+      await task.save();
+    }
+
+    // Recalculate progress
+    const linkedTasks = await Task.find({ _id: { $in: deliverable.tasks } });
+    const completed = linkedTasks.filter(t => t.status === 'completed').length;
+    deliverable.progress_percentage = linkedTasks.length > 0
+      ? Math.round((completed / linkedTasks.length) * 100)
+      : 0;
+    await deliverable.save();
+
+    res.json({ success: true, message: 'Task unlinked from deliverable', data: deliverable });
   })
 );
 

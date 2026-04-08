@@ -5,15 +5,17 @@ const Tenant = require('../models/Tenant');
 const EmployeeMetrics = require('../models/EmployeeMetrics');
 const Project = require('../models/Project');
 const Attendance = require('../models/Attendance');
-// const Invoice = require('../models/Invoice'); // Model not yet implemented
 const usageTrackerService = require('../services/usageTrackerService');
 const projectProfitabilityService = require('../services/projectProfitabilityService');
 const hrPerformanceService = require('../services/hrPerformanceService');
 const clientHealthService = require('../services/clientHealthService');
 const aiInsightsService = require('../services/analytics/ai-insights.service');
 const tenantProvisioningService = require('../services/tenantProvisioningService');
-const emailService = require('../../services/integrations/email.service');
+const emailService = require('../services/integrations/email.service');
 const logger = require('../utils/logger');
+const { Invoice } = require('../models/Finance');
+const NotificationService = require('../services/notifications/notification.service');
+const documentHubService = require('../services/documentHub/documentHub.service');
 
 class JobScheduler {
   constructor() {
@@ -45,6 +47,9 @@ class JobScheduler {
     this.scheduleDataCleanup();
     this.scheduleBackupJobs();
     this.scheduleNotificationJobs();
+    this.scheduleDocumentReviewTimeout();
+    this.scheduleReadOnlyEnforcement();
+    this.scheduleContractorAccessExpiry();
 
     logger.info('Job scheduler started successfully');
   }
@@ -310,6 +315,104 @@ class JobScheduler {
     this.jobs.set('notificationJobs', job);
     job.start();
     logger.info('Scheduled notification job (every 15 minutes)');
+  }
+
+  /**
+   * Schedule document review timeout (FR26): 7/14-day reminders for documents in review. Run daily.
+   */
+  scheduleDocumentReviewTimeout() {
+    const job = cron.schedule('0 8 * * *', async () => {
+      try {
+        logger.info('Starting document review timeout job...');
+        await documentHubService.runDocumentReviewTimeoutJob();
+        logger.info('Document review timeout job completed');
+      } catch (error) {
+        logger.error('Document review timeout job failed:', error);
+      }
+    }, { scheduled: false, timezone: 'UTC' });
+    this.jobs.set('documentReviewTimeout', job);
+    job.start();
+    logger.info('Scheduled document review timeout job (daily 08:00 UTC)');
+  }
+
+  /**
+   * Schedule job: set readOnlyMode for tenants with paymentFailedAt > 7 days ago (Software House billing).
+   */
+  scheduleReadOnlyEnforcement() {
+    const job = cron.schedule('0 */6 * * *', async () => {
+      try {
+        await this.runReadOnlyEnforcement();
+      } catch (error) {
+        logger.error('Read-only enforcement job failed:', error);
+      }
+    }, { scheduled: false, timezone: 'UTC' });
+    this.jobs.set('readOnlyEnforcement', job);
+    job.start();
+    logger.info('Scheduled read-only enforcement job (every 6 hours)');
+  }
+
+  /**
+   * Contractor/auditor access expiry (UPR Phase 4.1).
+   * Every 10 min: mark expired TenantDepartmentAccess, invalidate cache + revocation list.
+   */
+  scheduleContractorAccessExpiry() {
+    const job = cron.schedule('*/10 * * * *', async () => {
+      try {
+        await this.runContractorAccessExpiry();
+      } catch (error) {
+        logger.error('Contractor access expiry job failed:', error);
+      }
+    }, { scheduled: false, timezone: 'UTC' });
+    this.jobs.set('contractorAccessExpiry', job);
+    job.start();
+    logger.info('Scheduled contractor access expiry job (every 10 minutes)');
+  }
+
+  async runContractorAccessExpiry() {
+    const TenantDepartmentAccess = require('../models/TenantDepartmentAccess');
+    const { invalidateResolvedPermissions } = require('../services/tenant/permissionResolver.service');
+    const toExpire = await TenantDepartmentAccess.find({
+      status: 'active',
+      expiresAt: { $lt: new Date() }
+    })
+      .select('tenantId userId')
+      .lean();
+    if (toExpire.length === 0) return;
+    const seen = new Set();
+    const pairs = [];
+    for (const r of toExpire) {
+      const t = r.tenantId?.toString?.();
+      const u = r.userId?.toString?.();
+      if (t && u) {
+        const key = t + ':' + u;
+        if (!seen.has(key)) {
+          seen.add(key);
+          pairs.push({ tenantId: t, userId: u });
+        }
+      }
+    }
+    const result = await TenantDepartmentAccess.cleanupExpired();
+    for (const { tenantId, userId } of pairs) {
+      await invalidateResolvedPermissions(tenantId, userId, { addRevoked: true });
+    }
+    if (result.modifiedCount > 0) {
+      logger.info(`Contractor access expiry: marked ${result.modifiedCount} record(s) expired, invalidated ${pairs.length} user(s)`);
+    }
+  }
+
+  async runReadOnlyEnforcement() {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const result = await Tenant.updateMany(
+      {
+        erpCategory: 'software_house',
+        'subscription.paymentFailedAt': { $exists: true, $ne: null, $lte: sevenDaysAgo },
+        'subscription.readOnlyMode': { $ne: true }
+      },
+      { $set: { 'subscription.readOnlyMode': true } }
+    );
+    if (result.modifiedCount > 0) {
+      logger.info(`Read-only mode enabled for ${result.modifiedCount} tenant(s) (payment failed >7 days ago)`);
+    }
   }
 
   /**
@@ -713,39 +816,50 @@ class JobScheduler {
    */
   async runNotificationJobs() {
     try {
-      // Check for overdue invoices
+      // Overdue invoices: use Finance Invoice (orgId); notify via service + email to tenant
       const overdueInvoices = await Invoice.find({
-        status: 'pending',
+        status: { $in: ['sent', 'overdue'] },
         dueDate: { $lt: new Date() }
-      });
-      
+      }).lean();
+
       for (const invoice of overdueInvoices) {
-        const tenant = await Tenant.findOne({ tenantId: invoice.tenantId });
+        const tenant = await Tenant.findOne({ organizationId: invoice.orgId }).lean();
         if (tenant) {
           await emailService.sendOverdueInvoiceNotification(tenant, invoice);
         }
+        await NotificationService.notifyInvoiceOverdue(invoice);
       }
-      
-      // Check for usage alerts
-      const tenants = await Tenant.find({ status: 'active' });
-      
-      for (const tenant of tenants) {
-        const usage = await usageTrackerService.getAllCurrentUsage(tenant.tenantId);
-        const subscriptionPlan = await require('../models/SubscriptionPlan').findOne({ 
-          slug: tenant.subscription.plan 
-        });
-        
-        if (subscriptionPlan) {
-          // Check for usage approaching limits
-          Object.entries(usage).forEach(async ([metric, value]) => {
-            const limit = subscriptionPlan.getUsageLimit(metric);
-            if (limit !== -1 && value > limit * 0.9) { // 90% of limit
-              await emailService.sendUsageAlert(tenant, metric, value, limit);
-            }
-          });
+
+      // Budget 80% warning (FR18): notify PM, Finance, CEO
+      const projects = await Project.find({
+        'budget.total': { $gt: 0 },
+        status: { $in: ['active', 'in_progress'] }
+      }).lean();
+      for (const project of projects) {
+        const total = project.budget?.total || 0;
+        const spent = project.budget?.spent || 0;
+        if (total > 0 && spent / total >= 0.8) {
+          await NotificationService.notifyBudget80Warning(project, project.orgId);
         }
       }
-      
+
+      // Usage alerts
+      const tenants = await Tenant.find({ status: 'active' });
+      for (const tenant of tenants) {
+        const usage = await usageTrackerService.getAllCurrentUsage(tenant._id);
+        const subscriptionPlan = await require('../models/SubscriptionPlan').findOne({
+          slug: tenant.subscription?.plan
+        });
+        if (subscriptionPlan) {
+          for (const [metric, value] of Object.entries(usage || {})) {
+            const limit = subscriptionPlan.getUsageLimit(metric);
+            if (limit !== -1 && limit !== undefined && value > limit * 0.9) {
+              await emailService.sendUsageAlert(tenant, metric, value, limit);
+            }
+          }
+        }
+      }
+
       logger.debug('Notification job completed successfully');
     } catch (error) {
       logger.error('Notification job failed:', error);

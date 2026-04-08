@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router({ mergeParams: true });
 const { requireRole } = require('../../../middleware/auth/auth');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const Department = require('../../../models/Department');
 const DepartmentDashboardService = require('../../../services/analytics/department-dashboard.service');
@@ -12,6 +13,11 @@ const { body, validationResult } = require('express-validator');
 const { injectOwnership, injectUpdateOwnership } = require('../../../middleware/validation/ownershipMiddleware');
 // ✅ IDOR Fix: Resource access validation
 const { validateResourceAccess } = require('../../../middleware/security/resourceAccessCheck');
+
+const VALID_MODULE_KEYS = new Set([
+  'projects', 'hr', 'finance', 'payroll', 'documents', 'analytics', 'nucleus',
+  'clients', 'deals', 'audit', 'attendance', 'leave', 'notifications', 'settings'
+]);
 
 // Tenant context from ERP token (sets req.user, req.tenant, req.tenantContext, req.orgId)
 router.use(verifyERPToken);
@@ -30,25 +36,30 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
+const deptListAccess = requireErpAccess({ module: 'hr', action: 'read' });
+
 // Get all departments
-router.get('/', ErrorHandler.asyncHandler(async (req, res) => {
-  // Use standardized orgId utility
-  const orgId = await ensureOrgId(req);
+router.get('/', deptListAccess, ErrorHandler.asyncHandler(async (req, res) => {
   const { includeInactive } = req.query;
-  
-  // Use standardized tenant filter
-  const filter = await getTenantFilter(req);
+
+  // Resolve orgId — return empty list (not 500) if context is unavailable
+  let filter;
+  try {
+    filter = await getTenantFilter(req);
+  } catch (err) {
+    return res.json({ success: true, data: [] });
+  }
+
   let query = { ...filter };
-  
   if (includeInactive !== 'true') {
     query.status = 'active';
   }
-  
+
   const departments = await Department.find(query)
     .populate('departmentHead', 'fullName email')
     .populate('parentDepartment', 'name code')
     .sort({ name: 1 });
-  
+
   res.json({
     success: true,
     data: departments
@@ -111,15 +122,25 @@ router.post('/',
     body('parentDepartment').optional().isMongoId().withMessage('Invalid parent department ID'),
     body('departmentHead').optional().isMongoId().withMessage('Invalid department head ID'),
     body('settings').optional().isObject().withMessage('Settings must be an object'),
+    body('moduleKey').optional().isIn([...VALID_MODULE_KEYS]).withMessage('moduleKey must be one of: ' + [...VALID_MODULE_KEYS].join(', ')),
     handleValidationErrors
   ],
   injectOwnership,
   ErrorHandler.asyncHandler(async (req, res) => {
-  // Use standardized orgId utility
-  const orgId = await ensureOrgId(req);
+  // Resolve orgId — return clear 400 if context is unavailable rather than crashing
+  let orgId;
+  try {
+    orgId = await ensureOrgId(req);
+  } catch (err) {
+    return res.status(400).json({ success: false, message: 'Organization context could not be determined. Please log in again.' });
+  }
   const tenantId = req.tenantId || req.user?.tenantId;
-  const { name, code, description, parentDepartment, departmentHead, settings } = req.body;
-  
+  const { name, code, description, parentDepartment, departmentHead, settings, moduleKey } = req.body;
+
+  if (moduleKey !== undefined && moduleKey !== null && moduleKey !== '' && !VALID_MODULE_KEYS.has(moduleKey)) {
+    return res.status(400).json({ success: false, message: 'Invalid moduleKey. Must be one of: ' + [...VALID_MODULE_KEYS].join(', ') });
+  }
+
   // Check if department with same code already exists
   const existingDepartment = await Department.findOne({ 
     code: code.toUpperCase().trim(),
@@ -144,6 +165,7 @@ router.post('/',
     parentDepartment: parentDepartment || undefined,
     departmentHead: departmentHead || undefined,
     settings: settings || {},
+    moduleKey: moduleKey && VALID_MODULE_KEYS.has(moduleKey) ? moduleKey : undefined,
     status: 'active',
     createdBy: req.body.createdBy || req.user?._id
   });
@@ -176,6 +198,7 @@ router.put('/:id',
     body('parentDepartment').optional().isMongoId().withMessage('Invalid parent department ID'),
     body('departmentHead').optional().isMongoId().withMessage('Invalid department head ID'),
     body('status').optional().isIn(['active', 'inactive', 'archived']).withMessage('Invalid status'),
+    body('moduleKey').optional().isIn([...VALID_MODULE_KEYS]).withMessage('moduleKey must be one of: ' + [...VALID_MODULE_KEYS].join(', ')),
     handleValidationErrors
   ],
   injectUpdateOwnership,
@@ -184,7 +207,11 @@ router.put('/:id',
   // Use standardized orgId utility
   const orgId = await ensureOrgId(req);
   const tenantId = req.tenantId || req.user?.tenantId;
-  const { name, code, description, parentDepartment, departmentHead, settings, status } = req.body;
+  const { name, code, description, parentDepartment, departmentHead, settings, status, moduleKey } = req.body;
+
+  if (moduleKey !== undefined && moduleKey !== null && moduleKey !== '' && !VALID_MODULE_KEYS.has(moduleKey)) {
+    return res.status(400).json({ success: false, message: 'Invalid moduleKey. Must be one of: ' + [...VALID_MODULE_KEYS].join(', ') });
+  }
   
   const department = await Department.findOne({
     _id: id,
@@ -244,6 +271,10 @@ router.put('/:id',
   
   if (departmentHead !== undefined) {
     department.departmentHead = departmentHead || undefined;
+  }
+
+  if (moduleKey !== undefined) {
+    department.moduleKey = (moduleKey && VALID_MODULE_KEYS.has(moduleKey)) ? moduleKey : null;
   }
   
   if (settings !== undefined) {

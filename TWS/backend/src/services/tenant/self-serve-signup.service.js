@@ -8,41 +8,8 @@ const tenantProvisioningService = require('../tenantProvisioningService');
 const emailService = require('../integrations/email.service');
 const masterERPService = require('../masterERPService');
 const envConfig = require('../../config/environment');
-const { Queue } = require('bullmq');
-const Redis = require('ioredis');
 
-// Initialize Redis connection for job queue
-let redis = null;
-let tenantProvisioningQueue = null;
-
-try {
-  redis = new Redis({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: process.env.REDIS_PORT || 6379,
-    password: process.env.REDIS_PASSWORD,
-    db: process.env.REDIS_DB || 0,
-    maxRetriesPerRequest: null,
-    retryDelayOnFailover: 100,
-    lazyConnect: true,
-    enableOfflineQueue: false,
-    connectTimeout: 5000
-  });
-
-  tenantProvisioningQueue = new Queue('tenantProvisioning', {
-    connection: redis,
-    defaultJobOptions: {
-      removeOnComplete: 100,
-      removeOnFail: 50,
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 2000
-      }
-    }
-  });
-} catch (error) {
-  console.warn('⚠️  Redis not available - tenant provisioning will run synchronously');
-}
+// Tenant provisioning runs synchronously (no queue needed)
 
 class SelfServeSignupService {
   /**
@@ -65,7 +32,7 @@ class SelfServeSignupService {
     try {
       console.log('📝 Looking for temporary organization with slug: signup-temp');
       tempOrg = await Organization.findOne({ slug: 'signup-temp' });
-      
+
       if (!tempOrg) {
         console.log('📝 Temporary organization not found, creating new one...');
         // Create temporary organization for signup users
@@ -74,7 +41,7 @@ class SelfServeSignupService {
           slug: 'signup-temp',
           status: 'active'
         });
-        
+
         console.log('📝 Saving temporary organization...');
         await tempOrg.save();
         console.log('✅ Created temporary organization for signup:', tempOrg._id);
@@ -95,7 +62,7 @@ class SelfServeSignupService {
       if (orgError.keyValue) {
         console.error('❌ Organization duplicate key value:', orgError.keyValue);
       }
-      
+
       // If it's a duplicate key error, try to find the existing org
       if (orgError.code === 11000) {
         console.log('📝 Duplicate key error, trying to find existing organization...');
@@ -116,7 +83,7 @@ class SelfServeSignupService {
       console.log('📝 Creating user with email:', email.toLowerCase());
       console.log('📝 User orgId:', tempOrg._id);
       console.log('📝 User fullName:', fullName);
-      
+
       const user = new User({
         email: email.toLowerCase(),
         password,
@@ -148,7 +115,7 @@ class SelfServeSignupService {
       console.error('❌ User error message:', userError.message);
       console.error('❌ User error code:', userError.code);
       console.error('❌ User error stack:', userError.stack);
-      
+
       if (userError.errors) {
         console.error('❌ User validation errors:', JSON.stringify(userError.errors, null, 2));
         const validationErrors = Object.keys(userError.errors).map(key => ({
@@ -299,8 +266,8 @@ class SelfServeSignupService {
     // Add industry-specific configurations
     if (industry === 'education' && metadata.schoolType) {
       tenantData.educationConfig = {
-        institutionType: metadata.schoolType === 'school' ? 'school' : 
-                         metadata.schoolType === 'college' ? 'college' : 'university'
+        institutionType: metadata.schoolType === 'school' ? 'school' :
+          metadata.schoolType === 'college' ? 'college' : 'university'
       };
       if (metadata.schoolEmail) {
         tenantData.contactInfo.email = metadata.schoolEmail;
@@ -391,7 +358,7 @@ class SelfServeSignupService {
       try {
         console.log('📝 Starting synchronous tenant provisioning...');
         console.log('📝 Tenant data:', JSON.stringify(tenantData, null, 2));
-        
+
         const result = await tenantProvisioningService.provisionTenant(
           tenantData,
           masterERPId, // Use master ERP ID if found
@@ -505,37 +472,37 @@ class SelfServeSignupService {
   async completeSignup(email, password, fullName, organizationName, organizationSlug, metadata = {}) {
     const mongoose = require('mongoose');
     const session = await mongoose.startSession();
-    
+
     let user, tenant, organization, tenantRole;
-    
+
     try {
       console.log('📝 Starting complete signup transaction...');
       console.log('📝 Email:', email);
       console.log('📝 Organization:', organizationName);
       console.log('📝 Slug:', organizationSlug);
-      
+
       const result = await session.withTransaction(async () => {
         // Step 1: Validate email doesn't exist
         const existingUser = await User.findOne({ email: email.toLowerCase() }).session(session);
         if (existingUser) {
           throw new Error('User with this email already exists');
         }
-        
+
         // Step 2: Validate slug availability
         const existingTenant = await Tenant.findOne({ slug: organizationSlug.toLowerCase() }).session(session);
         if (existingTenant) {
           throw new Error('Organization slug is already taken');
         }
-        
+
         // Step 3: Validate password strength
         this.validatePassword(password);
-        
+
         // Step 4: Validate slug format
         this.validateSlug(organizationSlug);
-        
+
         // Step 5: Generate tenantId
         const tenantId = this.generateTenantId(organizationName);
-        
+
         // Step 6: Create organization first (needed for createdBy placeholder)
         console.log('📝 Step 6: Creating organization...');
         organization = await Organization.create([{
@@ -546,7 +513,7 @@ class SelfServeSignupService {
         }], { session });
         organization = organization[0];
         console.log('✅ Organization created:', organization._id);
-        
+
         // Step 7: Prepare tenant data with ownerCredentials and createdBy
         const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || 'owner';
         const tenantData = {
@@ -598,23 +565,23 @@ class SelfServeSignupService {
           createdBy: organization._id,
           createdByModel: 'Organization'
         };
-        
+
         // Step 8: Create tenant record
         console.log('📝 Step 8: Creating tenant record...');
         tenant = await Tenant.create([tenantData], { session });
         tenant = tenant[0];
         console.log('✅ Tenant created:', tenant._id);
-        
+
         // Step 9: Update organization with tenantId
         organization.tenantId = tenant._id;
         await organization.save({ session });
-        
+
         // Step 10: Create database connection
         console.log('📝 Step 10: Creating tenant database...');
         const { createTenantDatabase } = require('../tenantProvisioningService/tenantCreation');
         await createTenantDatabase(tenant, session);
         console.log('✅ Database created');
-        
+
         // Step 11: Create user with correct orgId
         console.log('📝 Step 11: Creating user...');
         user = await User.create([{
@@ -637,13 +604,13 @@ class SelfServeSignupService {
         }], { session });
         user = user[0];
         console.log('✅ User created:', user._id);
-        
+
         // Step 12: Update tenant createdBy to actual user (self-serve)
         tenant.createdBy = user._id;
         tenant.createdByModel = 'User';
         await tenant.save({ session });
         console.log('✅ Tenant createdBy updated');
-        
+
         // Step 13: Create tenant role assignment
         console.log('📝 Step 13: Creating tenant role...');
         tenantRole = await TenantRole.create([{
@@ -654,7 +621,7 @@ class SelfServeSignupService {
         }], { session });
         tenantRole = tenantRole[0];
         console.log('✅ Tenant role created');
-        
+
         // Step 13b: Create TenantUser for per-tenant role (FR1 isolated user management)
         console.log('📝 Step 13b: Creating TenantUser for owner...');
         await TenantUser.create([{
@@ -665,14 +632,14 @@ class SelfServeSignupService {
           lastActivity: new Date()
         }], { session });
         console.log('✅ TenantUser created');
-        
+
         // Step 14: Update tenant status to active
         console.log('📝 Step 14: Activating tenant...');
         tenant.status = 'active';
         tenant.activatedAt = new Date();
         await tenant.save({ session });
         console.log('✅ Tenant activated');
-        
+
         return {
           user: user.toJSON(),
           tenant: tenant.toJSON(),
@@ -680,9 +647,9 @@ class SelfServeSignupService {
           tenantRole: tenantRole.toJSON()
         };
       });
-      
+
       console.log('✅ Complete signup transaction committed successfully');
-      
+
       // Step 13: Seed industry-specific data (background, non-blocking)
       setImmediate(async () => {
         try {
@@ -700,7 +667,7 @@ class SelfServeSignupService {
           console.error('⚠️ Error seeding data (non-critical):', seedError);
         }
       });
-      
+
       // Step 14: Send welcome email (background, non-blocking)
       setImmediate(async () => {
         try {
@@ -712,7 +679,7 @@ class SelfServeSignupService {
           console.error('⚠️ Error sending welcome email (non-critical):', emailError);
         }
       });
-      
+
       // Step 15: Initialize onboarding checklist (background, non-blocking)
       setImmediate(async () => {
         try {
@@ -724,20 +691,20 @@ class SelfServeSignupService {
           console.error('⚠️ Error initializing onboarding checklist (non-critical):', checklistError);
         }
       });
-      
+
       return {
         user,
         tenant,
         organization,
         message: 'Account and workspace created successfully'
       };
-      
+
     } catch (error) {
       console.error('❌ Complete signup error:', error);
       console.error('❌ Error name:', error.name);
       console.error('❌ Error message:', error.message);
       console.error('❌ Error stack:', error.stack);
-      
+
       // Transaction will automatically rollback on error
       throw error;
     } finally {

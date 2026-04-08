@@ -198,9 +198,12 @@ class TenantSwitchingService {
         assignedBy: updatedBy,
         assignedAt: new Date()
       }];
-      
+
       await tenantUser.save();
-      
+
+      const { invalidateResolvedPermissions } = require('./permissionResolver.service');
+      await invalidateResolvedPermissions(tenantId, userId);
+
       return tenantUser;
     } catch (error) {
       throw new Error(`Failed to update user role: ${error.message}`);

@@ -14,10 +14,16 @@ const bcrypt = require('bcryptjs');
 const { authenticateToken } = require('../../../middleware/auth/auth');
 const tenantOrgService = require('../../../services/tenant/tenant-org.service');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const { tokenVerificationLimiter, strictLimiter } = require('../../../middleware/rateLimiting/rateLimiter');
 
+const attendanceRead = requireErpAccess({ module: 'attendance', action: 'read', checkRevocation: false });
+const attendanceWrite = requireErpAccess({ module: 'attendance', action: 'write', checkRevocation: false });
+const employeesRead = requireErpAccess({ module: 'employees', action: 'read', checkRevocation: false });
+const employeesWrite = requireErpAccess({ module: 'employees', action: 'write', checkRevocation: false });
+
 const TenantMiddleware = require('../../../middleware/tenant/tenantMiddleware');
-const { requireModuleAccess } = require('../../../middleware/auth/moduleAccessControl');
+const { checkUsageLimitSoftwareHouseOnly, checkReadOnlySoftwareHouseOnly } = require('../../../middleware/common/featureGate');
 
 // @deprecated - Use verifyERPToken middleware instead
 // This function is kept for backward compatibility but should not be used in new code
@@ -633,6 +639,46 @@ router.get('/info', authenticateToken, async (req, res) => {
   }
 });
 
+// ── Organization Profile (GET + PUT) ─────────────────────────────────────────
+// Returns full org profile: name, description, contactInfo, businessInfo, branding, subscription
+router.get('/profile', authenticateToken, async (req, res) => {
+  try {
+    const { tenantSlug } = req.params;
+    const tenant = await Tenant.findOne({ slug: tenantSlug })
+      .select('name slug description contactInfo businessInfo branding subscription erpCategory erpModules status createdAt');
+    if (!tenant) return res.status(404).json({ success: false, message: 'Organization not found' });
+    res.json({ success: true, data: tenant });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error fetching organization profile', error: err.message });
+  }
+});
+
+// Update org profile (name, description, contactInfo, businessInfo, branding colors)
+router.put('/profile', verifyERPToken, async (req, res) => {
+  try {
+    const { tenantSlug } = req.params;
+    const { name, description, contactInfo, businessInfo, branding } = req.body;
+
+    const allowed = {};
+    if (name)         allowed.name        = name;
+    if (description !== undefined) allowed.description = description;
+    if (contactInfo)  allowed.contactInfo = contactInfo;
+    if (businessInfo) allowed.businessInfo = businessInfo;
+    if (branding)     allowed.branding    = branding;
+
+    const tenant = await Tenant.findOneAndUpdate(
+      { slug: tenantSlug },
+      { $set: allowed },
+      { new: true, runValidators: true }
+    ).select('name slug description contactInfo businessInfo branding subscription erpCategory erpModules status');
+
+    if (!tenant) return res.status(404).json({ success: false, message: 'Organization not found' });
+    res.json({ success: true, data: tenant, message: 'Organization profile updated' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error updating organization profile', error: err.message });
+  }
+});
+
 // @deprecated - verifyERPToken middleware now sets tenantContext automatically
 // This function is kept for backward compatibility but should not be used in new code
 // Will be removed in a future version
@@ -774,7 +820,7 @@ router.get('/analytics/reports', verifyERPToken, async (req, res) => {
 // ==================== HR ATTENDANCE ROUTES ====================
 
 // Get attendance data (list + summary for a date or month, optional employeeId for employee portal)
-router.get('/hr/attendance', verifyERPToken, async (req, res) => {
+router.get('/hr/attendance', verifyERPToken, attendanceRead, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { date, employeeId, month } = req.query;
@@ -787,7 +833,7 @@ router.get('/hr/attendance', verifyERPToken, async (req, res) => {
 });
 
 // Software House Attendance Engine config (departments, categories, user types)
-router.get('/hr/attendance/config', verifyERPToken, async (req, res) => {
+router.get('/hr/attendance/config', verifyERPToken, attendanceRead, async (req, res) => {
   try {
     const config = tenantOrgService.getSoftwareHouseAttendanceConfig();
     res.json({ success: true, data: config });
@@ -798,7 +844,7 @@ router.get('/hr/attendance/config', verifyERPToken, async (req, res) => {
 });
 
 // Check-in
-router.post('/hr/attendance/check-in', verifyERPToken, async (req, res) => {
+router.post('/hr/attendance/check-in', verifyERPToken, attendanceWrite, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { employeeId, ...checkInData } = req.body;
@@ -815,7 +861,7 @@ router.post('/hr/attendance/check-in', verifyERPToken, async (req, res) => {
 });
 
 // Check-out
-router.post('/hr/attendance/check-out', verifyERPToken, async (req, res) => {
+router.post('/hr/attendance/check-out', verifyERPToken, attendanceWrite, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { employeeId, ...checkOutData } = req.body;
@@ -834,7 +880,7 @@ router.post('/hr/attendance/check-out', verifyERPToken, async (req, res) => {
 // ==================== HR EMPLOYEES ROUTES ====================
 
 // Get employees list (with pagination and filters)
-router.get('/hr/employees', verifyERPToken, async (req, res) => {
+router.get('/hr/employees', verifyERPToken, employeesRead, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { page, limit, department, status } = req.query;
@@ -847,7 +893,7 @@ router.get('/hr/employees', verifyERPToken, async (req, res) => {
 });
 
 // Get single employee by ID
-router.get('/hr/employees/:id', verifyERPToken, async (req, res) => {
+router.get('/hr/employees/:id', verifyERPToken, employeesRead, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { id } = req.params;
@@ -863,15 +909,26 @@ router.get('/hr/employees/:id', verifyERPToken, async (req, res) => {
 });
 
 // Create employee
-router.post('/hr/employees', verifyERPToken, async (req, res) => {
+router.post('/hr/employees', verifyERPToken, employeesWrite, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const employeeData = req.body;
-    if (!employeeData || !employeeData.employeeId) {
-      return res.status(400).json({ success: false, message: 'employeeId is required' });
+    if (!employeeData) {
+      return res.status(400).json({ success: false, message: 'Employee data is required' });
+    }
+    // jobTitle is the only truly required field (name is resolved inside the service)
+    if (!employeeData.jobTitle) {
+      return res.status(400).json({ success: false, message: 'jobTitle is required' });
     }
     const employee = await tenantOrgService.createEmployee(tenantContext, employeeData);
-    res.status(201).json({ success: true, data: employee });
+    const temporaryPassword = employee._temporaryPassword || undefined;
+    res.status(201).json({
+      success: true,
+      data: {
+        employee,
+        ...(temporaryPassword && { temporaryPassword, mustChangePassword: true })
+      }
+    });
   } catch (error) {
     console.error('Create HR employee error:', error);
     const status = error.name === 'ValidationError' ? 400 : 500;
@@ -879,8 +936,136 @@ router.post('/hr/employees', verifyERPToken, async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// INVITE FLOW
+// POST /hr/employees/invite — admin sends a portal invite by email
+// GET  /hr/employees/invite/accept?token= — validate token (public)
+// POST /hr/employees/invite/accept — activate account + set password (public)
+// ---------------------------------------------------------------------------
+
+router.post('/hr/employees/invite', verifyERPToken, employeesWrite, async (req, res) => {
+  try {
+    const { email, erpRole = 'employee', hrSubRole } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: 'email is required' });
+
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { tenantId, orgId } = tenantContext;
+    if (!tenantId) return res.status(400).json({ success: false, message: 'Tenant context required' });
+
+    const User = require('../../../models/User');
+    const TenantUser = require('../../../models/TenantUser');
+    const fullName = req.body.fullName || email.split('@')[0];
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Find or create a stub User
+    let user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      const crypto = require('crypto');
+      user = new User({
+        fullName,
+        email: normalizedEmail,
+        password: crypto.randomBytes(16).toString('hex'),
+        role: 'employee',
+        orgId,
+        status: 'pending',
+        emailVerified: false,
+        mustChangePassword: true,
+        createdBy: req.user?._id
+      });
+      await user.save();
+    }
+
+    // Guard: already active
+    const existingTU = await TenantUser.findOne({ userId: user._id, tenantId });
+    if (existingTU && existingTU.status === 'active') {
+      return res.status(409).json({ success: false, message: 'This person already has active portal access.' });
+    }
+
+    let tenantUser;
+    if (existingTU) {
+      const crypto = require('crypto');
+      existingTU.invitation.invitationToken = crypto.randomBytes(32).toString('hex');
+      existingTU.invitation.invitationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      existingTU.status = 'pending';
+      if (hrSubRole && erpRole === 'hr') existingTU.hrSubRole = hrSubRole;
+      await existingTU.save();
+      tenantUser = existingTU;
+    } else {
+      tenantUser = await TenantUser.inviteUser(user._id, tenantId, req.user?._id, erpRole);
+      if (hrSubRole && erpRole === 'hr') { tenantUser.hrSubRole = hrSubRole; await tenantUser.save(); }
+    }
+
+    const envConfig = require('../../../config/environment');
+    const frontendUrl = envConfig.get('FRONTEND_URL') || process.env.FRONTEND_URL || '';
+    const inviteLink = `${frontendUrl}/invite/accept?token=${tenantUser.invitation.invitationToken}`;
+
+    const Organization = require('../../../models/Organization');
+    const org = await Organization.findById(orgId).select('name').lean();
+    const inviter = await User.findById(req.user?._id).select('fullName').lean();
+
+    const emailService = require('../../../services/integrations/email.service');
+    emailService.sendEmployeeInviteEmail(
+      { fullName, email: normalizedEmail },
+      { inviteLink, orgName: org?.name || 'your organisation', role: erpRole, inviterName: inviter?.fullName || 'An admin' }
+    ).catch(err => console.warn('Invite email failed (non-fatal):', err.message));
+
+    res.status(201).json({ success: true, message: `Invitation sent to ${normalizedEmail}`, data: { inviteLink, email: normalizedEmail, erpRole } });
+  } catch (error) {
+    console.error('Invite employee error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to send invite' });
+  }
+});
+
+// Validate token (called by InviteAccept page on mount)
+router.get('/hr/employees/invite/accept', async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ success: false, message: 'token required' });
+  const TenantUser = require('../../../models/TenantUser');
+  const tenantUser = await TenantUser.findOne({
+    'invitation.invitationToken': token,
+    'invitation.invitationExpires': { $gt: new Date() },
+    status: 'pending'
+  }).populate('userId', 'email fullName');
+  if (!tenantUser) return res.status(400).json({ success: false, message: 'Invalid or expired invitation link' });
+  res.json({ success: true, data: { email: tenantUser.userId?.email, fullName: tenantUser.userId?.fullName, role: tenantUser.roles?.[0]?.role || 'employee' } });
+});
+
+// Activate invite — set password and go active
+router.post('/hr/employees/invite/accept', async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ success: false, message: 'token and password are required' });
+  if (password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+
+  const TenantUser = require('../../../models/TenantUser');
+  const User = require('../../../models/User');
+  const tenantUser = await TenantUser.findOne({
+    'invitation.invitationToken': token,
+    'invitation.invitationExpires': { $gt: new Date() },
+    status: 'pending'
+  });
+  if (!tenantUser) return res.status(400).json({ success: false, message: 'Invalid or expired invitation link' });
+
+  const user = await User.findById(tenantUser.userId);
+  if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+  user.password = password;
+  user.status = 'active';
+  user.mustChangePassword = false;
+  await user.save();
+
+  tenantUser.status = 'active';
+  tenantUser.invitation.acceptedAt = new Date();
+  tenantUser.lastActivity = new Date();
+  await tenantUser.save();
+
+  const { invalidateResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
+  await invalidateResolvedPermissions(tenantUser.tenantId, user._id).catch(() => {});
+
+  res.json({ success: true, message: 'Account activated. You can now log in.' });
+});
+
 // Attendance reports
-router.get('/hr/attendance/reports', verifyERPToken, async (req, res) => {
+router.get('/hr/attendance/reports', verifyERPToken, attendanceRead, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { from, to, employeeId, department } = req.query;
@@ -921,7 +1106,7 @@ router.get('/users', verifyERPToken, async (req, res) => {
 });
 
 // Create user
-router.post('/users', verifyERPToken, async (req, res) => {
+router.post('/users', verifyERPToken, checkReadOnlySoftwareHouseOnly, checkUsageLimitSoftwareHouseOnly('users', 1), async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const userData = req.body;
@@ -933,25 +1118,50 @@ router.post('/users', verifyERPToken, async (req, res) => {
   }
 });
 
-// Get user by ID
+// Get user by ID (includes TenantUser.role and hrSubRole for UI)
 router.get('/users/:id', verifyERPToken, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const tenantId = req.tenant?._id || tenantContext?.tenantId;
     const { id } = req.params;
     const user = await tenantOrgService.getUserById(tenantContext, id);
-    res.json({ success: true, data: user });
+    const userObj = user?.toObject ? user.toObject() : { ...user };
+    const TenantUser = require('../../../models/TenantUser');
+    const tenantUser = await TenantUser.findOne({ userId: id, tenantId, status: 'active' }).select('roles hrSubRole').lean();
+    if (tenantUser) {
+      userObj.role = tenantUser.roles?.[0]?.role || userObj.role;
+      userObj.hrSubRole = tenantUser.hrSubRole ?? null;
+    }
+    res.json({ success: true, data: userObj });
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch user' });
   }
 });
 
-// Update user
+// Update user (includes TenantUser.hrSubRole when role is hr — UPR Phase 2)
 router.put('/users/:id', verifyERPToken, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const tenantId = req.tenant?._id || tenantContext?.tenantId;
     const { id } = req.params;
-    const userData = req.body;
+    const { hrSubRole, ...userData } = req.body;
+
+    if (hrSubRole !== undefined) {
+      const valid = ['manager', 'executive', 'payroll_officer'].includes(hrSubRole);
+      if (hrSubRole !== null && hrSubRole !== '' && !valid) {
+        return res.status(400).json({ success: false, message: 'hrSubRole must be one of: manager, executive, payroll_officer' });
+      }
+      const TenantUser = require('../../../models/TenantUser');
+      const { invalidateResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
+      const tenantUser = await TenantUser.findOne({ userId: id, tenantId, status: 'active' });
+      if (tenantUser) {
+        tenantUser.hrSubRole = (hrSubRole === null || hrSubRole === '') ? undefined : hrSubRole;
+        await tenantUser.save();
+        await invalidateResolvedPermissions(tenantId, id);
+      }
+    }
+
     const user = await tenantOrgService.updateUser(tenantContext, id, userData);
     res.json({ success: true, data: user });
   } catch (error) {
@@ -963,6 +1173,89 @@ router.put('/users/:id', verifyERPToken, async (req, res) => {
 // ==================== USER PROFILE ROUTES ====================
 
 // Configure multer for profile picture uploads
+// ── Org Logo Upload ───────────────────────────────────────────────────────────
+const orgLogoStorage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'uploads', 'org-logos');
+    await fs.mkdir(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const { tenantSlug } = req.params;
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `logo-${tenantSlug}-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const orgLogoUpload = multer({
+  storage: orgLogoStorage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|gif|webp|svg/;
+    if (allowed.test(path.extname(file.originalname).toLowerCase()) && allowed.test(file.mimetype)) {
+      return cb(null, true);
+    }
+    cb(new Error('Only image files are allowed (jpeg, jpg, png, gif, webp, svg)'));
+  }
+});
+
+// POST /profile/logo — upload org logo (admin only)
+router.post('/profile/logo', verifyERPToken, (req, res, next) => {
+  orgLogoUpload.single('logo')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ success: false, message: 'Logo must be under 2 MB' });
+      return res.status(400).json({ success: false, message: err.message || 'Invalid file' });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    const { tenantSlug } = req.params;
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+
+    const tenant = await Tenant.findOne({ slug: tenantSlug });
+    if (!tenant) { await fs.unlink(req.file.path); return res.status(404).json({ success: false, message: 'Organization not found' }); }
+
+    // Delete old logo if exists
+    if (tenant.branding?.logo) {
+      try {
+        const oldPath = path.join(process.cwd(), tenant.branding.logo.replace(/^\//, ''));
+        if (await fs.access(oldPath).then(() => true).catch(() => false)) await fs.unlink(oldPath);
+      } catch (_) {}
+    }
+
+    const logoUrl = `/uploads/org-logos/${req.file.filename}`;
+    tenant.branding = { ...(tenant.branding || {}), logo: logoUrl };
+    await tenant.save();
+
+    res.json({ success: true, message: 'Logo uploaded', data: { logoUrl } });
+  } catch (err) {
+    if (req.file) try { await fs.unlink(req.file.path); } catch (_) {}
+    res.status(500).json({ success: false, message: 'Upload failed', error: err.message });
+  }
+});
+
+// DELETE /profile/logo — remove org logo
+router.delete('/profile/logo', verifyERPToken, async (req, res) => {
+  try {
+    const { tenantSlug } = req.params;
+    const tenant = await Tenant.findOne({ slug: tenantSlug });
+    if (!tenant) return res.status(404).json({ success: false, message: 'Organization not found' });
+
+    if (tenant.branding?.logo) {
+      try {
+        const p = path.join(process.cwd(), tenant.branding.logo.replace(/^\//, ''));
+        if (await fs.access(p).then(() => true).catch(() => false)) await fs.unlink(p);
+      } catch (_) {}
+      tenant.branding.logo = undefined;
+      await tenant.save();
+    }
+    res.json({ success: true, message: 'Logo removed' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to remove logo', error: err.message });
+  }
+});
+
 const profilePicStorage = multer.diskStorage({
   destination: async (req, file, cb) => {
     const uploadDir = path.join(process.cwd(), 'uploads', 'profile-pictures');
@@ -1472,6 +1765,52 @@ router.put('/settings', verifyERPToken, async (req, res) => {
   }
 });
 
+// ==================== UNIFIED PERMISSIONS (UPR) ====================
+
+// Get my resolved permissions (for menu and UI) — Plan Phase 1
+router.get('/me/permissions', verifyTenantOrgAccess, async (req, res) => {
+  try {
+    const tenantId = req.tenant?._id || req.tenantContext?.tenantId || req.user?.tenantId;
+    const userId = req.user?._id;
+    if (!tenantId || !userId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+    const permissionResolver = require('../../../services/tenant/permissionResolver.service');
+    const resolved = await permissionResolver.getResolvedPermissions(userId, tenantId, {
+      hrSubRole: req.user?.hrSubRole
+    });
+    const MODULES = [
+      'projects', 'hr', 'finance', 'payroll', 'documents', 'analytics', 'nucleus',
+      'audit', 'clients', 'settings', 'attendance', 'leave', 'reports', 'tasks'
+    ];
+    const modules = {};
+    const perms = resolved.permissions || [];
+    const hasWildcard = perms.includes('*:*');
+    MODULES.forEach(m => {
+      modules[m] = {
+        read: hasWildcard || perms.includes(m + ':read') || perms.includes(m + ':*'),
+        write: hasWildcard || perms.includes(m + ':write') || perms.includes(m + ':*'),
+        delete: hasWildcard || perms.includes(m + ':delete') || perms.includes(m + ':*')
+      };
+    });
+    const ProjectMember = require('../../../models/ProjectMember');
+    const memberships = await ProjectMember.find({ userId, status: 'active' }).select('projectId').lean();
+    const projectIds = memberships.map(m => m.projectId?.toString?.()).filter(Boolean);
+    res.json({
+      success: true,
+      data: {
+        modules,
+        departmentIds: resolved.departmentIds || [],
+        hrSubRole: resolved.hrSubRole || null,
+        projectIds
+      }
+    });
+  } catch (err) {
+    console.error('GET /me/permissions error:', err);
+    res.status(500).json({ success: false, message: 'Failed to load permissions' });
+  }
+});
+
 // ==================== USER DEPARTMENT ACCESS ====================
 
 // Get user departments (for navigation and access control)
@@ -1524,10 +1863,8 @@ router.get('/user-departments', verifyTenantOrgAccess, async (req, res) => {
 
 // Projects routes - New comprehensive project management API
 const projectsRoutes = require('./projects');
-// SECURITY FIX: Add rate limiting to token verification routes
-// SECURITY FIX: Add module access check to prevent education/healthcare from accessing projects
-// Use simplified ERP token verification middleware (replaces verifyTenantOrgAccess + ensureTenantContext)
-router.use('/projects', tokenVerificationLimiter, verifyERPToken, requireModuleAccess('projects'), projectsRoutes);
+// Rate limiting and ERP token verification (module access control removed per product decision)
+router.use('/projects', tokenVerificationLimiter, verifyERPToken, projectsRoutes);
 
 // Nucleus Project OS - Approval and Change Request routes
 const approvalsRoutes = require('./approvals');
@@ -1588,7 +1925,8 @@ console.log('✅ Tenant organization routes registered:', {
     'POST /reports/generate',
     'GET /settings',
     'PUT /settings',
-    'GET /user-departments'
+    'GET /user-departments',
+    'GET /me/permissions'
   ]
 });
 

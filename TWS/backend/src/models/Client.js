@@ -6,6 +6,12 @@ const clientSchema = new mongoose.Schema({
     ref: 'Organization',
     required: true
   },
+  /** Link to User for client portal login (optional). When set, role 'client' user can access this client's projects. */
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
   name: {
     type: String,
     required: true,
@@ -126,5 +132,6 @@ const clientSchema = new mongoose.Schema({
 clientSchema.index({ orgId: 1, slug: 1 }, { unique: true });
 clientSchema.index({ orgId: 1, status: 1 });
 clientSchema.index({ 'contact.primary.email': 1 });
+clientSchema.index({ orgId: 1, userId: 1 }, { sparse: true });
 
 module.exports = mongoose.model('ProjectClient', clientSchema);

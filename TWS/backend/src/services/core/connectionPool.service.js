@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const Redis = require('ioredis');
 const envConfig = require('../../config/environment');
 
 /**
@@ -86,154 +85,10 @@ class ConnectionPoolService {
   }
 
   /**
-   * Initialize Redis connection pools
+   * Initialize Redis connection pools — no-op (Redis removed)
    */
   async initializeRedis() {
-    if (process.env.REDIS_DISABLED === 'true') {
-      return;
-    }
-    try {
-      const redisConfig = envConfig.getRedisConfig();
-      
-      // Create different Redis connections for different purposes
-      const connections = {
-        // Main Redis connection for caching and sessions
-        main: new Redis({
-          ...redisConfig,
-          lazyConnect: true,
-          maxRetriesPerRequest: null,
-          retryDelayOnFailover: 100,
-          enableReadyCheck: true,
-          maxLoadingTimeout: 5000,
-          connectTimeout: 10000,
-          commandTimeout: 5000,
-          // Connection pool settings
-          family: 4, // IPv4
-          keepAlive: 30000,
-          // Retry settings
-          retryDelayOnClusterDown: 300,
-          retryDelayOnFailover: 100,
-          maxRetriesPerRequest: null,
-          // Offline queue
-          enableOfflineQueue: false
-        }),
-
-        // Redis connection for pub/sub
-        pubsub: new Redis({
-          ...redisConfig,
-          lazyConnect: true,
-          maxRetriesPerRequest: null,
-          retryDelayOnFailover: 100,
-          enableReadyCheck: true,
-          maxLoadingTimeout: 5000,
-          connectTimeout: 5000,
-          commandTimeout: 5000,
-          family: 4,
-          keepAlive: 30000,
-          retryDelayOnClusterDown: 300,
-          retryDelayOnFailover: 100,
-          maxRetriesPerRequest: null,
-          enableOfflineQueue: false,
-          retryStrategy: (times) => {
-            if (times > 3) return null;
-            return Math.min(times * 200, 2000);
-          }
-        }),
-
-        // Redis connection for rate limiting
-        rateLimit: new Redis({
-          ...redisConfig,
-          lazyConnect: true,
-          maxRetriesPerRequest: null,
-          retryDelayOnFailover: 100,
-          enableReadyCheck: true,
-          maxLoadingTimeout: 5000,
-          connectTimeout: 5000,
-          commandTimeout: 5000,
-          family: 4,
-          keepAlive: 30000,
-          retryDelayOnClusterDown: 300,
-          retryDelayOnFailover: 100,
-          maxRetriesPerRequest: null,
-          enableOfflineQueue: false,
-          retryStrategy: (times) => {
-            if (times > 3) return null;
-            return Math.min(times * 200, 2000);
-          }
-        }),
-
-        // Redis connection for sessions
-        session: new Redis({
-          ...redisConfig,
-          lazyConnect: true,
-          maxRetriesPerRequest: null,
-          retryDelayOnFailover: 100,
-          enableReadyCheck: true,
-          maxLoadingTimeout: 5000,
-          connectTimeout: 5000,
-          commandTimeout: 5000,
-          family: 4,
-          keepAlive: 30000,
-          retryDelayOnClusterDown: 300,
-          retryDelayOnFailover: 100,
-          maxRetriesPerRequest: null,
-          enableOfflineQueue: false,
-          retryStrategy: (times) => {
-            if (times > 3) return null;
-            return Math.min(times * 200, 2000);
-          }
-        })
-      };
-
-      // Set up event listeners for each connection
-      const errorFlags = {}; // Track which connections have logged errors
-      for (const [name, connection] of Object.entries(connections)) {
-        errorFlags[name] = false;
-        
-        connection.on('connect', () => {
-          console.log(`✅ Redis ${name} connected`);
-          this.updateConnectionStats('redis', 'connected', name);
-          errorFlags[name] = false; // Reset error flag on successful connection
-        });
-
-        connection.on('error', (error) => {
-          // Suppress repeated ECONNREFUSED errors
-          if (error.code === 'ECONNREFUSED' && errorFlags[name]) {
-            return; // Already logged, suppress
-          }
-          if (error.code === 'ECONNREFUSED' && !errorFlags[name]) {
-            // Log once per connection type
-            console.warn(`⚠️  Redis ${name} not available (continuing without Redis)`);
-            errorFlags[name] = true;
-          } else if (!errorFlags[name]) {
-            console.error(`❌ Redis ${name} error:`, error.message);
-            errorFlags[name] = true;
-          }
-          this.updateConnectionStats('redis', 'error', name);
-        });
-
-        connection.on('close', () => {
-          console.log(`⚠️ Redis ${name} closed`);
-          this.updateConnectionStats('redis', 'closed', name);
-        });
-
-        connection.on('reconnecting', () => {
-          console.log(`🔄 Redis ${name} reconnecting`);
-          this.updateConnectionStats('redis', 'reconnecting', name);
-        });
-
-        // Connect the Redis instance
-        await connection.connect();
-        
-        this.redisConnections.set(name, connection);
-      }
-
-      return this.redisConnections;
-
-    } catch (error) {
-      console.error('Failed to initialize Redis:', error);
-      throw error;
-    }
+    // Redis replaced with in-memory store; nothing to initialize
   }
 
   /**
@@ -277,20 +132,8 @@ class ConnectionPoolService {
       console.error('MongoDB health check failed:', error);
     }
 
-    // Check Redis health
-    for (const [name, connection] of this.redisConnections) {
-      try {
-        if (connection.status === 'ready') {
-          await connection.ping();
-          health.redis[name] = true;
-        } else {
-          health.redis[name] = false;
-        }
-      } catch (error) {
-        console.error(`Redis ${name} health check failed:`, error);
-        health.redis[name] = false;
-      }
-    }
+    // Redis replaced with in-memory store
+    health.redis = { disabled: true };
 
     return health;
   }
@@ -355,12 +198,7 @@ class ConnectionPoolService {
         await db.admin().command({ setParameter: 1, maxIncomingConnections: 100 });
       }
 
-      // Optimize Redis connections
-      for (const [name, connection] of this.redisConnections) {
-        // Set Redis-specific optimizations
-        await connection.config('SET', 'tcp-keepalive', '60');
-        await connection.config('SET', 'timeout', '300');
-      }
+      // Redis replaced with in-memory store — no Redis pool to optimize
 
       console.log('✅ Connection pools optimized');
     } catch (error) {
@@ -381,11 +219,7 @@ class ConnectionPoolService {
         console.log('✅ MongoDB connection closed');
       }
 
-      // Close Redis connections
-      for (const [name, connection] of this.redisConnections) {
-        await connection.quit();
-        console.log(`✅ Redis ${name} connection closed`);
-      }
+      // Redis replaced with in-memory store — nothing to close
 
       console.log('✅ All connections closed gracefully');
       process.exit(0);
@@ -440,27 +274,7 @@ class ConnectionPoolService {
    * Create connection pool for specific use case
    */
   createCustomPool(type, config) {
-    switch (type) {
-      case 'redis':
-        const redisConnection = new Redis({
-          ...envConfig.getRedisConfig(),
-          ...config,
-          lazyConnect: true
-        });
-        
-        redisConnection.on('connect', () => {
-          console.log(`✅ Custom Redis pool connected: ${config.name || 'unnamed'}`);
-        });
-
-        redisConnection.on('error', (error) => {
-          console.error(`❌ Custom Redis pool error:`, error);
-        });
-
-        return redisConnection;
-
-      default:
-        throw new Error(`Unsupported pool type: ${type}`);
-    }
+    throw new Error(`createCustomPool: Redis removed — pool type '${type}' not supported`);
   }
 
   /**

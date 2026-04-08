@@ -36,7 +36,7 @@ class TenantService {
       };
       
       // Common modules available to all industries
-      const commonModules = ['hr', 'finance', 'projects', 'operations', 'inventory', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles'];
+      const commonModules = ['hr', 'finance', 'projects', 'operations', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles'];
       
       // Get industry-specific modules for the selected category
       const categoryModules = industryModules[industryType] || [];

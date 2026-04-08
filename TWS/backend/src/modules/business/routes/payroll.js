@@ -1,9 +1,23 @@
 const express = require('express');
 const { body, query } = require('express-validator');
-const { requirePermission } = require('../../../middleware/auth/rbac');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
+const { checkFeatureAccessSoftwareHouseOnly } = require('../../../middleware/common/featureGate');
 const { PayrollRecord, PayrollRule, PayrollCycle } = require('../../../models/Payroll');
+
+// UPR Phase 1.4 + 4.2: payroll uses requireErpAccess (resolved permissions + hrSubRole) and checkRevocation
+const payrollRead = requireErpAccess({ module: 'payroll', action: 'read', checkRevocation: true, sensitive: true, auditResourceType: 'payroll' });
+const payrollReadOrOwn = requireErpAccess({ module: 'payroll', action: ['read', 'read_own'], checkRevocation: true, sensitive: true, auditResourceType: 'payroll' });
+const payrollWrite = requireErpAccess({ module: 'payroll', action: 'write', checkRevocation: true, sensitive: true, auditResourceType: 'payroll' });
+const payrollAdmin = requireErpAccess({ module: 'payroll', action: 'admin', checkRevocation: true, sensitive: true, auditResourceType: 'payroll' });
+
+async function shouldFilterPayrollToOwn(req) {
+  const { getResolvedPermissions, hasPermission } = require('../../../services/tenant/permissionResolver.service');
+  const tenantId = req.tenant?._id || req.tenantContext?.tenantId || req.user?.tenantId;
+  const resolved = await getResolvedPermissions(req.user._id, tenantId, { hrSubRole: req.user.hrSubRole });
+  return !hasPermission(resolved.permissions, 'payroll', 'read');
+}
 const { AIPayrollConfig, AIPayrollAnalytics, SmartPayrollProcessing, EmployeeAIInsights } = require('../../../models/AIPayroll');
 const Employee = require('../../../models/Employee');
 const User = require('../../../models/User');
@@ -11,9 +25,12 @@ const aiPayrollService = require('../../../services/aiPayrollService');
 
 const router = express.Router();
 
+// Plan feature gate: payroll only for Software House plans that include it; others skip
+router.use(checkFeatureAccessSoftwareHouseOnly('payroll'));
+
 // AI Payroll Configuration
 router.get('/ai/config', [
-  requirePermission('payroll:read')
+  payrollRead
 ], ErrorHandler.asyncHandler(async (req, res) => {
   const config = await AIPayrollConfig.findOne({ organizationId: req.user.organization });
   
@@ -24,7 +41,7 @@ router.get('/ai/config', [
 }));
 
 router.post('/ai/config', [
-  requirePermission('payroll:admin'),
+  payrollAdmin,
   body('aiSettings').isObject(),
   body('integrations').isObject()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -44,7 +61,7 @@ router.post('/ai/config', [
 
 // AI Predictive Analytics
 router.get('/ai/forecast', [
-  requirePermission('payroll:read'),
+  payrollRead,
   query('period').optional().isInt({ min: 1, max: 24 })
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const forecastPeriod = parseInt(req.query.period) || 6;
@@ -62,7 +79,7 @@ router.get('/ai/forecast', [
 
 // AI Anomaly Detection
 router.get('/ai/anomalies', [
-  requirePermission('payroll:read'),
+  payrollRead,
   query('period').optional().isIn(['current_month', 'last_month', 'quarter'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'current_month';
@@ -80,7 +97,7 @@ router.get('/ai/anomalies', [
 
 // Smart Payroll Processing
 router.post('/ai/process', [
-  requirePermission('payroll:write'),
+  payrollWrite,
   body('period.start').isISO8601(),
   body('period.end').isISO8601(),
   body('options').optional().isObject()
@@ -102,7 +119,7 @@ router.post('/ai/process', [
 
 // Get Smart Processing Status
 router.get('/ai/process/:batchId', [
-  requirePermission('payroll:read')
+  payrollRead
 ], ErrorHandler.asyncHandler(async (req, res) => {
   const processing = await SmartPayrollProcessing.findOne({
     batchId: req.params.batchId,
@@ -124,7 +141,7 @@ router.get('/ai/process/:batchId', [
 
 // Dynamic Payroll Adjustments
 router.post('/ai/adjust/:employeeId', [
-  requirePermission('payroll:write'),
+  payrollWrite,
   body('adjustmentType').isIn(['overtime', 'shift_differential', 'performance_bonus', 'cost_of_living', 'market_adjustment']),
   body('data').isObject()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -146,17 +163,12 @@ router.post('/ai/adjust/:employeeId', [
 
 // Employee AI Insights
 router.get('/ai/insights/:employeeId', [
-  requirePermission('payroll:read')
+  payrollReadOrOwn
 ], ErrorHandler.asyncHandler(async (req, res) => {
-  // Check if user can view employee insights
-  if (req.params.employeeId !== req.user._id.toString() && 
-      !['hr', 'admin', 'owner', 'finance'].includes(req.user.role)) {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to view employee insights'
-    });
+  // Resource-level: viewing others requires payroll:read
+  if (req.params.employeeId !== req.user._id.toString() && await shouldFilterPayrollToOwn(req)) {
+    return res.status(403).json({ success: false, message: 'Not authorized to view employee insights' });
   }
-  
   const insights = await aiPayrollService.generateEmployeeInsights(
     req.params.employeeId,
     req.user.organization
@@ -170,7 +182,7 @@ router.get('/ai/insights/:employeeId', [
 
 // Workforce Cost Optimization
 router.get('/ai/optimize', [
-  requirePermission('payroll:admin')
+  payrollAdmin
 ], ErrorHandler.asyncHandler(async (req, res) => {
   const optimization = await aiPayrollService.optimizeWorkforceCosts(
     req.user.organization
@@ -184,7 +196,7 @@ router.get('/ai/optimize', [
 
 // Compliance Processing
 router.post('/ai/compliance', [
-  requirePermission('payroll:write'),
+  payrollWrite,
   body('region').optional().isString()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const { region = 'US' } = req.body;
@@ -203,7 +215,7 @@ router.post('/ai/compliance', [
 
 // AI Analytics Dashboard Data
 router.get('/ai/analytics', [
-  requirePermission('payroll:read'),
+  payrollRead,
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';
@@ -251,7 +263,7 @@ router.get('/ai/analytics', [
 
 // Bulk Operations
 router.post('/ai/bulk-approve', [
-  requirePermission('payroll:write'),
+  payrollWrite,
   body('batchId').isString(),
   body('approvalComments').optional().isString()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -299,7 +311,7 @@ router.post('/ai/bulk-approve', [
 
 // AI Recommendations
 router.get('/ai/recommendations', [
-  requirePermission('payroll:read')
+  payrollRead
 ], ErrorHandler.asyncHandler(async (req, res) => {
   const analytics = await AIPayrollAnalytics.findOne({
     organizationId: req.user.organization
@@ -315,7 +327,7 @@ router.get('/ai/recommendations', [
 
 // Get payroll preview
 router.get('/preview', [
-  requirePermission('payroll:read'),
+  payrollRead,
   query('employeeId').optional().isMongoId(),
   query('period').isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -326,7 +338,9 @@ router.get('/preview', [
   const periodStart = new Date(periodDate.getFullYear(), periodDate.getMonth(), 1);
   const periodEnd = new Date(periodDate.getFullYear(), periodDate.getMonth() + 1, 0);
 
-  const filter = {};
+  const orgId = req.orgId || req.user?.orgId;
+  if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
+  const filter = { orgId };
   if (employeeId) filter.employeeId = employeeId;
 
   const employees = await Employee.find(filter).populate('userId', 'fullName email');
@@ -373,7 +387,7 @@ router.get('/preview', [
 
 // Generate payroll
 router.post('/generate', [
-  requirePermission('payroll:write'),
+  payrollWrite,
   body('periodStart').isISO8601(),
   body('periodEnd').isISO8601(),
   body('employeeIds').isArray()
@@ -433,7 +447,7 @@ router.post('/generate', [
 
 // Approve payroll
 router.post('/:id/approve', [
-  requirePermission('payroll:write'),
+  payrollWrite,
   body('notes').optional().notEmpty()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const { notes } = req.body;
@@ -460,8 +474,8 @@ router.post('/:id/approve', [
   });
 }));
 
-// Get payslip
-router.get('/:id/payslip', requirePermission('payroll:read'), ErrorHandler.asyncHandler(async (req, res) => {
+// Get payslip (Plan: employee can view own slip via payroll:read_own)
+router.get('/:id/payslip', payrollReadOrOwn, ErrorHandler.asyncHandler(async (req, res) => {
   const payrollRecord = await PayrollRecord.findById(req.params.id)
     .populate('employeeId')
     .populate('userId', 'fullName email');
@@ -473,13 +487,16 @@ router.get('/:id/payslip', requirePermission('payroll:read'), ErrorHandler.async
     });
   }
 
-  // Check if user can access this payslip
-  if (payrollRecord.userId._id.toString() !== req.user._id.toString() && 
-      !['hr', 'admin', 'owner', 'finance'].includes(req.user.role)) {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to view this payslip'
-    });
+  // Resource-level: if user has payroll:read_own only, must be own record
+  const userIdStr = req.user._id.toString();
+  const recordUserId = payrollRecord.userId?._id?.toString?.() || payrollRecord.userId?.toString?.();
+  if (recordUserId !== userIdStr) {
+    const { getResolvedPermissions, hasPermission } = require('../../../services/tenant/permissionResolver.service');
+    const tenantId = req.tenant?._id || req.tenantContext?.tenantId || req.user?.tenantId;
+    const resolved = await getResolvedPermissions(req.user._id, tenantId, { hrSubRole: req.user.hrSubRole });
+    if (!hasPermission(resolved.permissions, 'payroll', 'read')) {
+      return res.status(403).json({ success: false, message: 'Not authorized to view this payslip' });
+    }
   }
 
   res.json({
@@ -490,14 +507,10 @@ router.get('/:id/payslip', requirePermission('payroll:read'), ErrorHandler.async
 
 // Get payroll statistics
 router.get('/stats', [
-  requirePermission('payroll:read')
+  payrollReadOrOwn
 ], ErrorHandler.asyncHandler(async (req, res) => {
   const filter = {};
-  
-  // If not HR/Admin/Owner/Finance, only show own records
-  if (!['hr', 'admin', 'owner', 'finance'].includes(req.user.role)) {
-    filter.userId = req.user._id;
-  }
+  if (await shouldFilterPayrollToOwn(req)) filter.userId = req.user._id;
 
   const totalPayroll = await PayrollRecord.aggregate([
     { $match: filter },
@@ -548,7 +561,7 @@ router.get('/stats', [
 
 // Get payroll records
 router.get('/', [
-  requirePermission('payroll:read'),
+  payrollReadOrOwn,
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('status').optional().isIn(['draft', 'pending', 'approved', 'paid', 'cancelled'])
@@ -559,11 +572,7 @@ router.get('/', [
 
   const filter = {};
   if (req.query.status) filter.status = req.query.status;
-
-  // If not HR/Admin/Owner/Finance, only show own records
-  if (!['hr', 'admin', 'owner', 'finance'].includes(req.user.role)) {
-    filter.userId = req.user._id;
-  }
+  if (await shouldFilterPayrollToOwn(req)) filter.userId = req.user._id;
 
   const payrollRecords = await PayrollRecord.find(filter)
     .populate('employeeId')
@@ -591,7 +600,7 @@ router.get('/', [
 
 // Get payroll settings
 router.get('/settings', [
-  requirePermission('payroll:read')
+  payrollRead
 ], ErrorHandler.asyncHandler(async (req, res) => {
   // Return default settings for now
   res.json({

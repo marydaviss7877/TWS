@@ -923,17 +923,36 @@ class TenantOrgService {
    */
   async createEmployee(tenantContext, employeeData) {
     const { tenantId, orgId, orgSlug } = tenantContext;
-    
+
     try {
       const models = this.getTenantModels(tenantContext);
       const baseFilter = this.getTenantFilter(tenantContext);
       let userId = employeeData.userId;
+      let temporaryPassword = null;
 
-      // If no userId but email/name provided, create a User first so Employee can link to it
+      // Resolve fullName from fullName field OR firstName+lastName
+      const resolvedFullName = (employeeData.fullName ||
+        ([employeeData.firstName, employeeData.lastName].filter(Boolean).join(' ').trim()) ||
+        employeeData.email || 'Employee').trim();
+
+      // Auto-generate a temporary password when none supplied
+      const crypto = require('crypto');
+      let resolvedPassword = employeeData.password;
+      if (!resolvedPassword) {
+        temporaryPassword = crypto.randomBytes(4).toString('hex'); // 8-char hex
+        resolvedPassword = temporaryPassword;
+      }
+
+      // Auto-generate employeeId when not provided
+      const employeeId = employeeData.employeeId || `EMP${Date.now()}`;
+
+      // ERP portal role and optional HR sub-role
+      const erpRole = employeeData.erpRole || 'employee';
+      const hrSubRole = (erpRole === 'hr' && employeeData.hrSubRole) ? employeeData.hrSubRole : undefined;
+
+      // If no userId but email provided, create/find User first
       if (!userId && employeeData.email && orgId) {
-        const fullName = [employeeData.firstName, employeeData.lastName].filter(Boolean).join(' ') || employeeData.fullName || employeeData.email;
         const existingUser = await models.User.findOne({
-          ...baseFilter,
           email: (employeeData.email || '').toLowerCase().trim()
         });
         if (existingUser) {
@@ -941,40 +960,82 @@ class TenantOrgService {
         } else {
           const user = new models.User({
             email: (employeeData.email || '').toLowerCase().trim(),
-            fullName: fullName.trim() || 'Employee',
-            password: employeeData.password || 'ChangeMe123',
+            fullName: resolvedFullName,
+            password: resolvedPassword,
             orgId,
             tenantId: baseFilter.tenantId || tenantId,
             orgSlug,
             role: 'employee',
+            status: 'active',
+            emailVerified: false,
+            mustChangePassword: temporaryPassword !== null,
             module: 'users'
           });
           await user.save();
           userId = user._id;
+
+          // Provision TenantUser so the new hire has ERP portal access immediately
+          const resolvedTenantId = baseFilter.tenantId || tenantId;
+          if (resolvedTenantId) {
+            try {
+              const TenantUser = require('../../models/TenantUser');
+              const tenantUserDoc = {
+                userId,
+                tenantId: resolvedTenantId,
+                roles: [{ role: erpRole, permissions: [], assignedAt: new Date() }],
+                status: 'active',
+                tenantSpecificInfo: {
+                  employeeId,
+                  department: employeeData.department || 'General',
+                  jobTitle: employeeData.jobTitle || '',
+                  hireDate: employeeData.hireDate ? new Date(employeeData.hireDate) : new Date()
+                }
+              };
+              if (hrSubRole) tenantUserDoc.hrSubRole = hrSubRole;
+              await TenantUser.create(tenantUserDoc);
+
+              const { invalidateResolvedPermissions } = require('./permissionResolver.service');
+              await invalidateResolvedPermissions(resolvedTenantId, userId).catch(() => {});
+            } catch (tuErr) {
+              console.warn('TenantUser provision failed (non-fatal):', tuErr.message);
+            }
+          }
         }
       }
 
       const employeePayload = {
         ...employeeData,
+        employeeId,
         ...(userId ? { userId } : {}),
         ...(baseFilter.tenantId ? { tenantId } : {}),
         ...(orgId ? { orgId, organizationId: orgId } : {}),
         orgSlug,
         module: 'hr',
-        submodule: 'employees'
+        submodule: 'employees',
+        department: employeeData.department || 'General'
       };
-      // reportingManager as string (name) is not valid ObjectId; omit so schema default/null applies
+
+      // reportingManager as string (name) is not a valid ObjectId — omit
       if (employeePayload.reportingManager && typeof employeePayload.reportingManager === 'string' && !/^[0-9a-fA-F]{24}$/.test(employeePayload.reportingManager)) {
         delete employeePayload.reportingManager;
       }
-      // employmentStatus from frontend maps to status
+      // employmentStatus → status
       if (employeePayload.employmentStatus && !employeePayload.status) {
         employeePayload.status = employeePayload.employmentStatus;
         delete employeePayload.employmentStatus;
       }
+      // Strip internal fields that don't belong on Employee model
+      delete employeePayload.erpRole;
+      delete employeePayload.hrSubRole;
+      delete employeePayload.password;
 
       const employee = new models.Employee(employeePayload);
       await employee.save();
+
+      // Surface the temp password so the route handler can return it to the admin
+      if (temporaryPassword) {
+        employee._temporaryPassword = temporaryPassword;
+      }
       return employee;
     } catch (error) {
       console.error('Error creating employee:', error);
@@ -1697,7 +1758,6 @@ class TenantOrgService {
           'finance': { department: 'Finance', module: 'finance', name: 'Finance' },
           'projects': { department: 'Projects', module: 'projects', name: 'Projects' },
           'operations': { department: 'Operations', module: 'operations', name: 'Operations' },
-          'inventory': { department: 'Inventory', module: 'inventory', name: 'Inventory' },
           'clients': { department: 'Clients', module: 'clients', name: 'Clients' },
           'reports': { department: 'Reports', module: 'reports', name: 'Reports' },
           'messaging': { department: 'Messaging', module: 'messaging', name: 'Messaging' },

@@ -38,6 +38,7 @@ const auditLogSchema = new mongoose.Schema({
     enum: [
       'CREATE', 'READ', 'UPDATE', 'DELETE',
       'LOGIN', 'LOGOUT', 'LOGIN_FAILED',
+      'AUTH_SUCCESS', 'AUTH_FAILED', 'AUTH_REFRESH', 'AUTH_REVOKE',
       'PASSWORD_CHANGE', 'PASSWORD_RESET',
       'PERMISSION_CHANGE', 'ROLE_CHANGE',
       'DATA_EXPORT', 'DATA_IMPORT',
@@ -48,6 +49,7 @@ const auditLogSchema = new mongoose.Schema({
       'PROJECT_CREATED', 'PROJECT_UPDATED', 'PROJECT_DELETED',
       'ATTENDANCE_CREATED', 'ATTENDANCE_UPDATED', 'ATTENDANCE_DELETED',
       'INVOICE_CREATED', 'INVOICE_UPDATED', 'INVOICE_DELETED',
+      'RESOURCE_CREATED', 'RESOURCE_UPDATED', 'RESOURCE_DELETED',
       'CUSTOM'
     ]
   },
@@ -65,6 +67,7 @@ const auditLogSchema = new mongoose.Schema({
       'USER', 'ORGANIZATION', 'TENANT', 'PROJECT', 'CLIENT',
       'EMPLOYEE', 'ATTENDANCE', 'INVOICE', 'SUBSCRIPTION',
       'PAYMENT', 'FILE', 'API', 'SYSTEM', 'AUDIT_LOG',
+      'AUTH', 'SESSION', 'RESOURCE', 'TASK', 'SPRINT', 'MILESTONE',
       // Healthcare resources
       'PATIENT', 'MEDICAL_RECORD', 'PRESCRIPTION', 'APPOINTMENT',
       'DOCTOR', 'LAB_RESULT', 'BILLING_CLAIM'

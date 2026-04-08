@@ -83,10 +83,6 @@ const tenantSettingsSchema = new mongoose.Schema({
   
   // Security Settings
   security: {
-    twoFactorAuth: {
-      type: Boolean,
-      default: false
-    },
     sessionTimeout: {
       type: Number,
       default: 30, // minutes

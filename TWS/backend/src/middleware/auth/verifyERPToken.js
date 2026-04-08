@@ -514,13 +514,21 @@ const verifyERPToken = async (req, res, next) => {
     
     // Set tenant on request for utility access
     req.tenant = tenant;
-    
+
+    // Pre-populate req.orgId from tenant so the strict-mode check below succeeds
+    // without needing a DB fallback on every request.
+    if (tenant.organizationId) {
+      req.orgId = tenant.organizationId.toString();
+    } else if (tenant.orgId) {
+      req.orgId = tenant.orgId.toString();
+    }
+
     let orgId;
     try {
-      // Try strict mode first (only from tenant, no fallbacks)
+      // Try strict mode first (only from req.orgId — now pre-set above)
       orgId = await getOrgId(req, { allowFallback: false });
-      
-      // If not found in strict mode, try with fallback but log warning
+
+      // Only fall back (with warning) if the tenant genuinely has no org reference
       if (!orgId) {
         console.warn('⚠️ SECURITY: orgId not found in strict mode, trying fallback');
         orgId = await getOrgId(req, { required: true });
@@ -596,6 +604,7 @@ const verifyERPToken = async (req, res, next) => {
     // backward compatibility (e.g. self-serve signups before TenantUser is created).
     // ============================================
     let roleForRequest = user.role;
+    let hrSubRole = null;
     try {
       const tenantUser = await TenantUser.findOne({
         userId: user._id,
@@ -606,6 +615,9 @@ const verifyERPToken = async (req, res, next) => {
         const primaryRole = tenantUser.roles[0].role;
         // Map 'manager' to 'project_manager' for ERP routes that expect project_manager
         roleForRequest = (primaryRole === 'manager') ? 'project_manager' : primaryRole;
+        if (primaryRole === 'hr' && tenantUser.hrSubRole) {
+          hrSubRole = tenantUser.hrSubRole;
+        }
       }
     } catch (err) {
       console.warn('verifyERPToken: TenantUser lookup failed, using User.role', err.message);
@@ -619,6 +631,7 @@ const verifyERPToken = async (req, res, next) => {
       id: user._id,
       email: user.email,
       role: roleForRequest, // Per-tenant when TenantUser exists, else User.role
+      hrSubRole, // Plan Phase 2: when role is 'hr', used for payroll vs leave vs roster
       orgId: orgId,
       tenantId: tenant._id.toString(),
       workspaceRole: workspaceRole // From workspace membership if available
@@ -650,6 +663,7 @@ const verifyERPToken = async (req, res, next) => {
     const duration = Date.now() - startTime;
     await logSecurityEvent('AUTH_SUCCESS', userId, {
       tenantId: tenant._id.toString(),
+      orgId: orgId,
       role: user.role,
       workspaceRole: workspaceRole,
       duration: `${duration}ms`,
@@ -677,37 +691,6 @@ const verifyERPToken = async (req, res, next) => {
     });
   }
 };
-
-/**
- * Helper function to log security events
- */
-async function logSecurityEvent(event, userId, details = {}) {
-  try {
-    if (auditService) {
-      await auditService.logSecurityEvent(
-        event,
-        userId,
-        details.orgId || null,
-        {
-          ...details,
-          timestamp: new Date(),
-          resource: 'AUTH',
-          resourceId: userId?.toString() || 'unknown'
-        }
-      );
-    } else {
-      // Fallback to console logging
-      console.log(`[SECURITY] ${event}:`, {
-        userId,
-        ...details,
-        timestamp: new Date().toISOString()
-      });
-    }
-  } catch (error) {
-    // Don't fail auth if logging fails
-    console.error('Failed to log security event:', error);
-  }
-}
 
 module.exports = verifyERPToken;
 

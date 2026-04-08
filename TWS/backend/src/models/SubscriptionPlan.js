@@ -8,6 +8,14 @@ const subscriptionPlanSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
+  slug: {
+    type: String,
+    required: false,
+    unique: true,
+    sparse: true,
+    trim: true,
+    lowercase: true
+  },
   displayName: {
     type: String,
     required: true,
@@ -22,8 +30,12 @@ const subscriptionPlanSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['free', 'basic', 'professional', 'enterprise', 'custom'],
+    enum: ['free', 'basic', 'starter', 'growth', 'professional', 'enterprise', 'custom'],
     default: 'basic'
+  },
+  requiresCustomQuote: {
+    type: Boolean,
+    default: false
   },
   category: {
     type: String,
@@ -36,12 +48,14 @@ const subscriptionPlanSchema = new mongoose.Schema({
   pricing: {
     monthly: {
       type: Number,
-      required: true,
+      required: false,
+      default: null,
       min: 0
     },
     yearly: {
       type: Number,
-      required: true,
+      required: false,
+      default: null,
       min: 0
     },
     currency: {
@@ -147,6 +161,26 @@ const subscriptionPlanSchema = new mongoose.Schema({
         type: Boolean,
         default: false
       }
+    },
+    workspaces: {
+      max: {
+        type: Number,
+        default: 3
+      },
+      unlimited: {
+        type: Boolean,
+        default: false
+      }
+    },
+    clientAccounts: {
+      max: {
+        type: Number,
+        default: 10
+      },
+      unlimited: {
+        type: Boolean,
+        default: false
+      }
     }
   },
   
@@ -226,6 +260,22 @@ const subscriptionPlanSchema = new mongoose.Schema({
       default: false
     },
     sla: {
+      type: Boolean,
+      default: false
+    },
+    payroll: {
+      type: Boolean,
+      default: false
+    },
+    customRoles: {
+      type: Boolean,
+      default: false
+    },
+    reportsAdvanced: {
+      type: Boolean,
+      default: false
+    },
+    hrAdvanced: {
       type: Boolean,
       default: false
     }
@@ -387,28 +437,32 @@ const subscriptionPlanSchema = new mongoose.Schema({
 
 // Indexes for performance
 subscriptionPlanSchema.index({ name: 1 });
+subscriptionPlanSchema.index({ slug: 1 }, { sparse: true });
 subscriptionPlanSchema.index({ type: 1, status: 1 });
 subscriptionPlanSchema.index({ category: 1 });
 subscriptionPlanSchema.index({ 'pricing.monthly': 1 });
 subscriptionPlanSchema.index({ 'pricing.yearly': 1 });
 subscriptionPlanSchema.index({ status: 1 });
 
-// Virtual for effective yearly price with discount
+// Virtual for effective yearly price with discount (null-safe for custom/enterprise)
 subscriptionPlanSchema.virtual('effectiveYearlyPrice').get(function() {
-  const yearlyPrice = this.pricing.yearly;
-  const discount = this.pricing.discount.yearlyDiscount || 0;
+  const yearlyPrice = this.pricing?.yearly;
+  if (yearlyPrice == null) return null;
+  const discount = (this.pricing?.discount?.yearlyDiscount) || 0;
   return yearlyPrice * (1 - discount / 100);
 });
 
-// Virtual for monthly equivalent of yearly price
+// Virtual for monthly equivalent of yearly price (null for custom)
 subscriptionPlanSchema.virtual('monthlyEquivalent').get(function() {
-  return this.effectiveYearlyPrice / 12;
+  const y = this.effectiveYearlyPrice;
+  return y != null ? y / 12 : null;
 });
 
-// Virtual for savings percentage
+// Virtual for savings percentage (null-safe)
 subscriptionPlanSchema.virtual('savingsPercentage').get(function() {
-  const monthlyTotal = this.pricing.monthly * 12;
+  const monthlyTotal = (this.pricing?.monthly ?? 0) * 12;
   const yearlyPrice = this.effectiveYearlyPrice;
+  if (yearlyPrice == null || monthlyTotal <= 0) return 0;
   return monthlyTotal > yearlyPrice ? Math.round(((monthlyTotal - yearlyPrice) / monthlyTotal) * 100) : 0;
 });
 
@@ -431,6 +485,23 @@ subscriptionPlanSchema.methods.getRemainingLimit = function(resourceType, curren
   if (!limit || limit.unlimited) return Infinity;
   
   return Math.max(0, limit.max - currentUsage);
+};
+
+// Get usage limit for a metric (users, projects, storage, workspaces, clientAccounts, etc.). Returns -1 for unlimited.
+subscriptionPlanSchema.methods.getUsageLimit = function(metric) {
+  const limit = this.limits[metric];
+  if (!limit || limit.unlimited) return -1;
+  const max = limit.max;
+  return typeof max === 'number' && max >= 0 ? max : -1;
+};
+
+// Calculate overage cost for billing/display. Returns 0 until overage pricing is configured.
+subscriptionPlanSchema.methods.calculateOverageCost = function(usage, metric) {
+  const limit = this.getUsageLimit(metric);
+  if (limit === -1) return 0;
+  const overage = Math.max(0, usage - limit);
+  // No overage rates in schema yet; return 0 to avoid breaking callers
+  return 0;
 };
 
 // Method to check if plan can be upgraded to target plan

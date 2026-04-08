@@ -1,6 +1,22 @@
 const SubscriptionPlan = require('../../models/SubscriptionPlan');
 const Tenant = require('../../models/Tenant');
+const Organization = require('../../models/Organization');
 const usageTrackerService = require('../../services/usageTrackerService');
+
+/**
+ * Get effective usage limit for a metric: plan limit + tenant add-ons (Software House).
+ * Storage: plan is in bytes; addOns.extraStorageGB in GB -> bytes.
+ */
+function getEffectiveUsageLimit(tenant, subscriptionPlan, metric) {
+  const base = subscriptionPlan.getUsageLimit(metric);
+  if (base === -1) return -1;
+  const addOns = tenant.subscription?.addOns || {};
+  let add = 0;
+  if (metric === 'users') add = addOns.extraUsers || 0;
+  else if (metric === 'storage') add = (addOns.extraStorageGB || 0) * 1024 * 1024 * 1024;
+  else if (metric === 'workspaces') add = addOns.extraWorkspaces || 0;
+  return add === 0 ? base : base + add;
+}
 
 /**
  * Feature Gate Middleware
@@ -25,7 +41,7 @@ const checkFeatureAccess = (featureName) => {
       }
 
       // Get tenant and subscription plan
-      const tenant = await Tenant.findOne({ tenantId });
+      const tenant = await Tenant.findById(tenantId);
       if (!tenant) {
         return res.status(404).json({
           success: false,
@@ -86,7 +102,7 @@ const checkUsageLimit = (metric, requestedAmount = 1) => {
       }
 
       // Get tenant and subscription plan
-      const tenant = await Tenant.findOne({ tenantId });
+      const tenant = await Tenant.findById(tenantId);
       if (!tenant) {
         return res.status(404).json({
           success: false,
@@ -102,9 +118,9 @@ const checkUsageLimit = (metric, requestedAmount = 1) => {
         });
       }
 
-      // Get current usage
+      // Get current usage and effective limit (plan + add-ons)
       const currentUsage = await usageTrackerService.getCurrentUsage(tenantId, metric);
-      const limit = subscriptionPlan.getUsageLimit(metric);
+      const limit = getEffectiveUsageLimit(tenant, subscriptionPlan, metric);
       
       // Check if limit is unlimited (-1)
       if (limit === -1) {
@@ -169,7 +185,7 @@ const checkMultipleUsageLimits = (limits) => {
       }
 
       // Get tenant and subscription plan
-      const tenant = await Tenant.findOne({ tenantId });
+      const tenant = await Tenant.findById(tenantId);
       if (!tenant) {
         return res.status(404).json({
           success: false,
@@ -188,10 +204,10 @@ const checkMultipleUsageLimits = (limits) => {
       const usageChecks = {};
       const exceededLimits = [];
 
-      // Check each limit
+      // Check each limit (effective = plan + add-ons)
       for (const [metric, requestedAmount] of Object.entries(limits)) {
         const currentUsage = await usageTrackerService.getCurrentUsage(tenantId, metric);
-        const limit = subscriptionPlan.getUsageLimit(metric);
+        const limit = getEffectiveUsageLimit(tenant, subscriptionPlan, metric);
         
         usageChecks[metric] = {
           currentUsage,
@@ -262,7 +278,7 @@ const checkPlanRestrictions = (restrictions) => {
       }
 
       // Get tenant and subscription plan
-      const tenant = await Tenant.findOne({ tenantId });
+      const tenant = await Tenant.findById(tenantId);
       if (!tenant) {
         return res.status(404).json({
           success: false,
@@ -362,7 +378,7 @@ const checkSubscriptionStatus = () => {
       }
 
       // Get tenant
-      const tenant = await Tenant.findOne({ tenantId });
+      const tenant = await Tenant.findById(tenantId);
       if (!tenant) {
         return res.status(404).json({
           success: false,
@@ -443,7 +459,7 @@ const enforceRateLimit = (rateLimits) => {
       }
 
       // Get tenant and subscription plan
-      const tenant = await Tenant.findOne({ tenantId });
+      const tenant = await Tenant.findById(tenantId);
       if (!tenant) {
         return res.status(404).json({
           success: false,
@@ -503,7 +519,7 @@ const enforceRateLimit = (rateLimits) => {
  */
 const getTenantSubscriptionInfo = async (tenantId) => {
   try {
-    const tenant = await Tenant.findOne({ tenantId });
+    const tenant = await Tenant.findById(tenantId);
     if (!tenant) {
       throw new Error('Tenant not found');
     }
@@ -516,16 +532,30 @@ const getTenantSubscriptionInfo = async (tenantId) => {
     // Get current usage for all metrics
     const usage = await usageTrackerService.getAllCurrentUsage(tenantId);
 
+    const metrics = ['users', 'projects', 'workspaces', 'clientAccounts', 'storage', 'apiCalls'];
+    const limits = {};
+    let atRisk = false;
+    const atRiskMetrics = [];
+    for (const m of metrics) {
+      const lim = getEffectiveUsageLimit(tenant, subscriptionPlan, m);
+      limits[m] = lim;
+      if (lim !== -1 && usage[m] !== undefined) {
+        const pct = lim > 0 ? (usage[m] / lim) : 0;
+        if (pct >= 0.8) {
+          atRisk = true;
+          atRiskMetrics.push({ metric: m, usage: usage[m], limit: lim, percentage: Math.round(pct * 100) });
+        }
+      }
+    }
+
     return {
       tenant,
       subscriptionPlan,
       usage,
-      limits: {
-        users: subscriptionPlan.getUsageLimit('users'),
-        projects: subscriptionPlan.getUsageLimit('projects'),
-        storage: subscriptionPlan.getUsageLimit('storage'),
-        apiCalls: subscriptionPlan.getUsageLimit('apiCalls')
-      },
+      limits,
+      atRisk,
+      atRiskMetrics,
+      readOnlyMode: !!(tenant.subscription && tenant.subscription.readOnlyMode),
       features: {
         advancedAnalytics: subscriptionPlan.hasFeature('advancedAnalytics'),
         customIntegrations: subscriptionPlan.hasFeature('customIntegrations'),
@@ -538,7 +568,11 @@ const getTenantSubscriptionInfo = async (tenantId) => {
         sso: subscriptionPlan.hasFeature('sso'),
         advancedSecurity: subscriptionPlan.hasFeature('advancedSecurity'),
         dataExport: subscriptionPlan.hasFeature('dataExport'),
-        customDomain: subscriptionPlan.hasFeature('customDomain')
+        customDomain: subscriptionPlan.hasFeature('customDomain'),
+        payroll: subscriptionPlan.hasFeature('payroll'),
+        customRoles: subscriptionPlan.hasFeature('customRoles'),
+        reportsAdvanced: subscriptionPlan.hasFeature('reportsAdvanced'),
+        hrAdvanced: subscriptionPlan.hasFeature('hrAdvanced')
       }
     };
   } catch (error) {
@@ -547,13 +581,90 @@ const getTenantSubscriptionInfo = async (tenantId) => {
   }
 };
 
+/**
+ * Enforce usage limit only for Software House ERP tenants; others skip.
+ * @param {string} metric - users, projects, workspaces, clientAccounts, storage
+ * @param {number} requestedAmount - default 1
+ * @param {string} [paramKey] - if set, use req.params[paramKey] as tenantId (e.g. 'tenantId' for invite route)
+ */
+const checkUsageLimitSoftwareHouseOnly = (metric, requestedAmount = 1, paramKey = null) => {
+  const mw = checkUsageLimit(metric, requestedAmount);
+  return async (req, res, next) => {
+    const tenantId = (paramKey && req.params[paramKey]) ? req.params[paramKey] : (req.tenantId || req.user?.tenantId);
+    if (!tenantId) return res.status(400).json({ success: false, message: 'Tenant ID is required' });
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ success: false, message: 'Tenant not found' });
+    if (tenant.erpCategory !== 'software_house') return next();
+    const orig = req.tenantId;
+    req.tenantId = tenantId;
+    mw(req, res, (err) => {
+      req.tenantId = orig;
+      next(err);
+    });
+  };
+};
+
+/**
+ * Block write operations when tenant is in read-only mode (billing failure). Software House only.
+ */
+const checkReadOnlySoftwareHouseOnly = async (req, res, next) => {
+  try {
+    const method = (req.method || '').toUpperCase();
+    if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return next();
+    const tenantId = req.tenantId || req.user?.tenantId;
+    if (!tenantId) return next();
+    const tenant = await Tenant.findById(tenantId).select('erpCategory subscription.readOnlyMode');
+    if (!tenant || tenant.erpCategory !== 'software_house') return next();
+    if (tenant.subscription?.readOnlyMode) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account in read-only mode due to billing. Please update payment to resume.',
+        code: 'READ_ONLY_BILLING'
+      });
+    }
+    next();
+  } catch (err) {
+    console.error('Error checking read-only mode:', err);
+    next();
+  }
+};
+
+/**
+ * Check feature access only for Software House tenants; others skip (unrestricted).
+ * Resolves tenant from req.tenantId, req.user.tenantId, or req.user.orgId -> Organization.tenantId.
+ */
+const checkFeatureAccessSoftwareHouseOnly = (featureName) => {
+  const mw = checkFeatureAccess(featureName);
+  return async (req, res, next) => {
+    let tenantId = req.tenantId || req.user?.tenantId;
+    if (!tenantId && req.user?.orgId) {
+      const org = await Organization.findById(req.user.orgId).select('tenantId').lean();
+      tenantId = org?.tenantId?.toString();
+    }
+    if (!tenantId) return res.status(400).json({ success: false, message: 'Tenant ID is required' });
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ success: false, message: 'Tenant not found' });
+    if (tenant.erpCategory !== 'software_house') return next();
+    const orig = req.tenantId;
+    req.tenantId = tenantId;
+    mw(req, res, (err) => {
+      req.tenantId = orig;
+      next(err);
+    });
+  };
+};
+
 module.exports = {
   checkFeatureAccess,
   checkUsageLimit,
+  checkUsageLimitSoftwareHouseOnly,
   checkMultipleUsageLimits,
   checkPlanRestrictions,
   trackApiUsage,
   checkSubscriptionStatus,
   enforceRateLimit,
-  getTenantSubscriptionInfo
+  getTenantSubscriptionInfo,
+  getEffectiveUsageLimit,
+  checkReadOnlySoftwareHouseOnly,
+  checkFeatureAccessSoftwareHouseOnly
 };

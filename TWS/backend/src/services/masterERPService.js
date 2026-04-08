@@ -213,7 +213,7 @@ class MasterERPService {
         // Valid module enum values from Tenant model (must match exactly)
         const validModules = [
           // Common modules
-          'hr', 'finance', 'projects', 'operations', 'inventory', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles',
+          'hr', 'finance', 'projects', 'operations', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles',
           // Healthcare modules
           'patients', 'doctors', 'appointments', 'medical_records', 'prescriptions', 'departments', 'billing',
           // Education modules

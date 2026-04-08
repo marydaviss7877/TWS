@@ -194,129 +194,7 @@ class PlatformIntegration {
     }
   }
 
-  // Microsoft Teams Integration
-  async createTeamsMeeting(meeting) {
-    try {
-      const { Client } = require('@microsoft/microsoft-graph-client');
-      
-      const graphClient = Client.init({
-        authProvider: (done) => {
-          done(null, meeting.organizer.microsoftAccessToken);
-        }
-      });
-
-      const event = {
-        subject: meeting.title,
-        body: {
-          contentType: 'HTML',
-          content: meeting.description || ''
-        },
-        start: {
-          dateTime: meeting.startTime.toISOString(),
-          timeZone: meeting.timezone
-        },
-        end: {
-          dateTime: meeting.endTime.toISOString(),
-          timeZone: meeting.timezone
-        },
-        attendees: [
-          ...meeting.attendees.map(attendee => ({
-            emailAddress: {
-              address: attendee.email,
-              name: attendee.name
-            },
-            type: 'required'
-          })),
-          ...meeting.externalAttendees.map(attendee => ({
-            emailAddress: {
-              address: attendee.email,
-              name: attendee.name
-            },
-            type: 'required'
-          }))
-        ],
-        isOnlineMeeting: true,
-        onlineMeetingProvider: 'teamsForBusiness'
-      };
-
-      const response = await graphClient
-        .me
-        .events
-        .post(event);
-
-      return {
-        meetingUrl: response.onlineMeeting.joinUrl,
-        meetingId: response.id,
-        passcode: response.onlineMeeting.tollNumber || null,
-        dialInNumbers: response.onlineMeeting.tollFreeNumbers || []
-      };
-    } catch (error) {
-      console.error('Error creating Teams meeting:', error);
-      throw error;
-    }
-  }
-
-  async updateTeamsMeeting(meeting, teamsMeetingId) {
-    try {
-      const { Client } = require('@microsoft/microsoft-graph-client');
-      
-      const graphClient = Client.init({
-        authProvider: (done) => {
-          done(null, meeting.organizer.microsoftAccessToken);
-        }
-      });
-
-      const event = {
-        subject: meeting.title,
-        body: {
-          contentType: 'HTML',
-          content: meeting.description || ''
-        },
-        start: {
-          dateTime: meeting.startTime.toISOString(),
-          timeZone: meeting.timezone
-        },
-        end: {
-          dateTime: meeting.endTime.toISOString(),
-          timeZone: meeting.timezone
-        }
-      };
-
-      const response = await graphClient
-        .me
-        .events(teamsMeetingId)
-        .patch(event);
-
-      return response;
-    } catch (error) {
-      console.error('Error updating Teams meeting:', error);
-      throw error;
-    }
-  }
-
-  async deleteTeamsMeeting(teamsMeetingId, accessToken) {
-    try {
-      const { Client } = require('@microsoft/microsoft-graph-client');
-      
-      const graphClient = Client.init({
-        authProvider: (done) => {
-          done(null, accessToken);
-        }
-      });
-
-      await graphClient
-        .me
-        .events(teamsMeetingId)
-        .delete();
-
-      return true;
-    } catch (error) {
-      console.error('Error deleting Teams meeting:', error);
-      throw error;
-    }
-  }
-
-  // Generic meeting creation based on platform
+  // Generic meeting creation based on platform (Microsoft Teams/Graph integration removed)
   async createMeeting(meeting, platform) {
     switch (platform) {
       case 'google_meet':
@@ -324,7 +202,7 @@ class PlatformIntegration {
       case 'zoom':
         return await this.createZoomMeeting(meeting);
       case 'teams':
-        return await this.createTeamsMeeting(meeting);
+        throw new Error('Microsoft Graph integration has been removed. Use Google Meet or Zoom.');
       default:
         throw new Error(`Unsupported platform: ${platform}`);
     }
@@ -336,9 +214,8 @@ class PlatformIntegration {
       case 'zoom':
         return await this.updateZoomMeeting(meeting, meetingId);
       case 'teams':
-        return await this.updateTeamsMeeting(meeting, meetingId);
+        throw new Error('Microsoft Graph integration has been removed. Use Google Meet or Zoom.');
       case 'google_meet':
-        // Google Meet updates are handled through calendar integration
         return { success: true };
       default:
         throw new Error(`Unsupported platform: ${platform}`);
@@ -351,9 +228,8 @@ class PlatformIntegration {
       case 'zoom':
         return await this.deleteZoomMeeting(meetingId);
       case 'teams':
-        return await this.deleteTeamsMeeting(meetingId, accessToken);
+        throw new Error('Microsoft Graph integration has been removed. Use Google Meet or Zoom.');
       case 'google_meet':
-        // Google Meet deletions are handled through calendar integration
         return { success: true };
       default:
         throw new Error(`Unsupported platform: ${platform}`);
@@ -382,20 +258,7 @@ class PlatformIntegration {
 
           return response.data;
         case 'teams':
-          const { Client } = require('@microsoft/microsoft-graph-client');
-          
-          const graphClient = Client.init({
-            authProvider: (done) => {
-              done(null, accessToken);
-            }
-          });
-
-          const event = await graphClient
-            .me
-            .events(meetingId)
-            .get();
-
-          return event;
+          throw new Error('Microsoft Graph integration has been removed. Use Google Meet or Zoom.');
         default:
           throw new Error(`Unsupported platform: ${platform}`);
       }

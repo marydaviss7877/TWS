@@ -84,13 +84,24 @@ const departmentSchema = new mongoose.Schema({
     }
   },
   
+  // UPR Phase 3: validated module key for menu/permission mapping (replaces hardcoded moduleToDepartmentMap)
+  moduleKey: {
+    type: String,
+    enum: [
+      'projects', 'hr', 'finance', 'payroll', 'documents', 'analytics', 'nucleus',
+      'clients', 'deals', 'audit', 'attendance', 'leave', 'notifications', 'settings'
+    ],
+    required: false,
+    default: null
+  },
+
   // Access Control
   defaultPermissions: [{
     type: String,
     enum: ['read', 'write', 'admin', 'delete', 'manage_users', 'view_analytics', 'export_data'],
     default: 'read'
   }],
-  
+
   // Status
   status: {
     type: String,

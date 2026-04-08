@@ -1,6 +1,8 @@
 const express = require('express');
 const { body, query, param } = require('express-validator');
-const { requirePermission } = require('../../../middleware/auth/rbac');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
+const financeRead = requireErpAccess({ module: 'finance', action: 'read', checkRevocation: true, sensitive: true, auditResourceType: 'finance' });
+const financeWrite = requireErpAccess({ module: 'finance', action: 'write', checkRevocation: true, sensitive: true, auditResourceType: 'finance' });
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
 const { 
@@ -21,7 +23,7 @@ const router = express.Router();
 
 // Get all integrations
 router.get('/', [
-  requirePermission('finance:read'),
+  financeRead,
   query('type').optional().isIn(['time_tracking', 'project_management', 'payment_gateway', 'banking', 'accounting', 'hr']),
   query('status').optional().isIn(['active', 'inactive', 'error', 'pending'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -43,7 +45,7 @@ router.get('/', [
 
 // Get integration by ID
 router.get('/:id', [
-  requirePermission('finance:read'),
+  financeRead,
   param('id').isMongoId()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const integration = await IntegrationConfig.findOne({
@@ -69,7 +71,7 @@ router.get('/:id', [
 
 // Create integration
 router.post('/', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('name').notEmpty().trim(),
   body('type').isIn(['time_tracking', 'project_management', 'payment_gateway', 'banking', 'accounting', 'hr']),
   body('provider').notEmpty().trim(),
@@ -92,7 +94,7 @@ router.post('/', [
 
 // Update integration
 router.put('/:id', [
-  requirePermission('finance:write'),
+  financeWrite,
   param('id').isMongoId(),
   body('name').optional().notEmpty().trim(),
   body('status').optional().isIn(['active', 'inactive', 'error', 'pending']),
@@ -122,7 +124,7 @@ router.put('/:id', [
 
 // Delete integration
 router.delete('/:id', [
-  requirePermission('finance:write'),
+  financeWrite,
   param('id').isMongoId()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const integration = await IntegrationConfig.findOneAndDelete({
@@ -147,7 +149,7 @@ router.delete('/:id', [
 
 // Test integration connection
 router.post('/:id/test', [
-  requirePermission('finance:write'),
+  financeWrite,
   param('id').isMongoId()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const integration = await IntegrationConfig.findOne({
@@ -194,7 +196,7 @@ router.post('/:id/test', [
 
 // Sync time entries
 router.post('/:id/sync/time-entries', [
-  requirePermission('finance:write'),
+  financeWrite,
   param('id').isMongoId(),
   body('startDate').isISO8601(),
   body('endDate').isISO8601()
@@ -226,7 +228,7 @@ router.post('/:id/sync/time-entries', [
 
 // Create payment intent
 router.post('/:id/payment-intent', [
-  requirePermission('finance:write'),
+  financeWrite,
   param('id').isMongoId(),
   body('invoiceId').isMongoId(),
   body('amount').isNumeric(),
@@ -295,7 +297,7 @@ router.post('/:id/webhook/payment', [
 
 // Sync bank transactions
 router.post('/:id/sync/transactions', [
-  requirePermission('finance:write'),
+  financeWrite,
   param('id').isMongoId(),
   body('accountId').notEmpty(),
   body('startDate').isISO8601(),
@@ -330,7 +332,7 @@ router.post('/:id/sync/transactions', [
 
 // Reconcile transactions
 router.post('/:id/reconcile', [
-  requirePermission('finance:write'),
+  financeWrite,
   param('id').isMongoId(),
   body('accountId').notEmpty(),
   body('autoMatch').optional().isBoolean()
@@ -393,7 +395,7 @@ router.post('/:id/webhook/banking', [
 
 // Get integration logs
 router.get('/:id/logs', [
-  requirePermission('finance:read'),
+  financeRead,
   param('id').isMongoId(),
   query('type').optional().isIn(['sync', 'webhook', 'api_call', 'error', 'auth']),
   query('status').optional().isIn(['success', 'error', 'warning', 'info']),
@@ -437,7 +439,7 @@ router.get('/:id/logs', [
 
 // Update integration mappings
 router.put('/:id/mappings', [
-  requirePermission('finance:write'),
+  financeWrite,
   param('id').isMongoId(),
   body('mappings').isObject()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -465,7 +467,7 @@ router.put('/:id/mappings', [
 
 // Get integration health status
 router.get('/:id/health', [
-  requirePermission('finance:read'),
+  financeRead,
   param('id').isMongoId()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const integration = await IntegrationConfig.findOne({

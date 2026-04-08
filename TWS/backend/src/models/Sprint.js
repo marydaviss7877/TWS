@@ -5,7 +5,7 @@ const { ObjectId } = mongoose.Schema.Types;
 const SprintSchema = new mongoose.Schema({
   // Basic Info
   projectId: { type: ObjectId, ref: 'Project', required: true },
-  workspaceId: { type: ObjectId, ref: 'Workspace', required: true },
+  workspaceId: { type: ObjectId, ref: 'Workspace', required: false },
   orgId: { type: ObjectId, ref: 'Organization', required: true },
   
   // Sprint Details

@@ -1,8 +1,12 @@
 const express = require('express');
 const { body, query } = require('express-validator');
-const { requirePermission } = require('../../../middleware/auth/rbac');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
+
+// UPR Phase 1.4 + 4.2: finance uses requireErpAccess with checkRevocation on sensitive routes
+const financeRead = requireErpAccess({ module: 'finance', action: 'read', checkRevocation: true, sensitive: true, auditResourceType: 'finance' });
+const financeWrite = requireErpAccess({ module: 'finance', action: 'write', checkRevocation: true, sensitive: true, auditResourceType: 'finance' });
 const { 
   Transaction, 
   ChartOfAccounts, 
@@ -25,7 +29,7 @@ const router = express.Router();
 
 // Get transactions
 router.get('/', [
-  requirePermission('finance:read'),
+  financeRead,
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('type').optional().isIn(['expense', 'revenue', 'investment', 'transfer', 'loan']),
@@ -69,7 +73,7 @@ router.get('/', [
 
 // Create transaction
 router.post('/', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('type').isIn(['expense', 'revenue', 'investment', 'transfer', 'loan']),
   body('category').notEmpty().trim(),
   body('amount').isNumeric(),
@@ -88,7 +92,7 @@ router.post('/', [
 }));
 
 // Get accounts
-router.get('/accounts', requirePermission('finance:read'), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/accounts', financeRead, ErrorHandler.asyncHandler(async (req, res) => {
   const accounts = await Account.find({ active: true }).sort({ code: 1 });
 
   res.json({
@@ -99,7 +103,7 @@ router.get('/accounts', requirePermission('finance:read'), ErrorHandler.asyncHan
 
 // Create account
 router.post('/accounts', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('name').notEmpty().trim(),
   body('type').isIn(['asset', 'liability', 'equity', 'revenue', 'expense']),
   body('code').notEmpty().trim()
@@ -116,7 +120,7 @@ router.post('/accounts', [
 
 // Get invoices
 router.get('/invoices', [
-  requirePermission('finance:read'),
+  financeRead,
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('status').optional().isIn(['draft', 'sent', 'paid', 'overdue', 'cancelled'])
@@ -152,7 +156,7 @@ router.get('/invoices', [
 
 // Create invoice
 router.post('/invoices', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('clientName').notEmpty().trim(),
   body('clientEmail').isEmail(),
   body('issueDate').isISO8601(),
@@ -189,7 +193,7 @@ router.post('/invoices', [
 
 // Get financial reports
 router.get('/reports/pnl', [
-  requirePermission('finance:read'),
+  financeRead,
   query('start').isISO8601(),
   query('end').isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -244,7 +248,7 @@ router.get('/reports/pnl', [
 
 // Get chart of accounts
 router.get('/chart-of-accounts', [
-  requirePermission('finance:read'),
+  financeRead,
   query('type').optional().isIn(['asset', 'liability', 'equity', 'revenue', 'expense']),
   query('level').optional().isInt({ min: 1, max: 5 })
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -264,7 +268,7 @@ router.get('/chart-of-accounts', [
 
 // Create chart of accounts entry
 router.post('/chart-of-accounts', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('code').notEmpty().trim(),
   body('name').notEmpty().trim(),
   body('type').isIn(['asset', 'liability', 'equity', 'revenue', 'expense']),
@@ -288,7 +292,7 @@ router.post('/chart-of-accounts', [
 
 // Get journal entries
 router.get('/journal-entries', [
-  requirePermission('finance:read'),
+  financeRead,
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('status').optional().isIn(['draft', 'posted', 'reversed']),
@@ -333,7 +337,7 @@ router.get('/journal-entries', [
 
 // Create journal entry
 router.post('/journal-entries', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('description').notEmpty().trim(),
   body('entries').isArray({ min: 2 }),
   body('entries.*.accountId').isMongoId(),
@@ -381,7 +385,7 @@ router.post('/journal-entries', [
 
 // Get project profitability
 router.get('/project-costing/:projectId', [
-  requirePermission('finance:read')
+  financeRead
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const projectCosting = await ProjectCosting.findOne({
     projectId: req.params.projectId,
@@ -407,7 +411,7 @@ router.get('/project-costing/:projectId', [
 
 // Update project costing
 router.put('/project-costing/:projectId', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('budget').optional().isObject(),
   body('actualCosts').optional().isObject()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -431,7 +435,7 @@ router.put('/project-costing/:projectId', [
 
 // Get time entries
 router.get('/time-entries', [
-  requirePermission('finance:read'),
+  financeRead,
   query('projectId').optional().isMongoId(),
   query('clientId').optional().isMongoId(),
   query('employeeId').optional().isMongoId(),
@@ -467,7 +471,7 @@ router.get('/time-entries', [
 
 // Create time entry
 router.post('/time-entries', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('employeeId').isMongoId(),
   body('projectId').isMongoId(),
   body('clientId').isMongoId(),
@@ -494,7 +498,7 @@ router.post('/time-entries', [
 
 // Get vendors
 router.get('/vendors', [
-  requirePermission('finance:read'),
+  financeRead,
   query('status').optional().isIn(['active', 'inactive', 'suspended'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const filter = { orgId: req.user.orgId };
@@ -512,7 +516,7 @@ router.get('/vendors', [
 
 // Create vendor
 router.post('/vendors', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('name').notEmpty().trim(),
   body('email').optional().isEmail(),
   body('paymentTerms').optional().isIn(['net_15', 'net_30', 'net_45', 'net_60', 'due_on_receipt'])
@@ -533,7 +537,7 @@ router.post('/vendors', [
 
 // Get bills
 router.get('/bills', [
-  requirePermission('finance:read'),
+  financeRead,
   query('vendorId').optional().isMongoId(),
   query('status').optional().isIn(['draft', 'pending_approval', 'approved', 'paid', 'overdue', 'cancelled']),
   query('from').optional().isISO8601(),
@@ -562,7 +566,7 @@ router.get('/bills', [
 
 // Create bill
 router.post('/bills', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('vendorId').isMongoId(),
   body('billDate').isISO8601(),
   body('dueDate').isISO8601(),
@@ -598,7 +602,7 @@ router.post('/bills', [
 
 // Get cash flow forecasts
 router.get('/cash-flow-forecasts', [
-  requirePermission('finance:read'),
+  financeRead,
   query('status').optional().isIn(['draft', 'active', 'archived'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const filter = { orgId: req.user.orgId };
@@ -616,7 +620,7 @@ router.get('/cash-flow-forecasts', [
 
 // Create cash flow forecast
 router.post('/cash-flow-forecasts', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('name').notEmpty().trim(),
   body('period.start').isISO8601(),
   body('period.end').isISO8601(),
@@ -642,7 +646,7 @@ router.post('/cash-flow-forecasts', [
 
 // Get bank accounts
 router.get('/bank-accounts', [
-  requirePermission('finance:read')
+  financeRead
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const bankAccounts = await BankAccount.find({ 
     orgId: req.user.orgId,
@@ -657,7 +661,7 @@ router.get('/bank-accounts', [
 
 // Create bank account
 router.post('/bank-accounts', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('name').notEmpty().trim(),
   body('bankName').notEmpty().trim(),
   body('accountType').isIn(['checking', 'savings', 'money_market', 'cd']),
@@ -681,7 +685,7 @@ router.post('/bank-accounts', [
 
 // Get financial KPIs
 router.get('/kpis', [
-  requirePermission('finance:read'),
+  financeRead,
   query('period').optional().isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const filter = { orgId: req.user.orgId };
@@ -707,7 +711,7 @@ router.get('/kpis', [
 
 // Calculate and update financial KPIs
 router.post('/kpis/calculate', [
-  requirePermission('finance:write'),
+  financeWrite,
   body('period.start').isISO8601(),
   body('period.end').isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -832,7 +836,7 @@ router.post('/kpis/calculate', [
 
 // Get comprehensive KPIs for dashboard
 router.get('/kpis/dashboard', [
-  requirePermission('finance:read'),
+  financeRead,
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';
@@ -847,7 +851,7 @@ router.get('/kpis/dashboard', [
 
 // Get revenue trends
 router.get('/revenue/trends', [
-  requirePermission('finance:read'),
+  financeRead,
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';
@@ -861,7 +865,7 @@ router.get('/revenue/trends', [
 
 // Get expense trends
 router.get('/expenses/trends', [
-  requirePermission('finance:read'),
+  financeRead,
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';
@@ -875,7 +879,7 @@ router.get('/expenses/trends', [
 
 // Get cash flow data
 router.get('/cash-flow', [
-  requirePermission('finance:read'),
+  financeRead,
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';
@@ -889,7 +893,7 @@ router.get('/cash-flow', [
 
 // Get accounts aging
 router.get('/accounts/aging', [
-  requirePermission('finance:read')
+  financeRead
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const aging = await FinanceDashboardService.getAccountsAging(req.user.orgId);
 
@@ -901,7 +905,7 @@ router.get('/accounts/aging', [
 
 // Get project profitability
 router.get('/projects/profitability', [
-  requirePermission('finance:read')
+  financeRead
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const profitability = await FinanceDashboardService.getProjectProfitability(req.user.orgId);
 
@@ -913,7 +917,7 @@ router.get('/projects/profitability', [
 
 // Get budget vs actual
 router.get('/budget/vs-actual', [
-  requirePermission('finance:read'),
+  financeRead,
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';
@@ -927,7 +931,7 @@ router.get('/budget/vs-actual', [
 
 // Get financial alerts
 router.get('/alerts', [
-  requirePermission('finance:read')
+  financeRead
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const alerts = await FinanceDashboardService.getFinancialAlerts(req.user.orgId);
 
@@ -939,7 +943,7 @@ router.get('/alerts', [
 
 // Get overdue invoices
 router.get('/invoices/overdue', [
-  requirePermission('finance:read')
+  financeRead
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const invoices = await Invoice.find({
     orgId: req.user.orgId,
@@ -957,7 +961,7 @@ router.get('/invoices/overdue', [
 
 // Get upcoming bills
 router.get('/bills/upcoming', [
-  requirePermission('finance:read'),
+  financeRead,
   query('days').optional().isInt({ min: 1, max: 90 })
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const days = parseInt(req.query.days) || 30;
@@ -981,7 +985,7 @@ router.get('/bills/upcoming', [
 
 // Get recent transactions
 router.get('/transactions', [
-  requirePermission('finance:read'),
+  financeRead,
   query('limit').optional().isInt({ min: 1, max: 100 })
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
@@ -1003,7 +1007,7 @@ router.get('/transactions', [
 
 // Export KPIs to Excel
 router.get('/export/kpis/excel', [
-  requirePermission('finance:read'),
+  financeRead,
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';
@@ -1012,7 +1016,7 @@ router.get('/export/kpis/excel', [
 
 // Export KPIs to PDF
 router.get('/export/kpis/pdf', [
-  requirePermission('finance:read'),
+  financeRead,
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';
@@ -1021,7 +1025,7 @@ router.get('/export/kpis/pdf', [
 
 // Export KPIs to CSV
 router.get('/export/kpis/csv', [
-  requirePermission('finance:read'),
+  financeRead,
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';
@@ -1030,7 +1034,7 @@ router.get('/export/kpis/csv', [
 
 // Export full dashboard to Excel
 router.get('/export/dashboard/excel', [
-  requirePermission('finance:read'),
+  financeRead,
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';

@@ -73,47 +73,35 @@ const migration = {
       }
     );
     
-    // Create AuditLog collection
+    // Create AuditLog collection (skip if already exists, e.g. different options)
     console.log('Creating AuditLog collection...');
-    
-    const auditLogSchema = {
-      action: { type: String, required: true },
-      performedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-      targetUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-      targetMessage: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' },
-      targetChat: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat' },
-      reason: String,
-      details: { type: mongoose.Schema.Types.Mixed, default: {} },
-      organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
-      ipAddress: String,
-      userAgent: String,
-      createdAt: { type: Date, default: Date.now },
-      updatedAt: { type: Date, default: Date.now }
-    };
-    
-    // Create auditlogs collection with schema validation
-    await db.createCollection('auditlogs', {
-      validator: {
-        $jsonSchema: {
-          bsonType: 'object',
-          required: ['action', 'performedBy', 'organization'],
-          properties: {
-            action: { bsonType: 'string' },
-            performedBy: { bsonType: 'objectId' },
-            targetUser: { bsonType: ['objectId', 'null'] },
-            targetMessage: { bsonType: ['objectId', 'null'] },
-            targetChat: { bsonType: ['objectId', 'null'] },
-            reason: { bsonType: ['string', 'null'] },
-            details: { bsonType: 'object' },
-            organization: { bsonType: 'objectId' },
-            ipAddress: { bsonType: ['string', 'null'] },
-            userAgent: { bsonType: ['string', 'null'] },
-            createdAt: { bsonType: 'date' },
-            updatedAt: { bsonType: 'date' }
+    const auditLogsExists = await db.listCollections({ name: 'auditlogs' }).hasNext();
+    if (!auditLogsExists) {
+      await db.createCollection('auditlogs', {
+        validator: {
+          $jsonSchema: {
+            bsonType: 'object',
+            required: ['action', 'performedBy', 'organization'],
+            properties: {
+              action: { bsonType: 'string' },
+              performedBy: { bsonType: 'objectId' },
+              targetUser: { bsonType: ['objectId', 'null'] },
+              targetMessage: { bsonType: ['objectId', 'null'] },
+              targetChat: { bsonType: ['objectId', 'null'] },
+              reason: { bsonType: ['string', 'null'] },
+              details: { bsonType: 'object' },
+              organization: { bsonType: 'objectId' },
+              ipAddress: { bsonType: ['string', 'null'] },
+              userAgent: { bsonType: ['string', 'null'] },
+              createdAt: { bsonType: 'date' },
+              updatedAt: { bsonType: 'date' }
+            }
           }
         }
-      }
-    });
+      });
+    } else {
+      console.log('  auditlogs collection already exists, skipping create.');
+    }
     
     // Create indexes for AuditLog
     await db.collection('auditlogs').createIndex({ action: 1, createdAt: -1 });
@@ -143,31 +131,36 @@ const migration = {
       updatedAt: { type: Date, default: Date.now }
     };
     
-    await db.createCollection('userbans', {
-      validator: {
-        $jsonSchema: {
-          bsonType: 'object',
-          required: ['user', 'organization', 'bannedBy', 'reason'],
-          properties: {
-            user: { bsonType: 'objectId' },
-            organization: { bsonType: 'objectId' },
-            bannedBy: { bsonType: 'objectId' },
-            reason: { bsonType: 'string' },
-            banType: { bsonType: 'string', enum: ['temporary', 'permanent'] },
-            duration: { bsonType: 'number' },
-            expiresAt: { bsonType: ['date', 'null'] },
-            isActive: { bsonType: 'bool' },
-            revokedBy: { bsonType: ['objectId', 'null'] },
-            revokedAt: { bsonType: ['date', 'null'] },
-            revokeReason: { bsonType: ['string', 'null'] },
-            ipAddress: { bsonType: ['string', 'null'] },
-            userAgent: { bsonType: ['string', 'null'] },
-            createdAt: { bsonType: 'date' },
-            updatedAt: { bsonType: 'date' }
+    const userbansExists = await db.listCollections({ name: 'userbans' }).hasNext();
+    if (!userbansExists) {
+      await db.createCollection('userbans', {
+        validator: {
+          $jsonSchema: {
+            bsonType: 'object',
+            required: ['user', 'organization', 'bannedBy', 'reason'],
+            properties: {
+              user: { bsonType: 'objectId' },
+              organization: { bsonType: 'objectId' },
+              bannedBy: { bsonType: 'objectId' },
+              reason: { bsonType: 'string' },
+              banType: { bsonType: 'string', enum: ['temporary', 'permanent'] },
+              duration: { bsonType: 'number' },
+              expiresAt: { bsonType: ['date', 'null'] },
+              isActive: { bsonType: 'bool' },
+              revokedBy: { bsonType: ['objectId', 'null'] },
+              revokedAt: { bsonType: ['date', 'null'] },
+              revokeReason: { bsonType: ['string', 'null'] },
+              ipAddress: { bsonType: ['string', 'null'] },
+              userAgent: { bsonType: ['string', 'null'] },
+              createdAt: { bsonType: 'date' },
+              updatedAt: { bsonType: 'date' }
+            }
           }
         }
-      }
-    });
+      });
+    } else {
+      console.log('  userbans collection already exists, skipping create.');
+    }
     
     // Create indexes for UserBan
     await db.collection('userbans').createIndex({ user: 1, organization: 1, isActive: 1 });

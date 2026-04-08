@@ -20,6 +20,12 @@ const WorkspaceSchema = new mongoose.Schema({
       enum: ['owner', 'admin', 'member', 'guest'], // Added 'guest' for client access
       default: 'member' 
     },
+    /** Nucleus: which approval step this member can approve (dev_lead, qa_lead, security, client) */
+    approvalRole: {
+      type: String,
+      enum: ['dev_lead', 'qa_lead', 'security', 'client'],
+      default: undefined
+    },
     joinedAt: { type: Date, default: Date.now },
     invitedBy: { type: ObjectId, ref: 'User' },
     status: { 
@@ -107,7 +113,7 @@ const WorkspaceSchema = new mongoose.Schema({
   subscription: {
     plan: { 
       type: String, 
-      enum: ['free', 'starter', 'professional', 'enterprise'], 
+      enum: ['free', 'starter', 'growth', 'professional', 'enterprise'], 
       default: 'free' 
     },
     status: { 
@@ -390,16 +396,13 @@ WorkspaceSchema.methods.canApprove = function(userId, approverType) {
     return true;
   }
 
-  // Check if user has the specific approver role
-  // This would need to be enhanced based on your role system
   const member = this.members.find(m => m.userId.toString() === userId.toString());
   if (!member || member.status !== 'active') {
     return false;
   }
 
-  // For now, members can approve if they match the approver type
-  // You may want to add role mapping (e.g., member.role === 'dev_lead' for approverType === 'dev_lead')
-  return true;
+  // Member must have matching approvalRole for this step type
+  return member.approvalRole === approverType;
 };
 
 /**

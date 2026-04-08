@@ -1,6 +1,8 @@
 const express = require('express');
 const { body, query } = require('express-validator');
-const { requirePermission } = require('../../../middleware/auth/rbac');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
+const attendanceRead = requireErpAccess({ module: 'attendance', action: 'read', checkRevocation: false });
+const attendanceWrite = requireErpAccess({ module: 'attendance', action: 'write', checkRevocation: false });
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
 const AttendanceIntegrationService = require('../../../services/attendanceIntegrationService');
@@ -9,7 +11,7 @@ const router = express.Router();
 
 // Sync attendance with payroll
 router.post('/payroll/sync', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('startDate').isISO8601(),
   body('endDate').isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -36,7 +38,7 @@ router.post('/payroll/sync', [
 
 // Generate HR reports
 router.get('/hr/reports/:reportType', [
-  requirePermission('attendance:read'),
+  attendanceRead,
   query('startDate').isISO8601(),
   query('endDate').isISO8601(),
   query('department').optional().notEmpty(),
@@ -71,7 +73,7 @@ router.get('/hr/reports/:reportType', [
 
 // Auto-approve attendance
 router.post('/auto-approve', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('qualityThreshold').optional().isInt({ min: 0, max: 100 }),
   body('riskThreshold').optional().isIn(['low', 'medium', 'high']),
   body('requireManagerApproval').optional().isBoolean()
@@ -103,7 +105,7 @@ router.post('/auto-approve', [
 
 // Export for external systems
 router.get('/export/:systemType', [
-  requirePermission('attendance:read'),
+  attendanceRead,
   query('startDate').isISO8601(),
   query('endDate').isISO8601(),
   query('format').optional().isIn(['json', 'csv', 'xml'])
@@ -150,7 +152,7 @@ router.get('/export/:systemType', [
 
 // Get integration status
 router.get('/status', [
-  requirePermission('attendance:read')
+  attendanceRead
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
     // This would typically check the status of various integrations
@@ -186,7 +188,7 @@ router.get('/status', [
 
 // Test integration connection
 router.post('/test/:systemType', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('credentials').optional().isObject()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
@@ -221,7 +223,7 @@ router.post('/test/:systemType', [
 
 // Bulk operations for HR
 router.post('/bulk/operations', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('operation').isIn(['approve', 'reject', 'export', 'sync']),
   body('attendanceIds').isArray({ min: 1 }),
   body('attendanceIds.*').isMongoId(),

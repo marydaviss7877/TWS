@@ -7,12 +7,16 @@ const ProjectClient = require('../../../models/Client');
 
 const router = express.Router();
 
-// Get client's projects (accessible by client role)
+// Get client's projects (accessible by client role). Scoped by orgId so clients cannot see other tenants' data.
 router.get('/projects', authenticateToken, requireRole(['client']), ErrorHandler.asyncHandler(async (req, res) => {
   const { _id: userId } = req.user;
-  
-  // Find client record
-  const client = await ProjectClient.findOne({ userId });
+  const orgId = req.user?.orgId || req.orgId;
+  if (!orgId) {
+    return res.status(400).json({ success: false, message: 'Organization context required' });
+  }
+
+  // Find client record (scoped to current org)
+  const client = await ProjectClient.findOne({ userId, orgId });
   if (!client) {
     return res.status(404).json({
       success: false,
@@ -20,12 +24,12 @@ router.get('/projects', authenticateToken, requireRole(['client']), ErrorHandler
     });
   }
 
-  // Get projects for this client
-  const projects = await Project.find({ clientId: client._id })
+  // Get projects for this client (org-scoped)
+  const projects = await Project.find({ clientId: client._id, orgId })
     .populate('clientId', 'name email')
     .select('-internalNotes -budget -costs');
 
-  // Add pending approvals count for each project
+  // Add pending approvals count for each project (Card may have orgId; filter by project ownership)
   const projectsWithApprovals = await Promise.all(
     projects.map(async (project) => {
       const pendingCount = await Card.countDocuments({
@@ -47,13 +51,16 @@ router.get('/projects', authenticateToken, requireRole(['client']), ErrorHandler
   });
 }));
 
-// Get deliverables for a specific project (client view)
+// Get deliverables for a specific project (client view). Org-scoped.
 router.get('/projects/:projectId/deliverables', authenticateToken, requireRole(['client']), ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const { _id: userId } = req.user;
+  const orgId = req.user?.orgId || req.orgId;
+  if (!orgId) {
+    return res.status(400).json({ success: false, message: 'Organization context required' });
+  }
 
-  // Verify client has access to this project
-  const client = await ProjectClient.findOne({ userId });
+  const client = await ProjectClient.findOne({ userId, orgId });
   if (!client) {
     return res.status(404).json({
       success: false,
@@ -61,9 +68,10 @@ router.get('/projects/:projectId/deliverables', authenticateToken, requireRole([
     });
   }
 
-  const project = await Project.findOne({ 
-    _id: projectId, 
-    clientId: client._id 
+  const project = await Project.findOne({
+    _id: projectId,
+    clientId: client._id,
+    orgId
   });
   
   if (!project) {
@@ -88,13 +96,16 @@ router.get('/projects/:projectId/deliverables', authenticateToken, requireRole([
   });
 }));
 
-// Approve or reject a deliverable
+// Approve or reject a deliverable. Org-scoped.
 router.post('/cards/:cardId/approve', authenticateToken, requireRole(['client']), ErrorHandler.asyncHandler(async (req, res) => {
   const { cardId } = req.params;
   const { approved, comment } = req.body;
   const { _id: userId } = req.user;
+  const orgId = req.user?.orgId || req.orgId;
+  if (!orgId) {
+    return res.status(400).json({ success: false, message: 'Organization context required' });
+  }
 
-  // Find the card and verify client access
   const card = await Card.findById(cardId)
     .populate('projectId')
     .populate('projectId.clientId');
@@ -106,9 +117,8 @@ router.post('/cards/:cardId/approve', authenticateToken, requireRole(['client'])
     });
   }
 
-  // Verify client has access to this project
-  const client = await ProjectClient.findOne({ userId });
-  if (!client || card.projectId.clientId._id.toString() !== client._id.toString()) {
+  const client = await ProjectClient.findOne({ userId, orgId });
+  if (!client || !card.projectId?.clientId || card.projectId.clientId._id.toString() !== client._id.toString()) {
     return res.status(403).json({
       success: false,
       message: 'Access denied'
@@ -143,13 +153,16 @@ router.post('/cards/:cardId/approve', authenticateToken, requireRole(['client'])
   });
 }));
 
-// Get project timeline/milestones (client view)
+// Get project timeline/milestones (client view). Org-scoped.
 router.get('/projects/:projectId/timeline', authenticateToken, requireRole(['client']), ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const { _id: userId } = req.user;
+  const orgId = req.user?.orgId || req.orgId;
+  if (!orgId) {
+    return res.status(400).json({ success: false, message: 'Organization context required' });
+  }
 
-  // Verify client access
-  const client = await ProjectClient.findOne({ userId });
+  const client = await ProjectClient.findOne({ userId, orgId });
   if (!client) {
     return res.status(404).json({
       success: false,
@@ -157,9 +170,10 @@ router.get('/projects/:projectId/timeline', authenticateToken, requireRole(['cli
     });
   }
 
-  const project = await Project.findOne({ 
-    _id: projectId, 
-    clientId: client._id 
+  const project = await Project.findOne({
+    _id: projectId,
+    clientId: client._id,
+    orgId
   });
   
   if (!project) {
@@ -192,11 +206,15 @@ router.get('/projects/:projectId/timeline', authenticateToken, requireRole(['cli
   });
 }));
 
-// Add comment to a deliverable
+// Add comment to a deliverable. Org-scoped.
 router.post('/cards/:cardId/comments', authenticateToken, requireRole(['client']), ErrorHandler.asyncHandler(async (req, res) => {
   const { cardId } = req.params;
   const { text } = req.body;
   const { _id: userId } = req.user;
+  const orgId = req.user?.orgId || req.orgId;
+  if (!orgId) {
+    return res.status(400).json({ success: false, message: 'Organization context required' });
+  }
 
   if (!text || text.trim().length === 0) {
     return res.status(400).json({
@@ -205,7 +223,6 @@ router.post('/cards/:cardId/comments', authenticateToken, requireRole(['client']
     });
   }
 
-  // Find card and verify access
   const card = await Card.findById(cardId)
     .populate('projectId.clientId');
 
@@ -216,9 +233,8 @@ router.post('/cards/:cardId/comments', authenticateToken, requireRole(['client']
     });
   }
 
-  // Verify client access
-  const client = await ProjectClient.findOne({ userId });
-  if (!client || card.projectId.clientId._id.toString() !== client._id.toString()) {
+  const client = await ProjectClient.findOne({ userId, orgId });
+  if (!client || !card.projectId?.clientId || card.projectId.clientId._id.toString() !== client._id.toString()) {
     return res.status(403).json({
       success: false,
       message: 'Access denied'

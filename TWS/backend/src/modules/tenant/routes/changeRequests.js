@@ -5,7 +5,7 @@ const ChangeRequestAudit = require('../../../models/ChangeRequestAudit');
 const Milestone = require('../../../models/Milestone');
 const Deliverable = require('../../../models/Deliverable');
 const Project = require('../../../models/Project');
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const ProjectMember = require('../../../models/ProjectMember');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const NotificationService = require('../../../services/notifications/notification.service');
 // Use standardized orgId helper utility
@@ -16,7 +16,6 @@ const { ensureOrgId, getTenantFilter } = require('../../../utils/orgIdHelper');
  * Client submits a change request
  */
 router.post('/',
-  authenticateToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     // Use standardized orgId utility
     const orgId = await ensureOrgId(req);
@@ -53,21 +52,28 @@ router.post('/',
       tenantId
     );
     
-    // Send in-app notification to PM
+    // Send in-app notification to PM (Project has no ownerId; use ProjectMember owner)
     try {
       const deliverable = await Deliverable.findById(deliverable_id);
       if (deliverable) {
         const project = await Project.findById(deliverable.project_id);
-        if (project && project.ownerId) {
-          await NotificationService.createNotification({
-            userIds: [project.ownerId],
-            type: 'project_update',
-            title: 'Change Request Submitted',
-            message: `Client submitted a change request for deliverable "${deliverable.name}"`,
-            relatedEntityType: 'change_request',
-            relatedEntityId: changeRequest._id,
-            createdBy: req.user._id
+        if (project) {
+          const ownerMember = await ProjectMember.findOne({
+            projectId: project._id,
+            role: 'owner',
+            status: 'active'
           });
+          if (ownerMember) {
+            await NotificationService.createNotification({
+              userIds: [ownerMember.userId],
+              type: 'project_update',
+              title: 'Change Request Submitted',
+              message: `Client submitted a change request for deliverable "${deliverable.name}"`,
+              relatedEntityType: 'change_request',
+              relatedEntityId: changeRequest._id,
+              createdBy: req.user._id
+            });
+          }
         }
       }
     } catch (error) {
@@ -87,7 +93,6 @@ router.post('/',
  * PM acknowledges change request
  */
 router.post('/:id/acknowledge',
-  authenticateToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     // Use standardized orgId utility
     const orgId = await ensureOrgId(req);
@@ -139,7 +144,6 @@ router.post('/:id/acknowledge',
  * PM evaluates and recommends
  */
 router.post('/:id/evaluate',
-  authenticateToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     // Use standardized orgId utility
     const orgId = await ensureOrgId(req);
@@ -229,7 +233,6 @@ router.post('/:id/evaluate',
  * Client decides on change request
  */
 router.post('/:id/decide',
-  authenticateToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     // Use standardized orgId utility
     const orgId = await ensureOrgId(req);
@@ -284,21 +287,28 @@ router.post('/:id/decide',
       tenantId
     );
     
-    // Send in-app notification to PM
+    // Send in-app notification to PM (Project has no ownerId; use ProjectMember owner)
     try {
       const deliverable = await Deliverable.findById(changeRequest.deliverable_id);
       if (deliverable) {
         const project = await Project.findById(deliverable.project_id);
-        if (project && project.ownerId) {
-          await NotificationService.createNotification({
-            userIds: [project.ownerId],
-            type: 'project_update',
-            title: `Change Request ${decision === 'accept' ? 'Accepted' : 'Rejected'}`,
-            message: `Client ${decision}ed the change request for deliverable "${deliverable.name}"`,
-            relatedEntityType: 'change_request',
-            relatedEntityId: changeRequest._id,
-            createdBy: req.user._id
+        if (project) {
+          const ownerMember = await ProjectMember.findOne({
+            projectId: project._id,
+            role: 'owner',
+            status: 'active'
           });
+          if (ownerMember) {
+            await NotificationService.createNotification({
+              userIds: [ownerMember.userId],
+              type: 'project_update',
+              title: `Change Request ${decision === 'accept' ? 'Accepted' : 'Rejected'}`,
+              message: `Client ${decision}ed the change request for deliverable "${deliverable.name}"`,
+              relatedEntityType: 'change_request',
+              relatedEntityId: changeRequest._id,
+              createdBy: req.user._id
+            });
+          }
         }
       }
     } catch (error) {
@@ -318,7 +328,6 @@ router.post('/:id/decide',
  * Get audit trail for a change request
  */
 router.get('/:id/audit',
-  authenticateToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     // Use standardized orgId utility
     const orgId = await ensureOrgId(req);
@@ -347,11 +356,45 @@ router.get('/:id/audit',
 );
 
 /**
+ * GET /change-requests/:id
+ * Get a single change request by ID
+ */
+router.get('/:id',
+  ErrorHandler.asyncHandler(async (req, res) => {
+    // Use standardized orgId utility
+    const orgId = await ensureOrgId(req);
+    const tenantId = req.tenantId || req.tenant?._id?.toString();
+
+    const changeRequest = await ChangeRequest.findOne({
+      _id: req.params.id,
+      orgId,
+      tenantId
+    })
+      .populate({
+        path: 'deliverable_id',
+        select: 'name project_id',
+        populate: { path: 'project_id', select: 'name' }
+      });
+
+    if (!changeRequest) {
+      return res.status(404).json({
+        success: false,
+        message: 'Change request not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: changeRequest
+    });
+  })
+);
+
+/**
  * GET /change-requests
  * Get all change requests (with filtering)
  */
 router.get('/',
-  authenticateToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     // Use standardized orgId utility
     const orgId = await ensureOrgId(req);

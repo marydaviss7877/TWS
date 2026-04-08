@@ -1,12 +1,10 @@
 const { google } = require('googleapis');
-const { Client } = require('@microsoft/microsoft-graph-client');
 const User = require('../../models/User');
 const Meeting = require('../../models/Meeting');
 
 class CalendarService {
   constructor() {
     this.googleOAuth2Client = null;
-    this.microsoftGraphClient = null;
   }
 
   // Google Calendar integration
@@ -31,33 +29,11 @@ class CalendarService {
     return google.calendar({ version: 'v3', auth: this.googleOAuth2Client });
   }
 
-  // Microsoft Graph integration
-  async initializeMicrosoftClient(userId) {
-    const user = await User.findById(userId);
-    if (!user || !user.microsoftAccessToken) {
-      throw new Error('Microsoft Calendar not connected for this user');
-    }
-
-    this.microsoftGraphClient = Client.init({
-      authProvider: {
-        getAccessToken: async () => {
-          // Check if token is expired and refresh if needed
-          if (user.microsoftTokenExpiry && new Date() >= user.microsoftTokenExpiry) {
-            await this.refreshMicrosoftToken(user);
-          }
-          return user.microsoftAccessToken;
-        }
-      }
-    });
-
-    return this.microsoftGraphClient;
-  }
-
   // Create meeting in Google Calendar
   async createGoogleMeeting(userId, meetingData) {
     try {
       const calendar = await this.initializeGoogleClient(userId);
-      
+
       const event = {
         summary: meetingData.title,
         description: meetingData.description,
@@ -106,56 +82,11 @@ class CalendarService {
     }
   }
 
-  // Create meeting in Microsoft Calendar
-  async createMicrosoftMeeting(userId, meetingData) {
-    try {
-      const graphClient = await this.initializeMicrosoftClient(userId);
-      
-      const event = {
-        subject: meetingData.title,
-        body: {
-          contentType: 'HTML',
-          content: meetingData.description || ''
-        },
-        start: {
-          dateTime: meetingData.startTime,
-          timeZone: meetingData.timezone || 'UTC'
-        },
-        end: {
-          dateTime: meetingData.endTime,
-          timeZone: meetingData.timezone || 'UTC'
-        },
-        attendees: meetingData.attendees?.map(email => ({
-          emailAddress: { address: email },
-          type: 'required'
-        })) || [],
-        isOnlineMeeting: true,
-        onlineMeetingProvider: 'teamsForBusiness'
-      };
-
-      const response = await graphClient
-        .me
-        .events
-        .post(event);
-
-      return {
-        success: true,
-        eventId: response.id,
-        meetingLink: response.onlineMeeting?.joinUrl,
-        calendarLink: response.webLink,
-        data: response
-      };
-    } catch (error) {
-      console.error('Microsoft Calendar error:', error);
-      throw new Error(`Failed to create Microsoft Calendar meeting: ${error.message}`);
-    }
-  }
-
   // Get user's calendar events
   async getGoogleEvents(userId, timeMin, timeMax) {
     try {
       const calendar = await this.initializeGoogleClient(userId);
-      
+
       const response = await calendar.events.list({
         calendarId: 'primary',
         timeMin: timeMin || new Date().toISOString(),
@@ -171,41 +102,11 @@ class CalendarService {
     }
   }
 
-  // Get user's Microsoft events
-  async getMicrosoftEvents(userId, startDateTime, endDateTime) {
+  // Check user's availability (Google Calendar only)
+  async checkAvailability(userId, startTime, endTime) {
     try {
-      const graphClient = await this.initializeMicrosoftClient(userId);
-      
-      const response = await graphClient
-        .me
-        .calendar
-        .events
-        .get({
-          queryParameters: {
-            startDateTime: startDateTime || new Date().toISOString(),
-            endDateTime: endDateTime || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-          }
-        });
+      const events = await this.getGoogleEvents(userId, startTime, endTime);
 
-      return response.value || [];
-    } catch (error) {
-      console.error('Microsoft Calendar fetch error:', error);
-      throw new Error(`Failed to fetch Microsoft Calendar events: ${error.message}`);
-    }
-  }
-
-  // Check user's availability
-  async checkAvailability(userId, startTime, endTime, calendarType = 'google') {
-    try {
-      let events = [];
-      
-      if (calendarType === 'google') {
-        events = await this.getGoogleEvents(userId, startTime, endTime);
-      } else if (calendarType === 'microsoft') {
-        events = await this.getMicrosoftEvents(userId, startTime, endTime);
-      }
-
-      // Check for conflicts
       const conflicts = events.filter(event => {
         const eventStart = new Date(event.start?.dateTime || event.start?.date);
         const eventEnd = new Date(event.end?.dateTime || event.end?.date);
@@ -218,7 +119,7 @@ class CalendarService {
       return {
         available: conflicts.length === 0,
         conflicts: conflicts.map(event => ({
-          title: event.summary || event.subject,
+          title: event.summary,
           start: event.start?.dateTime || event.start?.date,
           end: event.end?.dateTime || event.end?.date
         }))
@@ -229,7 +130,7 @@ class CalendarService {
     }
   }
 
-  // Schedule meeting with multiple attendees
+  // Schedule meeting (Google Calendar only)
   async scheduleMeeting(organizerId, meetingData) {
     try {
       const organizer = await User.findById(organizerId);
@@ -237,12 +138,14 @@ class CalendarService {
         throw new Error('Organizer not found');
       }
 
-      // Check organizer's availability
+      if (!organizer.googleAccessToken) {
+        throw new Error('Organizer has no calendar integration. Google Calendar is required.');
+      }
+
       const organizerAvailability = await this.checkAvailability(
-        organizerId, 
-        meetingData.startTime, 
-        meetingData.endTime,
-        organizer.googleAccessToken ? 'google' : 'microsoft'
+        organizerId,
+        meetingData.startTime,
+        meetingData.endTime
       );
 
       if (!organizerAvailability.available) {
@@ -253,17 +156,8 @@ class CalendarService {
         };
       }
 
-      // Create meeting in organizer's calendar
-      let calendarResult;
-      if (organizer.googleAccessToken) {
-        calendarResult = await this.createGoogleMeeting(organizerId, meetingData);
-      } else if (organizer.microsoftAccessToken) {
-        calendarResult = await this.createMicrosoftMeeting(organizerId, meetingData);
-      } else {
-        throw new Error('No calendar integration found for organizer');
-      }
+      const calendarResult = await this.createGoogleMeeting(organizerId, meetingData);
 
-      // Save meeting to database
       const meeting = new Meeting({
         title: meetingData.title,
         description: meetingData.description,
@@ -274,7 +168,7 @@ class CalendarService {
         attendees: meetingData.attendees || [],
         meetingLink: calendarResult.meetingLink,
         calendarEventId: calendarResult.eventId,
-        calendarType: organizer.googleAccessToken ? 'google' : 'microsoft',
+        calendarType: 'google',
         status: 'scheduled',
         workspaceId: meetingData.workspaceId,
         channelId: meetingData.channelId,
@@ -294,63 +188,28 @@ class CalendarService {
     }
   }
 
-  // Refresh Microsoft token
-  async refreshMicrosoftToken(user) {
-    try {
-      const response = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({
-          client_id: process.env.MICROSOFT_CLIENT_ID,
-          client_secret: process.env.MICROSOFT_CLIENT_SECRET,
-          refresh_token: user.microsoftRefreshToken,
-          grant_type: 'refresh_token'
-        })
-      });
-
-      const data = await response.json();
-      
-      if (data.access_token) {
-        user.microsoftAccessToken = data.access_token;
-        user.microsoftTokenExpiry = new Date(Date.now() + data.expires_in * 1000);
-        await user.save();
-      }
-    } catch (error) {
-      console.error('Microsoft token refresh error:', error);
-      throw new Error('Failed to refresh Microsoft token');
-    }
-  }
-
-  // Get meeting suggestions based on attendees' availability
+  // Get meeting suggestions based on attendees' availability (Google Calendar only)
   async getMeetingSuggestions(organizerId, attendees, duration, dateRange) {
     try {
       const suggestions = [];
       const { startDate, endDate } = dateRange;
-      
-      // Get availability for all attendees
+
       const availabilityPromises = attendees.map(async (attendeeId) => {
         const user = await User.findById(attendeeId);
-        if (!user) return null;
-        
-        const calendarType = user.googleAccessToken ? 'google' : 'microsoft';
-        return this.checkAvailability(attendeeId, startDate, endDate, calendarType);
+        if (!user || !user.googleAccessToken) return null;
+        return this.checkAvailability(attendeeId, startDate, endDate);
       });
 
       const availabilityResults = await Promise.all(availabilityPromises);
-      
-      // Find common free time slots
-      // This is a simplified implementation - in production, you'd want more sophisticated scheduling logic
+
       const start = new Date(startDate);
       const end = new Date(endDate);
-      const interval = 30 * 60 * 1000; // 30 minutes
-      
+      const interval = 30 * 60 * 1000;
+
       for (let time = start.getTime(); time < end.getTime(); time += interval) {
         const slotStart = new Date(time);
         const slotEnd = new Date(time + duration * 60 * 1000);
-        
-        // Check if all attendees are available
+
         const allAvailable = availabilityResults.every(result => {
           if (!result) return false;
           return result.conflicts.every(conflict => {
@@ -364,12 +223,12 @@ class CalendarService {
           suggestions.push({
             startTime: slotStart.toISOString(),
             endTime: slotEnd.toISOString(),
-            score: 1.0 // Could be calculated based on various factors
+            score: 1.0
           });
         }
       }
 
-      return suggestions.slice(0, 10); // Return top 10 suggestions
+      return suggestions.slice(0, 10);
     } catch (error) {
       console.error('Meeting suggestions error:', error);
       throw new Error(`Failed to get meeting suggestions: ${error.message}`);

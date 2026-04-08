@@ -26,11 +26,11 @@ const taskSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  // Department ownership (required for department dashboards)
+  // Department ownership (optional — tasks can exist without a department)
   departmentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Department',
-    required: true,
+    required: false,
     index: true
   },
   sprintId: {

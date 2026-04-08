@@ -87,11 +87,17 @@ router.get('/tenants/:tenantId/users', async (req, res) => {
   }
 });
 
+const { checkUsageLimitSoftwareHouseOnly, checkReadOnlySoftwareHouseOnly } = require('../../../middleware/common/featureGate');
+
 // Invite user to tenant
 router.post('/tenants/:tenantId/invite', [
   body('email').isEmail().withMessage('Valid email is required'),
   body('role').isIn(['owner', 'admin', 'manager', 'employee', 'client', 'contractor']).withMessage('Valid role is required')
-], async (req, res) => {
+], (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  next();
+}, (req, res, next) => { if (req.params.tenantId) req.tenantId = req.params.tenantId; next(); }, checkReadOnlySoftwareHouseOnly, checkUsageLimitSoftwareHouseOnly('users', 1, 'tenantId'), async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

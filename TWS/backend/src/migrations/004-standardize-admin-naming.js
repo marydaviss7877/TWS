@@ -6,15 +6,9 @@ require('dotenv').config();
  * Renames SupraAdmin/GTSAdmin to TWSAdmin and updates all references
  */
 
-async function migrateAdminModels() {
+async function runAdminMigration(db) {
   try {
     console.log('🔄 Starting admin model migration...');
-    
-    // Connect to MongoDB
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('✅ Connected to MongoDB');
-
-    const db = mongoose.connection.db;
 
     // Step 1: Check if SupraAdmin collection exists and has data
     const supraAdminExists = await db.listCollections({ name: 'supraadmins' }).hasNext();
@@ -168,23 +162,35 @@ async function migrateAdminModels() {
   } catch (error) {
     console.error('❌ Migration failed:', error);
     throw error;
-  } finally {
-    await mongoose.disconnect();
-    console.log('🔌 Disconnected from MongoDB');
   }
 }
 
-// Run migration if called directly
-if (require.main === module) {
-  migrateAdminModels()
-    .then(() => {
-      console.log('🎉 Migration completed successfully!');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('💥 Migration failed:', error);
-      process.exit(1);
-    });
+const migration = {
+  version: '004',
+  name: 'standardize-admin-naming',
+  description: 'Rename SupraAdmin/GTSAdmin to TWSAdmin and update references',
+  async up(db) {
+    await runAdminMigration(db);
+  },
+  async down() {
+    console.log('Rollback not supported for 004-standardize-admin-naming.');
+  }
+};
+
+// Run migration if called directly (connects itself)
+async function migrateAdminModels() {
+  await mongoose.connect(process.env.MONGO_URI);
+  try {
+    await runAdminMigration(mongoose.connection.db);
+  } finally {
+    await mongoose.disconnect();
+  }
 }
 
-module.exports = migrateAdminModels;
+if (require.main === module) {
+  migrateAdminModels()
+    .then(() => { console.log('🎉 Migration completed successfully!'); process.exit(0); })
+    .catch((error) => { console.error('💥 Migration failed:', error); process.exit(1); });
+}
+
+module.exports = migration;

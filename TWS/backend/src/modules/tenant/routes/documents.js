@@ -1,7 +1,7 @@
 /**
  * Document Hub – tenant org routes
  * Base path: /api/tenant/:tenantSlug/organization/documents
- * Auth: verifyERPToken applied by parent (organization.js)
+ * Auth: verifyERPToken applied here so routes are protected even if mounted elsewhere
  */
 const express = require('express');
 const { body, query, param } = require('express-validator');
@@ -11,8 +11,11 @@ const ValidationMiddleware = require('../../../middleware/validation/validation'
 const documentHubService = require('../../../services/documentHub/documentHub.service');
 const { uploadToS3, isS3Configured } = require('../../../config/s3');
 const User = require('../../../models/User');
-
-const conditionalAuth = (req, res, next) => next();
+const Tenant = require('../../../models/Tenant');
+const SubscriptionPlan = require('../../../models/SubscriptionPlan');
+const usageTrackerService = require('../../../services/usageTrackerService');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { checkReadOnlySoftwareHouseOnly, getEffectiveUsageLimit } = require('../../../middleware/common/featureGate');
 
 function getOrgId(req) {
   return req.orgId || req.tenant?.organizationId || req.tenant?.orgId;
@@ -38,7 +41,7 @@ router.get('/',
     query('order').optional().isIn(['asc', 'desc'])
   ],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id;
@@ -69,7 +72,7 @@ router.get('/',
 
 // Org users list (for assign/share picker); must be before /:id
 router.get('/org-users',
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -83,7 +86,7 @@ router.get('/org-users',
 );
 
 router.get('/in-review',
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -112,7 +115,7 @@ router.get('/audit/log',
     query('limit').optional().isInt({ min: 1, max: 100 })
   ],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -132,7 +135,8 @@ router.get('/audit/log',
 
 // Upload (must be before /:id)
 router.post('/upload',
-  conditionalAuth,
+  verifyERPToken,
+  checkReadOnlySoftwareHouseOnly,
   (req, res, next) => {
     if (!isS3Configured()) {
       return res.status(503).json({
@@ -161,6 +165,27 @@ router.post('/upload',
     const tenantId = req.tenantId || req.tenant?._id;
     const userId = getUserId(req);
     if (!orgId || !userId) return res.status(400).json({ success: false, message: 'Organization and user context required' });
+    // Storage limit (Software House only; effective = plan + add-ons)
+    const tenant = await Tenant.findById(tenantId).select('erpCategory subscription');
+    if (tenant && tenant.erpCategory === 'software_house') {
+      const plan = await SubscriptionPlan.findOne({ slug: tenant.subscription?.plan || 'trial' });
+      if (plan) {
+        const currentStorage = await usageTrackerService.getCurrentUsage(tenantId, 'storage');
+        const limit = getEffectiveUsageLimit(tenant, plan, 'storage');
+        const fileSize = req.file.size || 0;
+        if (limit !== -1 && currentStorage + fileSize > limit) {
+          return res.status(403).json({
+            success: false,
+            message: 'Storage limit exceeded. Please upgrade your plan.',
+            code: 'USAGE_LIMIT_EXCEEDED',
+            currentUsage: currentStorage,
+            limit,
+            requestedAmount: fileSize,
+            upgradeRequired: true
+          });
+        }
+      }
+    }
     const doc = await documentHubService.createUploadedDocument({
       orgId,
       tenantId,
@@ -179,7 +204,7 @@ router.post('/upload',
 
 // Folders (must be before /:id)
 router.get('/folders/list',
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id;
@@ -198,7 +223,7 @@ router.post('/folders',
     body('scope').optional().isIn(['org', 'employee'])
   ],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id;
@@ -225,7 +250,7 @@ router.patch('/folders/:folderId',
     body('parentId').optional().isMongoId()
   ],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -241,7 +266,7 @@ router.patch('/folders/:folderId',
 router.delete('/folders/:folderId',
   [param('folderId').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -252,7 +277,7 @@ router.delete('/folders/:folderId',
 
 // Tags (must be before /:id)
 router.get('/tags/list',
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id;
@@ -268,7 +293,7 @@ router.post('/tags',
     body('color').optional().trim().isLength({ max: 30 })
   ],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id;
@@ -292,7 +317,7 @@ router.patch('/tags/:tagId',
     body('color').optional().trim().isLength({ max: 30 })
   ],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -308,7 +333,7 @@ router.patch('/tags/:tagId',
 router.delete('/tags/:tagId',
   [param('tagId').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -321,7 +346,7 @@ router.delete('/tags/:tagId',
 router.get('/:id/comments',
   [param('id').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -334,7 +359,7 @@ router.get('/:id/comments',
 router.post('/:id/comments',
   [param('id').isMongoId(), body('content').trim().notEmpty().isLength({ max: 5000 })],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
@@ -350,7 +375,7 @@ router.post('/:id/comments',
 router.get('/:id/shares',
   [param('id').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -363,7 +388,7 @@ router.get('/:id/shares',
 router.post('/:id/shares',
   [param('id').isMongoId(), body('userId').isMongoId(), body('permission').optional().isIn(['view', 'edit'])],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const sharedBy = getUserId(req);
@@ -377,7 +402,7 @@ router.post('/:id/shares',
 router.delete('/:id/shares/:userId',
   [param('id').isMongoId(), param('userId').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -390,7 +415,7 @@ router.delete('/:id/shares/:userId',
 router.get('/:id',
   [param('id').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -410,7 +435,7 @@ router.post('/',
     body('tags.*').optional().isMongoId()
   ],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id;
@@ -442,7 +467,7 @@ router.patch('/:id',
     body('assigneeId').optional().isMongoId()
   ],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
@@ -464,7 +489,7 @@ router.patch('/:id',
 router.delete('/:id',
   [param('id').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
@@ -478,7 +503,7 @@ router.delete('/:id',
 router.post('/:id/submit-for-review',
   [param('id').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
@@ -496,7 +521,7 @@ router.post('/:id/approve',
     body('comment').optional().trim().isLength({ max: 2000 })
   ],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
@@ -514,7 +539,7 @@ router.post('/:id/reject',
     body('comment').optional().trim().isLength({ max: 2000 })
   ],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
@@ -530,7 +555,7 @@ router.post('/:id/reject',
 router.get('/:id/versions',
   [param('id').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -543,7 +568,7 @@ router.get('/:id/versions',
 router.post('/:id/versions/:versionId/restore',
   [param('id').isMongoId(), param('versionId').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
-  conditionalAuth,
+  verifyERPToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);

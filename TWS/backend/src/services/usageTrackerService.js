@@ -1,7 +1,17 @@
 /**
  * Usage Tracker Service
- * Tracks system usage and user activity
+ * Tracks system usage and tenant resource counts for plan limits.
+ * Policy: sum usage across all organizations belonging to the tenant (see plan 1c).
+ * Active projects = status not in ['cancelled', 'archived'] (see plan 1b).
  */
+
+const mongoose = require('mongoose');
+const Organization = require('../models/Organization');
+const TenantUser = require('../models/TenantUser');
+const Project = require('../models/Project');
+const Workspace = require('../models/Workspace');
+const Client = require('../models/Client');
+const OrgDocument = require('../models/OrgDocument');
 
 class UsageTrackerService {
   constructor() {
@@ -9,41 +19,115 @@ class UsageTrackerService {
     this.usageData = new Map();
   }
 
-  /**
-   * Initialize the service
-   */
   async initialize() {
     if (this.initialized) return;
-    
-    console.log('📊 Usage Tracker Service initialized');
     this.initialized = true;
   }
 
   /**
-   * Track user activity
+   * Resolve tenant's organization IDs (sum-across-orgs policy).
+   * @param {string|ObjectId} tenantId
+   * @returns {Promise<ObjectId[]>}
    */
-  async trackActivity(userId, activity, metadata = {}) {
-    if (!this.initialized) return;
-
-    const activityData = {
-      userId,
-      activity,
-      metadata,
-      timestamp: new Date().toISOString()
-    };
-
-    // Store activity data
-    if (!this.usageData.has(userId)) {
-      this.usageData.set(userId, []);
-    }
-    this.usageData.get(userId).push(activityData);
-
-    return activityData;
+  async _getTenantOrgIds(tenantId) {
+    const id = typeof tenantId === 'string' ? new mongoose.Types.ObjectId(tenantId) : tenantId;
+    const orgs = await Organization.find({ tenantId: id }).select('_id').lean();
+    return orgs.map(o => o._id);
   }
 
   /**
-   * Get usage statistics
+   * Get current usage for a single metric (DB-backed).
+   * @param {string|ObjectId} tenantId - Tenant _id
+   * @param {string} metric - 'users' | 'projects' | 'workspaces' | 'clientAccounts' | 'storage'
+   * @returns {Promise<number>}
    */
+  async getCurrentUsage(tenantId, metric) {
+    if (!tenantId) return 0;
+    const id = typeof tenantId === 'string' ? new mongoose.Types.ObjectId(tenantId) : tenantId;
+
+    switch (metric) {
+      case 'users': {
+        const n = await TenantUser.countDocuments({ tenantId: id, status: 'active' });
+        return n;
+      }
+      case 'projects': {
+        const orgIds = await this._getTenantOrgIds(id);
+        if (orgIds.length === 0) return 0;
+        const n = await Project.countDocuments({
+          orgId: { $in: orgIds },
+          status: { $nin: ['cancelled', 'archived'] }
+        });
+        return n;
+      }
+      case 'workspaces': {
+        const orgIds = await this._getTenantOrgIds(id);
+        if (orgIds.length === 0) return 0;
+        const n = await Workspace.countDocuments({ orgId: { $in: orgIds }, status: 'active' });
+        return n;
+      }
+      case 'clientAccounts': {
+        const orgIds = await this._getTenantOrgIds(id);
+        if (orgIds.length === 0) return 0;
+        const n = await Client.countDocuments({ orgId: { $in: orgIds } });
+        return n;
+      }
+      case 'storage': {
+        const result = await OrgDocument.aggregate([
+          { $match: { tenantId: id } },
+          { $group: { _id: null, total: { $sum: { $ifNull: ['$fileSize', 0] } } } }
+        ]);
+        return (result[0] && result[0].total) ? result[0].total : 0;
+      }
+      default:
+        return 0;
+    }
+  }
+
+  /**
+   * Get all current usage metrics for a tenant (for 80% warning / subscription info).
+   * @param {string|ObjectId} tenantId
+   * @returns {Promise<{ users: number, projects: number, workspaces: number, clientAccounts: number, storage: number }>}
+   */
+  async getAllCurrentUsage(tenantId) {
+    const [users, projects, workspaces, clientAccounts, storage] = await Promise.all([
+      this.getCurrentUsage(tenantId, 'users'),
+      this.getCurrentUsage(tenantId, 'projects'),
+      this.getCurrentUsage(tenantId, 'workspaces'),
+      this.getCurrentUsage(tenantId, 'clientAccounts'),
+      this.getCurrentUsage(tenantId, 'storage')
+    ]);
+    return { users, projects, workspaces, clientAccounts, storage };
+  }
+
+  /**
+   * No-op for backward compatibility with featureGate (rate limit tracking).
+   */
+  async trackUsage(tenantId, metric, amount = 1) {
+    return;
+  }
+
+  /**
+   * No-op; featureGate may call this for rate limit checks.
+   */
+  async getRateLimitUsage(tenantId, path) {
+    return 0;
+  }
+
+  /**
+   * No-op; featureGate may call this.
+   */
+  async trackRateLimitUsage(tenantId, path, windowMs) {
+    return;
+  }
+
+  async trackActivity(userId, activity, metadata = {}) {
+    if (!this.initialized) return;
+    const activityData = { userId, activity, metadata, timestamp: new Date().toISOString() };
+    if (!this.usageData.has(userId)) this.usageData.set(userId, []);
+    this.usageData.get(userId).push(activityData);
+    return activityData;
+  }
+
   async getUsageStats(userId = null) {
     if (userId) {
       return {
@@ -52,7 +136,6 @@ class UsageTrackerService {
         totalActivities: (this.usageData.get(userId) || []).length
       };
     }
-
     return {
       totalUsers: this.usageData.size,
       totalActivities: Array.from(this.usageData.values()).reduce((sum, activities) => sum + activities.length, 0),
@@ -60,16 +143,10 @@ class UsageTrackerService {
     };
   }
 
-  /**
-   * Health check
-   */
   async healthCheck() {
     return this.initialized;
   }
 
-  /**
-   * Get service metrics
-   */
   async getMetrics() {
     return {
       status: 'active',
@@ -79,13 +156,9 @@ class UsageTrackerService {
     };
   }
 
-  /**
-   * Shutdown service
-   */
-  async shutdown() {
+  shutdown() {
     this.usageData.clear();
     this.initialized = false;
-    console.log('📊 Usage Tracker Service shut down');
   }
 }
 

@@ -9,12 +9,18 @@ const Project = require('../../../models/Project');
 const Task = require('../../../models/Task');
 const TenantDataService = require('../../../services/tenant/tenant-data.service');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 
 // Use simplified ERP token verification middleware (replaces verifyTenantOwner + TenantMiddleware.setTenantContext)
 router.use(verifyERPToken);
 
+const adminDashAccess = requireErpAccess({
+  allowedRoles: ['owner', 'admin', 'super_admin', 'ceo', 'manager', 'project_manager', 'pmo']
+});
+const ownerAdminOnly = requireErpAccess({ allowedRoles: ['owner', 'admin', 'super_admin'] });
+
 // Get tenant dashboard overview
-router.get('/overview', async (req, res) => {
+router.get('/overview', adminDashAccess, async (req, res) => {
   try {
     const overview = await TenantDataService.getDashboardOverview(req.tenantId);
     res.json({ success: true, data: overview });
@@ -36,7 +42,7 @@ router.get('/departments', async (req, res) => {
 });
 
 // Get tenant users with real-time data
-router.get('/users', async (req, res) => {
+router.get('/users', adminDashAccess, async (req, res) => {
   try {
     const { page = 1, limit = 20, department, status } = req.query;
     const result = await TenantDataService.getUsers(req.tenantId, { page, limit, department, status });
@@ -60,7 +66,7 @@ router.get('/projects', async (req, res) => {
 });
 
 // Get recent activity
-router.get('/activity', async (req, res) => {
+router.get('/activity', adminDashAccess, async (req, res) => {
   try {
     const { limit = 20 } = req.query;
     const activities = await TenantDataService.getRecentActivity(req.tenantId, limit);
@@ -72,7 +78,7 @@ router.get('/activity', async (req, res) => {
 });
 
 // Get analytics data
-router.get('/analytics', async (req, res) => {
+router.get('/analytics', adminDashAccess, async (req, res) => {
   try {
     const { period = '30d' } = req.query;
     const analytics = await TenantDataService.getAnalytics(req.tenantId, period);
@@ -84,7 +90,7 @@ router.get('/analytics', async (req, res) => {
 });
 
 // Get Finance dashboard data
-router.get('/finance', async (req, res) => {
+router.get('/finance', adminDashAccess, async (req, res) => {
   try {
     const financeData = await TenantDataService.getFinanceDashboard(req.tenantId);
     res.json({ success: true, data: financeData });
@@ -95,7 +101,7 @@ router.get('/finance', async (req, res) => {
 });
 
 // Create sample data for tenant
-router.post('/create-sample-data', async (req, res) => {
+router.post('/create-sample-data', ownerAdminOnly, async (req, res) => {
   try {
     const tenant = await Tenant.findById(req.tenantId);
     if (!tenant) {

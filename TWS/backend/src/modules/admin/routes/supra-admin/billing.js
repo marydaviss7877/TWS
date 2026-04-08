@@ -8,7 +8,8 @@ const {
   requirePlatformPermission,
   PLATFORM_PERMISSIONS,
   Billing,
-  billingService
+  billingService,
+  Tenant
 } = require('./shared');
 
 // Get billing overview
@@ -67,6 +68,18 @@ router.put('/billing/invoices/:id', requirePlatformPermission(PLATFORM_PERMISSIO
       invoice.paymentStatus = validStatuses.includes(newStatus) ? newStatus : (newStatus === 'sent' ? 'pending' : newStatus);
       if (invoice.paymentStatus === 'paid') {
         invoice.paidAt = paymentDate ? new Date(paymentDate) : new Date();
+        if (invoice.tenantId) {
+          await Tenant.updateOne(
+            { _id: invoice.tenantId },
+            { $unset: { 'subscription.paymentFailedAt': 1 }, $set: { 'subscription.readOnlyMode': false } }
+          );
+        }
+      }
+      if (invoice.paymentStatus === 'failed' && invoice.tenantId) {
+        await Tenant.updateOne(
+          { _id: invoice.tenantId },
+          { $set: { 'subscription.paymentFailedAt': new Date() } }
+        );
       }
     }
     await invoice.save();

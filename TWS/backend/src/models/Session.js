@@ -93,10 +93,6 @@ const sessionSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  twoFactorVerified: {
-    type: Boolean,
-    default: false
-  },
   location: {
     country: String,
     region: String,

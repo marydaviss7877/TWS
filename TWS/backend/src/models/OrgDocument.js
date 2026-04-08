@@ -78,6 +78,19 @@ const orgDocumentSchema = new mongoose.Schema({
     default: 'draft',
     index: true
   },
+  /** Set when status becomes in_review (for 7/14-day timeout job) */
+  submittedForReviewAt: {
+    type: Date,
+    default: null,
+    index: true
+  },
+  /** Optional: document's department for reviewer resolution (Dept Head + Senior) */
+  departmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department',
+    default: null,
+    index: true
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

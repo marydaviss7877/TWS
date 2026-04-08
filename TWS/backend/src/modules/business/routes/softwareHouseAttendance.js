@@ -1,6 +1,8 @@
 const express = require('express');
 const { body, query } = require('express-validator');
-const { requirePermission } = require('../../../middleware/auth/rbac');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
+const attendanceRead = requireErpAccess({ module: 'attendance', action: 'read', checkRevocation: false });
+const attendanceWrite = requireErpAccess({ module: 'attendance', action: 'write', checkRevocation: false });
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
 const Attendance = require('../../../models/Attendance');
@@ -12,7 +14,7 @@ const router = express.Router();
 
 // Software House Check In with project and work mode
 router.post('/checkin', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('location.latitude').optional().isFloat(),
   body('location.longitude').optional().isFloat(),
   body('location.address').optional().notEmpty(),
@@ -99,7 +101,7 @@ router.post('/checkin', [
 
 // Get today's productivity stats
 router.get('/stats', [
-  requirePermission('attendance:read')
+  attendanceRead
 ], ErrorHandler.asyncHandler(async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -159,7 +161,7 @@ router.get('/stats', [
 
 // Get team activity
 router.get('/team/activity', [
-  requirePermission('attendance:read')
+  attendanceRead
 ], ErrorHandler.asyncHandler(async (req, res) => {
   try {
     // Get team members from the same organization
@@ -193,7 +195,7 @@ router.get('/team/activity', [
 
 // Get sprint progress
 router.get('/sprint/progress', [
-  requirePermission('attendance:read')
+  attendanceRead
 ], ErrorHandler.asyncHandler(async (req, res) => {
   try {
     // Mock sprint data - in real implementation, this would come from project management system
@@ -221,7 +223,7 @@ router.get('/sprint/progress', [
 
 // Toggle focus mode
 router.post('/focus-mode/toggle', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('enabled').isBoolean(),
   body('project').optional().notEmpty()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -266,7 +268,7 @@ router.post('/focus-mode/toggle', [
 
 // Get productivity analytics
 router.get('/analytics/productivity', [
-  requirePermission('attendance:read'),
+  attendanceRead,
   query('range').optional().isIn(['1d', '7d', '30d', '90d'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
@@ -378,7 +380,7 @@ router.get('/analytics/productivity', [
 
 // Get AI insights
 router.get('/analytics/insights', [
-  requirePermission('attendance:read'),
+  attendanceRead,
   query('range').optional().isIn(['1d', '7d', '30d', '90d'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {

@@ -8,17 +8,12 @@ const employees = require('./employees');
 
 // Attendance Management
 const attendance = require('./attendance');
-const employeeAttendance = require('./employeeAttendance');
-const modernAttendance = require('./modernAttendance');
-const simpleAttendance = require('./simpleAttendance');
-// softwareHouseAttendance moved to erp/software-house/attendance
-const calendarAttendance = require('./calendarAttendance');
 const attendanceIntegration = require('./attendanceIntegration');
 
 // Financial Management
 const payroll = require('./payroll');
 const finance = require('./finance');
-const equity = require('./equity');
+const billing = require('./billing');
 
 // Project Management
 const projects = require('./projects');
@@ -31,7 +26,7 @@ const developmentMetrics = require('./developmentMetrics');
 
 // Client Management
 const clients = require('./clients');
-// Client Portal - REMOVED COMPLETELY
+const clientPortal = require('./clientPortal');
 // nucleusPM moved to erp/software-house/nucleusPM
 
 // Nucleus Templates & Onboarding
@@ -78,18 +73,14 @@ module.exports = {
   
   // Attendance Management
   attendance,
-  employeeAttendance,
-  modernAttendance,
-  simpleAttendance,
-  softwareHouseAttendance: softwareHouseERP.attendance, // From erp/software-house
-  calendarAttendance,
   attendanceIntegration,
+  softwareHouseAttendance: softwareHouseERP.attendance, // From erp/software-house
   
   // Financial Management
   payroll,
   finance,
-  equity,
-  
+  billing,
+
   // Project Management
   projects,
   projectAccess,
@@ -101,8 +92,8 @@ module.exports = {
   
   // Client Management
   clients,
-  // Client Portal - REMOVED COMPLETELY
-  
+  clientPortal,
+
   // Nucleus Templates & Onboarding
   nucleusTemplates,
   

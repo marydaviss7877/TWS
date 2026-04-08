@@ -1,20 +1,26 @@
-const Redis = require('ioredis');
 const envConfig = require('../config/environment');
 const auditService = require('./compliance/audit.service');
 
-// No-op Redis when REDIS_DISABLED - avoids ECONNREFUSED on Railway etc.
+// In-memory rate-limit counters replacing Redis
+const _counters = new Map(); // key -> { value, expiresAt }
+function _incr(key) {
+  const entry = _counters.get(key);
+  if (!entry || Date.now() > entry.expiresAt) return 1; // reset
+  entry.value++;
+  return entry.value;
+}
 const redisNoop = {
-  incr: async () => 1,
-  incrby: async () => 0,
-  expire: async () => 'OK',
-  sadd: async () => 1,
-  srem: async () => 0,
-  scard: async () => 0,
-  smembers: async () => [],
-  setex: async () => 'OK',
-  get: async () => null,
-  exists: async () => 0,
-  info: async () => '# Memory\nused_memory:0\n'
+  incr:    async (key)           => { const e = _counters.get(key); const v = e && Date.now() <= e.expiresAt ? e.value + 1 : 1; _counters.set(key, { value: v, expiresAt: e?.expiresAt || Date.now() + 60000 }); return v; },
+  incrby:  async ()              => 0,
+  expire:  async (key, ttl)      => { const e = _counters.get(key); if (e) e.expiresAt = Date.now() + ttl * 1000; return 'OK'; },
+  sadd:    async (key, member)   => { const s = _counters.get(key)?.value || new Set(); s.add(member); _counters.set(key, { value: s, expiresAt: Date.now() + 3600000 }); return 1; },
+  srem:    async (key, member)   => { const s = _counters.get(key)?.value; if (s) s.delete(member); return 0; },
+  scard:   async (key)           => { const s = _counters.get(key)?.value; return s instanceof Set ? s.size : 0; },
+  smembers:async (key)           => { const s = _counters.get(key)?.value; return s instanceof Set ? [...s] : []; },
+  setex:   async (key, ttl, val) => { _counters.set(key, { value: val, expiresAt: Date.now() + ttl * 1000 }); return 'OK'; },
+  get:     async (key)           => { const e = _counters.get(key); return (e && Date.now() <= e.expiresAt) ? e.value : null; },
+  exists:  async (key)           => { const e = _counters.get(key); return (e && Date.now() <= e.expiresAt) ? 1 : 0; },
+  info:    async ()              => '# Memory\nused_memory:0\n'
 };
 
 /**
@@ -23,11 +29,7 @@ const redisNoop = {
  */
 class WebSocketRateLimitService {
   constructor() {
-    if (process.env.REDIS_DISABLED === 'true') {
-      this.redis = redisNoop;
-    } else {
-      this.redis = new Redis(envConfig.getRedisConfig());
-    }
+    this.redis = redisNoop;
     this.rateLimits = {
       // Connection limits
       connections: {

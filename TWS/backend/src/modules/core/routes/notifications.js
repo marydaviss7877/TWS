@@ -5,7 +5,7 @@ const ErrorHandler = require('../../../middleware/common/errorHandler');
 const { body, validationResult } = require('express-validator');
 const DeviceToken = require('../../../models/DeviceToken');
 const NotificationPreference = require('../../../models/NotificationPreference');
-// REMOVED: pushNotificationService (push notifications removed - email only)
+const pushNotificationService = require('../../../services/notifications/push-notification.service');
 const emailService = require('../../../services/integrations/email.service');
 
 // Register device token for push notifications
@@ -131,8 +131,8 @@ router.get('/preferences', authenticateToken, ErrorHandler.asyncHandler(async (r
 // Update user's notification preferences
 router.put('/preferences', authenticateToken, [
   body('email').optional().isObject().withMessage('Email preferences must be an object'),
-  body('push').optional().isObject().withMessage('Push preferences must be an object'),
-  body('sms').optional().isObject().withMessage('SMS preferences must be an object'),
+  body('inApp').optional().isObject().withMessage('In-app preferences must be an object'),
+  body('eventTypes').optional().isObject().withMessage('Event types must be an object'),
   body('quietHours').optional().isObject().withMessage('Quiet hours must be an object')
 ], ErrorHandler.asyncHandler(async (req, res) => {
   const errors = validationResult(req);
@@ -147,15 +147,18 @@ router.put('/preferences', authenticateToken, [
   try {
     const preferences = await NotificationPreference.getOrCreate(req.user._id, req.user.orgId);
     
-    // Update preferences
     if (req.body.email) {
-      preferences.email = { ...preferences.email, ...req.body.email };
+      preferences.email = { ...preferences.email.toObject?.() || preferences.email, ...req.body.email };
+      if (req.body.email.types) {
+        preferences.email.types = { ...preferences.email.types, ...req.body.email.types };
+      }
     }
-    if (req.body.push) {
-      preferences.push = { ...preferences.push, ...req.body.push };
+    if (req.body.inApp && typeof req.body.inApp.enabled === 'boolean') {
+      preferences.inApp = preferences.inApp || {};
+      preferences.inApp.enabled = req.body.inApp.enabled;
     }
-    if (req.body.sms) {
-      preferences.sms = { ...preferences.sms, ...req.body.sms };
+    if (req.body.eventTypes && typeof req.body.eventTypes === 'object') {
+      preferences.eventTypes = { ...(preferences.eventTypes || {}), ...req.body.eventTypes };
     }
     if (req.body.quietHours) {
       preferences.quietHours = { ...preferences.quietHours, ...req.body.quietHours };

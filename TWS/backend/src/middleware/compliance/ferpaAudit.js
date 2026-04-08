@@ -167,8 +167,7 @@ const validateFERPAAccess = async (req, res, next) => {
     return res.status(500).json({
       success: false,
       message: 'Error validating FERPA access',
-      error: 'FERPA_VALIDATION_ERROR'
-    });
+      error: 'FERPA_VALIDATION_ERROR'    });
   }
 };
 

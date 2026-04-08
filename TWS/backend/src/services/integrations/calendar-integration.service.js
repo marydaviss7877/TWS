@@ -1,11 +1,9 @@
 const { google } = require('googleapis');
-const { Client } = require('@microsoft/microsoft-graph-client');
 const axios = require('axios');
 
 class CalendarIntegration {
   constructor() {
     this.googleOAuth2Client = null;
-    this.microsoftGraphClient = null;
   }
 
   // Google Calendar Integration
@@ -137,135 +135,6 @@ class CalendarIntegration {
       return true;
     } catch (error) {
       console.error('Error deleting Google Calendar event:', error);
-      throw error;
-    }
-  }
-
-  // Microsoft Outlook Integration
-  async initializeMicrosoftGraph(accessToken) {
-    this.microsoftGraphClient = Client.init({
-      authProvider: (done) => {
-        done(null, accessToken);
-      }
-    });
-
-    return this.microsoftGraphClient;
-  }
-
-  async createOutlookEvent(meeting) {
-    try {
-      const graphClient = await this.initializeMicrosoftGraph(
-        meeting.organizer.microsoftAccessToken
-      );
-
-      const event = {
-        subject: meeting.title,
-        body: {
-          contentType: 'HTML',
-          content: meeting.description || ''
-        },
-        start: {
-          dateTime: meeting.startTime.toISOString(),
-          timeZone: meeting.timezone
-        },
-        end: {
-          dateTime: meeting.endTime.toISOString(),
-          timeZone: meeting.timezone
-        },
-        attendees: [
-          ...meeting.attendees.map(attendee => ({
-            emailAddress: {
-              address: attendee.email,
-              name: attendee.name
-            },
-            type: 'required'
-          })),
-          ...meeting.externalAttendees.map(attendee => ({
-            emailAddress: {
-              address: attendee.email,
-              name: attendee.name
-            },
-            type: 'required'
-          }))
-        ],
-        isOnlineMeeting: meeting.location.type === 'virtual',
-        onlineMeetingProvider: meeting.location.platform === 'teams' ? 'teamsForBusiness' : 'unknown'
-      };
-
-      const response = await graphClient
-        .me
-        .events
-        .post(event);
-
-      return response;
-    } catch (error) {
-      console.error('Error creating Outlook event:', error);
-      throw error;
-    }
-  }
-
-  async updateOutlookEvent(meeting, eventId) {
-    try {
-      const graphClient = await this.initializeMicrosoftGraph(
-        meeting.organizer.microsoftAccessToken
-      );
-
-      const event = {
-        subject: meeting.title,
-        body: {
-          contentType: 'HTML',
-          content: meeting.description || ''
-        },
-        start: {
-          dateTime: meeting.startTime.toISOString(),
-          timeZone: meeting.timezone
-        },
-        end: {
-          dateTime: meeting.endTime.toISOString(),
-          timeZone: meeting.timezone
-        },
-        attendees: [
-          ...meeting.attendees.map(attendee => ({
-            emailAddress: {
-              address: attendee.email,
-              name: attendee.name
-            },
-            type: 'required'
-          })),
-          ...meeting.externalAttendees.map(attendee => ({
-            emailAddress: {
-              address: attendee.email,
-              name: attendee.name
-            },
-            type: 'required'
-          }))
-        ]
-      };
-
-      const response = await graphClient
-        .me
-        .events(eventId)
-        .patch(event);
-
-      return response;
-    } catch (error) {
-      console.error('Error updating Outlook event:', error);
-      throw error;
-    }
-  }
-
-  async deleteOutlookEvent(eventId, accessToken) {
-    try {
-      const graphClient = await this.initializeMicrosoftGraph(accessToken);
-
-      await graphClient
-        .me
-        .events(eventId)
-        .delete();
-
-      return true;
-    } catch (error) {
-      console.error('Error deleting Outlook event:', error);
       throw error;
     }
   }
@@ -408,40 +277,6 @@ class CalendarIntegration {
     }
   }
 
-  async checkOutlookAvailability(attendees, startTime, endTime) {
-    try {
-      const graphClient = this.microsoftGraphClient;
-
-      const availabilityRequest = {
-        attendees: attendees.map(attendee => ({
-          emailAddress: {
-            address: attendee.email,
-            name: attendee.name
-          }
-        })),
-        timeSlot: {
-          start: {
-            dateTime: startTime.toISOString(),
-            timeZone: 'UTC'
-          },
-          end: {
-            dateTime: endTime.toISOString(),
-            timeZone: 'UTC'
-          }
-        }
-      };
-
-      const response = await graphClient
-        .me
-        .calendar
-        .getSchedule(availabilityRequest);
-
-      return response;
-    } catch (error) {
-      console.error('Error checking Outlook availability:', error);
-      throw error;
-    }
-  }
 }
 
 module.exports = new CalendarIntegration();

@@ -320,8 +320,7 @@ router.get('/analytics/department-access', async (req, res) => {
         hr: 12,
         finance: 10,
         projects: 8,
-        operations: 6,
-        inventory: 4
+        operations: 6
       },
       topDepartments: [
         { name: 'Engineering', users: 25, accessLevel: 'full' },

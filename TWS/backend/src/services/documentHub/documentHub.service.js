@@ -8,6 +8,10 @@ const OrgDocumentComment = require('../../models/OrgDocumentComment');
 const DocumentShare = require('../../models/DocumentShare');
 const DocumentFolder = require('../../models/DocumentFolder');
 const DocumentTag = require('../../models/DocumentTag');
+const Department = require('../../models/Department');
+const TenantDepartmentAccess = require('../../models/TenantDepartmentAccess');
+const User = require('../../models/User');
+const NotificationService = require('../notifications/notification.service');
 const { generateSignedUrl } = require('../../config/s3');
 
 const DEFAULT_PAGE = 1;
@@ -175,6 +179,41 @@ async function deleteDocument(documentId, orgId, userId) {
 }
 
 /**
+ * Resolve reviewer user IDs: Department Head + Senior (admin/owner) in document's department; fallback org admins.
+ */
+async function resolveReviewerUserIds(orgId, tenantId, departmentId) {
+  const ids = new Set();
+  if (departmentId && tenantId) {
+    const dept = await Department.findById(departmentId).select('departmentHead departmentHeadModel').lean();
+    if (dept?.departmentHead && dept.departmentHeadModel === 'User') {
+      ids.add(dept.departmentHead.toString());
+    }
+    const accessList = await TenantDepartmentAccess.find({
+      tenantId,
+      departmentId,
+      status: 'active',
+      accessLevel: { $in: ['admin', 'owner'] },
+      $or: [{ expiresAt: { $exists: false } }, { expiresAt: { $gt: new Date() } }]
+    })
+      .select('userId')
+      .lean();
+    accessList.forEach((a) => ids.add(a.userId.toString()));
+  }
+  if (ids.size === 0) {
+    const orgAdmins = await User.find({
+      orgId,
+      status: 'active',
+      role: { $in: ['owner', 'admin', 'manager'] }
+    })
+      .select('_id')
+      .limit(20)
+      .lean();
+    orgAdmins.forEach((u) => ids.add(u._id.toString()));
+  }
+  return Array.from(ids);
+}
+
+/**
  * Submit for review
  */
 async function submitForReview(documentId, orgId, userId) {
@@ -182,6 +221,7 @@ async function submitForReview(documentId, orgId, userId) {
   if (!doc) return null;
   if (doc.status !== 'draft') return { error: 'Only draft documents can be submitted for review' };
   doc.status = 'in_review';
+  doc.submittedForReviewAt = new Date();
   doc.updatedAt = new Date();
   await doc.save();
 
@@ -191,6 +231,26 @@ async function submitForReview(documentId, orgId, userId) {
     action: 'submitted_for_review',
     userId
   });
+
+  const tenantId = doc.tenantId;
+  const reviewerIds = await resolveReviewerUserIds(orgId, tenantId, doc.departmentId || null);
+  if (reviewerIds.length > 0) {
+    const submitter = await User.findById(userId).select('fullName').lean();
+    const submitterName = submitter?.fullName || 'A user';
+    const title = 'Document submitted for review';
+    const message = `${submitterName} submitted "${doc.title}" for review.`;
+    await NotificationService.createNotification({
+      userIds: reviewerIds,
+      type: 'document_submitted',
+      title,
+      message,
+      relatedEntityType: 'document',
+      relatedEntityId: doc._id,
+      createdBy: userId,
+      orgId,
+      sendEmail: true
+    });
+  }
 
   return doc.toObject ? doc.toObject() : doc;
 }
@@ -204,6 +264,7 @@ async function setReviewOutcome(documentId, orgId, userId, outcome, comment) {
   if (doc.status !== 'in_review') return { error: 'Document is not in review' };
 
   doc.status = outcome === 'approved' ? 'approved' : 'draft';
+  if (outcome !== 'approved') doc.submittedForReviewAt = null;
   doc.updatedAt = new Date();
   await doc.save();
 
@@ -214,6 +275,26 @@ async function setReviewOutcome(documentId, orgId, userId, outcome, comment) {
     userId,
     comment: comment || null
   });
+
+  const creatorId = (doc.ownerId || doc.createdBy)?.toString?.() || doc.ownerId || doc.createdBy;
+  if (creatorId) {
+    const title = outcome === 'approved' ? 'Document approved' : 'Document returned to draft';
+    const message =
+      outcome === 'approved'
+        ? `Document "${doc.title}" has been approved.`
+        : `Document "${doc.title}" was returned to draft.${comment ? ` Comment: ${comment}` : ''}`;
+    await NotificationService.createNotification({
+      userIds: [creatorId],
+      type: outcome === 'approved' ? 'document_approved' : 'document_rejected',
+      title,
+      message,
+      relatedEntityType: 'document',
+      relatedEntityId: doc._id,
+      createdBy: userId,
+      orgId,
+      sendEmail: true
+    });
+  }
 
   return doc.toObject ? doc.toObject() : doc;
 }
@@ -508,6 +589,74 @@ async function createUploadedDocument({ orgId, tenantId, userId, fileKey, fileNa
   return doc.toObject ? doc.toObject() : doc;
 }
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Document review timeout job (FR26): 7 days re-notify reviewers, 14 days escalate to Dept Head.
+ * Call daily from scheduler. Sends at most one 7-day reminder (when 7 <= days < 8) and one 14-day (when 14 <= days < 15).
+ */
+async function runDocumentReviewTimeoutJob() {
+  const now = Date.now();
+  const docs = await OrgDocument.find({
+    status: 'in_review',
+    submittedForReviewAt: { $ne: null, $exists: true }
+  })
+    .select('_id title orgId tenantId departmentId submittedForReviewAt')
+    .lean();
+
+  for (const doc of docs) {
+    const submittedAt = doc.submittedForReviewAt.getTime();
+    const days = (now - submittedAt) / ONE_DAY_MS;
+    let reviewerIds = [];
+    let title = '';
+    let message = '';
+
+    if (days >= 14 && days < 15) {
+      const dept = doc.departmentId
+        ? await Department.findById(doc.departmentId).select('departmentHead departmentHeadModel').lean()
+        : null;
+      if (dept?.departmentHead && dept.departmentHeadModel === 'User') {
+        reviewerIds = [dept.departmentHead.toString()];
+      }
+      if (reviewerIds.length === 0) {
+        const fallback = await User.find({
+          orgId: doc.orgId,
+          status: 'active',
+          role: { $in: ['owner', 'admin'] }
+        })
+          .select('_id')
+          .limit(5)
+          .lean();
+        reviewerIds = fallback.map((u) => u._id.toString());
+      }
+      title = 'Document review overdue (14 days)';
+      message = `"${doc.title}" has been in review for 14 days; please take action.`;
+    } else if (days >= 7 && days < 8) {
+      reviewerIds = await resolveReviewerUserIds(
+        doc.orgId,
+        doc.tenantId,
+        doc.departmentId || null
+      );
+      title = 'Document in review (7 days)';
+      message = `"${doc.title}" has been in review for 7 days.`;
+    }
+
+    if (reviewerIds.length > 0 && (title && message)) {
+      await NotificationService.createNotification({
+        userIds: reviewerIds,
+        type: 'document_submitted',
+        title,
+        message,
+        relatedEntityType: 'document',
+        relatedEntityId: doc._id,
+        createdBy: null,
+        orgId: doc.orgId,
+        sendEmail: true
+      });
+    }
+  }
+}
+
 module.exports = {
   listDocuments,
   getDocument,
@@ -516,6 +665,7 @@ module.exports = {
   deleteDocument,
   submitForReview,
   setReviewOutcome,
+  runDocumentReviewTimeoutJob,
   listVersions,
   getVersion,
   restoreVersion,

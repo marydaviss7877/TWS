@@ -1,108 +1,72 @@
-// Redis configuration with fallback for development
-const Redis = require('ioredis');
+/**
+ * In-memory store replacing Redis.
+ * Same interface as the old ioredis-backed config so all callers work unchanged.
+ */
 
-let redis = null;
-let redisErrorLogged = false;
+const store = new Map();   // key -> { value, expiresAt }
 
-// Check if Redis is disabled via environment variable
-if (process.env.REDIS_DISABLED === 'true') {
-  console.log('ℹ️  Redis disabled via REDIS_DISABLED=true');
-} else {
-  // Try to connect to Redis, but don't fail if it's not available
-  try {
-    redis = new Redis({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: process.env.REDIS_PORT || 6379,
-    retryDelayOnFailover: 100,
-    maxRetriesPerRequest: null, // Fix for BullMQ compatibility
-    lazyConnect: true,
-    connectTimeout: 5000,
-    commandTimeout: 5000,
-    retryDelayOnClusterDown: 300,
-    enableOfflineQueue: false,
-    enableReadyCheck: false,
-    retryStrategy: (times) => {
-      // Stop retrying after 3 attempts to prevent spam
-      if (times > 3) {
-        return null; // Stop retrying
-      }
-      return Math.min(times * 200, 2000);
-    }
-  });
-
-  redis.on('error', (err) => {
-    // Only log the error once to prevent spam
-    if (!redisErrorLogged && err.code !== 'ECONNREFUSED') {
-      console.warn('⚠️  Redis connection error (continuing without Redis):', err.message);
-      redisErrorLogged = true;
-    }
-    // Suppress ECONNREFUSED errors - they're expected when Redis is not running
-    if (err.code === 'ECONNREFUSED' && !redisErrorLogged) {
-      console.warn('⚠️  Redis not available - continuing without Redis');
-      console.warn('   To enable: Install and start Redis, or set REDIS_DISABLED=true');
-      redisErrorLogged = true;
-    }
-    redis = null;
-  });
-
-  redis.on('connect', () => {
-    console.log('✅ Redis connected successfully');
-    redisErrorLogged = false; // Reset flag on successful connection
-  });
-
-  } catch (error) {
-    if (!redisErrorLogged) {
-      console.warn('⚠️  Redis not available (continuing without Redis):', error.message);
-      redisErrorLogged = true;
-    }
-    redis = null;
-  }
+function _isExpired(entry) {
+  return entry.expiresAt !== null && Date.now() > entry.expiresAt;
 }
 
-// Fallback functions when Redis is not available
-const redisFallback = {
-  get: async (key) => null,
-  set: async (key, value) => 'OK',
-  del: async (key) => 1,
-  exists: async (key) => 0,
-  expire: async (key, seconds) => 1,
-  hget: async (key, field) => null,
-  hset: async (key, field, value) => 1,
-  hdel: async (key, field) => 1,
-  hgetall: async (key) => ({}),
-  sadd: async (key, member) => 1,
-  srem: async (key, member) => 1,
-  smembers: async (key) => [],
-  publish: async (channel, message) => 0,
-  subscribe: async (channel) => {},
-  unsubscribe: async (channel) => {}
+function _get(key) {
+  const entry = store.get(key);
+  if (!entry) return null;
+  if (_isExpired(entry)) { store.delete(key); return null; }
+  return entry.value;
+}
+
+function _set(key, value, ttlSeconds = null) {
+  store.set(key, {
+    value,
+    expiresAt: ttlSeconds ? Date.now() + ttlSeconds * 1000 : null
+  });
+}
+
+// In-memory client that mirrors the ioredis API surface used in this project
+const memoryClient = {
+  get:      async (key)                => _get(key),
+  set:      async (key, value)         => { _set(key, value); return 'OK'; },
+  setex:    async (key, ttl, value)    => { _set(key, value, ttl); return 'OK'; },
+  del:      async (key)                => { store.delete(key); return 1; },
+  exists:   async (key)                => (_get(key) !== null ? 1 : 0),
+  expire:   async (key, ttl)           => {
+    const entry = store.get(key);
+    if (entry) { entry.expiresAt = Date.now() + ttl * 1000; }
+    return entry ? 1 : 0;
+  },
+  keys:     async (pattern) => {
+    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+    return [...store.keys()].filter(k => regex.test(k));
+  },
+  hget:     async (key, field)         => { const h = _get(key); return h ? h[field] ?? null : null; },
+  hset:     async (key, field, value)  => { const h = _get(key) || {}; h[field] = value; _set(key, h); return 1; },
+  hdel:     async (key, field)         => { const h = _get(key); if (h) { delete h[field]; _set(key, h); } return 1; },
+  hgetall:  async (key)                => _get(key) || {},
+  sadd:     async (key, member)        => { const s = _get(key) || new Set(); s.add(member); _set(key, s); return 1; },
+  srem:     async (key, member)        => { const s = _get(key); if (s) s.delete(member); return 1; },
+  smembers: async (key)                => { const s = _get(key); return s ? [...s] : []; },
+  incr:     async (key)                => { const v = parseInt(_get(key) || '0') + 1; _set(key, String(v)); return v; },
+  publish:  async ()                   => 0,
+  subscribe: async ()                  => {},
+  unsubscribe: async ()                => {}
 };
 
-module.exports = {
-  getRedis: () => redis || redisFallback,
-  isRedisAvailable: () => redis !== null,
-  
-  // Helper functions
-  async get(key) {
-    const client = this.getRedis();
-    return await client.get(key);
-  },
-  
-  async set(key, value, expireSeconds = null) {
-    const client = this.getRedis();
-    if (expireSeconds) {
-      return await client.setex(key, expireSeconds, value);
-    }
-    return await client.set(key, value);
-  },
-  
-  async del(key) {
-    const client = this.getRedis();
-    return await client.del(key);
-  },
-  
-  async exists(key) {
-    const client = this.getRedis();
-    return await client.exists(key);
+// Cleanup expired keys every 5 minutes
+setInterval(() => {
+  for (const [key, entry] of store.entries()) {
+    if (_isExpired(entry)) store.delete(key);
   }
+}, 5 * 60 * 1000);
+
+console.log('ℹ️  Redis replaced with in-memory store');
+
+module.exports = {
+  getRedis:         () => memoryClient,
+  isRedisAvailable: () => false,   // always false → callers know to use fallback paths
+
+  async get(key)                     { return memoryClient.get(key); },
+  async set(key, value, ttl = null)  { return ttl ? memoryClient.setex(key, ttl, value) : memoryClient.set(key, value); },
+  async del(key)                     { return memoryClient.del(key); },
+  async exists(key)                  { return memoryClient.exists(key); }
 };

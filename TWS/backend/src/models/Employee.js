@@ -420,57 +420,72 @@ employeeSchema.index({ status: 1 });
 employeeSchema.index({ organizationId: 1 });
 employeeSchema.index({ orgId: 1 });
 
+// Dual-field sync: keep orgId as canonical tenant scope.
+// If only organizationId is set (legacy path), mirror it into orgId automatically.
+employeeSchema.pre('save', function(next) {
+  if (this.organizationId && !this.orgId) {
+    this.orgId = this.organizationId;
+  }
+  next();
+});
+
+// Helpers: AES-256-CBC with random IV (iv prepended as 32-hex-chars + ':' + ciphertext)
+function encryptField(value, keyStr) {
+  const key = crypto.scryptSync(keyStr, 'twssalt', 32);
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+  return iv.toString('hex') + ':' + cipher.update(value, 'utf8', 'hex') + cipher.final('hex');
+}
+
+function decryptField(stored, keyStr) {
+  const colonIdx = stored.indexOf(':');
+  if (colonIdx === 32) {
+    // New format: iv:ciphertext
+    const iv = Buffer.from(stored.slice(0, 32), 'hex');
+    const data = stored.slice(33);
+    const key = crypto.scryptSync(keyStr, 'twssalt', 32);
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    return decipher.update(data, 'hex', 'utf8') + decipher.final('utf8');
+  }
+  // Legacy format (no IV) — re-encrypt on next save
+  return stored;
+}
+
 // Encrypt sensitive fields
 employeeSchema.pre('save', function(next) {
   const encryptionKey = process.env.ENCRYPTION_KEY;
-  
+  if (!encryptionKey) return next();
+
   if (this.isModified('bankDetails.accountNumber') && this.bankDetails.accountNumber) {
-    const cipher = crypto.createCipher('aes-256-cbc', encryptionKey);
-    let encrypted = cipher.update(this.bankDetails.accountNumber, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    this.bankDetails.accountNumber = encrypted;
+    this.bankDetails.accountNumber = encryptField(this.bankDetails.accountNumber, encryptionKey);
   }
-  
+
   if (this.isModified('bankDetails.routingNumber') && this.bankDetails.routingNumber) {
-    const cipher = crypto.createCipher('aes-256-cbc', encryptionKey);
-    let encrypted = cipher.update(this.bankDetails.routingNumber, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    this.bankDetails.routingNumber = encrypted;
+    this.bankDetails.routingNumber = encryptField(this.bankDetails.routingNumber, encryptionKey);
   }
-  
+
   if (this.isModified('taxId') && this.taxId) {
-    const cipher = crypto.createCipher('aes-256-cbc', encryptionKey);
-    let encrypted = cipher.update(this.taxId, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    this.taxId = encrypted;
+    this.taxId = encryptField(this.taxId, encryptionKey);
   }
-  
+
   next();
 });
 
 // Decrypt sensitive fields when retrieving
 employeeSchema.methods.decryptSensitiveData = function() {
   const encryptionKey = process.env.ENCRYPTION_KEY;
-  
+  if (!encryptionKey) return;
+
   if (this.bankDetails.accountNumber) {
-    const decipher = crypto.createDecipher('aes-256-cbc', encryptionKey);
-    let decrypted = decipher.update(this.bankDetails.accountNumber, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    this.bankDetails.accountNumber = decrypted;
+    this.bankDetails.accountNumber = decryptField(this.bankDetails.accountNumber, encryptionKey);
   }
-  
+
   if (this.bankDetails.routingNumber) {
-    const decipher = crypto.createDecipher('aes-256-cbc', encryptionKey);
-    let decrypted = decipher.update(this.bankDetails.routingNumber, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    this.bankDetails.routingNumber = decrypted;
+    this.bankDetails.routingNumber = decryptField(this.bankDetails.routingNumber, encryptionKey);
   }
-  
+
   if (this.taxId) {
-    const decipher = crypto.createDecipher('aes-256-cbc', encryptionKey);
-    let decrypted = decipher.update(this.taxId, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    this.taxId = decrypted;
+    this.taxId = decryptField(this.taxId, encryptionKey);
   }
   
   return this;

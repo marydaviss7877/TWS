@@ -27,6 +27,37 @@ const projectSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Department'
   }],
+  /**
+   * Per-department view and action config (Plan §8.2).
+   * One project → many department views; filter APIs by this config.
+   */
+  projectDepartmentConfigs: [{
+    departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: true },
+    roleInProject: {
+      type: String,
+      enum: ['dev', 'design', 'qa', 'pm', 'finance_observer', 'sales_observer'],
+      required: true
+    },
+    viewConfig: {
+      canSeeTasks: { type: Boolean, default: false },
+      canSeeInternalBugs: { type: Boolean, default: false },
+      canSeeBudget: { type: Boolean, default: false },
+      canSeeTeamMembers: { type: Boolean, default: false },
+      canSeeClientDetails: { type: Boolean, default: false },
+      canSeeTimeEntries: { type: Boolean, default: false },
+      canSeeDeliverables: { type: Boolean, default: false },
+      canSeeChangeRequests: { type: Boolean, default: false },
+      canSeeInvoices: { type: Boolean, default: false },
+      canExportData: { type: Boolean, default: false }
+    },
+    actionConfig: {
+      canCreateTasks: { type: Boolean, default: false },
+      canApproveTasks: { type: Boolean, default: false },
+      canLogTime: { type: Boolean, default: false },
+      canUploadFiles: { type: Boolean, default: false },
+      canCommentInternally: { type: Boolean, default: false }
+    }
+  }],
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ProjectClient',

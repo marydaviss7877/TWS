@@ -1725,7 +1725,6 @@ router.get('/settings', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.RE
         fromEmail: 'noreply@tws.com'
       },
       securitySettings: {
-        twoFactorRequired: false,
         passwordMinLength: 8,
         sessionTimeout: 24,
         ipWhitelist: []

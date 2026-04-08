@@ -37,27 +37,41 @@ const checkDatabaseConnection = (req, res, next) => {
   next();
 };
 
-// DEBUG: Check all required functions before defining routes
-console.log('🔍 DEBUG: Checking middleware functions...');
-console.log('ErrorHandler:', typeof ErrorHandler);
-console.log('ErrorHandler.asyncHandler:', typeof ErrorHandler?.asyncHandler);
-console.log('handleValidationErrors:', typeof handleValidationErrors);
-console.log('checkDatabaseConnection:', typeof checkDatabaseConnection);
-console.log('body:', typeof body);
-
-// DEBUG: Verify all functions are defined before route definition
-if (!ErrorHandler || !ErrorHandler.asyncHandler) {
-  throw new Error('❌ CRITICAL: ErrorHandler.asyncHandler is undefined!');
-}
-if (typeof handleValidationErrors !== 'function') {
-  throw new Error('❌ CRITICAL: handleValidationErrors is not a function!');
-}
-if (typeof checkDatabaseConnection !== 'function') {
-  throw new Error('❌ CRITICAL: checkDatabaseConnection is not a function!');
-}
+/**
+ * GET /api/auth/db-status?email=...
+ * Diagnostic: DB connection + whether email exists in User or TWSAdmin (no secrets).
+ * Use to verify backend is connected and sees the user when login returns 401.
+ */
+router.get('/db-status', checkDatabaseConnection, ErrorHandler.asyncHandler(async (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const dbName = mongoose.connection.db?.databaseName || null;
+  const payload = {
+    database: {
+      connected: dbState === 1,
+      readyState: dbState,
+      name: dbName
+    }
+  };
+  const email = (req.query.email || '').toLowerCase().trim();
+  if (email) {
+    const [userDoc, twsDoc] = await Promise.all([
+      User.findOne({ email }).select('_id email role status').lean(),
+      TWSAdmin.findOne({ email }).select('_id email role status').lean()
+    ]);
+    payload.emailCheck = {
+      email,
+      inUser: !!userDoc,
+      inTWSAdmin: !!twsDoc,
+      userId: userDoc?._id?.toString() || null,
+      twsAdminId: twsDoc?._id?.toString() || null,
+      role: userDoc?.role || twsDoc?.role || null,
+      status: userDoc?.status || twsDoc?.status || null
+    };
+  }
+  res.json({ success: true, data: payload });
+}));
 
 // Register
-console.log('📝 Defining /register route...');
 router.post('/register', 
   registrationLimiter, // SECURITY: Rate limiting (3 registrations per hour per IP)
   checkDatabaseConnection,
@@ -119,482 +133,136 @@ router.post('/register',
   });
 }));
 
-// Login
+// Login - tenant / software-house users ONLY
+// Supra admins must use POST /api/auth/supra-admin/login
 router.post('/login',
-  authLimiter, // SECURITY: Rate limiting (5 login attempts per 15 minutes per IP)
+  authLimiter,
   checkDatabaseConnection,
   body('email').isEmail().normalizeEmail(),
   body('password').notEmpty(),
   handleValidationErrors,
   ErrorHandler.asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+    const { email, password } = req.body;
+    // express-validator normalizeEmail() already lowercased + stripped Gmail dots
+    const normalizedEmail = (email || '').toLowerCase().trim();
 
-  // Note: express-validator's normalizeEmail() already normalized the email in req.body
-  // For Gmail, it removes dots (e.g., m.subhan6612@gmail.com -> msubhan6612@gmail.com)
-  // But we need to handle both cases since users might have been created with dots
-  const originalEmail = (email || '').toLowerCase().trim();
-  let normalizedEmail = originalEmail;
-  
-  // If it's a Gmail address, express-validator's normalizeEmail() removes dots
-  // So we need to try both versions: with dots (as stored) and without dots (normalized)
-  let gmailWithoutDots = null;
-  if (normalizedEmail.includes('@gmail.com')) {
-    const [localPart, domain] = normalizedEmail.split('@');
-    gmailWithoutDots = localPart.replace(/\./g, '') + '@' + domain;
-    // Use the normalized version (without dots) for primary search
-    normalizedEmail = gmailWithoutDots;
-  }
-  
-  console.log('🔵 LOGIN ATTEMPT:', {
-    originalEmail: req.body.email,
-    normalizedEmail: normalizedEmail,
-    originalEmailLower: originalEmail,
-    gmailWithoutDots: gmailWithoutDots,
-    emailInBody: email,
-    passwordLength: password?.length,
-    passwordProvided: !!password,
-    timestamp: new Date().toISOString()
-  });
-  
-  // Debug: List all TWSAdmin users (first 5) to help debug
-  try {
-    const allTwsAdmins = await TWSAdmin.find({}).limit(10).select('email fullName role status');
-    console.log('🔍 Available TWSAdmin users (first 10):', allTwsAdmins.map(u => ({
-      email: u.email,
-      emailLength: u.email?.length,
-      fullName: u.fullName,
-      role: u.role,
-      status: u.status,
-      matches: u.email === normalizedEmail || u.email?.toLowerCase() === normalizedEmail
-    })));
-    
-    // Also check if the exact email exists
-    const exactMatch = await TWSAdmin.findOne({ email: normalizedEmail });
-    console.log('🔍 Direct TWSAdmin lookup result:', {
-      searchedEmail: normalizedEmail,
-      found: !!exactMatch,
-      foundEmail: exactMatch?.email,
-      foundId: exactMatch?._id
-    });
-  } catch (debugError) {
-    console.log('⚠️ Could not fetch TWSAdmin list for debug:', debugError.message);
-  }
+    // Single lookup in User model — supra admins are not here
+    const user = await User.findOne({ email: normalizedEmail });
 
-  // Find user - check both TWSAdmin and User models
-  // First try TWSAdmin (for Supra Admin users) - try multiple email formats
-  // For Gmail: try both with dots (as stored) and without dots (normalized)
-  let user = await TWSAdmin.findOne({ email: normalizedEmail });
-  let userType = 'twsAdmin';
-  
-  // For Gmail addresses, also try the original with dots (in case user was created with dots)
-  if (!user && originalEmail.includes('@gmail.com') && originalEmail !== normalizedEmail) {
-    user = await TWSAdmin.findOne({ email: originalEmail });
-    console.log('🔍 Tried Gmail with dots:', {
-      email: originalEmail,
-      found: !!user
-    });
-  }
-  
-  // If still not found, try case-insensitive regex search
-  if (!user) {
-    const emailRegex = new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-    user = await TWSAdmin.findOne({ email: emailRegex });
-  }
-  
-  // For Gmail, try regex that matches with or without dots (ali.bhai = alibhai)
-  if (!user && originalEmail.includes('@gmail.com')) {
-    const gmailBase = originalEmail.split('@')[0].replace(/\./g, ''); // Remove dots for matching
-    const gmailDomain = originalEmail.split('@')[1];
-    if (gmailBase && gmailDomain) {
-      // Match any Gmail variant: ali.bhai, alibhai, a.l.i.b.h.a.i all match
-      const gmailRegex = new RegExp(`^${gmailBase.split('').join('\\.?')}@${gmailDomain.replace(/\./g, '\\.')}$`, 'i');
-      user = await TWSAdmin.findOne({ email: gmailRegex });
-      console.log('🔍 Tried Gmail dot-flexible regex:', {
-        pattern: gmailRegex.toString(),
-        found: !!user
-      });
-    }
-  }
-  
-  console.log('🔍 Checking TWSAdmin:', {
-    email: normalizedEmail,
-    originalEmail: email,
-    found: !!user,
-    userId: user?._id,
-    foundEmail: user?.email,
-    emailMatch: user ? (user.email === normalizedEmail) : false
-  });
-  
-  // If not found in TWSAdmin, try User model (for tenant users)
-  if (!user) {
-    user = await User.findOne({ email: normalizedEmail }); // Try normalized first
-    userType = 'user';
-    
-    // For Gmail addresses, also try the original with dots (in case user was created with dots)
-    if (!user && originalEmail.includes('@gmail.com') && originalEmail !== normalizedEmail) {
-      user = await User.findOne({ email: originalEmail });
-      console.log('🔍 Tried User Gmail with dots:', {
-        email: originalEmail,
-        found: !!user
-      });
-    }
-    
     if (!user) {
-      user = await User.findOne({ email: email }); // Try exact match (already normalized by express-validator)
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
-    if (!user) {
-      // Try case-insensitive search as last resort
-      user = await User.findOne({ email: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
-    }
-    
-    // For Gmail, try regex that matches with or without dots (ali.bhai = alibhai)
-    if (!user && originalEmail.includes('@gmail.com')) {
-      const gmailBase = originalEmail.split('@')[0].replace(/\./g, ''); // Remove dots for matching
-      const gmailDomain = originalEmail.split('@')[1];
-      if (gmailBase && gmailDomain) {
-        // Match any Gmail variant: ali.bhai, alibhai, a.l.i.b.h.a.i all match
-        const gmailRegex = new RegExp(`^${gmailBase.split('').join('\\.?')}@${gmailDomain.replace(/\./g, '\\.')}$`, 'i');
-        user = await User.findOne({ email: gmailRegex });
-        console.log('🔍 Tried User Gmail dot-flexible regex:', {
-          pattern: gmailRegex.toString(),
-          found: !!user
-        });
-      }
-    }
-    
-    console.log('🔍 Checking User model:', {
-      email: normalizedEmail,
-      found: !!user,
-      userId: user?._id
-    });
-  }
-  
-  // Auto-create default admin user if it doesn't exist and default password is provided
-  const defaultAdminEmails = ['admin@tws.com', 'admin@wolfstack.com'];
-  const defaultPassword = 'admin123';
-  
-  // Determine role based on email - admin@tws.com should be super_admin for Supra Admin access
-  const getDefaultRole = (email) => {
-    if (email === 'admin@tws.com') {
-      return 'super_admin'; // Supra Admin role
-    }
-    return 'owner'; // Regular admin role
-  };
-  
-  if (!user && defaultAdminEmails.includes(normalizedEmail) && password === defaultPassword) {
-    console.log('🔄 Creating default admin user...');
-    
-    // Get or create default organization
-    const Organization = require('../../../models/Organization');
-    let organization = await Organization.findOne({ slug: 'wolfstack' });
-    if (!organization) {
-      organization = new Organization({
-        name: 'Wolf Stack',
-        slug: 'wolfstack',
-        description: 'Default organization for Wolf Stack Management Portal',
-        plan: 'enterprise',
-        status: 'active',
-        settings: {
-          timezone: 'UTC',
-          dateFormat: 'MM/DD/YYYY',
-          currency: 'USD',
-          workingHours: {
-            start: '09:00',
-            end: '17:00',
-            days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
-          },
-          features: {
-            timeTracking: true,
-            invoicing: true,
-            integrations: true,
-            aiFeatures: true
-          }
-        }
-      });
-      await organization.save();
-      console.log('✅ Default organization created');
-    }
-    
-    // Create default admin user with password: admin123
-    const userRole = getDefaultRole(normalizedEmail);
-    user = new User({
-      email: normalizedEmail,
-      password: defaultPassword, // Will be hashed by pre-save hook
-      fullName: userRole === 'super_admin' ? 'TWS Supra Administrator' : 'System Administrator',
-      role: userRole,
-      orgId: organization._id,
-      status: 'active',
-      emailVerified: true,
-      preferences: {
-        theme: 'light',
-        notifications: true,
-        language: 'en'
-      }
-    });
-    await user.save();
-    console.log('✅ Default admin user created:', normalizedEmail, 'Password: admin123', 'Role:', userRole);
-  }
-  
-  if (!user) {
-    console.log('❌ USER NOT FOUND:', {
-      normalizedEmail: normalizedEmail,
-      originalEmail: email,
-      checkedTWSAdmin: true,
-      checkedUser: true
-    });
-    
-    // Check if user exists in either model for better error message
-    const twsAdminExists = await TWSAdmin.findOne({ email: normalizedEmail });
-    const userExists = await User.findOne({ email: normalizedEmail });
-    
-    if (twsAdminExists || userExists) {
-      console.log('⚠️ User exists but email matching failed:', {
-        twsAdminExists: !!twsAdminExists,
-        userExists: !!userExists,
-        twsAdminEmail: twsAdminExists?.email,
-        userEmail: userExists?.email
-      });
-    }
-    
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid email or password'
-    });
-  }
 
-  console.log('✅ USER FOUND:', {
-    id: user._id,
-    email: user.email,
-    role: user.role,
-    status: user.status,
-    userType: userType,
-    model: userType === 'twsAdmin' ? 'TWSAdmin' : 'User'
-  });
-
-  // Check password with error handling
-  let isPasswordValid = false;
-  try {
-    isPasswordValid = await user.comparePassword(password);
-  } catch (passwordError) {
-    console.error('❌ Password comparison error:', {
-      email: normalizedEmail,
-      userType: userType,
-      error: passwordError.message,
-      stack: passwordError.stack
-    });
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid email or password'
-    });
-  }
-  
-  console.log('🔐 Password check result:', {
-    email: normalizedEmail,
-    userType: userType,
-    isValid: isPasswordValid,
-    passwordProvided: !!password,
-    passwordLength: password?.length
-  });
-  
-  if (!isPasswordValid) {
-    console.log('❌ PASSWORD INVALID for user:', normalizedEmail);
-    console.log('🔍 Password check details:', {
-      email: normalizedEmail,
-      userExists: !!user,
-      userId: user?._id,
-      userRole: user?.role,
-      userType: userType,
-      userStatus: user?.status,
-      passwordProvided: !!password,
-      passwordLength: password?.length,
-      isDefaultPassword: password === defaultPassword,
-      model: userType === 'twsAdmin' ? 'TWSAdmin' : 'User'
-    });
-    
-    // If it's a default admin email with default password but password doesn't match,
-    // it might be an existing user with wrong password - provide helpful error
-    if (defaultAdminEmails.includes(normalizedEmail) && password === defaultPassword) {
-      console.log('⚠️ Default admin email with default password, but password validation failed.');
-      console.log('💡 This might mean the user exists with a different password. Consider resetting the user.');
+    if (user.status !== 'active') {
+      return res.status(403).json({ success: false, message: 'Account is not active' });
     }
-    
-    // For TWSAdmin users, provide more specific error
-    if (userType === 'twsAdmin') {
-      console.log('⚠️ TWSAdmin password validation failed. Check if password was hashed correctly during creation.');
+
+    const isPasswordValid = await user.comparePassword(password).catch(() => false);
+    if (!isPasswordValid) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
-    
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid email or password'
-    });
-  }
 
-  console.log('✅ PASSWORD VALID for user:', normalizedEmail);
+    // Update last login without triggering password re-hash
+    await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } }).catch(() => {});
 
-  // Check if user is active
-  if (user.status !== 'active') {
-    return res.status(403).json({
-      success: false,
-      message: 'Account is not active'
-    });
-  }
-
-  // Update last login
-  user.lastLogin = new Date();
-  await user.save();
-
-  // Generate tokens - use appropriate user ID
-  const userId = user._id;
-  
-  // Build additional payload for token
-  let additionalPayload = {};
-  
-  if (userType === 'twsAdmin') {
-    // TWSAdmin users
-    additionalPayload = { type: 'tws_admin', userId: { _id: userId, type: 'tws_admin' } };
-  } else if (user.orgId) {
-    // For tenant users (including software house employees), include tenant info in token
+    // Build token payload with tenant context
     const Organization = require('../../../models/Organization');
     const Tenant = require('../../../models/Tenant');
-    
-    let org;
-    if (typeof user.orgId === 'object' && user.orgId._id) {
-      org = await Organization.findById(user.orgId._id).select('slug name').lean();
-    } else {
-      org = await Organization.findById(user.orgId).select('slug name').lean();
-    }
-    
-    if (org) {
-      // Find tenant by organizationId or slug
-      const tenant = await Tenant.findOne({
-        $or: [
-          { organizationId: org._id },
-          { slug: org.slug }
-        ]
-      }).select('_id slug').lean();
-      
-      if (tenant) {
-        // Include tenant info in token for software house employees
-        additionalPayload = {
-          tenantId: tenant._id.toString(),
-          tenantSlug: tenant.slug,
-          orgId: org._id.toString()
-        };
-        console.log('✅ Added tenant info to token:', {
-          email: user.email,
-          tenantId: tenant._id.toString(),
-          tenantSlug: tenant.slug,
-          orgId: org._id.toString()
-        });
+
+    let additionalPayload = {};
+    let orgData = null;
+
+    const orgId = (typeof user.orgId === 'object' && user.orgId._id) ? user.orgId._id : user.orgId;
+    if (orgId) {
+      const org = await Organization.findById(orgId).select('slug name').lean();
+      if (org) {
+        orgData = org;
+        const tenant = await Tenant.findOne({
+          $or: [{ organizationId: org._id }, { slug: org.slug }]
+        }).select('_id slug').lean();
+
+        if (tenant) {
+          additionalPayload = {
+            tenantId: tenant._id.toString(),
+            tenantSlug: tenant.slug,
+            orgId: org._id.toString()
+          };
+        }
       }
     }
-  }
-  
-  const { accessToken, refreshToken } = generateTokens(userId, additionalPayload);
 
-  // Store refresh token
-  if (user.refreshTokens && Array.isArray(user.refreshTokens)) {
-    user.refreshTokens.push({ token: refreshToken });
-  } else {
-    // For TWSAdmin, refreshTokens might not be initialized
-    user.refreshTokens = [{ token: refreshToken }];
-  }
-  await user.save();
+    const { accessToken, refreshToken } = generateTokens(user._id, additionalPayload);
+    await User.updateOne({ _id: user._id }, { $push: { refreshTokens: { token: refreshToken } } }).catch(() => {});
 
-  // SECURITY FIX: Set HttpOnly cookies instead of returning tokens in response
-  setSecureCookie(res, 'accessToken', accessToken, { maxAge: 15 * 60 * 1000 }); // 15 minutes
-  setRefreshTokenCookie(res, 'refreshToken', refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000 }); // 30 days
+    setSecureCookie(res, 'accessToken', accessToken, { maxAge: 15 * 60 * 1000 });
+    setRefreshTokenCookie(res, 'refreshToken', refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000 });
 
-  // Prepare user data for response
-  let userData = user.toJSON ? user.toJSON() : user;
-  
-  // Ensure id field is set from _id for frontend compatibility
-  if (userData._id && !userData.id) {
-    userData.id = userData._id.toString();
-  }
-  
-  // For TWSAdmin users, set role to super_admin for Supra Admin access
-  if (userType === 'twsAdmin') {
-    userData.role = 'super_admin'; // Override role for Supra Admin portal access
-    userData.userType = 'twsAdmin'; // Mark as TWSAdmin user
-    // TWSAdmin users don't have orgId, so set it to null
+    const userData = user.toJSON ? user.toJSON() : { ...user._doc };
+    if (userData._id && !userData.id) userData.id = userData._id.toString();
+
+    if (orgData) {
+      userData.orgId = { _id: orgData._id, slug: orgData.slug, name: orgData.name };
+      const tenantRoles = ['owner', 'admin', 'org_manager', 'project_manager', 'manager', 'employee',
+        'staff', 'developer', 'engineer', 'programmer'];
+      if (tenantRoles.includes(user.role)) {
+        userData.tenantId = orgData.slug;
+      }
+    } else if (user.tenantId) {
+      const org = await Organization.findOne({ slug: user.tenantId }).select('slug name').lean();
+      if (org) {
+        userData.orgId = { _id: org._id, slug: org.slug, name: org.name };
+        userData.tenantId = org.slug;
+      }
+    }
+
+    res.json({ success: true, message: 'Login successful', data: { user: userData } });
+  })
+);
+
+// Supra Admin Login - TWSAdmin model ONLY
+// Regular tenant users must use POST /api/auth/login
+router.post('/supra-admin/login',
+  authLimiter,
+  checkDatabaseConnection,
+  body('email').isEmail().normalizeEmail(),
+  body('password').notEmpty(),
+  handleValidationErrors,
+  ErrorHandler.asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    const normalizedEmail = (email || '').toLowerCase().trim();
+
+    const admin = await TWSAdmin.findOne({ email: normalizedEmail });
+
+    if (!admin) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    if (admin.status !== 'active') {
+      return res.status(403).json({ success: false, message: 'Account is not active' });
+    }
+
+    const isPasswordValid = await admin.comparePassword(password).catch(() => false);
+    if (!isPasswordValid) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    // Pass admin identity as the userId object so token type stays 'access'.
+    // auth.js middleware handles this at: decoded.userId?.type === 'tws_admin'
+    const { accessToken, refreshToken } = generateTokens({ _id: admin._id, type: 'tws_admin' });
+
+    setSecureCookie(res, 'accessToken', accessToken, { maxAge: 15 * 60 * 1000 });
+    setRefreshTokenCookie(res, 'refreshToken', refreshToken, { maxAge: 30 * 24 * 60 * 60 * 1000 });
+
+    const userData = admin.toJSON ? admin.toJSON() : { ...admin._doc };
+    if (userData._id && !userData.id) userData.id = userData._id.toString();
+    userData.role = 'super_admin';
+    userData.userType = 'twsAdmin';
     userData.orgId = null;
     userData.tenantId = null;
-    console.log('✅ TWSAdmin user logged in:', {
-      email: user.email,
-      originalRole: user.role,
-      assignedRole: 'super_admin',
-      userId: user._id
-    });
-  }
-  
-  // Try to get organization data for tenant users
-  if (user.orgId) {
-    const Organization = require('../../../models/Organization');
-    let org;
-    
-    // If orgId is already populated (object), use it directly
-    if (typeof user.orgId === 'object' && user.orgId._id) {
-      org = await Organization.findById(user.orgId._id).select('slug name');
-    } else {
-      // If orgId is just an ObjectId string, fetch it
-      org = await Organization.findById(user.orgId).select('slug name');
-    }
-    
-    if (org) {
-      // Add org slug to user data for frontend to use as tenant slug
-      userData.orgId = {
-        _id: org._id,
-        slug: org.slug,
-        name: org.name
-      };
-      // Set tenantId for routing
-      const tenantRoles = ['owner', 'admin', 'org_manager', 'project_manager', 'manager', 'employee', 'staff', 'developer', 'engineer', 'programmer'];
-      if (tenantRoles.includes(user.role)) {
-        userData.tenantId = org.slug;
-        console.log('✅ Set tenantId for tenant user:', {
-          email: user.email,
-          role: user.role,
-          tenantId: org.slug,
-          orgSlug: org.slug
-        });
-      }
-    } else {
-      console.warn('⚠️ Organization not found for user:', {
-        userId: user._id,
-        orgId: user.orgId,
-        role: user.role
-      });
-    }
-  } else {
-    if (user.tenantId) {
-      const Organization = require('../../../models/Organization');
-      const org = await Organization.findOne({ slug: user.tenantId }).select('slug name');
-      if (org) {
-        userData.orgId = {
-          _id: org._id,
-          slug: org.slug,
-          name: org.name
-        };
-        userData.tenantId = org.slug;
-        console.log('✅ Found org by tenantId and set tenantId:', {
-          email: user.email,
-          tenantId: user.tenantId,
-          orgSlug: org.slug
-        });
-      }
-    }
-  }
 
-  res.json({
-    success: true,
-    message: 'Login successful',
-    data: {
-      user: userData
-      // Tokens are now in HttpOnly cookies, not in response body
-    }
-  });
-}));
+    res.json({ success: true, message: 'Login successful', data: { user: userData } });
+  })
+);
 
 // Refresh token
 router.post('/refresh',
@@ -915,6 +583,78 @@ router.post('/forgot-password',
     });
   }
 }));
+
+// ---------------------------------------------------------------------------
+// INVITE ACCEPT — public endpoints (no tenant slug needed; token identifies tenant)
+// GET  /api/auth/invite/accept?token=  — validate token, return invitee info
+// POST /api/auth/invite/accept         — set password + activate account
+// ---------------------------------------------------------------------------
+
+router.get('/invite/accept', checkDatabaseConnection, ErrorHandler.asyncHandler(async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ success: false, message: 'token required' });
+
+  const TenantUser = require('../../models/TenantUser');
+  const tenantUser = await TenantUser.findOne({
+    'invitation.invitationToken': token,
+    'invitation.invitationExpires': { $gt: new Date() },
+    status: 'pending'
+  }).populate('userId', 'email fullName');
+
+  if (!tenantUser) {
+    return res.status(400).json({ success: false, message: 'Invalid or expired invitation link' });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      email: tenantUser.userId?.email,
+      fullName: tenantUser.userId?.fullName,
+      role: tenantUser.roles?.[0]?.role || 'employee'
+    }
+  });
+}));
+
+router.post('/invite/accept',
+  checkDatabaseConnection,
+  body('token').notEmpty(),
+  body('password').isLength({ min: 6 }),
+  handleValidationErrors,
+  ErrorHandler.asyncHandler(async (req, res) => {
+    const { token, password } = req.body;
+
+    const TenantUser = require('../../models/TenantUser');
+    const tenantUser = await TenantUser.findOne({
+      'invitation.invitationToken': token,
+      'invitation.invitationExpires': { $gt: new Date() },
+      status: 'pending'
+    });
+
+    if (!tenantUser) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired invitation link' });
+    }
+
+    const user = await User.findById(tenantUser.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User account not found' });
+
+    user.password = password;
+    user.status = 'active';
+    user.mustChangePassword = false;
+    await user.save();
+
+    tenantUser.status = 'active';
+    tenantUser.invitation.acceptedAt = new Date();
+    tenantUser.lastActivity = new Date();
+    await tenantUser.save();
+
+    try {
+      const { invalidateResolvedPermissions } = require('../../services/tenant/permissionResolver.service');
+      await invalidateResolvedPermissions(tenantUser.tenantId, user._id);
+    } catch (_) {}
+
+    res.json({ success: true, message: 'Account activated. You can now log in.' });
+  })
+);
 
 // GTS Admin Login removed - functionality consolidated into TWS Admin / Supra Admin
 

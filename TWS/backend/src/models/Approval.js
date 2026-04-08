@@ -9,7 +9,7 @@ const Schema = mongoose.Schema;
 const ApprovalSchema = new Schema({
   deliverable_id: {
     type: Schema.Types.ObjectId,
-    ref: 'Milestone', // Using Milestone as Deliverable (can be changed to Deliverable if separate model created)
+    ref: 'Deliverable',
     required: true,
     index: true
   },
@@ -107,15 +107,25 @@ ApprovalSchema.statics.getApprovalsForDeliverable = async function(deliverableId
 
 /**
  * Static method to check if all internal steps are approved
+ * Handles optional security step: counts how many internal steps actually exist,
+ * then checks all of them are approved (avoids hardcoded === 3 that broke when
+ * security step was omitted from createApprovalChain).
  */
 ApprovalSchema.statics.areAllInternalStepsApproved = async function(deliverableId) {
-  const internalApprovals = await this.find({
+  const existingCount = await this.countDocuments({
     deliverable_id: deliverableId,
-    step_number: { $in: [1, 2, 3] }, // Steps 1-3 are internal
+    step_number: { $in: [1, 2, 3] }
+  });
+
+  if (existingCount === 0) return false;
+
+  const approvedCount = await this.countDocuments({
+    deliverable_id: deliverableId,
+    step_number: { $in: [1, 2, 3] },
     status: 'approved'
   });
-  
-  return internalApprovals.length === 3;
+
+  return approvedCount === existingCount;
 };
 
 /**

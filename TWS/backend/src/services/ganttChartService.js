@@ -16,24 +16,13 @@ const Project = require('../models/Project');
 const Deliverable = require('../models/Deliverable');
 const Milestone = require('../models/Milestone');
 
-// Redis client (optional - will work without Redis)
-let redisClient = null;
-try {
-  const redis = require('redis');
-  if (process.env.REDIS_URL) {
-    redisClient = redis.createClient({ url: process.env.REDIS_URL });
-    redisClient.on('error', (err) => {
-      console.error('Redis Client Error:', err);
-      redisClient = null; // Disable Redis on error
-    });
-    redisClient.connect().catch(() => {
-      console.warn('Redis connection failed, continuing without cache');
-      redisClient = null;
-    });
-  }
-} catch (error) {
-  console.warn('Redis not available, continuing without cache');
-}
+// In-memory cache replacing Redis (60s TTL per Nucleus spec)
+const _ganttCache = new Map();
+const redisClient = {
+  get:   async (key) => { const e = _ganttCache.get(key); if (!e || Date.now() > e.expiresAt) { _ganttCache.delete(key); return null; } return e.data; },
+  setEx: async (key, ttl, data) => { _ganttCache.set(key, { data, expiresAt: Date.now() + ttl * 1000 }); },
+  del:   async (key) => { _ganttCache.delete(key); }
+};
 
 /**
  * Generate Gantt data for a project (with Redis caching)

@@ -1,6 +1,9 @@
 const express = require('express');
 const { body, query, param } = require('express-validator');
-const { requirePermission } = require('../../../middleware/auth/rbac');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
+const attendanceRead = requireErpAccess({ module: 'attendance', action: 'read', checkRevocation: false });
+const attendanceWrite = requireErpAccess({ module: 'attendance', action: 'write', checkRevocation: false });
+const attendanceAdminAccess = requireErpAccess({ allowedRoles: ['owner', 'admin', 'super_admin'] });
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
 const Attendance = require('../../../models/Attendance');
@@ -14,7 +17,7 @@ const router = express.Router();
 
 // Enhanced Check in with comprehensive validation
 router.post('/checkin', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('employeeId').optional().notEmpty(),
   body('location.latitude').optional().isFloat(),
   body('location.longitude').optional().isFloat(),
@@ -51,16 +54,24 @@ router.post('/checkin', [
       notes
     };
 
-    // Use employeeId if provided, otherwise use user._id
-    const userId = employeeId ? await Employee.findOne({ employeeId }).select('_id') : req.user._id;
-    if (employeeId && !userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid Employee ID'
-      });
+    // Determine target user: self by default, or another employee only if requester has hr:write
+    let targetUserId = req.user._id;
+    if (employeeId) {
+      const { getResolvedPermissions, hasPermission } = require('../../../services/tenant/permissionResolver.service');
+      const tenantId = req.tenant?._id || req.user?.tenantId;
+      const resolved = await getResolvedPermissions(req.user._id, tenantId, { hrSubRole: req.user.hrSubRole });
+      if (!hasPermission(resolved.permissions, 'hr', 'write')) {
+        return res.status(403).json({ success: false, message: 'Not authorized to check in on behalf of another employee' });
+      }
+      const orgId = req.orgId || req.user?.orgId;
+      const empRecord = await Employee.findOne({ employeeId, orgId }).select('_id');
+      if (!empRecord) {
+        return res.status(400).json({ success: false, message: 'Invalid Employee ID' });
+      }
+      targetUserId = empRecord._id;
     }
 
-    const result = await AttendanceService.checkIn(userId._id || userId, checkInData, deviceInfo);
+    const result = await AttendanceService.checkIn(targetUserId, checkInData, deviceInfo);
 
     res.json({
       success: true,
@@ -77,7 +88,7 @@ router.post('/checkin', [
 
 // Enhanced Check out with comprehensive validation
 router.post('/checkout', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('employeeId').optional().notEmpty(),
   body('location.latitude').optional().isFloat(),
   body('location.longitude').optional().isFloat(),
@@ -108,16 +119,24 @@ router.post('/checkout', [
       notes
     };
 
-    // Use employeeId if provided, otherwise use user._id
-    const userId = employeeId ? await Employee.findOne({ employeeId }).select('_id') : req.user._id;
-    if (employeeId && !userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid Employee ID'
-      });
+    // Determine target user: self by default, or another employee only if requester has hr:write
+    let targetUserId = req.user._id;
+    if (employeeId) {
+      const { getResolvedPermissions, hasPermission } = require('../../../services/tenant/permissionResolver.service');
+      const tenantId = req.tenant?._id || req.user?.tenantId;
+      const resolved = await getResolvedPermissions(req.user._id, tenantId, { hrSubRole: req.user.hrSubRole });
+      if (!hasPermission(resolved.permissions, 'hr', 'write')) {
+        return res.status(403).json({ success: false, message: 'Not authorized to check out on behalf of another employee' });
+      }
+      const orgId = req.orgId || req.user?.orgId;
+      const empRecord = await Employee.findOne({ employeeId, orgId }).select('_id');
+      if (!empRecord) {
+        return res.status(400).json({ success: false, message: 'Invalid Employee ID' });
+      }
+      targetUserId = empRecord._id;
     }
 
-    const result = await AttendanceService.checkOut(userId._id || userId, checkOutData, deviceInfo);
+    const result = await AttendanceService.checkOut(targetUserId, checkOutData, deviceInfo);
 
     res.json({
       success: true,
@@ -134,7 +153,7 @@ router.post('/checkout', [
 
 // Get attendance records
 router.get('/', [
-  requirePermission('attendance:read'),
+  attendanceRead,
   query('userId').optional().isMongoId(),
   query('employeeId').optional().notEmpty(),
   query('from').optional().isISO8601(),
@@ -185,7 +204,7 @@ router.get('/', [
 }));
 
 // Get today's attendance
-router.get('/today', requirePermission('attendance:read'), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/today', attendanceRead, ErrorHandler.asyncHandler(async (req, res) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -204,7 +223,7 @@ router.get('/today', requirePermission('attendance:read'), ErrorHandler.asyncHan
 
 // Request attendance correction
 router.post('/:id/correction', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('reason').notEmpty().trim()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const { reason } = req.body;
@@ -245,7 +264,7 @@ router.post('/:id/correction', [
 
 // Approve/reject correction request
 router.patch('/:id/corrections/:correctionId', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('status').isIn(['approved', 'rejected']),
   body('comments').optional().notEmpty()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -283,7 +302,7 @@ router.patch('/:id/corrections/:correctionId', [
 
 // Export attendance data
 router.get('/export', [
-  requirePermission('attendance:read'),
+  attendanceRead,
   query('from').isISO8601(),
   query('to').isISO8601(),
   query('format').optional().isIn(['csv', 'json'])
@@ -328,7 +347,7 @@ router.get('/export', [
 
 // Break management routes
 router.post('/break/start', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('type').optional().isIn(['lunch', 'break', 'meeting', 'training', 'personal', 'other']),
   body('location.latitude').optional().isFloat(),
   body('location.longitude').optional().isFloat(),
@@ -353,7 +372,7 @@ router.post('/break/start', [
 }));
 
 router.post('/break/end/:breakIndex', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('breakIndex').isInt({ min: 0 })
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
@@ -375,7 +394,7 @@ router.post('/break/end/:breakIndex', [
 
 // Attendance analytics and reporting
 router.get('/analytics', [
-  requirePermission('attendance:read'),
+  attendanceRead,
   query('from').optional().isISO8601(),
   query('to').optional().isISO8601(),
   query('userId').optional().isMongoId(),
@@ -417,7 +436,7 @@ router.get('/analytics', [
 
 // Security and risk management
 router.get('/security/alerts', [
-  requirePermission('attendance:read'),
+  attendanceRead,
   query('riskLevel').optional().isIn(['medium', 'high', 'critical']),
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 })
@@ -478,7 +497,7 @@ router.get('/security/alerts', [
 
 // Audit trail
 router.get('/audit/:attendanceId', [
-  requirePermission('attendance:read')
+  attendanceRead
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
     const auditTrail = await AttendanceAudit.getAuditTrail(req.params.attendanceId);
@@ -497,7 +516,7 @@ router.get('/audit/:attendanceId', [
 
 // Real-time attendance status
 router.get('/realtime', [
-  requirePermission('attendance:read')
+  attendanceRead
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
     const filters = { isActive: true };
@@ -525,7 +544,7 @@ router.get('/realtime', [
 
 // Attendance policies management
 router.get('/policies', [
-  requirePermission('attendance:read')
+  attendanceRead
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
     const policies = await AttendancePolicy.find({
@@ -547,7 +566,7 @@ router.get('/policies', [
 
 // Attendance shifts management
 router.get('/shifts', [
-  requirePermission('attendance:read')
+  attendanceRead
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
     const shifts = await AttendanceShift.find({
@@ -569,7 +588,7 @@ router.get('/shifts', [
 
 // Bulk operations for HR/Admin
 router.post('/bulk/approve', [
-  requirePermission('attendance:write'),
+  attendanceWrite,
   body('attendanceIds').isArray({ min: 1 }),
   body('attendanceIds.*').isMongoId(),
   body('comments').optional().notEmpty()
@@ -610,7 +629,7 @@ router.post('/bulk/approve', [
 
 // Export enhanced attendance data
 router.get('/export/enhanced', [
-  requirePermission('attendance:read'),
+  attendanceRead,
   query('from').isISO8601(),
   query('to').isISO8601(),
   query('format').optional().isIn(['csv', 'json', 'excel']),
@@ -674,7 +693,7 @@ router.get('/export/enhanced', [
 }));
 
 // Admin real-time attendance data
-router.get('/admin/realtime', requirePermission('attendance:read'), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/admin/realtime', attendanceRead, ErrorHandler.asyncHandler(async (req, res) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -721,7 +740,7 @@ router.get('/admin/realtime', requirePermission('attendance:read'), ErrorHandler
 }));
 
 // Admin trending metrics
-router.get('/admin/trending-metrics', requirePermission('attendance:read'), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/admin/trending-metrics', attendanceRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { range = '7d' } = req.query;
   
   let startDate = new Date();
@@ -815,7 +834,7 @@ router.get('/admin/trending-metrics', requirePermission('attendance:read'), Erro
 }));
 
 // Admin insights
-router.get('/admin/insights', requirePermission('attendance:read'), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/admin/insights', attendanceRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { range = '7d' } = req.query;
   
   let startDate = new Date();
@@ -926,7 +945,7 @@ router.get('/admin/insights', requirePermission('attendance:read'), ErrorHandler
 
 // Get admin attendance statistics
 router.get('/admin/stats', [
-  requirePermission('admin:read'),
+  attendanceAdminAccess,
   query('date').optional().isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
@@ -1010,7 +1029,7 @@ router.get('/admin/stats', [
 
 // Get attendance overview for admin
 router.get('/admin/overview', [
-  requirePermission('admin:read'),
+  attendanceAdminAccess,
   query('date').optional().isISO8601(),
   query('department').optional().isString(),
   query('status').optional().isString()
@@ -1066,7 +1085,7 @@ router.get('/admin/overview', [
 
 // Get pending approvals
 router.get('/admin/pending-approvals', [
-  requirePermission('admin:read')
+  attendanceAdminAccess
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
     const approvals = await Attendance.find({
@@ -1112,7 +1131,7 @@ router.get('/admin/pending-approvals', [
 
 // Manual attendance entry
 router.post('/admin/manual-entry', [
-  requirePermission('admin:write'),
+  attendanceAdminAccess,
   body('employeeId').isMongoId(),
   body('date').isISO8601(),
   body('status').isIn(['present', 'absent', 'late', 'half-day', 'on-leave']),
@@ -1234,7 +1253,7 @@ router.post('/admin/manual-entry', [
 
 // Bulk status update
 router.post('/admin/bulk-status-update', [
-  requirePermission('admin:write'),
+  attendanceAdminAccess,
   body('attendanceIds').isArray({ min: 1 }),
   body('status').isIn(['present', 'absent', 'late', 'half-day', 'on-leave'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -1272,7 +1291,7 @@ router.post('/admin/bulk-status-update', [
 
 // Bulk action (approve/reject)
 router.post('/admin/bulk-action', [
-  requirePermission('admin:write'),
+  attendanceAdminAccess,
   body('action').isIn(['approve', 'reject', 'export']),
   body('attendanceIds').isArray({ min: 1 })
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -1344,7 +1363,7 @@ router.post('/admin/bulk-action', [
 
 // Approve individual request
 router.post('/admin/approve/:approvalId', [
-  requirePermission('admin:write'),
+  attendanceAdminAccess,
   param('approvalId').isMongoId(),
   body('type').isString(),
   body('action').isIn(['approve', 'reject'])
@@ -1400,7 +1419,7 @@ router.post('/admin/approve/:approvalId', [
 
 // Reject individual request
 router.post('/admin/reject/:approvalId', [
-  requirePermission('admin:write'),
+  attendanceAdminAccess,
   param('approvalId').isMongoId(),
   body('type').isString(),
   body('action').isIn(['approve', 'reject']),
@@ -1452,7 +1471,7 @@ router.post('/admin/reject/:approvalId', [
 
 // Export attendance data
 router.get('/admin/export', [
-  requirePermission('admin:read'),
+  attendanceAdminAccess,
   query('format').isIn(['csv', 'excel', 'json']),
   query('date').optional().isISO8601(),
   query('department').optional().isString()
@@ -1529,6 +1548,327 @@ router.get('/admin/export', [
       message: error.message
     });
   }
+}));
+
+// ─── Routes consolidated from deleted legacy files ───────────────────────────
+
+// ── calendarAttendance.js ─────────────────────────────────────────────────────
+
+// Get attendance calendar data
+router.get('/calendar', [
+  attendanceRead,
+  query('year').isInt({ min: 2020, max: 2030 }),
+  query('month').isInt({ min: 1, max: 12 }),
+  query('userId').optional().isMongoId()
+], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
+  const { year, month, userId } = req.query;
+  const targetUserId = userId || req.user._id;
+  const startDate = new Date(year, month - 1, 1);
+  const endDate   = new Date(year, month, 0);
+
+  const records = await Attendance.find({
+    userId: targetUserId,
+    date: {
+      $gte: startDate.toISOString().split('T')[0],
+      $lte: endDate.toISOString().split('T')[0]
+    }
+  }).sort({ date: 1 });
+
+  const calendarData = {};
+  records.forEach(record => {
+    let status = 'absent';
+    if (record.checkIn && record.checkOut) {
+      const diff = Math.abs(new Date(record.checkIn.timestamp) - new Date(new Date(record.checkIn.timestamp).setHours(9, 0, 0, 0))) / 60000;
+      status = diff <= 30 ? 'on_time' : 'late';
+    } else if (record.checkIn) {
+      const diff = Math.abs(new Date(record.checkIn.timestamp) - new Date(new Date(record.checkIn.timestamp).setHours(9, 0, 0, 0))) / 60000;
+      status = diff <= 30 ? 'present' : 'late';
+    }
+    calendarData[record.date] = { status, checkIn: record.checkIn, checkOut: record.checkOut, durationMinutes: record.durationMinutes };
+  });
+
+  res.json({ success: true, data: calendarData });
+}));
+
+// Get employee records for admin (with search/filter/pagination)
+router.get('/admin/records', [
+  attendanceRead,
+  query('page').optional().isInt({ min: 1 }),
+  query('limit').optional().isInt({ min: 1, max: 100 }),
+  query('status').optional().isIn(['present', 'late', 'absent', 'half_day']),
+  query('date').optional().isISO8601(),
+  query('search').optional().isString()
+], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, status, date, search } = req.query;
+  const matchQuery = {};
+  if (status) matchQuery.status = status;
+  if (date)   matchQuery.date   = date;
+
+  const pipeline = [
+    { $match: matchQuery },
+    { $lookup: { from: 'employees', localField: 'userId', foreignField: '_id', as: 'employee' } },
+    { $unwind: '$employee' }
+  ];
+  if (search) {
+    pipeline.push({ $match: { $or: [
+      { 'employee.name': { $regex: search, $options: 'i' } },
+      { 'employee.employeeId': { $regex: search, $options: 'i' } }
+    ]}});
+  }
+  pipeline.push(
+    { $sort: { date: -1, 'checkIn.timestamp': -1 } },
+    { $facet: {
+      records:    [{ $skip: (page - 1) * parseInt(limit) }, { $limit: parseInt(limit) }],
+      totalCount: [{ $count: 'count' }]
+    }}
+  );
+
+  const result = await Attendance.aggregate(pipeline);
+  const records = result[0].records.map(r => ({
+    _id: r._id, employeeName: r.employee.name, employeeId: r.employee.employeeId,
+    adminId: r.employee.adminId, isAdmin: r.isAdmin || false, date: r.date,
+    checkIn: r.checkIn, checkOut: r.checkOut, status: r.status,
+    durationMinutes: r.durationMinutes, createdAt: r.createdAt
+  }));
+  const total = result[0].totalCount[0]?.count || 0;
+
+  res.json({ success: true, data: { records, total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / parseInt(limit)) } });
+}));
+
+// Update attendance record status
+router.put('/admin/records/:recordId/status', [
+  attendanceWrite,
+  body('status').isIn(['present', 'late', 'absent', 'half_day'])
+], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
+  const record = await Attendance.findByIdAndUpdate(req.params.recordId, { status: req.body.status }, { new: true });
+  if (!record) return res.status(404).json({ success: false, message: 'Attendance record not found' });
+  res.json({ success: true, message: 'Status updated successfully', data: record });
+}));
+
+// Export employee records as CSV
+router.get('/admin/records/export', [
+  attendanceRead,
+  query('status').optional().isIn(['present', 'late', 'absent', 'half_day']),
+  query('date').optional().isISO8601(),
+  query('search').optional().isString()
+], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
+  const { status, date, search } = req.query;
+  const matchQuery = {};
+  if (status) matchQuery.status = status;
+  if (date)   matchQuery.date   = date;
+
+  const pipeline = [
+    { $match: matchQuery },
+    { $lookup: { from: 'employees', localField: 'userId', foreignField: '_id', as: 'employee' } },
+    { $unwind: '$employee' }
+  ];
+  if (search) {
+    pipeline.push({ $match: { $or: [
+      { 'employee.name': { $regex: search, $options: 'i' } },
+      { 'employee.employeeId': { $regex: search, $options: 'i' } }
+    ]}});
+  }
+  pipeline.push({ $sort: { date: -1 } });
+
+  const records = await Attendance.aggregate(pipeline);
+  const csvHeader = 'Date,Employee Name,Employee ID,Check In,Check Out,Duration (Hours),Status\n';
+  const csvData   = records.map(r => {
+    const checkIn  = r.checkIn  ? new Date(r.checkIn.timestamp).toLocaleString()  : 'Not checked in';
+    const checkOut = r.checkOut ? new Date(r.checkOut.timestamp).toLocaleString() : 'Not checked out';
+    const duration = r.durationMinutes ? (r.durationMinutes / 60).toFixed(2) : '0';
+    return `${r.date},${r.employee.name},${r.employee.employeeId},${checkIn},${checkOut},${duration},${r.status}`;
+  }).join('\n');
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename=employee-records-${new Date().toISOString().split('T')[0]}.csv`);
+  res.send(csvHeader + csvData);
+}));
+
+// ── simpleAttendance.js ───────────────────────────────────────────────────────
+
+// Simple employee check-in (by employeeId string, no auth token required for kiosk use)
+router.post('/simple/checkin', [
+  attendanceWrite,
+  body('employeeId').notEmpty(),
+  body('timestamp').optional().isISO8601()
+], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
+  const { employeeId, timestamp } = req.body;
+  const employee = await Employee.findOne({ employeeId });
+  if (!employee) return res.status(400).json({ success: false, message: 'Employee not found' });
+
+  const today = new Date().toISOString().split('T')[0];
+  let record = await Attendance.findOne({ userId: employee._id, date: today });
+  if (record?.checkIn) return res.status(400).json({ success: false, message: 'Already checked in today' });
+
+  const checkInData = { timestamp: timestamp || new Date(), verified: true, verificationMethod: 'employee_id' };
+  if (record) { record.checkIn = checkInData; record.status = 'present'; record.isActive = true; await record.save(); }
+  else { await new Attendance({ userId: employee._id, employeeId, organizationId: employee.organizationId, date: today, checkIn: checkInData, status: 'present', isActive: true }).save(); }
+
+  res.json({ success: true, message: 'Checked in successfully', data: { employeeId, checkInTime: checkInData.timestamp, status: 'checked_in' } });
+}));
+
+// Simple employee check-out
+router.post('/simple/checkout', [
+  attendanceWrite,
+  body('employeeId').notEmpty(),
+  body('timestamp').optional().isISO8601()
+], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
+  const { employeeId, timestamp } = req.body;
+  const employee = await Employee.findOne({ employeeId });
+  if (!employee) return res.status(400).json({ success: false, message: 'Employee not found' });
+
+  const today   = new Date().toISOString().split('T')[0];
+  const record  = await Attendance.findOne({ userId: employee._id, date: today });
+  if (!record?.checkIn)  return res.status(400).json({ success: false, message: 'No check-in found for today' });
+  if (record?.checkOut)  return res.status(400).json({ success: false, message: 'Already checked out today' });
+
+  const checkOutTime    = new Date(timestamp || new Date());
+  record.checkOut       = { timestamp: checkOutTime, verified: true, verificationMethod: 'employee_id' };
+  record.durationMinutes = Math.round((checkOutTime - new Date(record.checkIn.timestamp)) / 60000);
+  record.status         = 'present';
+  record.isActive       = false;
+  await record.save();
+
+  res.json({ success: true, message: 'Checked out successfully', data: { employeeId, checkInTime: record.checkIn.timestamp, checkOutTime, durationMinutes: record.durationMinutes, status: 'checked_out' } });
+}));
+
+// Simple admin check-in
+router.post('/simple/admin/checkin', [
+  attendanceWrite,
+  body('adminId').notEmpty(),
+  body('timestamp').optional().isISO8601()
+], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
+  const { adminId, timestamp } = req.body;
+  const admin = await Employee.findOne({ $or: [{ adminId }, { employeeId: adminId }] });
+  if (!admin) return res.status(400).json({ success: false, message: 'Admin not found' });
+
+  const today  = new Date().toISOString().split('T')[0];
+  let record   = await Attendance.findOne({ userId: admin._id, date: today });
+  if (record?.checkIn) return res.status(400).json({ success: false, message: 'Already checked in today' });
+
+  const checkInData = { timestamp: timestamp || new Date(), verified: true, verificationMethod: 'admin_id' };
+  if (record) { record.checkIn = checkInData; record.status = 'present'; record.isActive = true; await record.save(); }
+  else { await new Attendance({ userId: admin._id, employeeId: adminId, organizationId: admin.organizationId, date: today, checkIn: checkInData, status: 'present', isActive: true, isAdmin: true }).save(); }
+
+  res.json({ success: true, message: 'Admin checked in successfully', data: { adminId, checkInTime: checkInData.timestamp, status: 'checked_in' } });
+}));
+
+// Simple admin check-out
+router.post('/simple/admin/checkout', [
+  attendanceWrite,
+  body('adminId').notEmpty(),
+  body('timestamp').optional().isISO8601()
+], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
+  const { adminId, timestamp } = req.body;
+  const admin = await Employee.findOne({ $or: [{ adminId }, { employeeId: adminId }] });
+  if (!admin) return res.status(400).json({ success: false, message: 'Admin not found' });
+
+  const today   = new Date().toISOString().split('T')[0];
+  const record  = await Attendance.findOne({ userId: admin._id, date: today });
+  if (!record?.checkIn) return res.status(400).json({ success: false, message: 'No check-in found for today' });
+  if (record?.checkOut) return res.status(400).json({ success: false, message: 'Already checked out today' });
+
+  const checkOutTime     = new Date(timestamp || new Date());
+  record.checkOut        = { timestamp: checkOutTime, verified: true, verificationMethod: 'admin_id' };
+  record.durationMinutes = Math.round((checkOutTime - new Date(record.checkIn.timestamp)) / 60000);
+  record.status          = 'present';
+  record.isActive        = false;
+  await record.save();
+
+  res.json({ success: true, message: 'Admin checked out successfully', data: { adminId, checkInTime: record.checkIn.timestamp, checkOutTime, durationMinutes: record.durationMinutes, status: 'checked_out' } });
+}));
+
+// Get today's simple records for admin
+router.get('/admin/simple/records', attendanceRead, ErrorHandler.asyncHandler(async (req, res) => {
+  const today   = new Date().toISOString().split('T')[0];
+  const records = await Attendance.find({ date: today })
+    .populate('userId', 'name email employeeId adminId')
+    .sort({ 'checkIn.timestamp': -1 });
+
+  res.json({ success: true, data: records.map(r => ({
+    _id: r._id, employeeName: r.userId?.name || 'Unknown', employeeId: r.userId?.employeeId || r.employeeId,
+    adminId: r.userId?.adminId, isAdmin: r.isAdmin || false, checkIn: r.checkIn, checkOut: r.checkOut,
+    status: r.checkOut ? 'checked_out' : r.checkIn ? 'checked_in' : 'not_checked_in',
+    durationMinutes: r.durationMinutes, createdAt: r.createdAt
+  }))});
+}));
+
+// ── employeeAttendance.js ─────────────────────────────────────────────────────
+
+// Get employee's own records (date range filter)
+router.get('/employee', attendanceRead, ErrorHandler.asyncHandler(async (req, res) => {
+  const { page = 1, limit = 50, startDate, endDate } = req.query;
+  const filter = { userId: req.user._id };
+  if (startDate && endDate) filter.date = { $gte: new Date(startDate), $lte: new Date(endDate) };
+
+  const records = await Attendance.find(filter).sort({ date: -1 }).limit(limit * 1).skip((page - 1) * limit);
+  res.json({ success: true, data: records });
+}));
+
+// Get today's attendance (date-range approach, returns single record)
+router.get('/employee/today', attendanceRead, ErrorHandler.asyncHandler(async (req, res) => {
+  const today    = new Date(); today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  const record   = await Attendance.findOne({ userId: req.user._id, date: { $gte: today, $lt: tomorrow } });
+  res.json({ success: true, data: record });
+}));
+
+// Alternative check-in (hyphenated path, used by some frontend components)
+router.post('/check-in', attendanceWrite, ErrorHandler.asyncHandler(async (req, res) => {
+  const { location, notes, timestamp, verificationMethod, photoUrl, photoHash, biometricData, device } = req.body;
+  const today    = new Date(); today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const existing = await Attendance.findOne({ userId: req.user._id, date: { $gte: today, $lt: tomorrow } });
+  if (existing?.checkIn) return res.status(400).json({ success: false, message: 'Already checked in today' });
+
+  const checkInTime = timestamp ? new Date(timestamp) : new Date();
+  const checkInData = { timestamp: checkInTime, location: { address: location || 'Office', verified: false }, notes: notes || '', verified: false, verificationMethod: verificationMethod || 'manual' };
+  if (verificationMethod === 'photo' && photoUrl)             { checkInData.photoUrl = photoUrl; checkInData.photoHash = photoHash; checkInData.verified = true; }
+  else if (verificationMethod === 'fingerprint' && biometricData) { checkInData.biometricData = { fingerprint: biometricData.fingerprint, quality: biometricData.quality }; checkInData.verified = true; }
+  else if (verificationMethod === 'location' && req.body.location) { checkInData.location = { ...req.body.location, verified: true }; checkInData.verified = true; }
+  if (device) checkInData.device = { type: device.type || 'web', userAgent: device.userAgent || req.headers['user-agent'], ipAddress: req.ip, deviceId: `web_${req.user._id}_${Date.now()}`, browser: device.browser, os: device.os, screenResolution: device.screenResolution };
+
+  if (existing) { existing.checkIn = checkInData; existing.status = 'present'; await existing.save(); }
+  else { await new Attendance({ userId: req.user._id, employeeId: req.user.employeeId || req.user._id.toString(), organizationId: req.user.orgId, date: today, checkIn: checkInData, status: 'present' }).save(); }
+
+  res.json({ success: true, message: 'Checked in successfully', data: { verificationMethod, verified: checkInData.verified, timestamp: checkInTime } });
+}));
+
+// Alternative check-out (hyphenated path)
+router.post('/check-out', attendanceWrite, ErrorHandler.asyncHandler(async (req, res) => {
+  const today    = new Date(); today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  const record   = await Attendance.findOne({ userId: req.user._id, date: { $gte: today, $lt: tomorrow } });
+
+  if (!record?.checkIn) return res.status(400).json({ success: false, message: 'No check-in record found for today' });
+  if (record?.checkOut) return res.status(400).json({ success: false, message: 'Already checked out today' });
+
+  const checkOutTime     = req.body.timestamp ? new Date(req.body.timestamp) : new Date();
+  record.checkOut        = { timestamp: checkOutTime };
+  record.status          = 'present';
+  record.durationMinutes = Math.round((checkOutTime - record.checkIn.timestamp) / 60000);
+  await record.save();
+
+  res.json({ success: true, message: 'Checked out successfully' });
+}));
+
+// Employee weekly stats
+router.get('/employee/stats/weekly', attendanceRead, ErrorHandler.asyncHandler(async (req, res) => {
+  const startOfWeek = new Date(); startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay()); startOfWeek.setHours(0, 0, 0, 0);
+  const records     = await Attendance.find({ userId: req.user._id, date: { $gte: startOfWeek }, checkOut: { $exists: true } });
+  const totalHours  = records.reduce((s, r) => s + (r.durationMinutes || 0), 0) / 60;
+  const daysWorked  = records.length;
+  res.json({ success: true, data: { totalHours: Math.round(totalHours * 100) / 100, daysWorked, averageHours: Math.round((daysWorked > 0 ? totalHours / daysWorked : 0) * 100) / 100 } });
+}));
+
+// Employee monthly stats
+router.get('/employee/stats/monthly', attendanceRead, ErrorHandler.asyncHandler(async (req, res) => {
+  const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const records      = await Attendance.find({ userId: req.user._id, date: { $gte: startOfMonth }, checkOut: { $exists: true } });
+  const totalHours   = records.reduce((s, r) => s + (r.durationMinutes || 0), 0) / 60;
+  const daysWorked   = records.length;
+  res.json({ success: true, data: { totalHours: Math.round(totalHours * 100) / 100, daysWorked, averageHours: Math.round((daysWorked > 0 ? totalHours / daysWorked : 0) * 100) / 100 } });
 }));
 
 module.exports = router;

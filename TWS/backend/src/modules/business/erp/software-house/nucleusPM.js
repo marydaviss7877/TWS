@@ -92,6 +92,64 @@ router.get(
 );
 
 /**
+ * GET /api/nucleus-pm/workspaces/:workspaceId/deliverables/:deliverableId
+ * Get a single deliverable with full approval chain
+ */
+router.get(
+  '/workspaces/:workspaceId/deliverables/:deliverableId',
+  authenticateToken,
+  verifyWorkspaceAccess,
+  paramValidators.workspaceId,
+  paramValidators.deliverableId,
+  ErrorHandler.asyncHandler(async (req, res) => {
+    const { deliverableId } = req.params;
+    const workspaceId = req.workspace._id;
+
+    const deliverable = await Deliverable.findOne({
+      _id: deliverableId,
+      workspaceId: workspaceId
+    })
+      .populate('tasks', 'title status assignee estimatedHours actualHours')
+      .populate('ownerId', 'fullName email');
+
+    if (!deliverable) {
+      return res.status(404).json({
+        success: false,
+        message: 'Deliverable not found or access denied'
+      });
+    }
+
+    const approvals = await Approval.find({
+      deliverable_id: deliverableId,
+      workspaceId: workspaceId
+    }).sort({ step_number: 1 });
+
+    await calculateDeliverableProgress(deliverable._id);
+    const isAtRisk = deliverable.isAtRisk();
+
+    res.json({
+      success: true,
+      data: {
+        ...deliverable.toObject(),
+        approvals: approvals.map(a => ({
+          step_number: a.step_number,
+          approver_type: a.approver_type,
+          approver_id: a.approver_id,
+          status: a.status,
+          signature_timestamp: a.signature_timestamp,
+          rejection_reason: a.rejection_reason,
+          notes: a.notes,
+          can_proceed: a.can_proceed
+        })),
+        isAtRisk,
+        tasks_count: deliverable.tasks.length,
+        completed_tasks_count: deliverable.tasks.filter(t => t.status === 'completed').length
+      }
+    });
+  })
+);
+
+/**
  * POST /api/nucleus-pm/workspaces/:workspaceId/deliverables
  * Create a new deliverable
  */
@@ -555,18 +613,25 @@ router.post(
       const deliverable = await Deliverable.findById(approval.deliverable_id);
       const project = await Project.findById(deliverable.project_id);
       
-      // Notify PM via in-app notification
+      // Notify PM via in-app notification (Project has no ownerId; use ProjectMember owner)
       try {
-        if (project && project.ownerId) {
-          await NotificationService.createNotification({
-            userIds: [project.ownerId],
-            type: 'approval_approved',
-            title: 'Deliverable Approved',
-            message: `All approvals received for deliverable "${deliverable.name}"`,
-            relatedEntityType: 'deliverable',
-            relatedEntityId: deliverable._id,
-            createdBy: req.user._id
+        if (project) {
+          const ownerMember = await ProjectMember.findOne({
+            projectId: project._id,
+            role: 'owner',
+            status: 'active'
           });
+          if (ownerMember) {
+            await NotificationService.createNotification({
+              userIds: [ownerMember.userId],
+              type: 'approval_approved',
+              title: 'Deliverable Approved',
+              message: `All approvals received for deliverable "${deliverable.name}"`,
+              relatedEntityType: 'deliverable',
+              relatedEntityId: deliverable._id,
+              createdBy: req.user._id
+            });
+          }
         }
       } catch (error) {
         console.error('In-app notification failed:', error);
@@ -667,19 +732,26 @@ router.post(
     deliverable.status = 'in_rework';
     await deliverable.save();
 
-    // Send in-app notification to PM
+    // Send in-app notification to PM (Project has no ownerId; use ProjectMember owner)
     try {
       const project = await Project.findById(deliverable.project_id);
-      if (project && project.ownerId) {
-        await NotificationService.createNotification({
-          userIds: [project.ownerId],
-          type: 'approval_rejected',
-          title: 'Approval Rejected',
-          message: `Step ${approval.step_number} approval rejected for deliverable "${deliverable.name}". Reason: ${reason}`,
-          relatedEntityType: 'approval',
-          relatedEntityId: approval._id,
-          createdBy: req.user._id
+      if (project) {
+        const ownerMember = await ProjectMember.findOne({
+          projectId: project._id,
+          role: 'owner',
+          status: 'active'
         });
+        if (ownerMember) {
+          await NotificationService.createNotification({
+            userIds: [ownerMember.userId],
+            type: 'approval_rejected',
+            title: 'Approval Rejected',
+            message: `Step ${approval.step_number} approval rejected for deliverable "${deliverable.name}". Reason: ${reason}`,
+            relatedEntityType: 'approval',
+            relatedEntityId: approval._id,
+            createdBy: req.user._id
+          });
+        }
       }
     } catch (error) {
       console.error('In-app notification failed:', error);
@@ -828,13 +900,14 @@ router.post(
 
     // Send in-app notification to client
     try {
+      const deliverableForNotif = await Deliverable.findById(changeRequest.deliverable_id);
       const clientUser = await User.findOne({ email: changeRequest.submitted_by });
       if (clientUser) {
         await NotificationService.createNotification({
           userIds: [clientUser._id],
           type: 'project_update',
           title: 'Change Request Evaluated',
-          message: `PM has evaluated your change request for deliverable "${deliverable.name}"`,
+          message: `PM has evaluated your change request for deliverable "${deliverableForNotif?.name || 'Deliverable'}"`,
           relatedEntityType: 'change_request',
           relatedEntityId: changeRequest._id,
           createdBy: req.user._id
@@ -855,6 +928,91 @@ router.post(
           effort_days: changeRequest.effort_days,
           cost_impact: changeRequest.cost_impact,
           date_impact_days: changeRequest.date_impact_days
+        }
+      }
+    });
+  })
+);
+
+/**
+ * POST /api/nucleus-pm/workspaces/:workspaceId/change-requests/:changeRequestId/decide
+ * Client decides on an evaluated change request (accept/reject)
+ */
+router.post(
+  '/workspaces/:workspaceId/change-requests/:changeRequestId/decide',
+  authenticateToken,
+  verifyWorkspaceAccess,
+  ErrorHandler.asyncHandler(async (req, res) => {
+    const { changeRequestId } = req.params;
+    const { decision } = req.body;
+    const workspaceId = req.workspace._id;
+
+    if (!decision || !['accept', 'reject'].includes(decision)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid decision is required (accept or reject)'
+      });
+    }
+
+    const changeRequest = await ChangeRequest.findOne({
+      _id: changeRequestId,
+      workspaceId: workspaceId
+    });
+
+    if (!changeRequest) {
+      return res.status(404).json({
+        success: false,
+        message: 'Change request not found or access denied'
+      });
+    }
+
+    if (changeRequest.status !== 'evaluated') {
+      return res.status(400).json({
+        success: false,
+        message: 'Change request must be in evaluated status to decide'
+      });
+    }
+
+    changeRequest.client_decision = decision;
+    changeRequest.decided_at = new Date();
+    changeRequest.status = decision === 'accept' ? 'accepted' : 'rejected';
+    await changeRequest.save();
+
+    // Notify PM
+    try {
+      const deliverableForNotif = await Deliverable.findById(changeRequest.deliverable_id);
+      const project = deliverableForNotif ? await Project.findById(deliverableForNotif.project_id) : null;
+      if (project) {
+        const ownerMember = await ProjectMember.findOne({
+          projectId: project._id,
+          role: 'owner',
+          status: 'active'
+        });
+        if (ownerMember) {
+          await NotificationService.createNotification({
+            userIds: [ownerMember.userId],
+            type: 'project_update',
+            title: `Change Request ${decision === 'accept' ? 'Accepted' : 'Rejected'}`,
+            message: `Client has ${decision}ed the change request for deliverable "${deliverableForNotif?.name || 'Deliverable'}"`,
+            relatedEntityType: 'change_request',
+            relatedEntityId: changeRequest._id,
+            createdBy: req.user._id
+          });
+        }
+      }
+    } catch (error) {
+      console.error('In-app notification failed:', error);
+    }
+
+    res.json({
+      success: true,
+      message: `Change request ${decision}ed successfully`,
+      data: {
+        change_request: {
+          _id: changeRequest._id,
+          status: changeRequest.status,
+          client_decision: changeRequest.client_decision,
+          decided_at: changeRequest.decided_at
         }
       }
     });

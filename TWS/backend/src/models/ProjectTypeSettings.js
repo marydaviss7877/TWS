@@ -20,13 +20,21 @@ const projectTypeSettingsSchema = new mongoose.Schema({
   projectType: {
     type: String,
     enum: [
+      // Standard project types (matches Project.projectType enum)
+      'web_application',
+      'mobile_app',
+      'api_development',
+      'system_integration',
+      'maintenance_support',
+      'consulting',
+      'general',
+      // Software-house specific types
       'app_development',
       'ai_tool_development',
       'low_ticket_client',
       'high_ticket_client',
       'media_buying',
-      'ghl_project',
-      'general'
+      'ghl_project'
     ],
     required: true,
     default: 'general'

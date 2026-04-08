@@ -419,6 +419,97 @@ class EmailService {
     
     return await this.sendEmail(teacher.email, subject, html);
   }
+
+  /**
+   * Invoice overdue notification (FR18) – Finance, PM
+   * Scheduler calls this; can also be used by NotificationService.
+   */
+  async sendOverdueInvoiceNotification(tenant, invoice) {
+    const to = tenant.contactInfo?.email || tenant.contactInfo?.contactEmail;
+    if (!to) {
+      console.warn('Cannot send overdue invoice notification: no tenant contact email');
+      return { success: false, error: 'No tenant email' };
+    }
+    const subject = `Overdue Invoice: ${invoice.invoiceNumber || invoice._id}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #dc2626; padding: 16px; text-align: center;">
+          <h2 style="color: white; margin: 0;">Invoice Overdue</h2>
+        </div>
+        <div style="padding: 24px; background: #f9fafb;">
+          <p style="font-size: 14px; color: #374151;">Invoice <strong>${invoice.invoiceNumber || 'N/A'}</strong> is overdue.</p>
+          <p style="font-size: 14px; color: #6b7280;">Due date: ${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}. Please follow up with the client and update payment status.</p>
+          <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">TWS ERP – ${tenant.name || 'Tenant'}</p>
+        </div>
+      </div>
+    `;
+    return await this.sendEmail(to, subject, html);
+  }
+
+  /**
+   * Usage alert (e.g. 90% of plan limit) – scheduler
+   */
+  async sendUsageAlert(tenant, metric, value, limit) {
+    const to = tenant.contactInfo?.email || tenant.contactInfo?.contactEmail;
+    if (!to) {
+      console.warn('Cannot send usage alert: no tenant contact email');
+      return { success: false, error: 'No tenant email' };
+    }
+    const pct = limit > 0 ? Math.round((value / limit) * 100) : 0;
+    const subject = `Usage alert: ${metric} at ${pct}% of limit`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #f59e0b; padding: 16px; text-align: center;">
+          <h2 style="color: white; margin: 0;">Usage Alert</h2>
+        </div>
+        <div style="padding: 24px; background: #f9fafb;">
+          <p style="font-size: 14px; color: #374151;"><strong>${metric}</strong> is at ${pct}% of your plan limit (${value} / ${limit}).</p>
+          <p style="font-size: 14px; color: #6b7280;">Consider upgrading or reducing usage to avoid hitting the limit.</p>
+          <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">TWS ERP – ${tenant.name || 'Tenant'}</p>
+        </div>
+      </div>
+    `;
+    return await this.sendEmail(to, subject, html);
+  }
+  /**
+   * Employee portal invite email
+   * @param {{ fullName: string, email: string }} invitee
+   * @param {{ inviteLink: string, orgName: string, role: string, inviterName: string }} opts
+   */
+  async sendEmployeeInviteEmail(invitee, opts = {}) {
+    const { inviteLink, orgName = 'your organisation', role = 'employee', inviterName = 'An admin' } = opts;
+    const subject = `You've been invited to join ${orgName} on TWS`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">You're Invited!</h1>
+        </div>
+        <div style="padding: 30px; background: #f9fafb;">
+          <p style="font-size: 16px; color: #374151;">Hi ${invitee.fullName || invitee.email},</p>
+          <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
+            ${inviterName} has invited you to join <strong>${orgName}</strong> as a <strong>${role}</strong> on the TWS ERP portal.
+          </p>
+          <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
+            Click the button below to accept your invitation and set your password. This link expires in <strong>7 days</strong>.
+          </p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${inviteLink}"
+               style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px 36px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">
+              Accept Invitation
+            </a>
+          </div>
+          <p style="font-size: 12px; color: #9ca3af;">
+            Or copy this link into your browser:<br/>
+            <a href="${inviteLink}" style="color: #667eea;">${inviteLink}</a>
+          </p>
+          <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">
+            If you did not expect this invitation, you can safely ignore this email.
+          </p>
+        </div>
+      </div>
+    `;
+    return this.sendEmail(invitee.email, subject, html);
+  }
 }
 
 // Export singleton instance

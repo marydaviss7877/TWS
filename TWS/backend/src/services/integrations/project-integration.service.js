@@ -437,7 +437,7 @@ class ProjectIntegrationService {
     let timeEntries = [];
     try {
       [tasks, sprints, milestones, timeEntries] = await Promise.all([
-        Task.find(query),
+        Task.find(query).populate('assignee', 'name email fullName'),
         Sprint.find(query),
         Milestone.find(query),
         TimeEntry.find(query)
