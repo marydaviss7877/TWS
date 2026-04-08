@@ -487,94 +487,91 @@ app.use((err, req, res, next) => {
 
 // Start server function
 async function startServer() {
-  try {
-    console.log('🚀 Starting server initialization...');
-    
-    // Initialize Cache Service (for Education ERP and general caching)
-    try {
-      const cacheService = require('./services/core/cache.service');
-      await cacheService.initialize();
-      console.log('✅ Cache Service initialized');
-    } catch (error) {
-      console.warn('⚠️ Cache Service initialization failed:', error.message);
-      console.warn('⚠️ Continuing without cache (will use in-memory fallback)');
-    }
-    
-    // Initialize Token Blacklist Service (for token revocation)
-    try {
-      const tokenBlacklistService = require('./services/auth/token-blacklist.service');
-      console.log('✅ Token Blacklist Service initialized');
-    } catch (error) {
-      console.warn('⚠️ Token Blacklist Service initialization failed:', error.message);
-    }
-    
-    // Connect to MongoDB before accepting requests (avoids 503 "Database connection not ready" on login)
-    await connectToMongoDB();
+  console.log('🚀 Starting server initialization...');
 
-    // Start job scheduler (uses node-cron, no Redis required)
-    try {
-      const scheduler = require('./jobs/scheduler');
-      scheduler.start();
-      console.log('✅ Job scheduler started (13 cron jobs active)');
-    } catch (error) {
-      console.warn('⚠️ Job scheduler failed to start:', error.message);
-    }
-
-    // Start background workers (node-cron based, no Redis required)
-    try {
-      require('./workers/notificationWorker');
-      require('./workers/retentionWorker');
-      console.log('✅ Background workers started (notifications, retention)');
-    } catch (error) {
-      console.warn('⚠️ Background workers failed to start:', error.message);
-    }
-
-    // Load routes (these don't require MongoDB connection)
-    await loadRoutes();
-
-    // Load middleware
-    await loadMiddleware();
-    
-    // Register 404 handler AFTER routes are loaded
-    app.use('*', (req, res) => {
-      res.status(404).json({
-        error: 'Not Found',
-        message: `Route ${req.originalUrl} not found`,
-        timestamp: new Date().toISOString()
-      });
-    });
-    
-    // Start HTTP server
-    const PORT = config.get('PORT') || 5000;
-    server.listen(PORT, () => {
-      console.log(`✅ TWS Backend Server running on port ${PORT}`);
-      console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-      console.log(`📊 Metrics: http://localhost:${PORT}/metrics`);
-      console.log(`🌍 Environment: ${config.get('NODE_ENV') || 'development'}`);
-      console.log(`🔴 Redis: ${config.isRedisEnabled() ? 'Enabled' : 'Disabled'}`);
-      console.log(`⚡ BullMQ: ${config.isBullMQEnabled() ? 'Enabled' : 'Disabled'}`);
-      console.log(`🗄️  Cache Service: Initialized`);
-    }).on('error', (error) => {
+  // ── Step 1: bind the port FIRST so Railway healthcheck passes immediately ──
+  // /health is registered at module scope above, so it responds before MongoDB
+  // connects. Railway's 30-second window starts from container launch — we must
+  // be listening before that window expires.
+  const PORT = config.get('PORT') || 5000;
+  await new Promise((resolve, reject) => {
+    server.listen(PORT, resolve).on('error', (error) => {
       if (error.code === 'EADDRINUSE') {
         console.error(`❌ Port ${PORT} is already in use.`);
-        console.error(`💡 To fix this, either:`);
-        console.error(`   1. Stop the process using port ${PORT}:`);
-        console.error(`      Windows: netstat -ano | findstr :${PORT}`);
-        console.error(`      Then: taskkill /PID <PID> /F`);
-        console.error(`   2. Use a different port by setting PORT environment variable`);
-        console.error(`      Example: PORT=5001 npm start`);
-        process.exit(1);
       } else {
-        console.error('❌ Server startup failed:', error);
-        process.exit(1);
+        console.error('❌ server.listen error:', error);
       }
+      reject(error);
     });
-    
-  } catch (error) {
-    console.error('❌ Server startup failed:', error);
-    console.error('Full error details:', error);
-    process.exit(1);
-  }
+  });
+  console.log(`✅ TWS Backend Server running on port ${PORT}`);
+  console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+  console.log(`📊 Metrics: http://localhost:${PORT}/metrics`);
+  console.log(`🌍 Environment: ${config.get('NODE_ENV') || 'development'}`);
+  console.log(`🔴 Redis: ${config.isRedisEnabled() ? 'Enabled' : 'Disabled'}`);
+  console.log(`⚡ BullMQ: ${config.isBullMQEnabled() ? 'Enabled' : 'Disabled'}`);
+
+  // ── Step 2: finish initialization in the background ──────────────────────
+  // Any failure here is logged but does NOT take down the already-listening server.
+  (async () => {
+    try {
+      // Cache service
+      try {
+        const cacheService = require('./services/core/cache.service');
+        await cacheService.initialize();
+        console.log('✅ Cache Service initialized');
+      } catch (e) {
+        console.warn('⚠️ Cache Service initialization failed:', e.message);
+      }
+
+      // Token blacklist
+      try {
+        require('./services/auth/token-blacklist.service');
+        console.log('✅ Token Blacklist Service initialized');
+      } catch (e) {
+        console.warn('⚠️ Token Blacklist Service initialization failed:', e.message);
+      }
+
+      // MongoDB
+      await connectToMongoDB();
+
+      // Job scheduler
+      try {
+        const scheduler = require('./jobs/scheduler');
+        scheduler.start();
+        console.log('✅ Job scheduler started (13 cron jobs active)');
+      } catch (e) {
+        console.warn('⚠️ Job scheduler failed to start:', e.message);
+      }
+
+      // Background workers
+      try {
+        require('./workers/notificationWorker');
+        require('./workers/retentionWorker');
+        console.log('✅ Background workers started (notifications, retention)');
+      } catch (e) {
+        console.warn('⚠️ Background workers failed to start:', e.message);
+      }
+
+      // Routes
+      await loadRoutes();
+      await loadMiddleware();
+
+      // 404 handler — registered after all routes
+      app.use('*', (req, res) => {
+        res.status(404).json({
+          error: 'Not Found',
+          message: `Route ${req.originalUrl} not found`,
+          timestamp: new Date().toISOString()
+        });
+      });
+
+      console.log('🗄️  Cache Service: Initialized');
+      console.log('✅ Server fully initialized');
+    } catch (error) {
+      console.error('❌ Background initialization error:', error.message);
+    }
+  })();
 }
 
 // Handle graceful shutdown
