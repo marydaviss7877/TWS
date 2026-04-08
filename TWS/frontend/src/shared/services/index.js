@@ -21,7 +21,6 @@ export { default as aiInsightsService } from './analytics/ai-insights.service';
 // ============================================================================
 // AUTH SERVICES - Authentication & token management
 // ============================================================================
-export { default as secureTokenService } from './auth/secure-token.service';
 export { default as tokenRefreshService } from './auth/token-refresh.service';
 
 // ============================================================================
@@ -34,11 +33,9 @@ export { default as tenantApiService } from './tenant/tenant-api.service';
 // ============================================================================
 export { default as billingService } from './business/billing.service';
 export { default as formManagementService } from './business/form-management.service';
-export { default as partnerService } from './business/partner.service';
 export { default as resourceService } from './business/resource.service';
 export { default as taskService } from './business/task.service';
 export { default as usageTrackingService } from './business/usage-tracking.service';
-export { default as workspaceService } from './business/workspace.service';
 
 // ============================================================================
 // INDUSTRY SERVICES - Industry-specific APIs
@@ -54,7 +51,6 @@ export const analytics = {
 };
 
 export const auth = {
-  secureTokenService: () => import('./auth/secure-token.service'),
   tokenRefreshService: () => import('./auth/token-refresh.service')
 };
 
@@ -65,11 +61,9 @@ export const tenant = {
 export const business = {
   billingService: () => import('./business/billing.service'),
   formManagementService: () => import('./business/form-management.service'),
-  partnerService: () => import('./business/partner.service'),
   resourceService: () => import('./business/resource.service'),
   taskService: () => import('./business/task.service'),
-  usageTrackingService: () => import('./business/usage-tracking.service'),
-  workspaceService: () => import('./business/workspace.service')
+  usageTrackingService: () => import('./business/usage-tracking.service')
 };
 
 // Re-export industry services
