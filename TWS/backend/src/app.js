@@ -520,18 +520,13 @@ async function startServer() {
       console.warn('⚠️ Job scheduler failed to start:', error.message);
     }
 
-    // Start BullMQ workers (only when Redis is available)
-    if (process.env.REDIS_DISABLED !== 'true') {
-      try {
-        require('./workers/fileProcessor');
-        require('./workers/notificationWorker');
-        require('./workers/retentionWorker');
-        console.log('✅ Background workers started (fileProcessor, notifications, retention)');
-      } catch (error) {
-        console.warn('⚠️ Background workers failed to start:', error.message);
-      }
-    } else {
-      console.log('ℹ️  Background workers skipped (REDIS_DISABLED=true)');
+    // Start background workers (node-cron based, no Redis required)
+    try {
+      require('./workers/notificationWorker');
+      require('./workers/retentionWorker');
+      console.log('✅ Background workers started (notifications, retention)');
+    } catch (error) {
+      console.warn('⚠️ Background workers failed to start:', error.message);
     }
 
     // Load routes (these don't require MongoDB connection)
