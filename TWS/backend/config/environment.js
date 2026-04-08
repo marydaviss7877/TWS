@@ -213,11 +213,13 @@ class BackendConfig {
   }
 
   isRedisEnabled() {
-    return !this.config.REDIS_DISABLED;
+    // Redis/ioredis removed — always disabled
+    return false;
   }
 
   isBullMQEnabled() {
-    return !this.config.BULLMQ_DISABLED;
+    // BullMQ removed — always disabled
+    return false;
   }
 
   isFirebaseEnabled() {
