@@ -300,6 +300,151 @@ const TimeExpenses = () => {
   const totalExpenses = safeExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
   const billableExpenses = safeExpenses.filter(expense => expense.billable).reduce((sum, expense) => sum + (expense.amount || 0), 0);
 
+  const resetTimeForm = () => setTimeFormData({ projectId: '', employeeId: '', date: '', hours: 0, description: '', billable: true, hourlyRate: 0 });
+  const resetExpenseForm = () => setExpenseFormData({ projectId: '', employeeId: '', date: '', category: '', amount: 0, description: '', receipt: null, billable: true });
+
+  // ── Full-page Time Entry Form ─────────────────────────────────────────────
+  if (showTimeForm) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="glass-card-premium">
+          <div className="px-6 py-5 sm:px-8 flex items-center gap-4">
+            <button type="button" onClick={() => { setShowTimeForm(false); setEditingEntry(null); resetTimeForm(); }} className="glass-button p-2 rounded-xl hover-scale" title="Back">←</button>
+            <div>
+              <h1 className="text-xl xl:text-2xl font-bold font-heading text-gray-900 dark:text-white">{editingEntry ? 'Edit Time Entry' : 'Log Time Entry'}</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Track time spent on projects for accurate billing</p>
+            </div>
+          </div>
+        </div>
+        <form onSubmit={handleTimeSubmit} className="space-y-6">
+          <div className="glass-card-premium p-6">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200/50 dark:border-gray-700/50">Time Entry Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Project *</label>
+                <select value={timeFormData.projectId} onChange={(e) => setTimeFormData({...timeFormData, projectId: e.target.value})} className="glass-input w-full" required>
+                  <option value="">Select Project</option>
+                  {projects.map(project => <option key={project._id} value={project._id}>{project.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Employee *</label>
+                <select value={timeFormData.employeeId} onChange={(e) => { const emp = employees.find(e2 => e2._id === e.target.value); setTimeFormData({...timeFormData, employeeId: e.target.value, hourlyRate: emp?.hourlyRate || 0}); }} className="glass-input w-full" required>
+                  <option value="">Select Employee</option>
+                  {employees.map(employee => <option key={employee._id} value={employee._id}>{employee.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Date *</label>
+                <input type="date" value={timeFormData.date} onChange={(e) => setTimeFormData({...timeFormData, date: e.target.value})} className="glass-input w-full" required />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Hours *</label>
+                <input type="number" value={timeFormData.hours} onChange={(e) => setTimeFormData({...timeFormData, hours: parseFloat(e.target.value) || 0})} className="glass-input w-full" min="0" step="0.25" required />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Hourly Rate</label>
+                <input type="number" value={timeFormData.hourlyRate} onChange={(e) => setTimeFormData({...timeFormData, hourlyRate: parseFloat(e.target.value) || 0})} className="glass-input w-full" min="0" step="0.01" />
+              </div>
+              <div className="flex items-center pt-7">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={timeFormData.billable} onChange={(e) => setTimeFormData({...timeFormData, billable: e.target.checked})} className="h-4 w-4 text-primary-600 border-gray-300 rounded" />
+                  <span className="text-sm text-gray-900 dark:text-gray-100">Billable</span>
+                </label>
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Description *</label>
+              <textarea value={timeFormData.description} onChange={(e) => setTimeFormData({...timeFormData, description: e.target.value})} className="glass-input w-full" rows="4" required placeholder="Describe the work performed..." />
+            </div>
+          </div>
+          <div className="glass-card-premium p-6 flex justify-end gap-3">
+            <button type="button" onClick={() => { setShowTimeForm(false); setEditingEntry(null); resetTimeForm(); }} className="glass-button px-5 py-2.5 rounded-xl hover-scale">Cancel</button>
+            <button type="submit" className="glass-button px-5 py-2.5 rounded-xl hover-scale bg-gradient-to-r from-primary-500 to-accent-500 text-white font-medium">{editingEntry ? 'Update' : 'Log'} Time Entry</button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  // ── Full-page Expense Form ────────────────────────────────────────────────
+  if (showExpenseForm) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="glass-card-premium">
+          <div className="px-6 py-5 sm:px-8 flex items-center gap-4">
+            <button type="button" onClick={() => { setShowExpenseForm(false); setEditingExpense(null); resetExpenseForm(); }} className="glass-button p-2 rounded-xl hover-scale" title="Back">←</button>
+            <div>
+              <h1 className="text-xl xl:text-2xl font-bold font-heading text-gray-900 dark:text-white">{editingExpense ? 'Edit Expense' : 'Add Expense'}</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Record project expenses for accurate cost tracking</p>
+            </div>
+          </div>
+        </div>
+        <form onSubmit={handleExpenseSubmit} className="space-y-6">
+          <div className="glass-card-premium p-6">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200/50 dark:border-gray-700/50">Expense Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Project *</label>
+                <select value={expenseFormData.projectId} onChange={(e) => setExpenseFormData({...expenseFormData, projectId: e.target.value})} className="glass-input w-full" required>
+                  <option value="">Select Project</option>
+                  {projects.map(project => <option key={project._id} value={project._id}>{project.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Employee *</label>
+                <select value={expenseFormData.employeeId} onChange={(e) => setExpenseFormData({...expenseFormData, employeeId: e.target.value})} className="glass-input w-full" required>
+                  <option value="">Select Employee</option>
+                  {employees.map(employee => <option key={employee._id} value={employee._id}>{employee.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Date *</label>
+                <input type="date" value={expenseFormData.date} onChange={(e) => setExpenseFormData({...expenseFormData, date: e.target.value})} className="glass-input w-full" required />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Category *</label>
+                <select value={expenseFormData.category} onChange={(e) => setExpenseFormData({...expenseFormData, category: e.target.value})} className="glass-input w-full" required>
+                  <option value="">Select Category</option>
+                  <option value="Travel">Travel</option>
+                  <option value="Software">Software</option>
+                  <option value="Office">Office</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Equipment">Equipment</option>
+                  <option value="Cloud">Cloud Services</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Amount *</label>
+                <input type="number" value={expenseFormData.amount} onChange={(e) => setExpenseFormData({...expenseFormData, amount: parseFloat(e.target.value) || 0})} className="glass-input w-full" min="0" step="0.01" required />
+              </div>
+              <div className="flex items-center pt-7">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={expenseFormData.billable} onChange={(e) => setExpenseFormData({...expenseFormData, billable: e.target.checked})} className="h-4 w-4 text-primary-600 border-gray-300 rounded" />
+                  <span className="text-sm text-gray-900 dark:text-gray-100">Billable</span>
+                </label>
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Description *</label>
+              <textarea value={expenseFormData.description} onChange={(e) => setExpenseFormData({...expenseFormData, description: e.target.value})} className="glass-input w-full" rows="4" required placeholder="Describe the expense..." />
+            </div>
+            <div className="mt-4">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Receipt</label>
+              <input type="file" onChange={(e) => setExpenseFormData({...expenseFormData, receipt: e.target.files[0]})} className="glass-input w-full" accept=".pdf,.jpg,.jpeg,.png" />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Upload receipt (PDF, JPG, PNG)</p>
+            </div>
+          </div>
+          <div className="glass-card-premium p-6 flex justify-end gap-3">
+            <button type="button" onClick={() => { setShowExpenseForm(false); setEditingExpense(null); resetExpenseForm(); }} className="glass-button px-5 py-2.5 rounded-xl hover-scale">Cancel</button>
+            <button type="submit" className="glass-button px-5 py-2.5 rounded-xl hover-scale bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium">{editingExpense ? 'Update' : 'Add'} Expense</button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       {/* Header */}
@@ -693,284 +838,6 @@ const TimeExpenses = () => {
       </div>
 
       {/* Time Entry Form Modal */}
-      {showTimeForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-card-premium w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
-              <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white">
-                {editingEntry ? 'Edit Time Entry' : 'Log Time Entry'}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Track time spent on projects for accurate billing
-              </p>
-            </div>
-            <form onSubmit={handleTimeSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Project *</label>
-                  <select
-                    value={timeFormData.projectId}
-                    onChange={(e) => setTimeFormData({...timeFormData, projectId: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  >
-                    <option value="">Select Project</option>
-                    {projects.map(project => (
-                      <option key={project._id} value={project._id}>{project.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Employee *</label>
-                  <select
-                    value={timeFormData.employeeId}
-                    onChange={(e) => {
-                      const selectedEmployee = employees.find(emp => emp._id === e.target.value);
-                      setTimeFormData({
-                        ...timeFormData, 
-                        employeeId: e.target.value,
-                        hourlyRate: selectedEmployee?.hourlyRate || 0
-                      });
-                    }}
-                    className="glass-input w-full"
-                    required
-                  >
-                    <option value="">Select Employee</option>
-                    {employees.map(employee => (
-                      <option key={employee._id} value={employee._id}>{employee.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Date *</label>
-                  <input
-                    type="date"
-                    value={timeFormData.date}
-                    onChange={(e) => setTimeFormData({...timeFormData, date: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Hours *</label>
-                  <input
-                    type="number"
-                    value={timeFormData.hours}
-                    onChange={(e) => setTimeFormData({...timeFormData, hours: parseFloat(e.target.value) || 0})}
-                    className="glass-input w-full"
-                    min="0"
-                    step="0.25"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Hourly Rate</label>
-                  <input
-                    type="number"
-                    value={timeFormData.hourlyRate}
-                    onChange={(e) => setTimeFormData({...timeFormData, hourlyRate: parseFloat(e.target.value) || 0})}
-                    className="glass-input w-full"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div className="flex items-center pt-8">
-                  <input
-                    type="checkbox"
-                    checked={timeFormData.billable}
-                    onChange={(e) => setTimeFormData({...timeFormData, billable: e.target.checked})}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label className="ml-2 block text-sm text-gray-900 dark:text-gray-100">Billable</label>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Description *</label>
-                <textarea
-                  value={timeFormData.description}
-                  onChange={(e) => setTimeFormData({...timeFormData, description: e.target.value})}
-                  className="glass-input w-full"
-                  rows="3"
-                  required
-                  placeholder="Describe the work performed..."
-                />
-              </div>
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowTimeForm(false);
-                    setEditingEntry(null);
-                    setTimeFormData({
-                      projectId: '',
-                      employeeId: '',
-                      date: '',
-                      hours: 0,
-                      description: '',
-                      billable: true,
-                      hourlyRate: 0
-                    });
-                  }}
-                  className="glass-button px-4 py-2 rounded-xl hover-scale"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="glass-button px-4 py-2 rounded-xl hover-scale bg-gradient-to-r from-primary-500 to-accent-500 text-white"
-                >
-                  {editingEntry ? 'Update' : 'Log'} Time Entry
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Expense Form Modal */}
-      {showExpenseForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-card-premium w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
-              <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white">
-                {editingExpense ? 'Edit Expense' : 'Add Expense'}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Record project expenses for accurate cost tracking
-              </p>
-            </div>
-            <form onSubmit={handleExpenseSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Project *</label>
-                  <select
-                    value={expenseFormData.projectId}
-                    onChange={(e) => setExpenseFormData({...expenseFormData, projectId: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  >
-                    <option value="">Select Project</option>
-                    {projects.map(project => (
-                      <option key={project._id} value={project._id}>{project.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Employee *</label>
-                  <select
-                    value={expenseFormData.employeeId}
-                    onChange={(e) => setExpenseFormData({...expenseFormData, employeeId: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  >
-                    <option value="">Select Employee</option>
-                    {employees.map(employee => (
-                      <option key={employee._id} value={employee._id}>{employee.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Date *</label>
-                  <input
-                    type="date"
-                    value={expenseFormData.date}
-                    onChange={(e) => setExpenseFormData({...expenseFormData, date: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Category *</label>
-                  <select
-                    value={expenseFormData.category}
-                    onChange={(e) => setExpenseFormData({...expenseFormData, category: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  >
-                    <option value="">Select Category</option>
-                    <option value="Travel">Travel</option>
-                    <option value="Software">Software</option>
-                    <option value="Office">Office</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Equipment">Equipment</option>
-                    <option value="Cloud">Cloud Services</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Amount *</label>
-                  <input
-                    type="number"
-                    value={expenseFormData.amount}
-                    onChange={(e) => setExpenseFormData({...expenseFormData, amount: parseFloat(e.target.value) || 0})}
-                    className="glass-input w-full"
-                    min="0"
-                    step="0.01"
-                    required
-                  />
-                </div>
-                <div className="flex items-center pt-8">
-                  <input
-                    type="checkbox"
-                    checked={expenseFormData.billable}
-                    onChange={(e) => setExpenseFormData({...expenseFormData, billable: e.target.checked})}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label className="ml-2 block text-sm text-gray-900 dark:text-gray-100">Billable</label>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Description *</label>
-                <textarea
-                  value={expenseFormData.description}
-                  onChange={(e) => setExpenseFormData({...expenseFormData, description: e.target.value})}
-                  className="glass-input w-full"
-                  rows="3"
-                  required
-                  placeholder="Describe the expense..."
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Receipt</label>
-                <input
-                  type="file"
-                  onChange={(e) => setExpenseFormData({...expenseFormData, receipt: e.target.files[0]})}
-                  className="glass-input w-full"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Upload receipt (PDF, JPG, PNG)</p>
-              </div>
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowExpenseForm(false);
-                    setEditingExpense(null);
-                    setExpenseFormData({
-                      projectId: '',
-                      employeeId: '',
-                      date: '',
-                      category: '',
-                      amount: 0,
-                      description: '',
-                      receipt: null,
-                      billable: true
-                    });
-                  }}
-                  className="glass-button px-4 py-2 rounded-xl hover-scale"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="glass-button px-4 py-2 rounded-xl hover-scale bg-gradient-to-r from-green-500 to-emerald-600 text-white"
-                >
-                  {editingExpense ? 'Update' : 'Add'} Expense
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
       )}
     </div>
   );

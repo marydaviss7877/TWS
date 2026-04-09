@@ -698,6 +698,104 @@ const AccountsPayable = () => {
     );
   }
 
+  // ── Full-page Vendor Form ─────────────────────────────────────────────────
+  if (showVendorForm) {
+    const resetVendor = () => setVendorFormData({ name: '', email: '', phone: '', address: '', paymentTerms: '30', taxId: '', vendorType: 'cloud_services', industry: 'Technology', contactPerson: '', creditLimit: 0, preferredPaymentMethod: 'bank_transfer' });
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="glass-card-premium">
+          <div className="px-6 py-5 sm:px-8 flex items-center gap-4">
+            <button type="button" onClick={() => { setShowVendorForm(false); resetVendor(); }} className="glass-button p-2 rounded-xl hover-scale" title="Back to Bills">←</button>
+            <div>
+              <h1 className="text-xl xl:text-2xl font-bold font-heading text-gray-900 dark:text-white">Add New Vendor</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Comprehensive vendor management for software houses</p>
+            </div>
+          </div>
+        </div>
+        <form onSubmit={handleVendorSubmit} className="space-y-6">
+          <div className="glass-card-premium p-6">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200/50 dark:border-gray-700/50">Vendor Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Vendor Name *</label>
+                <input type="text" value={vendorFormData.name} onChange={(e) => setVendorFormData({...vendorFormData, name: e.target.value})} className="glass-input w-full" required />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Email *</label>
+                <input type="email" value={vendorFormData.email} onChange={(e) => setVendorFormData({...vendorFormData, email: e.target.value})} className="glass-input w-full" required />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Phone</label>
+                <input type="tel" value={vendorFormData.phone} onChange={(e) => setVendorFormData({...vendorFormData, phone: e.target.value})} className="glass-input w-full" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Contact Person</label>
+                <input type="text" value={vendorFormData.contactPerson} onChange={(e) => setVendorFormData({...vendorFormData, contactPerson: e.target.value})} className="glass-input w-full" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Vendor Type *</label>
+                <select value={vendorFormData.vendorType} onChange={(e) => setVendorFormData({...vendorFormData, vendorType: e.target.value})} className="glass-input w-full" required>
+                  <option value="cloud_services">Cloud Services</option>
+                  <option value="software_licenses">Software Licenses</option>
+                  <option value="contractor_services">Contractor Services</option>
+                  <option value="office_expenses">Office Expenses</option>
+                  <option value="marketing_expenses">Marketing Expenses</option>
+                  <option value="technology">Technology</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Industry</label>
+                <select value={vendorFormData.industry} onChange={(e) => setVendorFormData({...vendorFormData, industry: e.target.value})} className="glass-input w-full">
+                  <option value="Technology">Technology</option>
+                  <option value="Cloud Computing">Cloud Computing</option>
+                  <option value="Software Development">Software Development</option>
+                  <option value="Real Estate">Real Estate</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Payment Terms</label>
+                <select value={vendorFormData.paymentTerms} onChange={(e) => setVendorFormData({...vendorFormData, paymentTerms: e.target.value})} className="glass-input w-full">
+                  <option value="15">15 days</option>
+                  <option value="30">30 days</option>
+                  <option value="45">45 days</option>
+                  <option value="60">60 days</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Preferred Payment Method</label>
+                <select value={vendorFormData.preferredPaymentMethod} onChange={(e) => setVendorFormData({...vendorFormData, preferredPaymentMethod: e.target.value})} className="glass-input w-full">
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="credit_card">Credit Card</option>
+                  <option value="check">Check</option>
+                  <option value="paypal">PayPal</option>
+                  <option value="stripe">Stripe</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Tax ID</label>
+                <input type="text" value={vendorFormData.taxId} onChange={(e) => setVendorFormData({...vendorFormData, taxId: e.target.value})} className="glass-input w-full" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Credit Limit</label>
+                <input type="number" value={vendorFormData.creditLimit} onChange={(e) => setVendorFormData({...vendorFormData, creditLimit: parseFloat(e.target.value) || 0})} className="glass-input w-full" min="0" step="1000" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Address</label>
+              <textarea value={vendorFormData.address} onChange={(e) => setVendorFormData({...vendorFormData, address: e.target.value})} className="glass-input w-full" rows="3" placeholder="Vendor address..." />
+            </div>
+          </div>
+          <div className="glass-card-premium p-6 flex justify-end gap-3">
+            <button type="button" onClick={() => { setShowVendorForm(false); resetVendor(); }} className="glass-button px-5 py-2.5 rounded-xl hover-scale">Cancel</button>
+            <button type="submit" className="glass-button px-5 py-2.5 rounded-xl hover-scale bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium">Add Vendor</button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   const statsData = [
     { label: 'Total Payable', value: formatCurrency(stats.total), icon: ArrowTrendingDownIcon, iconBg: 'bg-gradient-to-br from-red-500 to-pink-600' },
     { label: 'Paid', value: formatCurrency(stats.paid), icon: CheckCircleIcon, iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600' },
@@ -1177,179 +1275,6 @@ const AccountsPayable = () => {
         </div>
       )}
 
-      {/* Vendor Form Modal */}
-      {showVendorForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-card-premium w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
-              <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white">Add New Vendor</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Comprehensive vendor management for software houses
-              </p>
-            </div>
-            <form onSubmit={handleVendorSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Vendor Name *</label>
-                  <input
-                    type="text"
-                    value={vendorFormData.name}
-                    onChange={(e) => setVendorFormData({...vendorFormData, name: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Email *</label>
-                  <input
-                    type="email"
-                    value={vendorFormData.email}
-                    onChange={(e) => setVendorFormData({...vendorFormData, email: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Phone</label>
-                  <input
-                    type="tel"
-                    value={vendorFormData.phone}
-                    onChange={(e) => setVendorFormData({...vendorFormData, phone: e.target.value})}
-                    className="glass-input w-full"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Contact Person</label>
-                  <input
-                    type="text"
-                    value={vendorFormData.contactPerson}
-                    onChange={(e) => setVendorFormData({...vendorFormData, contactPerson: e.target.value})}
-                    className="glass-input w-full"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Vendor Type *</label>
-                  <select
-                    value={vendorFormData.vendorType}
-                    onChange={(e) => setVendorFormData({...vendorFormData, vendorType: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  >
-                    <option value="cloud_services">Cloud Services</option>
-                    <option value="software_licenses">Software Licenses</option>
-                    <option value="contractor_services">Contractor Services</option>
-                    <option value="office_expenses">Office Expenses</option>
-                    <option value="marketing_expenses">Marketing Expenses</option>
-                    <option value="technology">Technology</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Industry</label>
-                  <select
-                    value={vendorFormData.industry}
-                    onChange={(e) => setVendorFormData({...vendorFormData, industry: e.target.value})}
-                    className="glass-input w-full"
-                  >
-                    <option value="Technology">Technology</option>
-                    <option value="Cloud Computing">Cloud Computing</option>
-                    <option value="Software Development">Software Development</option>
-                    <option value="Real Estate">Real Estate</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Payment Terms (days)</label>
-                  <select
-                    value={vendorFormData.paymentTerms}
-                    onChange={(e) => setVendorFormData({...vendorFormData, paymentTerms: e.target.value})}
-                    className="glass-input w-full"
-                  >
-                    <option value="15">15 days</option>
-                    <option value="30">30 days</option>
-                    <option value="45">45 days</option>
-                    <option value="60">60 days</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Credit Limit</label>
-                  <input
-                    type="number"
-                    value={vendorFormData.creditLimit}
-                    onChange={(e) => setVendorFormData({...vendorFormData, creditLimit: parseFloat(e.target.value) || 0})}
-                    className="glass-input w-full"
-                    min="0"
-                    step="1000"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Preferred Payment Method</label>
-                  <select
-                    value={vendorFormData.preferredPaymentMethod}
-                    onChange={(e) => setVendorFormData({...vendorFormData, preferredPaymentMethod: e.target.value})}
-                    className="glass-input w-full"
-                  >
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="credit_card">Credit Card</option>
-                    <option value="check">Check</option>
-                    <option value="paypal">PayPal</option>
-                    <option value="stripe">Stripe</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Tax ID</label>
-                  <input
-                    type="text"
-                    value={vendorFormData.taxId}
-                    onChange={(e) => setVendorFormData({...vendorFormData, taxId: e.target.value})}
-                    className="glass-input w-full"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Address</label>
-                <textarea
-                  value={vendorFormData.address}
-                  onChange={(e) => setVendorFormData({...vendorFormData, address: e.target.value})}
-                  className="glass-input w-full"
-                  rows="3"
-                  placeholder="Vendor address..."
-                />
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowVendorForm(false);
-                    setVendorFormData({
-                      name: '',
-                      email: '',
-                      phone: '',
-                      address: '',
-                      paymentTerms: '30',
-                      taxId: '',
-                      vendorType: 'cloud_services',
-                      industry: 'Technology',
-                      contactPerson: '',
-                      creditLimit: 0,
-                      preferredPaymentMethod: 'bank_transfer'
-                    });
-                  }}
-                  className="glass-button px-4 py-2 rounded-xl hover-scale"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="glass-button px-4 py-2 rounded-xl hover-scale bg-gradient-to-r from-green-500 to-emerald-600 text-white"
-                >
-                  Add Vendor
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
