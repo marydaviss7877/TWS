@@ -45,7 +45,6 @@ import EmployeePortal from './software-house/employee-portal/EmployeePortal';
 import FinanceOverview from './finance/FinanceOverview';
 import AccountsPayable from './finance/AccountsPayable';
 import AccountsReceivable from './finance/AccountsReceivable';
-import BankingManagement from './finance/BankingManagement';
 import ChartOfAccounts from './finance/ChartOfAccounts';
 import BillingEngine from './finance/BillingEngine';
 import ProjectCosting from './finance/ProjectCosting';
@@ -233,11 +232,9 @@ const TenantOrg = () => {
           <Route path="finance/chart-of-accounts" element={<ChartOfAccounts />} />
           <Route path="finance/accounts-payable" element={<AccountsPayable />} />
           <Route path="finance/accounts-receivable" element={<AccountsReceivable />} />
-          <Route path="finance/invoices" element={<AccountsReceivable />} />
           <Route path="finance/budgeting" element={<FinanceBudgeting />} />
           <Route path="finance/time-expenses" element={<TimeExpenses />} />
           <Route path="finance/reporting" element={<Reporting />} />
-          <Route path="finance/banking" element={<BankingManagement />} />
           <Route path="finance/billing-engine" element={<BillingEngine />} />
           <Route path="finance/project-costing" element={<ProjectCosting />} />
           <Route path="finance/cash-flow" element={<CashFlow />} />

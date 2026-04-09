@@ -93,11 +93,6 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
           path: `/${tenantSlug}/org/finance/accounts-receivable`
         },
         {
-          key: 'finance-invoices',
-          label: 'Invoices',
-          path: `/${tenantSlug}/org/finance/invoices`
-        },
-        {
           key: 'finance-budgeting',
           label: 'Budgeting',
           path: `/${tenantSlug}/org/finance/budgeting`
