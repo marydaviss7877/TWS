@@ -488,6 +488,216 @@ const AccountsPayable = () => {
   const totals = calculateTotals();
   const filteredBills = getFilteredBills();
 
+  // ── Full-page Bill Form ───────────────────────────────────────────────────
+  if (showForm) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        {/* Page Header */}
+        <div className="glass-card-premium">
+          <div className="px-6 py-5 sm:px-8 flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => { setShowForm(false); setEditingBill(null); resetForm(); }}
+              className="glass-button p-2 rounded-xl hover-scale"
+              title="Back to Bills"
+            >
+              ←
+            </button>
+            <div>
+              <h1 className="text-xl xl:text-2xl font-bold font-heading text-gray-900 dark:text-white">
+                {editingBill ? 'Edit Bill' : 'New Bill'}
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                Software house expense management with Chart of Accounts integration
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <div className="glass-card-premium p-6">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200/50 dark:border-gray-700/50">Bill Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Bill Number *</label>
+                <input type="text" value={formData.billNumber} onChange={(e) => setFormData({...formData, billNumber: e.target.value})} className="glass-input w-full" placeholder="BILL-2024-XXX" required />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Vendor *</label>
+                <select value={formData.vendorId} onChange={(e) => setFormData({...formData, vendorId: e.target.value})} className="glass-input w-full" required>
+                  <option value="">Select Vendor</option>
+                  {vendors.map(vendor => <option key={vendor._id} value={vendor._id}>{vendor.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Project</label>
+                <select value={formData.projectId} onChange={(e) => setFormData({...formData, projectId: e.target.value})} className="glass-input w-full">
+                  <option value="">Select Project</option>
+                  {projects.map(project => <option key={project._id} value={project._id}>{project.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Expense Category *</label>
+                <select value={formData.expenseCategory} onChange={(e) => setFormData({...formData, expenseCategory: e.target.value})} className="glass-input w-full" required>
+                  <option value="cloud_services">Cloud Services</option>
+                  <option value="software_licenses">Software Licenses</option>
+                  <option value="contractor_services">Contractor Services</option>
+                  <option value="office_expenses">Office Expenses</option>
+                  <option value="marketing_expenses">Marketing Expenses</option>
+                  <option value="technology">Technology</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Issue Date *</label>
+                <input type="date" value={formData.issueDate} onChange={(e) => setFormData({...formData, issueDate: e.target.value})} className="glass-input w-full" required />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Due Date *</label>
+                <input type="date" value={formData.dueDate} onChange={(e) => setFormData({...formData, dueDate: e.target.value})} className="glass-input w-full" required />
+              </div>
+            </div>
+          </div>
+
+          {/* Chart of Accounts */}
+          <div className="glass-card-premium p-6">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200/50 dark:border-gray-700/50">Chart of Accounts</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Expense Account *</label>
+                <select value={formData.expenseAccount} onChange={(e) => setFormData({...formData, expenseAccount: e.target.value})} className="glass-input w-full" required>
+                  {accounts.filter(acc => acc.type === 'expense').map(account => (
+                    <option key={account.code} value={account.code}>{account.code} - {account.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Cost Center</label>
+                <select value={formData.costCenter} onChange={(e) => setFormData({...formData, costCenter: e.target.value})} className="glass-input w-full">
+                  <option value="Development">Development</option>
+                  <option value="Management">Management</option>
+                  <option value="Sales">Sales</option>
+                  <option value="HR">HR</option>
+                  <option value="IT">IT</option>
+                  <option value="Administration">Administration</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Payment Terms</label>
+                <select value={formData.paymentTerms} onChange={(e) => setFormData({...formData, paymentTerms: e.target.value})} className="glass-input w-full">
+                  <option value="15">15 days</option>
+                  <option value="30">30 days</option>
+                  <option value="45">45 days</option>
+                  <option value="60">60 days</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Expense Items */}
+          <div className="glass-card-premium p-6">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200/50 dark:border-gray-700/50">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">Expense Items</h3>
+              <button type="button" onClick={addExpenseItem} className="glass-button px-3 py-2 rounded-xl hover-scale flex items-center gap-2 text-sm">
+                <PlusIcon className="h-4 w-4" /> Add Item
+              </button>
+            </div>
+            <div className="space-y-3">
+              {formData.expenseItems.map((item, index) => (
+                <div key={index} className="glass-card p-4 rounded-xl">
+                  <div className="grid grid-cols-12 gap-3 items-end">
+                    <div className="col-span-3">
+                      <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 block">Type</label>
+                      <select value={item.type} onChange={(e) => updateExpenseItem(index, 'type', e.target.value)} className="glass-input w-full text-sm">
+                        <option value="cloud_compute">Cloud Compute</option>
+                        <option value="cloud_storage">Cloud Storage</option>
+                        <option value="cloud_database">Cloud Database</option>
+                        <option value="software_license">Software License</option>
+                        <option value="contractor_work">Contractor Work</option>
+                        <option value="office_rent">Office Rent</option>
+                        <option value="utilities">Utilities</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="hardware">Hardware</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div className="col-span-6">
+                      <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 block">Description *</label>
+                      <input type="text" value={item.description} onChange={(e) => updateExpenseItem(index, 'description', e.target.value)} className="glass-input w-full text-sm" placeholder="e.g., EC2 Instances - Production" required />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 block">Amount *</label>
+                      <input type="number" value={item.amount} onChange={(e) => updateExpenseItem(index, 'amount', parseFloat(e.target.value) || 0)} className="glass-input w-full text-sm" min="0" step="0.01" required />
+                    </div>
+                    <div className="col-span-1">
+                      <button type="button" onClick={() => removeExpenseItem(index)} className="w-full p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" disabled={formData.expenseItems.length === 1}>
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Settings & Notes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="glass-card-premium p-6">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200/50 dark:border-gray-700/50">Settings</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Tax Rate (%)</label>
+                  <input type="number" value={formData.taxRate} onChange={(e) => setFormData({...formData, taxRate: parseFloat(e.target.value) || 0})} className="glass-input w-full" min="0" max="100" step="0.01" />
+                </div>
+                <div className="space-y-3 pt-2">
+                  {[['projectSpecific','Project Specific'],['requiresApproval','Requires Approval'],['recurring','Recurring Bill']].map(([key, label]) => (
+                    <label key={key} className="flex items-center gap-3 cursor-pointer">
+                      <input type="checkbox" checked={formData[key]} onChange={(e) => setFormData({...formData, [key]: e.target.checked})} className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" />
+                      <span className="text-sm text-gray-900 dark:text-gray-100">{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-card-premium p-6">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200/50 dark:border-gray-700/50">Notes</h3>
+              <textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="glass-input w-full h-32" placeholder="Additional notes or payment terms..." />
+            </div>
+          </div>
+
+          {/* Totals + Actions */}
+          <div className="glass-card-premium p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+              <div className="w-full sm:w-64 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(formData.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Tax ({formData.taxRate}%):</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(formData.subtotal * (formData.taxRate / 100))}</span>
+                </div>
+                <div className="flex justify-between border-t border-gray-200/50 dark:border-gray-700/50 pt-2">
+                  <span className="text-base font-semibold text-gray-900 dark:text-white">Total:</span>
+                  <span className="text-base font-semibold text-gray-900 dark:text-white">{formatCurrency(formData.subtotal + formData.subtotal * (formData.taxRate / 100))}</span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => { setShowForm(false); setEditingBill(null); resetForm(); }} className="glass-button px-5 py-2.5 rounded-xl hover-scale">
+                  Cancel
+                </button>
+                <button type="submit" className="glass-button px-5 py-2.5 rounded-xl hover-scale bg-gradient-to-r from-primary-500 to-accent-500 text-white font-medium">
+                  {editingBill ? 'Update Bill' : 'Create Bill'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   const statsData = [
     { label: 'Total Payable', value: formatCurrency(stats.total), icon: ArrowTrendingDownIcon, iconBg: 'bg-gradient-to-br from-red-500 to-pink-600' },
     { label: 'Paid', value: formatCurrency(stats.paid), icon: CheckCircleIcon, iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600' },
@@ -824,316 +1034,6 @@ const AccountsPayable = () => {
         </div>
       </div>
 
-      {/* Bill Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="glass-card-premium w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
-              <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white">
-                {editingBill ? 'Edit Bill' : 'Create New Bill'}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Software house expense management with Chart of Accounts integration
-              </p>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Bill Number *</label>
-                  <input
-                    type="text"
-                    value={formData.billNumber}
-                    onChange={(e) => setFormData({...formData, billNumber: e.target.value})}
-                    className="glass-input w-full"
-                    placeholder="BILL-2024-XXX"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Vendor *</label>
-                  <select
-                    value={formData.vendorId}
-                    onChange={(e) => setFormData({...formData, vendorId: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  >
-                    <option value="">Select Vendor</option>
-                    {vendors.map(vendor => (
-                      <option key={vendor._id} value={vendor._id}>{vendor.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Project</label>
-                  <select
-                    value={formData.projectId}
-                    onChange={(e) => setFormData({...formData, projectId: e.target.value})}
-                    className="glass-input w-full"
-                  >
-                    <option value="">Select Project</option>
-                    {projects.map(project => (
-                      <option key={project._id} value={project._id}>{project.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Expense Category *</label>
-                  <select
-                    value={formData.expenseCategory}
-                    onChange={(e) => setFormData({...formData, expenseCategory: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  >
-                    <option value="cloud_services">Cloud Services</option>
-                    <option value="software_licenses">Software Licenses</option>
-                    <option value="contractor_services">Contractor Services</option>
-                    <option value="office_expenses">Office Expenses</option>
-                    <option value="marketing_expenses">Marketing Expenses</option>
-                    <option value="technology">Technology</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Issue Date *</label>
-                  <input
-                    type="date"
-                    value={formData.issueDate}
-                    onChange={(e) => setFormData({...formData, issueDate: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Due Date *</label>
-                  <input
-                    type="date"
-                    value={formData.dueDate}
-                    onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Chart of Accounts Integration */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Expense Account *</label>
-                  <select
-                    value={formData.expenseAccount}
-                    onChange={(e) => setFormData({...formData, expenseAccount: e.target.value})}
-                    className="glass-input w-full"
-                    required
-                  >
-                    {accounts.filter(acc => acc.type === 'expense').map(account => (
-                      <option key={account.code} value={account.code}>{account.code} - {account.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Cost Center</label>
-                  <select
-                    value={formData.costCenter}
-                    onChange={(e) => setFormData({...formData, costCenter: e.target.value})}
-                    className="glass-input w-full"
-                  >
-                    <option value="Development">Development</option>
-                    <option value="Management">Management</option>
-                    <option value="Sales">Sales</option>
-                    <option value="HR">HR</option>
-                    <option value="IT">IT</option>
-                    <option value="Administration">Administration</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Payment Terms</label>
-                  <select
-                    value={formData.paymentTerms}
-                    onChange={(e) => setFormData({...formData, paymentTerms: e.target.value})}
-                    className="glass-input w-full"
-                  >
-                    <option value="15">15 days</option>
-                    <option value="30">30 days</option>
-                    <option value="45">45 days</option>
-                    <option value="60">60 days</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Expense Items */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">Expense Items</h4>
-                  <button
-                    type="button"
-                    onClick={addExpenseItem}
-                    className="glass-button px-3 py-2 rounded-xl hover-scale flex items-center gap-2 text-sm"
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                    Add Item
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {formData.expenseItems.map((item, index) => (
-                    <div key={index} className="glass-card p-4 rounded-xl">
-                      <div className="grid grid-cols-12 gap-3 items-end">
-                        <div className="col-span-3">
-                          <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 block">Type</label>
-                          <select
-                            value={item.type}
-                            onChange={(e) => updateExpenseItem(index, 'type', e.target.value)}
-                            className="glass-input w-full text-sm"
-                          >
-                            <option value="cloud_compute">Cloud Compute</option>
-                            <option value="cloud_storage">Cloud Storage</option>
-                            <option value="cloud_database">Cloud Database</option>
-                            <option value="software_license">Software License</option>
-                            <option value="contractor_work">Contractor Work</option>
-                            <option value="office_rent">Office Rent</option>
-                            <option value="utilities">Utilities</option>
-                            <option value="marketing">Marketing</option>
-                            <option value="hardware">Hardware</option>
-                            <option value="other">Other</option>
-                          </select>
-                        </div>
-                        <div className="col-span-6">
-                          <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 block">Description *</label>
-                          <input
-                            type="text"
-                            value={item.description}
-                            onChange={(e) => updateExpenseItem(index, 'description', e.target.value)}
-                            className="glass-input w-full text-sm"
-                            placeholder="e.g., EC2 Instances - Production Environment"
-                            required
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 block">Amount *</label>
-                          <input
-                            type="number"
-                            value={item.amount}
-                            onChange={(e) => updateExpenseItem(index, 'amount', parseFloat(e.target.value) || 0)}
-                            className="glass-input w-full text-sm"
-                            min="0"
-                            step="0.01"
-                            required
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <button
-                            type="button"
-                            onClick={() => removeExpenseItem(index)}
-                            className="w-full p-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
-                            disabled={formData.expenseItems.length === 1}
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Additional Settings */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Tax Rate (%)</label>
-                  <input
-                    type="number"
-                    value={formData.taxRate}
-                    onChange={(e) => setFormData({...formData, taxRate: parseFloat(e.target.value) || 0})}
-                    className="glass-input w-full"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.projectSpecific}
-                      onChange={(e) => setFormData({...formData, projectSpecific: e.target.checked})}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label className="ml-2 block text-sm text-gray-900 dark:text-gray-100">Project Specific</label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.requiresApproval}
-                      onChange={(e) => setFormData({...formData, requiresApproval: e.target.checked})}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label className="ml-2 block text-sm text-gray-900 dark:text-gray-100">Requires Approval</label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.recurring}
-                      onChange={(e) => setFormData({...formData, recurring: e.target.checked})}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label className="ml-2 block text-sm text-gray-900 dark:text-gray-100">Recurring Bill</label>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Notes</label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                  className="glass-input w-full"
-                  rows="3"
-                  placeholder="Additional notes or terms..."
-                />
-              </div>
-
-              {/* Totals */}
-              <div className="glass-card border-t border-gray-200/50 dark:border-gray-700/50 pt-4">
-                <div className="flex justify-end">
-                  <div className="w-64 space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Subtotal:</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(formData.subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Tax ({formData.taxRate}%):</span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(formData.subtotal * (formData.taxRate / 100))}</span>
-                    </div>
-                    <div className="flex justify-between border-t border-gray-200/50 dark:border-gray-700/50 pt-2">
-                      <span className="text-base font-semibold text-gray-900 dark:text-white">Total:</span>
-                      <span className="text-base font-semibold text-gray-900 dark:text-white">{formatCurrency(formData.subtotal + (formData.subtotal * (formData.taxRate / 100)))}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingBill(null);
-                    resetForm();
-                  }}
-                  className="glass-button px-4 py-2 rounded-xl hover-scale"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="glass-button px-4 py-2 rounded-xl hover-scale bg-gradient-to-r from-primary-500 to-accent-500 text-white"
-                >
-                  {editingBill ? 'Update' : 'Create'} Bill
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Payment Form Modal */}
       {showPaymentForm && selectedBill && (
