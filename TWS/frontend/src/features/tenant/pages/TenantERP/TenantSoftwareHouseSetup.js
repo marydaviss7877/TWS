@@ -33,10 +33,8 @@ const TenantSoftwareHouseSetup = () => {
     developmentSettings: {
       defaultSprintDuration: 14,
       storyPointScale: 'fibonacci',
-      timeTrackingEnabled: true,
       clientPortalEnabled: true,
-      codeQualityTracking: true,
-      automatedTesting: false
+      codeQualityTracking: true
     },
     
     // Billing Configuration

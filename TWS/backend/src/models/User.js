@@ -142,82 +142,6 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'TWSAdmin'
   },
-  // Calendar integration fields
-  googleAccessToken: {
-    type: String,
-    select: false
-  },
-  googleRefreshToken: {
-    type: String,
-    select: false
-  },
-  googleTokenExpiry: {
-    type: Date
-  },
-  microsoftAccessToken: {
-    type: String,
-    select: false
-  },
-  microsoftRefreshToken: {
-    type: String,
-    select: false
-  },
-  microsoftTokenExpiry: {
-    type: Date
-  },
-  zoomApiKey: {
-    type: String,
-    select: false
-  },
-  zoomApiSecret: {
-    type: String,
-    select: false
-  },
-  // Timezone and meeting preferences
-  timezone: {
-    type: String,
-    default: 'UTC'
-  },
-  businessHours: {
-    start: {
-      type: String,
-      default: '09:00'
-    },
-    end: {
-      type: String,
-      default: '17:00'
-    },
-    days: [{
-      type: String,
-      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-      default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-    }]
-  },
-  meetingPreferences: {
-    defaultDuration: {
-      type: Number,
-      default: 60
-    },
-    defaultReminders: [{
-      type: {
-        type: String,
-        enum: ['email', 'sms', 'push'],
-        default: 'email'
-      },
-      timeBefore: {
-        type: Number,
-        default: 15
-      }
-    }],
-    autoAcceptMeetings: {
-      type: Boolean,
-      default: false
-    },
-    requireApprovalForMeetings: {
-      type: Boolean,
-      default: false
-    }
-  },
   // Push notification settings
   expoPushToken: {
     type: String
@@ -232,18 +156,6 @@ const userSchema = new mongoose.Schema({
       default: false
     },
     push: {
-      type: Boolean,
-      default: true
-    },
-    meetingReminders: {
-      type: Boolean,
-      default: true
-    },
-    meetingUpdates: {
-      type: Boolean,
-      default: true
-    },
-    meetingCancellations: {
       type: Boolean,
       default: true
     }
@@ -299,12 +211,6 @@ userSchema.methods.toJSON = function() {
   delete user.password;
   delete user.refreshTokens;
   delete user.twoFASecret;
-  delete user.googleAccessToken;
-  delete user.googleRefreshToken;
-  delete user.microsoftAccessToken;
-  delete user.microsoftRefreshToken;
-  delete user.zoomApiKey;
-  delete user.zoomApiSecret;
   return user;
 };
 

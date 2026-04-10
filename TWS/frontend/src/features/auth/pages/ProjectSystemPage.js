@@ -34,27 +34,26 @@ const ProjectSystemPage = () => {
 
     const projectFeatures = [
         { title: 'Sprint Management', path: 'Org → Projects → Sprints', icon: QueueListIcon, desc: 'Plan sprints with your team, assign tasks, track progress, and close them on time. Full Agile and Scrum support.' },
-        { title: 'Kanban Boards', path: 'Org → Projects → Boards', icon: ViewColumnsIcon, desc: 'Visual task management with custom columns, drag-and-drop, and real-time updates. No more standup calls.' },
-        { title: 'Gantt Charts', path: 'Org → Projects → Roadmap', icon: PresentationChartLineIcon, desc: 'Timeline view for projects with dependencies, milestones, and deadline tracking. Spot blockers early.' },
+        { title: 'Kanban Boards', path: 'Org → [Project] → Board', icon: ViewColumnsIcon, desc: 'Visual task management with drag-and-drop cards per project. Move tasks across columns and keep your workflow clean.' },
+        { title: 'Gantt Charts', path: 'Org → Projects → Gantt Chart', icon: PresentationChartLineIcon, desc: 'Timeline view for projects with dependencies, milestones, and deadline tracking. Spot blockers early.' },
         { title: 'Resource Allocation', path: 'Org → Projects → Resources', icon: UsersIcon, desc: 'See who\'s overloaded and who has capacity. Assign team members based on actual availability—not guesswork.' },
-        { title: 'Issue Tracking', path: 'Org → Projects → Issues', icon: BugAntIcon, desc: 'Log bugs, feature requests, and blockers. Assign and prioritize them so your developers know exactly what\'s next.' },
-        { title: 'Project Docs', path: 'Org → Projects → Docs', icon: DocumentTextIcon, desc: 'Create and manage project documentation—requirements, specs, and meeting notes—directly inside the project.' },
-        { title: 'Client Portal', path: 'Org → Projects → Client Portal', icon: UserGroupIcon, desc: 'Give clients a clean, read-only view of progress. They stay informed, and you stop answering WhatsApp updates.' }
+        { title: 'Change Requests', path: 'Org → Projects → Change Requests', icon: BugAntIcon, desc: 'Log scope changes, evaluate impact, and route them through approval tiers. Every change is tracked and audited.' },
+        { title: 'Deliverables', path: 'Org → Projects → Deliverables', icon: DocumentTextIcon, desc: 'Define project deliverables, track completion, flag at-risk items, and send them through a sequential approval workflow.' },
+        { title: 'Client Portal', path: 'Org → Clients → Portal', icon: UserGroupIcon, desc: 'Give clients a clean view of progress, deliverable status, and invoices. They stay informed without access to your internal workspace.' }
     ];
 
     const builtFeatures = [
         "Project creation with templates (Web Dev, Mobile App, API Development)",
         "Task management — assignments, priorities, statuses, due dates",
         "Sprint planning and sprint board (Agile/Scrum)",
-        "Kanban boards with custom workflows",
+        "Kanban board — per-project, drag-and-drop task columns",
         "Gantt chart with dependency management and auto-progress calculation",
         "Deliverable management with sequential approval workflow",
         "Change request management with approval tiers",
-        "Client portal — read-only Gantt, deliverable status, invoices",
+        "Client portal — read-only deliverable status and invoices",
         "Time tracking — billable hours linked directly to projects",
         "Resource allocation — team members per project",
         "Project analytics — progress, at-risk tracking, workspace stats",
-        "Batch operations for bulk task updates",
         "Project templates — pre-built phases and default structure",
         "Role-based access — PM sees everything, client sees only their view"
     ];
@@ -137,9 +136,9 @@ const ProjectSystemPage = () => {
                                 <Link to="/software-house-signup" className="sh-project-button">
                                     Start Free <ArrowRightIcon className="h-4 w-4" />
                                 </Link>
-                                <button className="text-xs font-black uppercase tracking-[0.3em] text-white hover:text-cyan-500 transition-colors">
-                                    See the Demo
-                                </button>
+                                <Link to="/software-house-signup" className="text-xs font-black uppercase tracking-[0.3em] text-white hover:text-cyan-500 transition-colors">
+                                    Create Free Account
+                                </Link>
                             </motion.div>
                         </motion.div>
                     </div>
@@ -245,7 +244,6 @@ const ProjectSystemPage = () => {
                                             className="sh-checklist-node"
                                             initial={{ opacity: 0, y: 20 }}
                                             whileInView={{ opacity: 1, y: 0 }}
-                                            whileHover={{ scale: 1.05, translateX: 10 }}
                                             transition={{ duration: 0.4, delay: i * 0.04 }}
                                             viewport={{ once: true }}
                                         >
@@ -300,9 +298,9 @@ const ProjectSystemPage = () => {
                                         <Link to="/software-house-signup" className="sh-project-button">
                                             Start Free Trial
                                         </Link>
-                                        <button className="text-xs font-black uppercase tracking-[0.4em] text-white hover:text-cyan-500 transition-all">
-                                            Book a Demo
-                                        </button>
+                                        <Link to="/software-house-signup" className="text-xs font-black uppercase tracking-[0.4em] text-white hover:text-cyan-500 transition-all">
+                                            Create Free Account
+                                        </Link>
                                     </div>
                                 </div>
                             </div>

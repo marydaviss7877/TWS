@@ -42,10 +42,9 @@ const TenantSoftwareHouseDashboard = () => {
       developmentSettings: {
         defaultSprintDuration: 14,
         storyPointScale: 'fibonacci',
-        timeTrackingEnabled: true,
+
         clientPortalEnabled: true,
         codeQualityTracking: true,
-        automatedTesting: false
       },
       billingConfig: {
         defaultHourlyRate: 75,
@@ -330,16 +329,6 @@ const TenantSoftwareHouseDashboard = () => {
                 <span className="text-gray-600 dark:text-gray-400">Story Points:</span>
                 <span className="text-gray-900 dark:text-white capitalize">
                   {tenantInfo.softwareHouseConfig.developmentSettings.storyPointScale}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Time Tracking:</span>
-                <span className={`px-2 py-1 rounded text-xs ${
-                  tenantInfo.softwareHouseConfig.developmentSettings.timeTrackingEnabled
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                }`}>
-                  {tenantInfo.softwareHouseConfig.developmentSettings.timeTrackingEnabled ? 'Enabled' : 'Disabled'}
                 </span>
               </div>
             </div>

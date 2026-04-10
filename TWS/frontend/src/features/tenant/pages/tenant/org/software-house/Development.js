@@ -20,9 +20,7 @@ const Development = () => {
     developmentSettings: {
       defaultSprintDuration: 14,
       storyPointScale: 'fibonacci',
-      timeTrackingEnabled: true,
-      codeQualityTracking: true,
-      automatedTesting: false
+      codeQualityTracking: true
     }
   });
 
@@ -308,9 +306,7 @@ const Development = () => {
                   Feature Settings
                 </label>
                 {[
-                  { key: 'timeTrackingEnabled', label: 'Time Tracking', description: 'Enable time tracking for tasks and projects' },
-                  { key: 'codeQualityTracking', label: 'Code Quality Tracking', description: 'Track code quality metrics and standards' },
-                  { key: 'automatedTesting', label: 'Automated Testing', description: 'Require automated tests for code commits' }
+                  { key: 'codeQualityTracking', label: 'Code Quality Tracking', description: 'Track code quality metrics and standards' }
                 ].map((feature) => (
                   <label
                     key={feature.key}

@@ -35,7 +35,7 @@
     --sh-project-text: #1A1A24;
     --sh-project-secondary: #52526A;
     --sh-project-glass: rgba(255, 255, 255, 0.7);
-    --sh-project-glass-border: rgba(0, 0, 0, 0.05);
+    --sh-project-glass-border: rgba(0, 0, 0, 0.08);
 }
 
 .sh-project-page.day-mode .sh-noise-overlay {
@@ -44,6 +44,86 @@
 
 .sh-project-page.day-mode .sh-dot-grid {
     background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+
+/* Day mode — fix hardcoded white text in headings */
+.sh-project-page.day-mode .text-white {
+    color: #1A1A24 !important;
+}
+
+.sh-project-page.day-mode .text-\[#8B8BA8\] {
+    color: #52526A !important;
+}
+
+/* Day mode — nav glass */
+.sh-project-page.day-mode .sh-project-glass {
+    background: rgba(248, 248, 252, 0.92);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* Day mode — feature cards */
+.sh-project-page.day-mode .sh-delivery-card {
+    background: #FFFFFF;
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+.sh-project-page.day-mode .sh-delivery-card:hover {
+    background: #F0F9FF;
+    border-color: rgba(6, 182, 212, 0.3);
+}
+
+/* Day mode — step cards */
+.sh-project-page.day-mode .sh-step-card {
+    background: #FFFFFF;
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+.sh-project-page.day-mode .sh-step-card:hover {
+    border-color: rgba(6, 182, 212, 0.3);
+    background: #F0F9FF;
+}
+
+/* Day mode — checklist nodes */
+.sh-project-page.day-mode .sh-checklist-node {
+    background: #FFFFFF;
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+.sh-project-page.day-mode .sh-checklist-node:hover {
+    background: #F0F9FF;
+    border-color: rgba(6, 182, 212, 0.3);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.08);
+}
+
+/* Day mode — fix hardcoded near-white node text */
+.sh-project-page.day-mode .sh-node-text {
+    color: #1A1A24;
+}
+
+/* Day mode — specifics box */
+.sh-project-page.day-mode .sh-specifics-box {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.06), rgba(248, 248, 252, 0.8));
+    border-color: rgba(6, 182, 212, 0.2);
+}
+
+/* Day mode — title italic gradient (white→accent unreadable on light bg) */
+.sh-project-page.day-mode .sh-project-title .italic {
+    background: linear-gradient(to bottom, #0891B2, #0E7490);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Day mode — step number watermark */
+.sh-project-page.day-mode .sh-step-number {
+    color: rgba(8, 145, 178, 0.08);
+}
+
+/* Day mode — glow orbs toned down (performance + readability) */
+.sh-project-page.day-mode .sh-glow-orb {
+    opacity: 0.04;
+    filter: blur(80px);
 }
 
 /* ========== Background Elements ========== */
@@ -78,12 +158,13 @@
     width: 800px;
     height: 800px;
     border-radius: 50%;
-    filter: blur(150px);
+    filter: blur(120px);
     opacity: 0.15;
     pointer-events: none;
     z-index: 0;
     animation: pulse-glow 10s infinite ease-in-out;
-    will-change: transform, opacity;
+    will-change: transform;
+    transform: translateZ(0);
 }
 
 .sh-glow-1 {
@@ -172,10 +253,9 @@
     border: 1px solid var(--sh-project-glass-border);
     border-radius: 0;
     padding: 4rem 3rem;
-    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
     position: relative;
     overflow: hidden;
-    will-change: transform, background-color;
 }
 
 .sh-delivery-card::before {
@@ -186,13 +266,13 @@
     width: 3px;
     height: 0%;
     background: var(--sh-project-accent);
-    transition: height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .sh-delivery-card:hover {
     background: rgba(255, 255, 255, 0.03);
     border-color: rgba(255, 255, 255, 0.1);
-    transform: translateY(-8px);
+    box-shadow: 0 8px 40px rgba(6, 182, 212, 0.08);
 }
 
 .sh-delivery-card:hover::before {
@@ -231,7 +311,7 @@
     display: flex;
     align-items: center;
     gap: 1.25rem;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
     position: relative;
     overflow: hidden;
 }
@@ -268,7 +348,7 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
     font-weight: 700;
-    color: #F0F0F8;
+    color: var(--sh-project-text);
     line-height: 1.4;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -282,7 +362,7 @@
     border-radius: 0;
     padding: 4rem 2.5rem;
     position: relative;
-    transition: all 0.5s ease;
+    transition: background 0.4s ease, border-color 0.4s ease;
 }
 
 .sh-step-card:hover {

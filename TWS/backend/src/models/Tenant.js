@@ -197,9 +197,7 @@ const tenantSchema = new mongoose.Schema({
         default: 'fibonacci',
         required: false // Make optional
       },
-      timeTrackingEnabled: { type: Boolean, default: true },
-      codeQualityTracking: { type: Boolean, default: true },
-      automatedTesting: { type: Boolean, default: false }
+      codeQualityTracking: { type: Boolean, default: true }
     },
     
     // Billing Configuration

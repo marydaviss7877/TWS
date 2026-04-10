@@ -205,7 +205,7 @@ const SoftwareHouseLanding = () => {
                     transition={{ duration: 3, repeat: Infinity }}
                     className="text-xs uppercase tracking-widest text-[#4F6EF7] font-bold mb-4"
                   >
-                    Scanning fragmented workflow
+                    7 separate tools. 1 workflow.
                   </motion.div>
                   <div className="flex gap-2 justify-center mb-6">
                     {[1, 2, 3, 4, 5].map(i => (
@@ -218,7 +218,7 @@ const SoftwareHouseLanding = () => {
                     ))}
                   </div>
                   <p className="text-sm text-gray-400 max-w-xs mx-auto">
-                    Real-time cognitive load detection: <span className="text-red-400 font-bold">CRITICAL</span>
+                    Projects · HR · Finance · Clients · Docs — unified in TWS
                   </p>
                 </div>
               </div>
@@ -236,7 +236,7 @@ const SoftwareHouseLanding = () => {
           </div>
         </section>
 
-        {/* Chapter 2 — The Quantified Leak (Designed Mockup) */}
+        {/* Chapter 2 — The Quantified Leak */}
         <section className="sh-premium-cost py-24 px-4 sm:px-6 lg:px-8 border-y" style={{ borderColor: 'var(--tws-border)' }}>
           <div className="container mx-auto max-w-6xl">
             <div className="sh-cost-grid">
@@ -255,13 +255,13 @@ const SoftwareHouseLanding = () => {
                   on every <span className="sh-glitch-text text-red-500">sprint.</span>
                 </h2>
                 <p className="font-dm-sans text-lg text-gray-400 mb-12 max-w-xl">
-                  Fragmentation isn't just annoying—it's expensive. Every time an engineer hunts for a Jira ticket or checks a Slack thread for a requirement, momentum dies.
+                  Fragmentation isn't just annoying—it's expensive. Every time an engineer hunts for a ticket or chases a thread for a requirement, momentum dies.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {[
-                    { label: 'Avg. Dev Waste', value: '4.8h', suffix: '/week', desc: 'Lost to tool juggling' },
-                    { label: 'Cognitive Tax', value: '23%', suffix: '', desc: 'Drop in flow-state productivity' },
+                    { label: 'Avg. Dev Waste', value: '4.8h', suffix: '/week', desc: 'Industry avg — tool juggling (Atlassian Research)' },
+                    { label: 'Flow Disruption', value: '23 min', suffix: '', desc: 'To regain focus after a context switch (UC Irvine)' },
                   ].map((stat, i) => (
                     <div key={i} className="sh-cost-card group">
                       <div className="sh-cost-glow-red" />
@@ -288,8 +288,8 @@ const SoftwareHouseLanding = () => {
               >
                 <div className="sh-leak-visualization">
                   <div className="absolute top-6 left-6 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-red-500 font-sora">Revenue Leak Detected</span>
+                    <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400 font-sora">Unbilled Hours Accumulating</span>
                   </div>
 
                   <div className="flex items-end gap-1.5 h-48 px-8">
@@ -298,7 +298,7 @@ const SoftwareHouseLanding = () => {
                         key={i}
                         className="sh-leak-bar"
                         initial={{ height: 0 }}
-                        whileInView={{ height: [8, 40 + Math.random() * 100, 20] }}
+                        whileInView={{ height: [8, 40 + (((i * 37 + 13) % 7) / 7) * 100, 20] }}
                         transition={{
                           duration: 2,
                           repeat: Infinity,
@@ -315,24 +315,24 @@ const SoftwareHouseLanding = () => {
                       animate={{ scale: [1, 1.05, 1] }}
                       transition={{ duration: 4, repeat: Infinity }}
                     >
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2 block">Opportunity Cost</span>
-                      <span className="text-5xl md:text-6xl font-black text-white font-sora">$142k+</span>
-                      <span className="block text-[10px] text-red-500 font-bold mt-2 font-dm-sans">ANNUAL DRAIN / 10 DEVS</span>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2 block">TWS gives you visibility into</span>
+                      <span className="text-4xl md:text-5xl font-black text-white font-sora">Tracked vs<br/>Billed</span>
+                      <span className="block text-[10px] text-orange-400 font-bold mt-2 font-dm-sans">HOURS · COSTS · INVOICES · PER PROJECT</span>
                     </motion.div>
                   </div>
                 </div>
 
-                {/* Fragmented HUD Elements */}
+                {/* HUD callout — real TWS capability */}
                 <motion.div
                   className="absolute -bottom-6 -left-6 p-4 rounded-xl border border-white/5 bg-gray-900/80 backdrop-blur-xl shadow-2xl"
                   animate={{ y: [0, -10, 0] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500 text-xs">⚠️</div>
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs">✓</div>
                     <div>
-                      <div className="text-[10px] font-bold text-gray-200">Context Switch Spike</div>
-                      <div className="text-[9px] text-gray-500">14:22:05 — Platform Sync Failure</div>
+                      <div className="text-[10px] font-bold text-gray-200">Project Costing Module</div>
+                      <div className="text-[9px] text-gray-500">Budget · Burn Rate · Profitability — all in one place</div>
                     </div>
                   </div>
                 </motion.div>
@@ -341,7 +341,7 @@ const SoftwareHouseLanding = () => {
           </div>
         </section>
 
-        {/* Chapter 3 — The Singular Vision (Designed Mockup) */}
+        {/* Chapter 3 — The Singular Vision */}
         <section id="solution" className="sh-premium-solution px-4 sm:px-6 lg:px-8">
           <div className="container mx-auto max-w-6xl text-center relative z-10">
             <motion.div
@@ -358,11 +358,11 @@ const SoftwareHouseLanding = () => {
                 <span className="bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">Start building.</span>
               </h2>
               <p className="font-dm-sans text-lg text-gray-400 mb-16 max-w-2xl mx-auto">
-                TWS ERP is the resolution to the entropy. We unify your entire software house—from Git commits to trial balances—into a single, high-performance dashboard.
+                TWS brings your projects, people, and finances into one workspace — so your team spends less time coordinating and more time delivering.
               </p>
             </motion.div>
 
-            {/* The Divine Dashboard Mockup */}
+            {/* The Unified Dashboard Mockup */}
             <motion.div
               className="sh-divine-tab max-w-5xl mx-auto shadow-2xl"
               initial={{ opacity: 0, scale: 0.9, y: 100 }}
@@ -372,27 +372,32 @@ const SoftwareHouseLanding = () => {
             >
               <div className="sh-divine-glow" />
 
-              {/* Unification Animation: Dots flying into the dashboard */}
+              {/* Unification Animation: module dots converging into the dashboard */}
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {[...Array(12)].map((_, i) => (
+                {[
+                  { x: -500, y: -150, delay: 0.0 },
+                  { x: 500,  y: -120, delay: 0.1 },
+                  { x: -500, y: -60,  delay: 0.2 },
+                  { x: 500,  y: -30,  delay: 0.3 },
+                  { x: -500, y: 30,   delay: 0.4 },
+                  { x: 500,  y: 60,   delay: 0.5 },
+                  { x: -500, y: 120,  delay: 0.6 },
+                  { x: 500,  y: 150,  delay: 0.7 },
+                  { x: -500, y: 0,    delay: 0.8 },
+                  { x: 500,  y: 0,    delay: 0.9 },
+                  { x: -500, y: -90,  delay: 1.0 },
+                  { x: 500,  y: 90,   delay: 1.1 },
+                ].map((dot, i) => (
                   <motion.div
                     key={i}
                     className="sh-unify-dot"
-                    initial={{
-                      x: Math.random() > 0.5 ? -500 : 500,
-                      y: Math.random() * 400 - 200,
-                      opacity: 0
-                    }}
-                    whileInView={{
-                      x: 0,
-                      y: 0,
-                      opacity: [0, 1, 0]
-                    }}
+                    initial={{ x: dot.x, y: dot.y, opacity: 0 }}
+                    whileInView={{ x: 0, y: 0, opacity: [0, 1, 0] }}
                     transition={{
                       duration: 2,
-                      delay: i * 0.1,
+                      delay: dot.delay,
                       repeat: Infinity,
-                      repeatDelay: Math.random() * 2
+                      repeatDelay: 3
                     }}
                   />
                 ))}
@@ -400,12 +405,25 @@ const SoftwareHouseLanding = () => {
 
               <div className="sh-unified-dashboard-mock text-left">
                 <div className="flex gap-6">
-                  <div className="sh-mock-sidebar hidden md:flex">
-                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="sh-mock-sidebar-item" />)}
+                  {/* Sidebar — named modules */}
+                  <div className="sh-mock-sidebar hidden md:flex flex-col gap-2 pt-1">
+                    {[
+                      { label: 'Projects', color: 'bg-blue-500/40' },
+                      { label: 'HR', color: 'bg-purple-500/40' },
+                      { label: 'Finance', color: 'bg-emerald-500/40' },
+                      { label: 'Clients', color: 'bg-orange-500/40' },
+                      { label: 'Docs', color: 'bg-gray-500/40' },
+                    ].map(({ label, color }) => (
+                      <div key={label} className="sh-mock-sidebar-item flex items-center gap-2">
+                        <div className={`w-1.5 h-1.5 rounded-full ${color}`} />
+                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">{label}</span>
+                      </div>
+                    ))}
                   </div>
+
                   <div className="flex-1">
                     <div className="flex justify-between items-center mb-8">
-                      <div className="h-4 w-32 bg-white/10 rounded" />
+                      <span className="text-[11px] font-bold text-white/50 uppercase tracking-widest">TWS Workspace</span>
                       <div className="flex gap-2">
                         <div className="h-8 w-8 rounded bg-white/5" />
                         <div className="h-8 w-8 rounded bg-white/5" />
@@ -413,18 +431,34 @@ const SoftwareHouseLanding = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Main card — active project */}
                       <div className="md:col-span-2 sh-mock-card">
-                        <div className="h-4 w-40 bg-emerald-500/20 rounded mb-6" />
-                        <div className="space-y-4">
-                          <div className="h-2 w-full bg-white/10 rounded" />
-                          <div className="h-2 w-5/6 bg-white/10 rounded" />
-                          <div className="h-2 w-4/6 bg-white/10 rounded" />
+                        <div className="text-[10px] uppercase font-bold text-blue-400 mb-4">Active Project</div>
+                        <div className="space-y-3 mb-6">
+                          {[
+                            { label: 'Sprint 4 — In Progress', w: 'w-full', color: 'bg-blue-500/30' },
+                            { label: 'Deliverables: 6 of 9 done', w: 'w-5/6', color: 'bg-emerald-500/20' },
+                            { label: 'Budget: 68% consumed', w: 'w-4/6', color: 'bg-orange-500/20' },
+                          ].map(({ label, w, color }) => (
+                            <div key={label} className="flex items-center gap-3">
+                              <div className={`h-2 ${w} ${color} rounded`} />
+                              <span className="text-[9px] text-gray-500 whitespace-nowrap">{label}</span>
+                            </div>
+                          ))}
                         </div>
-                        <div className="mt-12 flex gap-4">
-                          <div className="h-24 flex-1 bg-white/5 rounded-xl border border-white/5" />
-                          <div className="h-24 flex-1 bg-white/5 rounded-xl border border-white/5" />
+                        <div className="mt-4 grid grid-cols-2 gap-4">
+                          <div className="h-20 bg-white/5 rounded-xl border border-white/5 flex flex-col items-center justify-center gap-1">
+                            <span className="text-[9px] text-gray-500 uppercase tracking-wider">Invoices Pending</span>
+                            <span className="text-lg font-black text-white">3</span>
+                          </div>
+                          <div className="h-20 bg-white/5 rounded-xl border border-white/5 flex flex-col items-center justify-center gap-1">
+                            <span className="text-[9px] text-gray-500 uppercase tracking-wider">Leave Requests</span>
+                            <span className="text-lg font-black text-white">2</span>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Right column — project + sprint stats */}
                       <div className="space-y-6">
                         <div className="sh-mock-card border-emerald-500/20">
                           <div className="text-[10px] uppercase font-bold text-emerald-400 mb-2">Project: Phoenix</div>
@@ -437,10 +471,12 @@ const SoftwareHouseLanding = () => {
                               transition={{ duration: 2, delay: 1 }}
                             />
                           </div>
+                          <span className="text-[9px] text-gray-500 mt-2 block">74% milestones complete</span>
                         </div>
                         <div className="sh-mock-card">
-                          <div className="text-[10px] uppercase font-bold text-gray-400 mb-2">Team Velocity</div>
+                          <div className="text-[10px] uppercase font-bold text-gray-400 mb-2">Sprint Velocity</div>
                           <div className="text-xl font-bold text-white">82 pts</div>
+                          <span className="text-[9px] text-gray-500">This sprint · tracked in Nucleus PM</span>
                         </div>
                       </div>
                     </div>
@@ -464,16 +500,14 @@ const SoftwareHouseLanding = () => {
                 </Link>
               </motion.div>
 
-              <div className="flex gap-8 opacity-30">
-                {['SOC2', 'GDPR', 'HIPAA'].map(t => (
-                  <span key={t} className="text-[10px] font-black uppercase tracking-[0.3em] text-white">{t}</span>
-                ))}
-              </div>
+              <p className="text-[10px] text-gray-600 uppercase tracking-widest mt-2">
+                Multi-tenant · Role-based access · Audit logs · Built for software houses
+              </p>
             </div>
           </div>
         </section>
 
-        {/* Chapter 4 — The Atomic Engine (Designed Mockup) */}
+        {/* Chapter 4 — The Atomic Engine */}
         <section id="features" className="sh-premium-atomic px-4 sm:px-6 lg:px-8">
           <div className="container mx-auto max-w-6xl">
             <motion.div
@@ -500,40 +534,41 @@ const SoftwareHouseLanding = () => {
                 {
                   title: 'Project Engine',
                   icon: CodeBracketIcon,
-                  specs: { core: 'React/Spring', sync: 'Real-time', modules: 'Kanban, Sprints, Backlog' },
+                  specs: { core: 'React / Node.js', sync: 'WebSocket', modules: 'Kanban, Sprints, Backlog' },
                   preview: [40, 70, 50, 90],
                   link: '/software-house/projects'
                 },
                 {
                   title: 'Global Finance',
                   icon: CurrencyDollarIcon,
-                  specs: { core: 'Double-Entry', sync: 'Instant', modules: 'Ledger, AP/AR, Tax' },
+                  specs: { core: 'Double-Entry', sync: 'On Save', modules: 'Ledger, AP/AR, Invoicing' },
                   preview: [20, 40, 80, 60],
                   link: '/software-house/finance'
                 },
                 {
                   title: 'HRM (Talent)',
                   icon: UserGroupIcon,
-                  specs: { core: 'Entity-Based', sync: 'Automated', modules: 'Attendance, Payroll, ID' },
+                  specs: { core: 'Entity-Based', sync: 'Role-Driven', modules: 'Attendance, Payroll, Leaves' },
                   preview: [90, 30, 70, 40],
                   link: '/software-house/hrm'
                 },
                 {
-                  title: 'Code Metrics',
+                  title: 'Analytics',
                   icon: ShieldCheckIcon,
-                  specs: { core: 'Git-Linked', sync: 'Post-Push', modules: 'PR Audit, Coverage, Debt' },
-                  preview: [50, 50, 50, 50]
+                  specs: { core: 'Per-Tenant', sync: 'Aggregated', modules: 'Reports, KPIs, Exports' },
+                  preview: [50, 75, 45, 85],
+                  link: '/software-house/analytics'
                 },
                 {
-                  title: 'Time Intel',
+                  title: 'Time & Billing',
                   icon: ClockIcon,
-                  specs: { core: 'Auto-track', sync: 'Billable', modules: 'Timesheets, Idle, Breaks' },
+                  specs: { core: 'Manual Entry', sync: 'Billable', modules: 'Timesheets, Expenses, Costs' },
                   preview: [30, 60, 90, 20]
                 },
                 {
-                  title: 'Client Nexus',
+                  title: 'Client Portal',
                   icon: ComputerDesktopIcon,
-                  specs: { core: 'Whitelabel', sync: 'Secure', modules: 'Invoices, Chat, Files' },
+                  specs: { core: 'Per-Tenant', sync: 'Secure', modules: 'Invoices, Contracts, Docs' },
                   preview: [60, 20, 40, 80]
                 }
               ].map((feature, i) => (
@@ -545,12 +580,13 @@ const SoftwareHouseLanding = () => {
                   transition={{ duration: 0.6, delay: i * 0.1 }}
                   viewport={{ once: true }}
                 >
-                  <Link to={feature.link || '#'} className="block"> {/* Added Link wrapper */}
+                  <Link to={feature.link || '#'} className="block">
                     <div className="sh-atomic-icon">
                       <feature.icon className="h-6 w-6" />
                     </div>
                     <h3 className="font-sora text-xl font-bold text-white mb-2">{feature.title}</h3>
                     <div className="sh-module-preview-box">
+                      <span className="text-[8px] text-gray-600 uppercase tracking-widest mb-1 block">Activity preview</span>
                       <div className="flex gap-1 flex-1">
                         {feature.preview.map((p, idx) => (
                           <motion.div
@@ -565,9 +601,9 @@ const SoftwareHouseLanding = () => {
                       </div>
                     </div>
                     <div className="sh-atomic-specs">
-                      <div className="sh-spec-item">Architecture <span>{feature.specs.core}</span></div>
-                      <div className="sh-spec-item">Sync Logic <span>{feature.specs.sync}</span></div>
-                      <div className="sh-spec-item md:col-span-2">Sub-Systems <span>{feature.specs.modules}</span></div>
+                      <div className="sh-spec-item">Stack <span>{feature.specs.core}</span></div>
+                      <div className="sh-spec-item">Sync <span>{feature.specs.sync}</span></div>
+                      <div className="sh-spec-item md:col-span-2">Modules <span>{feature.specs.modules}</span></div>
                     </div>
                   </Link>
                 </motion.div>
@@ -583,9 +619,9 @@ const SoftwareHouseLanding = () => {
               <div className="flex flex-wrap justify-center gap-x-12 gap-y-6">
                 {[
                   { l: 'Modules', v: '15+' },
-                  { l: 'Uptime', v: '99.9%' },
-                  { l: 'Encryption', v: 'AES-256' },
-                  { l: 'API Latency', v: '<40ms' }
+                  { l: 'Auth', v: 'JWT + bcrypt' },
+                  { l: 'Architecture', v: 'Multi-Tenant' },
+                  { l: 'Access Control', v: 'Role-Based' }
                 ].map(s => (
                   <div key={s.l} className="text-left">
                     <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{s.l}</div>
@@ -624,17 +660,17 @@ const SoftwareHouseLanding = () => {
                 {
                   icon: RocketLaunchIcon,
                   title: 'Built for Developers',
-                  desc: 'One tab for projects, sprints, and code. No context switching, just pure flow state.'
+                  desc: 'One tab for projects, sprints, timesheets, and team management. No context switching, just pure flow state.'
                 },
                 {
                   icon: ShieldCheckIcon,
-                  title: 'Enterprise Security',
-                  desc: 'Your "singular vision" is encrypted, audited, and compliant with SOC2/GDPR/HIPAA.'
+                  title: 'Security by Design',
+                  desc: 'Role-based access control, per-tenant data isolation, JWT authentication, and a full audit log on every action.'
                 },
                 {
                   icon: ChartBarIcon,
-                  title: 'Infinite Scale',
-                  desc: 'From startup to enterprise—TWS remains your singular dashboard tab. No new tools required.'
+                  title: 'Grows with You',
+                  desc: 'From startup to enterprise — TWS remains your singular dashboard. Add users, projects, and departments without adding tools.'
                 }
               ].map((item, i) => (
                 <motion.div

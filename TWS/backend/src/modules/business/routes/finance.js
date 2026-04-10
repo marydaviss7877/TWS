@@ -12,14 +12,13 @@ const {
   ChartOfAccounts, 
   JournalEntry,
   Account, 
-  Invoice, 
+  Invoice,
   Client,
   Vendor,
   Bill,
   ProjectCosting,
   TimeEntry,
   CashFlowForecast,
-  BankAccount,
   FinancialKPI
 } = require('../../../models/Finance');
 const FinanceDashboardService = require('../../../services/financeDashboardService');
@@ -639,45 +638,6 @@ router.post('/cash-flow-forecasts', [
     success: true,
     message: 'Cash flow forecast created successfully',
     data: { forecast }
-  });
-}));
-
-// ==================== BANK ACCOUNTS ROUTES ====================
-
-// Get bank accounts
-router.get('/bank-accounts', [
-  financeRead
-], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
-  const bankAccounts = await BankAccount.find({ 
-    orgId: req.user.orgId,
-    isActive: true 
-  }).sort({ name: 1 });
-
-  res.json({
-    success: true,
-    data: { bankAccounts }
-  });
-}));
-
-// Create bank account
-router.post('/bank-accounts', [
-  financeWrite,
-  body('name').notEmpty().trim(),
-  body('bankName').notEmpty().trim(),
-  body('accountType').isIn(['checking', 'savings', 'money_market', 'cd']),
-  body('openingBalance').optional().isNumeric()
-], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
-  const bankAccount = new BankAccount({
-    ...req.body,
-    orgId: req.user.orgId
-  });
-
-  await bankAccount.save();
-
-  res.status(201).json({
-    success: true,
-    message: 'Bank account created successfully',
-    data: { bankAccount }
   });
 }));
 

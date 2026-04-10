@@ -376,10 +376,8 @@ router.post('/initialize', requireRole(['owner', 'admin']), ErrorHandler.asyncHa
     developmentSettings: {
       defaultSprintDuration: 14,
       storyPointScale: 'fibonacci',
-      timeTrackingEnabled: true,
       clientPortalEnabled: true,
       codeQualityTracking: true,
-      automatedTesting: false,
       ...developmentSettings
     },
     billingConfig: {
@@ -442,10 +440,8 @@ router.get('/development', requireRole(['owner', 'admin', 'project_manager']), E
       developmentSettings: tenant.softwareHouseConfig?.developmentSettings || {
         defaultSprintDuration: 14,
         storyPointScale: 'fibonacci',
-        timeTrackingEnabled: true,
         clientPortalEnabled: true,
-        codeQualityTracking: true,
-        automatedTesting: false
+        codeQualityTracking: true
       }
     }
   });

@@ -443,7 +443,6 @@ async function loadRoutes() {
   try {
     console.log('📦 Loading Integration Module...');
     app.use('/api/integrations', modules.integration.integrations);
-    app.use('/api/platform-integration', modules.integration.platform);
     app.use('/api/timezone', modules.integration.timezone);
     app.use('/api/default-contacts', modules.integration.defaultContacts);
     console.log('✅ Integration module routes loaded');

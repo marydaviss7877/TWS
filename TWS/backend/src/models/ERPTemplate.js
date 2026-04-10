@@ -52,9 +52,7 @@ const erpTemplateSchema = new mongoose.Schema({
       developmentSettings: {
         defaultSprintDuration: { type: Number, default: 14 },
         storyPointScale: { type: String, enum: ['fibonacci', 'linear', 'custom'], default: 'fibonacci' },
-        timeTrackingEnabled: { type: Boolean, default: true },
-        codeQualityTracking: { type: Boolean, default: true },
-        automatedTesting: { type: Boolean, default: false }
+        codeQualityTracking: { type: Boolean, default: true }
       },
       billingConfig: {
         defaultHourlyRate: { type: Number, default: 0 },

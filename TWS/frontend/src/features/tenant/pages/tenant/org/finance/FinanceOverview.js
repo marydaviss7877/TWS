@@ -14,9 +14,6 @@ import {
   ClockIcon,
   ChartPieIcon,
   DocumentChartBarIcon,
-  BuildingOfficeIcon,
-  CloudIcon,
-  ShieldCheckIcon,
   CogIcon,
   CalendarIcon,
   CheckCircleIcon,
@@ -100,14 +97,6 @@ const FinanceOverview = () => {
       path: `/${tenantSlug}/org/finance/cash-flow`
     },
     {
-      id: 'banking',
-      name: 'Banking',
-      icon: BuildingOfficeIcon,
-      description: 'Bank reconciliation and accounts',
-      color: 'gray',
-      path: `/${tenantSlug}/org/finance/banking`
-    },
-    {
       id: 'reporting',
       name: 'Reporting',
       icon: ChartPieIcon,
@@ -115,30 +104,6 @@ const FinanceOverview = () => {
       color: 'pink',
       path: `/${tenantSlug}/org/finance/reporting`
     },
-    {
-      id: 'integrations',
-      name: 'Integrations',
-      icon: CloudIcon,
-      description: 'Connect external services',
-      color: 'cyan',
-      path: `/${tenantSlug}/org/finance/integrations`
-    },
-    {
-      id: 'security',
-      name: 'Security',
-      icon: ShieldCheckIcon,
-      description: 'Security and compliance',
-      color: 'orange',
-      path: `/${tenantSlug}/org/finance/security`
-    },
-    {
-      id: 'settings',
-      name: 'Settings',
-      icon: CogIcon,
-      description: 'Finance system configuration',
-      color: 'slate',
-      path: `/${tenantSlug}/org/finance/settings`
-    }
   ];
 
   useEffect(() => {

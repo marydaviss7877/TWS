@@ -69,11 +69,11 @@ const ProjectsList = () => {
       }
       
       console.log('📤 Fetching projects with params:', params);
-      
+
       const response = await tenantProjectApiService.getProjects(tenantSlug, params);
-      
+
       console.log('🔍 Raw API Response:', response);
-      
+
       // Check if we got metrics instead of projects (route conflict detection)
       if (response && typeof response === 'object' && response.totalProjects !== undefined && !response.projects) {
         console.error('❌ API returned metrics instead of projects! This indicates a route conflict.');
@@ -125,11 +125,11 @@ const ProjectsList = () => {
         console.error('Response keys:', response ? Object.keys(response) : 'null');
         projectsList = [];
       }
-      
+
       // Extract pagination info
       const total = pagination?.total || projectsList.length;
       const calculatedTotalPages = total > 0 ? Math.ceil(total / itemsPerPage) : 1;
-      
+
       console.log('✅ Projects loaded:', {
         count: projectsList.length,
         total,

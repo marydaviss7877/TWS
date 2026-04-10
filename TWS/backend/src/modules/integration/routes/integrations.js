@@ -5,17 +5,15 @@ const financeRead = requireErpAccess({ module: 'finance', action: 'read', checkR
 const financeWrite = requireErpAccess({ module: 'finance', action: 'write', checkRevocation: true, sensitive: true, auditResourceType: 'finance' });
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
-const { 
-  IntegrationConfig, 
-  IntegrationLog, 
+const {
+  IntegrationConfig,
+  IntegrationLog,
   TimeTrackingIntegration,
   ProjectManagementIntegration,
-  PaymentGatewayIntegration,
-  BankingIntegration
+  PaymentGatewayIntegration
 } = require('../../../models/Integration');
 const TimeTrackingService = require('../../../services/integrations/time-tracking-integration.service');
 // const PaymentGatewayService = require('../../../services/integrations/PaymentGatewayService'); // Service not yet implemented
-const BankingService = require('../../../services/integrations/banking-integration.service');
 
 const router = express.Router();
 
@@ -24,7 +22,7 @@ const router = express.Router();
 // Get all integrations
 router.get('/', [
   financeRead,
-  query('type').optional().isIn(['time_tracking', 'project_management', 'payment_gateway', 'banking', 'accounting', 'hr']),
+  query('type').optional().isIn(['time_tracking', 'project_management', 'payment_gateway', 'accounting', 'hr']),
   query('status').optional().isIn(['active', 'inactive', 'error', 'pending'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const filter = { orgId: req.user.orgId };
@@ -73,7 +71,7 @@ router.get('/:id', [
 router.post('/', [
   financeWrite,
   body('name').notEmpty().trim(),
-  body('type').isIn(['time_tracking', 'project_management', 'payment_gateway', 'banking', 'accounting', 'hr']),
+  body('type').isIn(['time_tracking', 'project_management', 'payment_gateway', 'accounting', 'hr']),
   body('provider').notEmpty().trim(),
   body('credentials').isObject(),
   body('settings').optional().isObject()
@@ -172,9 +170,6 @@ router.post('/:id/test', [
     case 'payment_gateway':
       // service = new PaymentGatewayService(integration); // PaymentGatewayService not yet implemented
       throw new Error('PaymentGatewayService is not yet implemented');
-      break;
-    case 'banking':
-      service = new BankingService(integration);
       break;
     default:
       return res.status(400).json({
@@ -285,104 +280,6 @@ router.post('/:id/webhook/payment', [
 
   // const service = new PaymentGatewayService(integration); // PaymentGatewayService not yet implemented
   throw new Error('PaymentGatewayService is not yet implemented');
-  await service.handleWebhook(req.body.payload, req.body.signature, req.body.eventType);
-
-  res.json({
-    success: true,
-    message: 'Webhook processed successfully'
-  });
-}));
-
-// ==================== BANKING INTEGRATION ROUTES ====================
-
-// Sync bank transactions
-router.post('/:id/sync/transactions', [
-  financeWrite,
-  param('id').isMongoId(),
-  body('accountId').notEmpty(),
-  body('startDate').isISO8601(),
-  body('endDate').isISO8601()
-], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
-  const integration = await IntegrationConfig.findOne({
-    _id: req.params.id,
-    orgId: req.user.orgId,
-    type: 'banking'
-  });
-
-  if (!integration) {
-    return res.status(404).json({
-      success: false,
-      message: 'Banking integration not found'
-    });
-  }
-
-  const service = new BankingService(integration);
-  const result = await service.syncTransactions(
-    req.body.accountId,
-    req.body.startDate,
-    req.body.endDate
-  );
-
-  res.json({
-    success: true,
-    message: 'Transactions synced successfully',
-    data: { result }
-  });
-}));
-
-// Reconcile transactions
-router.post('/:id/reconcile', [
-  financeWrite,
-  param('id').isMongoId(),
-  body('accountId').notEmpty(),
-  body('autoMatch').optional().isBoolean()
-], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
-  const integration = await IntegrationConfig.findOne({
-    _id: req.params.id,
-    orgId: req.user.orgId,
-    type: 'banking'
-  });
-
-  if (!integration) {
-    return res.status(404).json({
-      success: false,
-      message: 'Banking integration not found'
-    });
-  }
-
-  const service = new BankingService(integration);
-  const result = await service.reconcileTransactions(
-    req.body.accountId,
-    req.body.autoMatch !== false
-  );
-
-  res.json({
-    success: true,
-    message: 'Transactions reconciled successfully',
-    data: { result }
-  });
-}));
-
-// Handle banking webhook
-router.post('/:id/webhook/banking', [
-  param('id').isMongoId(),
-  body('payload').notEmpty(),
-  body('signature').notEmpty(),
-  body('eventType').notEmpty()
-], ErrorHandler.asyncHandler(async (req, res) => {
-  const integration = await IntegrationConfig.findOne({
-    _id: req.params.id,
-    type: 'banking'
-  });
-
-  if (!integration) {
-    return res.status(404).json({
-      success: false,
-      message: 'Banking integration not found'
-    });
-  }
-
-  const service = new BankingService(integration);
   await service.handleWebhook(req.body.payload, req.body.signature, req.body.eventType);
 
   res.json({

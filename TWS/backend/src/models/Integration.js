@@ -8,7 +8,7 @@ const integrationConfigSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['time_tracking', 'project_management', 'banking', 'accounting', 'hr'],
+    enum: ['time_tracking', 'project_management', 'accounting', 'hr'],
     required: true
   },
   provider: {
@@ -244,55 +244,6 @@ const projectManagementIntegrationSchema = new mongoose.Schema({
 });
 
 
-// Banking Integration Schema
-const bankingIntegrationSchema = new mongoose.Schema({
-  integrationId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'IntegrationConfig',
-    required: true
-  },
-  provider: {
-    type: String,
-    enum: ['plaid', 'yodlee', 'openbanking', 'teller', 'mx'],
-    required: true
-  },
-  accountMappings: [{
-    externalAccountId: String,
-    internalAccountId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'BankAccount'
-    },
-    accountName: String,
-    accountType: String,
-    lastSync: Date
-  }],
-  syncSettings: {
-    autoReconcile: {
-      type: Boolean,
-      default: true
-    },
-    syncFrequency: {
-      type: String,
-      enum: ['realtime', 'hourly', 'daily'],
-      default: 'daily'
-    },
-    transactionCategories: [{
-      externalCategory: String,
-      internalCategory: String,
-      glAccount: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'ChartOfAccounts'
-      }
-    }]
-  },
-  orgId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Organization',
-    required: true
-  }
-}, {
-  timestamps: true
-});
 
 // Indexes for performance
 integrationConfigSchema.index({ orgId: 1, type: 1 });
@@ -316,14 +267,9 @@ projectManagementIntegrationSchema.index({ orgId: 1 });
 // paymentGatewayIntegrationSchema.index({ provider: 1 });
 // paymentGatewayIntegrationSchema.index({ orgId: 1 });
 
-bankingIntegrationSchema.index({ integrationId: 1 });
-bankingIntegrationSchema.index({ provider: 1 });
-bankingIntegrationSchema.index({ orgId: 1 });
-
 module.exports = {
   IntegrationConfig: mongoose.model('IntegrationConfig', integrationConfigSchema),
   IntegrationLog: mongoose.model('IntegrationLog', integrationLogSchema),
   TimeTrackingIntegration: mongoose.model('TimeTrackingIntegration', timeTrackingIntegrationSchema),
-  ProjectManagementIntegration: mongoose.model('ProjectManagementIntegration', projectManagementIntegrationSchema),
-  BankingIntegration: mongoose.model('BankingIntegration', bankingIntegrationSchema)
+  ProjectManagementIntegration: mongoose.model('ProjectManagementIntegration', projectManagementIntegrationSchema)
 };

@@ -10,7 +10,7 @@ const Project = require('../../../models/Project');
 const Card = require('../../../models/Card');
 const Sprint = require('../../../models/Sprint');
 const DevelopmentMetrics = require('../../../models/DevelopmentMetrics');
-const { TimeEntry } = require('../../../models/Finance');
+const { TimeEntry, Transaction, Invoice, Bill, ProjectCosting, ChartOfAccounts, CashFlowForecast } = require('../../../models/Finance');
 const Client = require('../../../models/Client');
 const Workspace = require('../../../models/Workspace');
 const ProjectMember = require('../../../models/ProjectMember');
@@ -381,9 +381,7 @@ router.post('/initialize', unifiedSoftwareHouseAuth, requireRole(['owner', 'admi
     developmentSettings: {
       defaultSprintDuration: 14,
       storyPointScale: 'fibonacci',
-      timeTrackingEnabled: true,
       codeQualityTracking: true,
-      automatedTesting: false,
       ...developmentSettings
     },
     billingConfig: {
@@ -446,9 +444,7 @@ router.get('/development', unifiedSoftwareHouseAuth, requireRole(['owner', 'admi
       developmentSettings: tenant.softwareHouseConfig?.developmentSettings || {
         defaultSprintDuration: 14,
         storyPointScale: 'fibonacci',
-        timeTrackingEnabled: true,
-        codeQualityTracking: true,
-        automatedTesting: false
+        codeQualityTracking: true
       }
     }
   });
@@ -1160,5 +1156,210 @@ router.post('/employee-portal/workspaces/personal', unifiedSoftwareHouseAuth, ch
   }
 }));
 
+
+// ==================== FINANCE REPORTS ====================
+
+router.post('/finance/reports/generate', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+  const rawOrgId = req.user.orgId;
+  const orgId = mongoose.Types.ObjectId.isValid(rawOrgId) ? new mongoose.Types.ObjectId(rawOrgId) : rawOrgId;
+  const { reportId, startDate, endDate } = req.body;
+  const start = new Date(startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const end = new Date(endDate || new Date());
+  end.setHours(23, 59, 59, 999);
+  const periodLabel = `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+
+  let data = {};
+
+  if (reportId === 'profit-loss') {
+    const [revenueRows, expenseRows] = await Promise.all([
+      Transaction.aggregate([
+        { $match: { orgId, type: 'revenue', date: { $gte: start, $lte: end } } },
+        { $group: { _id: '$category', amount: { $sum: '$amount' } } },
+        { $sort: { amount: -1 } }
+      ]),
+      Transaction.aggregate([
+        { $match: { orgId, type: 'expense', date: { $gte: start, $lte: end } } },
+        { $group: { _id: '$category', amount: { $sum: '$amount' } } },
+        { $sort: { amount: -1 } }
+      ])
+    ]);
+    const totalRevenue = revenueRows.reduce((s, r) => s + r.amount, 0);
+    const totalExpenses = expenseRows.reduce((s, r) => s + r.amount, 0);
+    const netProfit = totalRevenue - totalExpenses;
+    data = {
+      title: 'Profit & Loss Statement',
+      period: periodLabel,
+      revenue: {
+        total: totalRevenue,
+        breakdown: revenueRows.map(r => ({ category: r._id || 'Uncategorized', amount: r.amount }))
+      },
+      expenses: {
+        total: totalExpenses,
+        breakdown: expenseRows.map(r => ({ category: r._id || 'Uncategorized', amount: r.amount }))
+      },
+      netProfit,
+      grossMargin: totalRevenue > 0 ? +((netProfit / totalRevenue) * 100).toFixed(1) : 0
+    };
+
+  } else if (reportId === 'cash-flow') {
+    const [inflowRows, outflowRows, forecasts] = await Promise.all([
+      Transaction.aggregate([
+        { $match: { orgId, type: 'revenue', date: { $gte: start, $lte: end } } },
+        { $group: { _id: { $month: '$date' }, month: { $first: '$date' }, amount: { $sum: '$amount' } } },
+        { $sort: { '_id': 1 } }
+      ]),
+      Transaction.aggregate([
+        { $match: { orgId, type: 'expense', date: { $gte: start, $lte: end } } },
+        { $group: { _id: { $month: '$date' }, month: { $first: '$date' }, amount: { $sum: '$amount' } } },
+        { $sort: { '_id': 1 } }
+      ]),
+      CashFlowForecast.find({ orgId, date: { $gte: new Date(), $lte: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) } }).sort({ date: 1 }).limit(10)
+    ]);
+    const totalInflows = inflowRows.reduce((s, r) => s + r.amount, 0);
+    const totalOutflows = outflowRows.reduce((s, r) => s + r.amount, 0);
+    data = {
+      title: 'Cash Flow Statement',
+      period: periodLabel,
+      operating: { inflows: totalInflows, outflows: totalOutflows, net: totalInflows - totalOutflows },
+      monthlyBreakdown: inflowRows.map(r => ({
+        month: new Date(r.month).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        inflow: r.amount,
+        outflow: outflowRows.find(o => o._id === r._id)?.amount || 0
+      })),
+      upcomingForecasts: forecasts.map(f => ({ date: f.date, type: f.type, amount: f.amount, category: f.category, confidence: f.confidence }))
+    };
+
+  } else if (reportId === 'balance-sheet') {
+    const accounts = await ChartOfAccounts.find({ orgId }).sort({ code: 1 });
+    const byType = (type) => accounts.filter(a => a.type === type).map(a => ({ code: a.code, name: a.name, balance: a.balance || 0 }));
+    const sum = (arr) => arr.reduce((s, a) => s + a.balance, 0);
+    const assets = byType('asset');
+    const liabilities = byType('liability');
+    const equity = byType('equity');
+    data = {
+      title: 'Balance Sheet',
+      period: `As of ${end.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`,
+      assets: { items: assets, total: sum(assets) },
+      liabilities: { items: liabilities, total: sum(liabilities) },
+      equity: { items: equity, total: sum(equity) }
+    };
+
+  } else if (reportId === 'project-profitability') {
+    const costings = await ProjectCosting.find({ orgId }).populate('projectId', 'name client').lean();
+    data = {
+      title: 'Project Profitability Report',
+      period: periodLabel,
+      projects: costings.map(c => {
+        const revenue = c.revenue || 0;
+        const costs = c.actualCost || 0;
+        const profit = revenue - costs;
+        return {
+          name: c.projectId?.name || c.projectName || 'Unknown Project',
+          client: c.clientName || 'N/A',
+          budget: c.budget || 0,
+          revenue,
+          costs,
+          profit,
+          margin: revenue > 0 ? +((profit / revenue) * 100).toFixed(1) : 0,
+          status: c.status || 'active'
+        };
+      })
+    };
+
+  } else if (reportId === 'client-analysis') {
+    const invoices = await Invoice.find({ orgId, createdAt: { $gte: start, $lte: end } }).lean();
+    const clientMap = {};
+    for (const inv of invoices) {
+      const key = inv.clientName || 'Unknown';
+      if (!clientMap[key]) clientMap[key] = { name: key, revenue: 0, invoices: 0, paid: 0, outstanding: 0 };
+      clientMap[key].revenue += inv.totalAmount || inv.amount || 0;
+      clientMap[key].invoices++;
+      if (inv.status === 'paid') clientMap[key].paid += inv.totalAmount || inv.amount || 0;
+      else clientMap[key].outstanding += inv.totalAmount || inv.amount || 0;
+    }
+    data = {
+      title: 'Client Analysis Report',
+      period: periodLabel,
+      clients: Object.values(clientMap).sort((a, b) => b.revenue - a.revenue).map(c => ({
+        ...c,
+        avgInvoiceValue: c.invoices > 0 ? +(c.revenue / c.invoices).toFixed(2) : 0,
+        paymentTerms: 'Net 30'
+      }))
+    };
+
+  } else if (reportId === 'time-tracking') {
+    const entries = await TimeEntry.find({ orgId, date: { $gte: start, $lte: end } })
+      .populate('projectId', 'name')
+      .populate('userId', 'fullName')
+      .lean();
+    const byEmployee = {};
+    for (const e of entries) {
+      const key = e.userId?.fullName || e.employeeName || 'Unknown';
+      if (!byEmployee[key]) byEmployee[key] = { employee: key, hours: 0, projects: new Set(), billable: 0 };
+      byEmployee[key].hours += e.hours || e.duration || 0;
+      byEmployee[key].billable += e.billable ? (e.hours || 0) : 0;
+      if (e.projectId?.name) byEmployee[key].projects.add(e.projectId.name);
+    }
+    const totalHours = entries.reduce((s, e) => s + (e.hours || e.duration || 0), 0);
+    data = {
+      title: 'Time Tracking Report',
+      period: periodLabel,
+      summary: { totalHours, totalEntries: entries.length },
+      byEmployee: Object.values(byEmployee).map(r => ({ ...r, projects: [...r.projects] })).sort((a, b) => b.hours - a.hours)
+    };
+
+  } else if (reportId === 'expense-analysis') {
+    const rows = await Transaction.aggregate([
+      { $match: { orgId, type: 'expense', date: { $gte: start, $lte: end } } },
+      { $group: { _id: '$category', amount: { $sum: '$amount' }, count: { $sum: 1 } } },
+      { $sort: { amount: -1 } }
+    ]);
+    const total = rows.reduce((s, r) => s + r.amount, 0);
+    data = {
+      title: 'Expense Analysis',
+      period: periodLabel,
+      total,
+      categories: rows.map(r => ({
+        category: r._id || 'Uncategorized',
+        amount: r.amount,
+        count: r.count,
+        percentage: total > 0 ? +((r.amount / total) * 100).toFixed(1) : 0
+      }))
+    };
+
+  } else if (reportId === 'revenue-trends') {
+    const months = [];
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      months.push(new Date(cursor));
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    const rows = await Transaction.aggregate([
+      { $match: { orgId, type: 'revenue', date: { $gte: start, $lte: end } } },
+      { $group: { _id: { year: { $year: '$date' }, month: { $month: '$date' } }, amount: { $sum: '$amount' } } },
+      { $sort: { '_id.year': 1, '_id.month': 1 } }
+    ]);
+    const trend = rows.map((r, i) => {
+      const prev = rows[i - 1]?.amount || null;
+      return {
+        label: new Date(r._id.year, r._id.month - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        revenue: r.amount,
+        growth: prev !== null && prev > 0 ? +((( r.amount - prev) / prev) * 100).toFixed(1) : null
+      };
+    });
+    data = {
+      title: 'Revenue Trends',
+      period: periodLabel,
+      trend,
+      totalRevenue: rows.reduce((s, r) => s + r.amount, 0),
+      avgMonthly: rows.length > 0 ? +(rows.reduce((s, r) => s + r.amount, 0) / rows.length).toFixed(2) : 0
+    };
+
+  } else {
+    return res.status(400).json({ success: false, message: 'Unknown report type' });
+  }
+
+  res.json({ success: true, data });
+}));
 
 module.exports = router;

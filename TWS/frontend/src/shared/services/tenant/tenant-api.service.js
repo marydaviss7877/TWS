@@ -245,12 +245,6 @@ const tenantApiService = {
     return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/accounts-receivable?${queryParams}`);
   },
 
-  // Get banking data (Software House specific)
-  getBankingData: async (tenantSlug, params = {}) => {
-    const queryParams = new URLSearchParams(params).toString();
-    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/banking?${queryParams}`);
-  },
-
   // ===== Finance Additional APIs =====
   
   // Get recent transactions (Software House specific)
@@ -954,28 +948,6 @@ const tenantApiService = {
 
   getVendorPaymentHistory: async (tenantSlug, vendorId) => {
     return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/accounts-payable/vendors/${vendorId}/history`);
-  },
-
-  // Banking
-  reconcileBankAccount: async (tenantSlug, accountId, transactions) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/banking/${accountId}/reconcile`, {
-      method: 'POST',
-      body: JSON.stringify({ transactions })
-    });
-  },
-
-  importBankStatement: async (tenantSlug, accountId, file, format = 'csv') => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/banking/${accountId}/import`, {
-      method: 'POST',
-      body: JSON.stringify({ file, format })
-    });
-  },
-
-  transferFunds: async (tenantSlug, fromAccountId, toAccountId, amount, description) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/banking/transfer`, {
-      method: 'POST',
-      body: JSON.stringify({ fromAccountId, toAccountId, amount, description })
-    });
   },
 
   // Cash Flow

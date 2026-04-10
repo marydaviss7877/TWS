@@ -1962,39 +1962,6 @@ class TenantOrgService {
   }
 
   /**
-   * Get banking data
-   */
-  async getBankingData(tenantContext, options = {}) {
-    try {
-      const { BankAccount, Transaction } = require('../../models/Finance');
-      const filter = this.getTenantFilter(tenantContext);
-
-      const accounts = await BankAccount.find({ ...filter, isActive: true }).sort({ name: 1 });
-
-      // Get recent transactions if period specified
-      let transactions = [];
-      if (options.period) {
-        const periodFilter = this.getPeriodFilter(options.period);
-        transactions = await Transaction.find({
-          ...filter,
-          ...periodFilter
-        })
-          .populate('accountId', 'name')
-          .sort({ date: -1 })
-          .limit(50);
-      }
-
-      return {
-        accounts: accounts || [],
-        transactions: transactions || []
-      };
-    } catch (error) {
-      console.error('Error getting banking data:', error);
-      return { accounts: [], transactions: [] };
-    }
-  }
-
-  /**
    * Get chart of accounts
    */
   async getChartOfAccounts(tenantContext, options = {}) {

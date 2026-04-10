@@ -9,7 +9,6 @@ const { createSampleProject, createSampleTasks } = require('../defaultDataCreato
 const { createDefaultChartOfAccounts } = require('../defaultDataCreators/chartOfAccounts');
 const { createSampleFinanceTransactions } = require('../defaultDataCreators/financeTransactions');
 const { createSampleClientsAndVendors } = require('../defaultDataCreators/clientsAndVendors');
-const { createDefaultMeetingTemplates } = require('../defaultDataCreators/meetingTemplates');
 const { createDefaultNotificationTemplates } = require('../defaultDataCreators/notificationTemplates');
 const { createDefaultAuditLogs } = require('../defaultDataCreators/auditLogs');
 
@@ -50,10 +49,7 @@ async function seedDefaultData(tenant, organization, session) {
     // 9. Create sample clients and vendors
     await createSampleClientsAndVendors(tenant, organization, session);
     
-    // 10. Create default meeting templates
-    await createDefaultMeetingTemplates(tenant, organization, session);
-    
-    // 11. Create default notification templates
+    // 10. Create default notification templates
     await createDefaultNotificationTemplates(tenant, organization, session);
     
     // 12. Create default audit log entries

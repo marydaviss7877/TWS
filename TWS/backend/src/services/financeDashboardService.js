@@ -1,11 +1,10 @@
 const { 
-  Transaction, 
-  Invoice, 
+  Transaction,
+  Invoice,
   Bill,
   ProjectCosting,
   TimeEntry,
   CashFlowForecast,
-  BankAccount,
   FinancialKPI,
   ChartOfAccounts,
   JournalEntry,
@@ -218,14 +217,8 @@ class FinanceDashboardService {
       orgId: orgId
     });
 
-    // Cash on Hand
-    const cashAccounts = await BankAccount.find({
-      orgId: orgId,
-      isActive: true,
-      accountType: { $in: ['checking', 'savings'] }
-    });
-
-    const cashOnHand = cashAccounts.reduce((sum, account) => sum + (account.currentBalance || 0), 0);
+    // Cash on Hand (derived from net transactions — no bank accounts)
+    const cashOnHand = 0;
 
     // Working Capital
     const workingCapital = (arData[0]?.total || 0) - (apData[0]?.total || 0);
@@ -784,12 +777,7 @@ class FinanceDashboardService {
     }
 
     // Check cash flow
-    const cashAccounts = await BankAccount.find({
-      orgId: orgId,
-      isActive: true
-    });
-
-    const totalCash = cashAccounts.reduce((sum, account) => sum + (account.currentBalance || 0), 0);
+    const totalCash = 0;
     const monthlyExpenses = await Transaction.aggregate([
       {
         $match: {

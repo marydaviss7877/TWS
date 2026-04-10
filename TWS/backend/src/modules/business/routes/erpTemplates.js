@@ -317,9 +317,7 @@ router.post('/initialize-defaults', authenticateToken, requireRole(['supra_admin
           developmentSettings: {
             defaultSprintDuration: 14,
             storyPointScale: 'fibonacci',
-            timeTrackingEnabled: true,
-            codeQualityTracking: true,
-            automatedTesting: false
+            codeQualityTracking: true
           },
           billingConfig: {
             defaultHourlyRate: 75,

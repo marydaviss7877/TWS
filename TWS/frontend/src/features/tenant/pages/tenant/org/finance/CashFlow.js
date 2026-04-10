@@ -23,7 +23,6 @@ const CashFlow = () => {
   const { tenantSlug } = useParams();
   const [cashFlowData, setCashFlowData] = useState([]);
   const [forecasts, setForecasts] = useState([]);
-  const [bankAccounts, setBankAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForecastForm, setShowForecastForm] = useState(false);
   const [editingForecast, setEditingForecast] = useState(null);
@@ -36,7 +35,6 @@ const CashFlow = () => {
     category: '',
     amount: 0,
     description: '',
-    accountId: '',
     confidence: 'medium',
     isRecurring: false,
     recurringFrequency: 'monthly'
@@ -86,14 +84,6 @@ const CashFlow = () => {
         console.error('Error fetching cash flow statement:', err);
       }
 
-      // Fetch bank accounts
-      try {
-        const bankAccountsResponse = await tenantApiService.getBankingData(tenantSlug);
-        setBankAccounts(bankAccountsResponse.accounts || []);
-      } catch (err) {
-        console.error('Error fetching bank accounts:', err);
-        setBankAccounts([]);
-      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -139,11 +129,10 @@ const CashFlow = () => {
   };
 
   const calculateProjectedBalance = () => {
-    const currentBalance = bankAccounts.reduce((sum, account) => sum + (account.balance || 0), 0);
     const netCashFlow = calculateNetCashFlow();
     const forecastInflows = forecasts.filter(item => item.type === 'inflow').reduce((sum, item) => sum + (item.amount || 0), 0);
     const forecastOutflows = forecasts.filter(item => item.type === 'outflow').reduce((sum, item) => sum + (item.amount || 0), 0);
-    return currentBalance + netCashFlow + forecastInflows - forecastOutflows;
+    return netCashFlow + forecastInflows - forecastOutflows;
   };
 
   const getFilteredCashFlow = () => {
@@ -227,9 +216,6 @@ const CashFlow = () => {
                 </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
                   Forecasting
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
-                  Multi-Account
                 </span>
               </div>
             </div>
@@ -327,36 +313,6 @@ const CashFlow = () => {
               </p>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Bank Accounts Overview */}
-      <div className="glass-card-premium">
-        <div className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
-          <h2 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white flex items-center">
-            <BanknotesIcon className="h-5 w-5 mr-2 text-green-600 dark:text-green-400" />
-            Bank Accounts
-          </h2>
-        </div>
-        <div className="p-6">
-          {bankAccounts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {bankAccounts.map((account) => (
-                <div key={account._id} className="glass-card p-4 rounded-xl">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-white">{account.name}</h3>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{account.type || 'checking'}</span>
-                  </div>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{formatCurrency(account.balance || 0)}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <BanknotesIcon className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">No bank accounts found</p>
-            </div>
-          )}
         </div>
       </div>
 
@@ -577,7 +533,6 @@ const CashFlow = () => {
                                 category: forecast.category || '',
                                 amount: forecast.amount || 0,
                                 description: forecast.description || '',
-                                accountId: forecast.accountId || '',
                                 confidence: forecast.confidence || 'medium',
                                 isRecurring: forecast.isRecurring || false,
                                 recurringFrequency: forecast.recurringFrequency || 'monthly'
@@ -684,19 +639,6 @@ const CashFlow = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Account</label>
-                  <select
-                    value={formData.accountId}
-                    onChange={(e) => setFormData({...formData, accountId: e.target.value})}
-                    className="glass-input w-full"
-                  >
-                    <option value="">Select Account</option>
-                    {bankAccounts.map(account => (
-                      <option key={account._id} value={account._id}>{account.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Confidence</label>
                   <select
                     value={formData.confidence}
@@ -758,7 +700,6 @@ const CashFlow = () => {
                       category: '',
                       amount: 0,
                       description: '',
-                      accountId: '',
                       confidence: 'medium',
                       isRecurring: false,
                       recurringFrequency: 'monthly'

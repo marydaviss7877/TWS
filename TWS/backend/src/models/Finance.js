@@ -494,50 +494,6 @@ const cashFlowForecastSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Bank Account Schema
-const bankAccountSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  accountNumber: String,
-  routingNumber: String,
-  bankName: String,
-  accountType: {
-    type: String,
-    enum: ['checking', 'savings', 'money_market', 'cd'],
-    default: 'checking'
-  },
-  currency: {
-    type: String,
-    default: 'USD'
-  },
-  openingBalance: {
-    type: Number,
-    default: 0
-  },
-  currentBalance: {
-    type: Number,
-    default: 0
-  },
-  lastReconciled: Date,
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  integration: {
-    provider: String,
-    accountId: String,
-    lastSync: Date
-  },
-  orgId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Organization',
-    required: true
-  }
-}, {
-  timestamps: true
-});
 
 // Enhanced Invoice Schema for Accounts Receivable
 const invoiceSchema = new mongoose.Schema({
@@ -905,11 +861,6 @@ cashFlowForecastSchema.index({ period: 1 });
 cashFlowForecastSchema.index({ status: 1 });
 cashFlowForecastSchema.index({ orgId: 1 });
 
-bankAccountSchema.index({ name: 1 });
-bankAccountSchema.index({ accountNumber: 1 });
-bankAccountSchema.index({ isActive: 1 });
-bankAccountSchema.index({ orgId: 1 });
-
 clientSchema.index({ name: 1 });
 clientSchema.index({ email: 1 });
 clientSchema.index({ status: 1 });
@@ -947,10 +898,9 @@ module.exports = {
   ProjectCosting: mongoose.model('ProjectCosting', projectCostingSchema),
   TimeEntry: mongoose.model('TimeEntry', timeEntrySchema),
   
-  // Forecasting & Banking
+  // Forecasting
   CashFlowForecast: mongoose.model('CashFlowForecast', cashFlowForecastSchema),
-  BankAccount: mongoose.model('BankAccount', bankAccountSchema),
-  
+
   // Analytics & KPIs
   FinancialKPI: mongoose.model('FinancialKPI', financialKpiSchema)
 };
