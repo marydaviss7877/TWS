@@ -955,7 +955,7 @@ router.post('/hr/employees', verifyERPToken, employeesWrite, async (req, res) =>
 
 router.post('/hr/employees/invite', verifyERPToken, employeesWrite, async (req, res) => {
   try {
-    const { email, erpRole = 'employee', hrSubRole } = req.body;
+    const { email, erpRole = 'employee', hrSubRole, financeSubRole } = req.body;
     if (!email) return res.status(400).json({ success: false, message: 'email is required' });
 
     const tenantContext = req.tenantContext || await buildTenantContext(req);
@@ -998,11 +998,13 @@ router.post('/hr/employees/invite', verifyERPToken, employeesWrite, async (req, 
       existingTU.invitation.invitationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       existingTU.status = 'pending';
       if (hrSubRole && erpRole === 'hr') existingTU.hrSubRole = hrSubRole;
+      if (financeSubRole && erpRole === 'finance') existingTU.financeSubRole = financeSubRole;
       await existingTU.save();
       tenantUser = existingTU;
     } else {
       tenantUser = await TenantUser.inviteUser(user._id, tenantId, req.user?._id, erpRole);
       if (hrSubRole && erpRole === 'hr') { tenantUser.hrSubRole = hrSubRole; await tenantUser.save(); }
+      if (financeSubRole && erpRole === 'finance') { tenantUser.financeSubRole = financeSubRole; await tenantUser.save(); }
     }
 
     const envConfig = require('../../../config/environment');
@@ -1148,10 +1150,11 @@ router.get('/users/:id', verifyERPToken, async (req, res) => {
     const user = await tenantOrgService.getUserById(tenantContext, id);
     const userObj = user?.toObject ? user.toObject() : { ...user };
     const TenantUser = require('../../../models/TenantUser');
-    const tenantUser = await TenantUser.findOne({ userId: id, tenantId }).select('roles hrSubRole status').lean();
+    const tenantUser = await TenantUser.findOne({ userId: id, tenantId }).select('roles hrSubRole financeSubRole status').lean();
     if (tenantUser) {
       userObj.role = tenantUser.roles?.[0]?.role || userObj.role;
       userObj.hrSubRole = tenantUser.hrSubRole ?? null;
+      userObj.financeSubRole = tenantUser.financeSubRole ?? null;
       userObj.portalTenantStatus = tenantUser.status;
     }
     res.json({ success: true, data: userObj });
@@ -1178,13 +1181,13 @@ router.patch('/users/:id/admin-password', verifyERPToken, strictLimiter, async (
   }
 });
 
-// Update user (includes TenantUser.hrSubRole when role is hr — UPR Phase 2)
+// Update user (includes TenantUser.hrSubRole / financeSubRole — UPR Phase 2)
 router.put('/users/:id', verifyERPToken, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const tenantId = req.tenant?._id || tenantContext?.tenantId;
     const { id } = req.params;
-    const { hrSubRole, ...userData } = req.body;
+    const { hrSubRole, financeSubRole, ...userData } = req.body;
 
     if (hrSubRole !== undefined) {
       const valid = ['manager', 'executive', 'payroll_officer'].includes(hrSubRole);
@@ -1196,6 +1199,24 @@ router.put('/users/:id', verifyERPToken, async (req, res) => {
       const tenantUser = await TenantUser.findOne({ userId: id, tenantId });
       if (tenantUser) {
         tenantUser.hrSubRole = (hrSubRole === null || hrSubRole === '') ? undefined : hrSubRole;
+        await tenantUser.save();
+        await invalidateResolvedPermissions(tenantId, id);
+      }
+    }
+
+    if (financeSubRole !== undefined) {
+      const validFin = ['manager', 'accountant', 'analyst', 'ap_officer', 'ar_officer'].includes(financeSubRole);
+      if (financeSubRole !== null && financeSubRole !== '' && !validFin) {
+        return res.status(400).json({
+          success: false,
+          message: 'financeSubRole must be one of: manager, accountant, analyst, ap_officer, ar_officer'
+        });
+      }
+      const TenantUser = require('../../../models/TenantUser');
+      const { invalidateResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
+      const tenantUser = await TenantUser.findOne({ userId: id, tenantId });
+      if (tenantUser) {
+        tenantUser.financeSubRole = (financeSubRole === null || financeSubRole === '') ? undefined : financeSubRole;
         await tenantUser.save();
         await invalidateResolvedPermissions(tenantId, id);
       }
@@ -1515,6 +1536,61 @@ router.post('/users/profile/picture', verifyERPToken, strictLimiter, (req, res, 
   }
 });
 
+// Upload profile picture for a specific user (admin flow: create user/employee with picture)
+router.post('/users/:id/picture', verifyERPToken, strictLimiter, (req, res, next) => {
+  profilePicUpload.single('profilePic')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ success: false, message: 'Image size must be less than 5MB' });
+      }
+      return res.status(400).json({ success: false, message: err.message || 'Invalid file. Only image files are allowed (jpeg, jpg, png, gif, webp).' });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+
+    const targetUserId = req.params.id;
+    const user = await User.findById(targetUserId);
+    if (!user) {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.profilePicUrl) {
+      try {
+        const oldPath = path.join(process.cwd(), user.profilePicUrl.replace(/^\//, ''));
+        if (await fs.access(oldPath).then(() => true).catch(() => false)) {
+          await fs.unlink(oldPath);
+        }
+      } catch (oldPicError) {
+        console.error('Error deleting old profile picture (admin upload):', oldPicError);
+      }
+    }
+
+    const relativePath = `/uploads/profile-pictures/${req.file.filename}`;
+    user.profilePicUrl = relativePath;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile picture uploaded successfully',
+      data: { profilePicUrl: relativePath, userId: user._id }
+    });
+  } catch (error) {
+    console.error('Upload user profile picture error:', error);
+    if (req.file) {
+      try {
+        await fs.unlink(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error cleaning up file:', unlinkError);
+      }
+    }
+    res.status(500).json({ success: false, message: 'Failed to upload profile picture', error: error.message });
+  }
+});
+
 // Serve profile pictures (static file serving)
 router.get('/uploads/profile-pictures/:filename', verifyERPToken, async (req, res) => {
   try {
@@ -1820,7 +1896,8 @@ router.get('/me/permissions', verifyTenantOrgAccess, async (req, res) => {
     }
     const permissionResolver = require('../../../services/tenant/permissionResolver.service');
     const resolved = await permissionResolver.getResolvedPermissions(userId, tenantId, {
-      hrSubRole: req.user?.hrSubRole
+      hrSubRole: req.user?.hrSubRole,
+      financeSubRole: req.user?.financeSubRole
     });
     const MODULES = [
       'projects', 'hr', 'finance', 'payroll', 'documents', 'analytics', 'nucleus',
@@ -1845,6 +1922,7 @@ router.get('/me/permissions', verifyTenantOrgAccess, async (req, res) => {
         modules,
         departmentIds: resolved.departmentIds || [],
         hrSubRole: resolved.hrSubRole || null,
+        financeSubRole: resolved.financeSubRole || null,
         projectIds
       }
     });

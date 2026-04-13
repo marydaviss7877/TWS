@@ -81,7 +81,10 @@ function requireErpAccess(options = {}) {
 
       // Step 5: Role / permission (resolved UPR or legacy allowedRoles)
       if (permissionModule && permissionAction) {
-        const resolved = await getResolvedPermissions(req.user._id, tenantId, { hrSubRole: req.user.hrSubRole });
+        const resolved = await getResolvedPermissions(req.user._id, tenantId, {
+          hrSubRole: req.user.hrSubRole,
+          financeSubRole: req.user.financeSubRole
+        });
         const actions = Array.isArray(permissionAction) ? permissionAction : [permissionAction];
         let permitted = hasAnyPermission(resolved.permissions, permissionModule, actions);
         // Self-service: employees may read only their own row via ?userId=<login user id>

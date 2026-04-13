@@ -4,7 +4,11 @@
  */
 
 const PROJECT_MANAGEMENT_PERMISSIONS = require('../../config/projectManagementPermissions');
-const { BASE_ROLE_PERMISSIONS, HR_SUBROLE_PERMISSIONS } = require('./permissionResolver.service');
+const {
+  BASE_ROLE_PERMISSIONS,
+  HR_SUBROLE_PERMISSIONS,
+  FINANCE_SUBROLE_PERMISSIONS
+} = require('./permissionResolver.service');
 
 /** @param {boolean|string} value */
 function normalizeScope(value) {
@@ -101,6 +105,32 @@ function invertPrimaryRolePermissions(baseRolePermissions) {
     .sort((a, b) => a.code.localeCompare(b.code));
 }
 
+function invertFinanceSubrolePermissions(finSub) {
+  const codeToLabels = new Map();
+  for (const [sub, list] of Object.entries(finSub)) {
+    if (!Array.isArray(list)) continue;
+    const label = `finance (${sub})`;
+    for (const code of list) {
+      if (!codeToLabels.has(code)) codeToLabels.set(code, []);
+      codeToLabels.get(code).push(label);
+    }
+  }
+  return [...codeToLabels.entries()]
+    .map(([code, labels]) => {
+      const uniq = [...new Set(labels)].sort();
+      const module = code.includes(':') ? code.slice(0, code.indexOf(':')) : code;
+      return {
+        code,
+        module,
+        scope: 'full',
+        roles: uniq.map((role) => ({ role, scope: 'full', displayRole: role })),
+        rolesDisplay: uniq.join(', '),
+        accessTypes: ['Full']
+      };
+    })
+    .sort((a, b) => a.code.localeCompare(b.code));
+}
+
 function invertHrSubrolePermissions(hrSub) {
   const codeToLabels = new Map();
   for (const [sub, list] of Object.entries(hrSub)) {
@@ -148,6 +178,12 @@ function buildPermissionCatalog() {
       description: 'When a user\'s primary role is hr, these strings apply by hrSubRole.',
       roleSystem: 'tenant_hr_subrole',
       entries: invertHrSubrolePermissions(HR_SUBROLE_PERMISSIONS)
+    },
+    organizationFinanceSubroles: {
+      title: 'Organization — Finance sub-roles (UPR)',
+      description: 'When a user\'s primary role is finance, these strings apply by financeSubRole.',
+      roleSystem: 'tenant_finance_subrole',
+      entries: invertFinanceSubrolePermissions(FINANCE_SUBROLE_PERMISSIONS)
     }
   };
 }
@@ -156,5 +192,6 @@ module.exports = {
   invertProjectManagementPermissions,
   invertPrimaryRolePermissions,
   invertHrSubrolePermissions,
+  invertFinanceSubrolePermissions,
   buildPermissionCatalog
 };

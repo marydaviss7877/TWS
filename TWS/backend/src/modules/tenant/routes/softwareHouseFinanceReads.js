@@ -5,8 +5,6 @@
 
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 
-const FINANCE_READ_ROLES = ['owner', 'admin', 'project_manager', 'hr', 'employee', 'contractor'];
-
 function toOrgObjectId(raw) {
   if (raw == null || raw === '') return null;
   const mongoose = require('mongoose');
@@ -25,7 +23,7 @@ function orgIdFromReq(req) {
 module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
   const {
     unifiedSoftwareHouseAuth,
-    requireRole,
+    requireErpAccess,
     Transaction,
     Invoice,
     Bill,
@@ -35,10 +33,12 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
     ProjectCosting
   } = deps;
 
+  const shFinanceRead = requireErpAccess({ module: 'finance', action: 'read' });
+
   router.get(
     '/finance',
     unifiedSoftwareHouseAuth,
-    requireRole(FINANCE_READ_ROLES),
+    shFinanceRead,
     ErrorHandler.asyncHandler(async (req, res) => {
       const orgId = orgIdFromReq(req);
       if (!orgId) {
@@ -98,7 +98,7 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
   router.get(
     '/finance/accounts-payable',
     unifiedSoftwareHouseAuth,
-    requireRole(FINANCE_READ_ROLES),
+    shFinanceRead,
     ErrorHandler.asyncHandler(async (req, res) => {
       const orgId = orgIdFromReq(req);
       if (!orgId) return res.status(400).json({ success: false, message: 'Organization required' });
@@ -128,7 +128,7 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
   router.get(
     '/finance/accounts-receivable',
     unifiedSoftwareHouseAuth,
-    requireRole(FINANCE_READ_ROLES),
+    shFinanceRead,
     ErrorHandler.asyncHandler(async (req, res) => {
       const orgId = orgIdFromReq(req);
       if (!orgId) return res.status(400).json({ success: false, message: 'Organization required' });
@@ -158,7 +158,7 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
   router.get(
     '/finance/transactions/recent',
     unifiedSoftwareHouseAuth,
-    requireRole(FINANCE_READ_ROLES),
+    shFinanceRead,
     ErrorHandler.asyncHandler(async (req, res) => {
       const orgId = orgIdFromReq(req);
       if (!orgId) return res.status(400).json({ success: false, message: 'Organization required' });
@@ -183,7 +183,7 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
   router.get(
     '/finance/invoices/overdue',
     unifiedSoftwareHouseAuth,
-    requireRole(FINANCE_READ_ROLES),
+    shFinanceRead,
     ErrorHandler.asyncHandler(async (req, res) => {
       const orgId = orgIdFromReq(req);
       if (!orgId) return res.status(400).json({ success: false, message: 'Organization required' });
@@ -218,7 +218,7 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
   router.get(
     '/finance/bills/upcoming',
     unifiedSoftwareHouseAuth,
-    requireRole(FINANCE_READ_ROLES),
+    shFinanceRead,
     ErrorHandler.asyncHandler(async (req, res) => {
       const orgId = orgIdFromReq(req);
       if (!orgId) return res.status(400).json({ success: false, message: 'Organization required' });
@@ -253,7 +253,7 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
   router.get(
     '/finance/projects/profitability',
     unifiedSoftwareHouseAuth,
-    requireRole(FINANCE_READ_ROLES),
+    shFinanceRead,
     ErrorHandler.asyncHandler(async (req, res) => {
       const orgId = orgIdFromReq(req);
       if (!orgId) return res.status(400).json({ success: false, message: 'Organization required' });
@@ -287,7 +287,7 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
   router.get(
     '/finance/cash-flow',
     unifiedSoftwareHouseAuth,
-    requireRole(FINANCE_READ_ROLES),
+    shFinanceRead,
     ErrorHandler.asyncHandler(async (req, res) => {
       const orgId = orgIdFromReq(req);
       if (!orgId) return res.status(400).json({ success: false, message: 'Organization required' });
@@ -311,7 +311,7 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
   router.get(
     '/finance/cash-flow/forecasts',
     unifiedSoftwareHouseAuth,
-    requireRole(FINANCE_READ_ROLES),
+    shFinanceRead,
     ErrorHandler.asyncHandler(async (req, res) => {
       const orgId = orgIdFromReq(req);
       if (!orgId) return res.status(400).json({ success: false, message: 'Organization required' });
@@ -355,7 +355,7 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
   router.get(
     '/finance/vendors',
     unifiedSoftwareHouseAuth,
-    requireRole(FINANCE_READ_ROLES),
+    shFinanceRead,
     ErrorHandler.asyncHandler(async (req, res) => {
       const orgId = orgIdFromReq(req);
       if (!orgId) return res.status(400).json({ success: false, message: 'Organization required' });
@@ -367,7 +367,7 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
   router.get(
     '/finance/chart-of-accounts',
     unifiedSoftwareHouseAuth,
-    requireRole(FINANCE_READ_ROLES),
+    shFinanceRead,
     ErrorHandler.asyncHandler(async (req, res) => {
       const orgId = orgIdFromReq(req);
       if (!orgId) return res.status(400).json({ success: false, message: 'Organization required' });

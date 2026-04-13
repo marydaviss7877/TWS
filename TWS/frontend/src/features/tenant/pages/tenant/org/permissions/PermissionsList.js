@@ -13,7 +13,8 @@ import toast from 'react-hot-toast';
 const emptyCatalog = {
   softwareHouse: { title: '', description: '', roleSystem: '', entries: [] },
   organization: { title: '', description: '', roleSystem: '', entries: [] },
-  organizationHrSubroles: { title: '', description: '', roleSystem: '', entries: [] }
+  organizationHrSubroles: { title: '', description: '', roleSystem: '', entries: [] },
+  organizationFinanceSubroles: { title: '', description: '', roleSystem: '', entries: [] }
 };
 
 function CatalogSection({ section, searchTerm }) {
@@ -239,6 +240,7 @@ const PermissionsList = () => {
       <CatalogSection section={catalog.softwareHouse} searchTerm={searchTerm} />
       <CatalogSection section={catalog.organization} searchTerm={searchTerm} />
       <CatalogSection section={catalog.organizationHrSubroles} searchTerm={searchTerm} />
+      <CatalogSection section={catalog.organizationFinanceSubroles} searchTerm={searchTerm} />
 
       <details className="group border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
         <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-200 list-none">

@@ -19,9 +19,33 @@ const DepartmentsList = () => {
   const [departments, setDepartments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
+  const [isSeedingTemplate, setIsSeedingTemplate] = useState(false);
+  const [isUpdatingDepartment, setIsUpdatingDepartment] = useState(false);
+  const [editDepartment, setEditDepartment] = useState(null);
+  const [editForm, setEditForm] = useState({ name: '', code: '', description: '', departmentHead: '' });
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
 
   useEffect(() => {
     fetchDepartments();
+  }, [tenantSlug]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!tenantSlug) return;
+      try {
+        setUsersLoading(true);
+        const data = await tenantProjectApiService.getUsers(tenantSlug, { page: 1, limit: 200, status: 'active' });
+        const list = Array.isArray(data?.users) ? data.users : [];
+        setUsers(list);
+      } catch (error) {
+        console.error('Error fetching users for department head:', error);
+        setUsers([]);
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+    fetchUsers();
   }, [tenantSlug]);
 
   const fetchDepartments = async () => {
@@ -69,11 +93,118 @@ const DepartmentsList = () => {
     }
   };
 
+  const handleApplyTemplate = async () => {
+    if (!window.confirm('Apply starter departments template? Existing department codes will be skipped.')) {
+      return;
+    }
+    try {
+      setIsSeedingTemplate(true);
+      const response = await fetch(`/api/tenant/${tenantSlug}/departments/template`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Failed to apply department template');
+      }
+      const createdCount = payload?.data?.created?.length || 0;
+      const skippedCount = payload?.data?.skipped?.length || 0;
+      toast.success(`Template applied. Created ${createdCount}, skipped ${skippedCount}.`);
+      fetchDepartments();
+    } catch (error) {
+      console.error('Error applying department template:', error);
+      toast.error(error.message || 'Failed to apply department template');
+    } finally {
+      setIsSeedingTemplate(false);
+    }
+  };
+
+  const openEditModal = (department) => {
+    setEditDepartment(department);
+    setEditForm({
+      name: department?.name || '',
+      code: department?.code || '',
+      description: department?.description || '',
+      departmentHead: typeof department?.departmentHead === 'object'
+        ? (department?.departmentHead?._id || '')
+        : (department?.departmentHead || '')
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditDepartment(null);
+    setEditForm({ name: '', code: '', description: '', departmentHead: '' });
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: name === 'code' ? value.toUpperCase().replace(/[^A-Z0-9-]/g, '') : value
+    }));
+  };
+
+  const handleUpdateDepartment = async (e) => {
+    e.preventDefault();
+    if (!editDepartment?._id) return;
+    if (!editForm.name.trim() || !editForm.code.trim()) {
+      toast.error('Name and code are required');
+      return;
+    }
+    try {
+      setIsUpdatingDepartment(true);
+      const response = await fetch(`/api/tenant/${tenantSlug}/departments/${editDepartment._id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editForm.name.trim(),
+          code: editForm.code.trim(),
+          description: editForm.description?.trim() || '',
+          departmentHead: editForm.departmentHead?.trim() || undefined
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Failed to update department');
+      }
+      const sync = payload?.data?.nameSync;
+      if (sync) {
+        const total = (sync.tenantUsers || 0) + (sync.users || 0) + (sync.employees || 0) + (sync.departmentAccess || 0);
+        toast.success(`Department updated. Synced ${total} assignment fields.`);
+      } else {
+        toast.success('Department updated successfully');
+      }
+      closeEditModal();
+      fetchDepartments();
+    } catch (error) {
+      console.error('Error updating department:', error);
+      toast.error(error.message || 'Failed to update department');
+    } finally {
+      setIsUpdatingDepartment(false);
+    }
+  };
+
   const filteredDepartments = departments.filter(department =>
     department.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     department.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     department.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const getDepartmentHeadLabel = (department) => {
+    const rawHead = department?.departmentHead;
+    const normalizedName = typeof rawHead === 'object' ? rawHead?.fullName : rawHead;
+
+    if (typeof normalizedName !== 'string') return 'N/A';
+
+    const cleaned = normalizedName.trim().toLowerCase();
+    if (!cleaned || cleaned === 'null' || cleaned === 'undefined' || cleaned === 'n/a') {
+      return 'N/A';
+    }
+
+    return typeof rawHead === 'object' ? rawHead.fullName : normalizedName;
+  };
 
   if (loading) {
     return (
@@ -114,14 +245,22 @@ const DepartmentsList = () => {
             Manage organizational departments
           </p>
         </div>
-        <button
-         
-          onClick={() => navigate(`/${tenantSlug}/org/departments/create`)}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Create Department
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleApplyTemplate}
+            disabled={isSeedingTemplate}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-60"
+          >
+            {isSeedingTemplate ? 'Applying...' : 'Apply Template'}
+          </button>
+          <button
+            onClick={() => navigate(`/${tenantSlug}/org/departments/create`)}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Create Department
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -193,7 +332,7 @@ const DepartmentsList = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {department.departmentHead?.fullName || 'N/A'}
+                      {getDepartmentHeadLabel(department)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -209,6 +348,13 @@ const DepartmentsList = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => openEditModal(department)}
+                        className="text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300"
+                        title="Edit Department"
+                      >
+                        <PencilIcon className="h-5 w-5" />
+                      </button>
                       <button
                         onClick={() => navigate(`/${tenantSlug}/org/departments/${department._id}/dashboard`)}
                         className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
@@ -231,6 +377,91 @@ const DepartmentsList = () => {
           </tbody>
         </table>
       </div>
+
+      {editDepartment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-lg bg-white dark:bg-gray-800 shadow-xl">
+            <form onSubmit={handleUpdateDepartment} className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Department</h2>
+                <button type="button" onClick={closeEditModal} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                <input
+                  name="name"
+                  value={editForm.name}
+                  onChange={handleEditChange}
+                  required
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Code</label>
+                <input
+                  name="code"
+                  value={editForm.code}
+                  onChange={handleEditChange}
+                  required
+                  className="mt-1 block w-full uppercase border border-gray-300 rounded-md shadow-sm py-2 px-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                <textarea
+                  name="description"
+                  value={editForm.description}
+                  onChange={handleEditChange}
+                  rows={3}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Department Head</label>
+                <select
+                  name="departmentHead"
+                  value={editForm.departmentHead}
+                  onChange={handleEditChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="">Unassigned</option>
+                  {users.map((user) => (
+                    <option key={user._id} value={user._id}>
+                      {user.fullName || user.name || user.email}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {usersLoading ? 'Loading users...' : 'Select who leads this department.'}
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="px-4 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingDepartment}
+                  className="px-4 py-2 text-sm rounded-md bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60"
+                >
+                  {isUpdatingDepartment ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

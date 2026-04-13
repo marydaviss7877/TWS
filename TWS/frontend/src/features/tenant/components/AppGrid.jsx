@@ -21,6 +21,13 @@ import {
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { APP_METADATA } from '../../../constants/navigationConstants';
 import { cn } from '../../../lib/utils';
+import {
+  loadRecentApps,
+  saveRecentApps,
+  pushRecentApp,
+  rankLauncherItem,
+  LAUNCHER_UI,
+} from './launcher/launcherUtils';
 
 // ── AppCard ───────────────────────────────────────────────────────────────────
 const AppCard = React.memo(function AppCard({
@@ -30,15 +37,23 @@ const AppCard = React.memo(function AppCard({
   onNavigate,
   onToggleFav,
 }) {
-  const meta   = APP_METADATA[item.key] ?? { gradient: 'from-gray-500 to-gray-600', description: '' };
-  const Icon   = item.icon;
+  const meta = APP_METADATA[item.key] ?? { gradient: 'from-gray-500 to-gray-600', description: '' };
+  const Icon = item.icon;
 
   return (
-    <button
-      type="button"
-      onClick={() => onNavigate(item.path)}
+    <div
+      role="button"
+      tabIndex={0}
+      data-launcher-card="true"
+      onClick={() => onNavigate(item.path, item.key)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onNavigate(item.path, item.key);
+        }
+      }}
       className={cn(
-        'group relative flex flex-col items-center gap-2 rounded-2xl p-3 transition-all duration-150 outline-none',
+        `group relative flex flex-col items-center ${LAUNCHER_UI.cardGap} ${LAUNCHER_UI.cardRadius} ${LAUNCHER_UI.cardPadding} transition-all duration-150 outline-none`,
         'hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary-500',
         isActive
           ? 'bg-primary-50 dark:bg-primary-900/30 ring-2 ring-primary-400 ring-offset-1'
@@ -55,7 +70,6 @@ const AppCard = React.memo(function AppCard({
           isFav && 'opacity-100'
         )}
         aria-label={isFav ? 'Remove from favourites' : 'Add to favourites'}
-        tabIndex={-1}
       >
         {isFav
           ? <StarSolidIcon  className="h-3.5 w-3.5 text-amber-400" />
@@ -65,27 +79,32 @@ const AppCard = React.memo(function AppCard({
 
       {/* Icon bubble */}
       <div className={cn(
-        'flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br shadow-md',
+        `flex items-center justify-center ${LAUNCHER_UI.iconWrap} bg-gradient-to-br shadow-md`,
         meta.gradient
       )}>
-        {Icon && <Icon className="h-7 w-7 text-white drop-shadow-sm" />}
+        {Icon && <Icon className={`${LAUNCHER_UI.iconSize} text-white drop-shadow-sm`} />}
       </div>
 
       {/* Label */}
       <span className={cn(
-        'w-20 text-center text-xs font-medium leading-snug',
+        `${LAUNCHER_UI.titleWidth} text-center ${LAUNCHER_UI.titleSize} font-medium leading-snug`,
         isActive
           ? 'text-primary-700 dark:text-primary-300'
-          : 'text-gray-700 dark:text-gray-200'
+          : 'text-gray-800 dark:text-gray-100'
       )}>
         {item.label}
       </span>
+      {meta.description && (
+        <span className={`${LAUNCHER_UI.descWidth} text-center ${LAUNCHER_UI.descSize} leading-tight text-gray-500 dark:text-gray-400 truncate`}>
+          {meta.description}
+        </span>
+      )}
 
       {/* Active indicator dot */}
       {isActive && (
         <span className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary-500" />
       )}
-    </button>
+    </div>
   );
 });
 
@@ -132,6 +151,7 @@ const AppGrid = ({
   const navigate    = useNavigate();
   const searchRef   = useRef(null);
   const [search, setSearch] = useState('');
+  const [recentKeys, setRecentKeys] = useState([]);
 
   // Focus search when opened
   useEffect(() => {
@@ -139,6 +159,11 @@ const AppGrid = ({
     const id = setTimeout(() => searchRef.current?.focus(), 80);
     return () => clearTimeout(id);
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setRecentKeys(loadRecentApps(tenantSlug));
+  }, [isOpen, tenantSlug]);
 
   // Keyboard: Escape to close
   useEffect(() => {
@@ -148,32 +173,71 @@ const AppGrid = ({
     return () => document.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
+  // Keyboard: arrow navigation between cards
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e) => {
+      if (e.target?.tagName === 'INPUT' || e.target?.tagName === 'TEXTAREA') return;
+      if (!['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+      const cards = Array.from(document.querySelectorAll('[data-launcher-card="true"]'));
+      if (!cards.length) return;
+      const active = document.activeElement;
+      let idx = cards.findIndex((el) => el === active);
+      if (idx === -1) {
+        cards[0].focus();
+        return;
+      }
+      e.preventDefault();
+      const computed = window.getComputedStyle(cards[0].parentElement);
+      const columns = Math.max(1, computed.gridTemplateColumns.split(' ').length);
+      if (e.key === 'ArrowRight') idx = Math.min(cards.length - 1, idx + 1);
+      if (e.key === 'ArrowLeft') idx = Math.max(0, idx - 1);
+      if (e.key === 'ArrowDown') idx = Math.min(cards.length - 1, idx + columns);
+      if (e.key === 'ArrowUp') idx = Math.max(0, idx - columns);
+      cards[idx].focus();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen]);
+
   // Prevent body scroll while open
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
-  const handleNavigate = useCallback((path) => {
+  const handleNavigate = useCallback((path, appKey) => {
+    if (appKey) {
+      setRecentKeys((prev) => {
+        const next = pushRecentApp(prev, appKey);
+        saveRecentApps(tenantSlug, next);
+        return next;
+      });
+    }
     navigate(path);
     onClose();
-  }, [navigate, onClose]);
+  }, [navigate, onClose, tenantSlug]);
 
   if (!isOpen) return null;
 
   // ── Filtered app list ───────────────────────────────────────────────────────
   const q = search.trim().toLowerCase();
   const visible = q
-    ? filteredMenuItems.filter(m =>
-        m.label.toLowerCase().includes(q) ||
-        (APP_METADATA[m.key]?.description ?? '').toLowerCase().includes(q)
-      )
+    ? filteredMenuItems
+      .filter((m) => rankLauncherItem(m, q, APP_METADATA) < 99)
+      .sort((a, b) => rankLauncherItem(a, q, APP_METADATA) - rankLauncherItem(b, q, APP_METADATA) || a.label.localeCompare(b.label))
     : filteredMenuItems;
 
   const favSet = new Set(favoriteKeys);
 
   const favItems   = visible.filter(m => favSet.has(m.key));
   const otherItems = visible.filter(m => !favSet.has(m.key));
+  const recentItems = visible.filter((m) => recentKeys.includes(m.key));
+  recentItems.sort((a, b) => recentKeys.indexOf(a.key) - recentKeys.indexOf(b.key));
+  const clearRecent = () => {
+    setRecentKeys([]);
+    saveRecentApps(tenantSlug, []);
+  };
 
   const orgInitial  = (orgName || tenantSlug || 'T').charAt(0).toUpperCase();
 
@@ -265,7 +329,27 @@ const AppGrid = ({
           ) : (
             <>
               <GridSection
-                title="Favourites"
+                title="Recent Apps"
+                emoji="🕘"
+                items={recentItems}
+                activeAppKey={activeAppKey}
+                favoriteKeys={favoriteKeys}
+                onNavigate={handleNavigate}
+                onToggleFav={toggleFavorite}
+              />
+              {recentItems.length > 0 && (
+                <div className="flex justify-end -mt-4 mb-3">
+                  <button
+                    type="button"
+                    onClick={clearRecent}
+                    className="text-[11px] text-primary-600 dark:text-primary-400 hover:underline"
+                  >
+                    Clear Recent
+                  </button>
+                </div>
+              )}
+              <GridSection
+                title="Pinned Apps"
                 emoji="⭐"
                 items={favItems}
                 activeAppKey={activeAppKey}
@@ -288,7 +372,7 @@ const AppGrid = ({
         {/* ── Footer hint ─────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 px-5 py-2">
           <p className="text-[10px] text-gray-400 dark:text-gray-600">
-            Hover an app and click ⭐ to pin it to Favourites
+            Hover an app and click ⭐ to pin it
           </p>
           <p className="text-[10px] text-gray-400 dark:text-gray-600">
             Press <kbd className="rounded bg-gray-100 dark:bg-gray-800 px-1 font-mono text-[10px]">Esc</kbd> to close

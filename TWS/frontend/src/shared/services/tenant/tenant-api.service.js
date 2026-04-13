@@ -196,13 +196,13 @@ const tenantApiService = {
   },
 
   // Send a portal invite to a new team member by email
-  inviteEmployee: async (tenantSlug, { email, fullName, erpRole, hrSubRole }) => {
+  inviteEmployee: async (tenantSlug, { email, fullName, erpRole, hrSubRole, financeSubRole }) => {
     const url = `/api/tenant/${tenantSlug}/organization/hr/employees/invite`;
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ email, fullName, erpRole, hrSubRole })
+      body: JSON.stringify({ email, fullName, erpRole, hrSubRole, financeSubRole })
     });
     const json = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(json.message || `Server error ${response.status}`);

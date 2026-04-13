@@ -694,7 +694,7 @@ class TenantOrgService {
         || rawEmail.toLowerCase();
 
       const erpRole = userData.erpRole || userData.role || 'employee';
-      const tenantRoleEnum = ['owner', 'admin', 'manager', 'project_manager', 'hr', 'employee', 'contractor', 'client'];
+      const tenantRoleEnum = ['owner', 'admin', 'manager', 'project_manager', 'hr', 'finance', 'employee', 'contractor', 'client'];
       const role = tenantRoleEnum.includes(erpRole) ? erpRole : 'employee';
 
       let plainPassword = userData.password != null ? String(userData.password) : '';
@@ -740,6 +740,9 @@ class TenantOrgService {
           };
           if (erpRole === 'hr' && userData.hrSubRole) {
             tuSet.hrSubRole = userData.hrSubRole;
+          }
+          if (erpRole === 'finance' && userData.financeSubRole) {
+            tuSet.financeSubRole = userData.financeSubRole;
           }
           await TenantUser.findOneAndUpdate(
             { userId: user._id, tenantId: mongoTenantId },
@@ -1116,6 +1119,9 @@ class TenantOrgService {
       // ERP portal role and optional HR sub-role
       const erpRole = employeeData.erpRole || 'employee';
       const hrSubRole = (erpRole === 'hr' && employeeData.hrSubRole) ? employeeData.hrSubRole : undefined;
+      const financeSubRole = (erpRole === 'finance' && employeeData.financeSubRole)
+        ? employeeData.financeSubRole
+        : undefined;
 
       // Auth always uses the primary (default connection) User collection for POST /api/auth/login.
       // When the tenant uses a separate DB, we still create the User on the primary DB, then mirror
@@ -1184,6 +1190,7 @@ class TenantOrgService {
             }
           };
           if (hrSubRole) baseDoc.hrSubRole = hrSubRole;
+          if (financeSubRole) baseDoc.financeSubRole = financeSubRole;
           if (!existingTU) {
             await TenantUser.create(baseDoc);
           } else {
@@ -1194,6 +1201,7 @@ class TenantOrgService {
               ...baseDoc.tenantSpecificInfo
             };
             if (hrSubRole) existingTU.hrSubRole = hrSubRole;
+            if (financeSubRole) existingTU.financeSubRole = financeSubRole;
             await existingTU.save();
           }
           const { invalidateResolvedPermissions } = require('./permissionResolver.service');
@@ -1226,6 +1234,7 @@ class TenantOrgService {
           hireDate: employeeData.hireDate ? new Date(employeeData.hireDate) : new Date()
         };
         if (hrSubRole && erpRole === 'hr') tu.hrSubRole = hrSubRole;
+        if (financeSubRole && erpRole === 'finance') tu.financeSubRole = financeSubRole;
         await tu.save();
         const { invalidateResolvedPermissions } = require('./permissionResolver.service');
         await invalidateResolvedPermissions(resolvedTenantId, tu.userId).catch(() => {});
@@ -1368,6 +1377,7 @@ class TenantOrgService {
       // Strip internal fields that don't belong on Employee model
       delete employeePayload.erpRole;
       delete employeePayload.hrSubRole;
+      delete employeePayload.financeSubRole;
       delete employeePayload.password;
       delete employeePayload.sendPortalInvite;
       delete employeePayload.invitedBy;

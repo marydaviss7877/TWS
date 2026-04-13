@@ -36,7 +36,7 @@ const tenantUserSchema = new mongoose.Schema({
   roles: [{
     role: {
       type: String,
-      enum: ['owner', 'admin', 'manager', 'project_manager', 'hr', 'employee', 'client', 'contractor'],
+      enum: ['owner', 'admin', 'manager', 'project_manager', 'hr', 'finance', 'employee', 'client', 'contractor'],
       required: true
     },
     permissions: [{
@@ -103,6 +103,12 @@ const tenantUserSchema = new mongoose.Schema({
   hrSubRole: {
     type: String,
     enum: ['manager', 'executive', 'payroll_officer']
+  },
+
+  // Finance sub-role (UPR): only when primary role is 'finance'
+  financeSubRole: {
+    type: String,
+    enum: ['manager', 'accountant', 'analyst', 'ap_officer', 'ar_officer']
   },
 
   // Access control

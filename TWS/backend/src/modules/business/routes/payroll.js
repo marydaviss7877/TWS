@@ -15,7 +15,10 @@ const payrollAdmin = requireErpAccess({ module: 'payroll', action: 'admin', chec
 async function shouldFilterPayrollToOwn(req) {
   const { getResolvedPermissions, hasPermission } = require('../../../services/tenant/permissionResolver.service');
   const tenantId = req.tenant?._id || req.tenantContext?.tenantId || req.user?.tenantId;
-  const resolved = await getResolvedPermissions(req.user._id, tenantId, { hrSubRole: req.user.hrSubRole });
+  const resolved = await getResolvedPermissions(req.user._id, tenantId, {
+    hrSubRole: req.user.hrSubRole,
+    financeSubRole: req.user.financeSubRole
+  });
   return !hasPermission(resolved.permissions, 'payroll', 'read');
 }
 const { AIPayrollConfig, AIPayrollAnalytics, SmartPayrollProcessing, EmployeeAIInsights } = require('../../../models/AIPayroll');
@@ -493,7 +496,10 @@ router.get('/:id/payslip', payrollReadOrOwn, ErrorHandler.asyncHandler(async (re
   if (recordUserId !== userIdStr) {
     const { getResolvedPermissions, hasPermission } = require('../../../services/tenant/permissionResolver.service');
     const tenantId = req.tenant?._id || req.tenantContext?.tenantId || req.user?.tenantId;
-    const resolved = await getResolvedPermissions(req.user._id, tenantId, { hrSubRole: req.user.hrSubRole });
+    const resolved = await getResolvedPermissions(req.user._id, tenantId, {
+    hrSubRole: req.user.hrSubRole,
+    financeSubRole: req.user.financeSubRole
+  });
     if (!hasPermission(resolved.permissions, 'payroll', 'read')) {
       return res.status(403).json({ success: false, message: 'Not authorized to view this payslip' });
     }

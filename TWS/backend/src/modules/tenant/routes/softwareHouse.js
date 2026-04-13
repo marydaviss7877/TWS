@@ -22,6 +22,9 @@ const { getProjectMetricsForRequest } = require('../../../services/tenant/projec
 // Single middleware that handles all authentication, tenant context, and orgId resolution
 // Performance: 1-2 queries instead of 8-17 queries
 const unifiedSoftwareHouseAuth = require('../../../middleware/auth/unifiedSoftwareHouseAuth');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
+const shFinanceRead = requireErpAccess({ module: 'finance', action: 'read' });
+const shFinanceWrite = requireErpAccess({ module: 'finance', action: 'write' });
 const { checkUsageLimitSoftwareHouseOnly, checkReadOnlySoftwareHouseOnly } = require('../../../middleware/common/featureGate');
 
 /**
@@ -890,7 +893,7 @@ router.get('/dashboard', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin'
 // ==================== SOFTWARE-HOUSE FINANCE (READ) ====================
 require('./softwareHouseFinanceReads')(router, {
   unifiedSoftwareHouseAuth,
-  requireRole,
+  requireErpAccess,
   Transaction,
   Invoice,
   Bill,
@@ -908,26 +911,26 @@ const buildTenantContext = (req) => ({
   hasSeparateDatabase: false
 });
 
-router.get('/finance/clients', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager', 'hr']), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/finance/clients', unifiedSoftwareHouseAuth, shFinanceRead, ErrorHandler.asyncHandler(async (req, res) => {
   const tenantContext = buildTenantContext(req);
   const options = { status: req.query.status };
   const { clients } = await tenantOrgService.getClients(tenantContext, options);
   res.json({ success: true, data: clients || [] });
 }));
 
-router.post('/finance/clients', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager', 'hr']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/finance/clients', unifiedSoftwareHouseAuth, shFinanceWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const tenantContext = buildTenantContext(req);
   const client = await tenantOrgService.createClient(tenantContext, req.body);
   res.status(201).json({ success: true, data: client });
 }));
 
-router.put('/finance/clients/:clientId', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager', 'hr']), ErrorHandler.asyncHandler(async (req, res) => {
+router.put('/finance/clients/:clientId', unifiedSoftwareHouseAuth, shFinanceWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const tenantContext = buildTenantContext(req);
   const client = await tenantOrgService.updateClient(tenantContext, req.params.clientId, req.body);
   res.json({ success: true, data: client });
 }));
 
-router.delete('/finance/clients/:clientId', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager', 'hr']), ErrorHandler.asyncHandler(async (req, res) => {
+router.delete('/finance/clients/:clientId', unifiedSoftwareHouseAuth, shFinanceWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const tenantContext = buildTenantContext(req);
   const client = await tenantOrgService.deleteClient(tenantContext, req.params.clientId);
   res.json({ success: true, data: client });
@@ -1134,7 +1137,7 @@ router.post('/employee-portal/workspaces/personal', unifiedSoftwareHouseAuth, ch
 
 // ==================== FINANCE REPORTS ====================
 
-router.post('/finance/reports/generate', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/finance/reports/generate', unifiedSoftwareHouseAuth, shFinanceRead, ErrorHandler.asyncHandler(async (req, res) => {
   const rawOrgId = req.user.orgId;
   const orgId = mongoose.Types.ObjectId.isValid(rawOrgId) ? new mongoose.Types.ObjectId(rawOrgId) : rawOrgId;
   const { reportId, startDate, endDate } = req.body;

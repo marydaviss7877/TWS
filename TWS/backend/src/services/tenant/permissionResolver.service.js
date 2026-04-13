@@ -57,14 +57,44 @@ const BASE_ROLE_PERMISSIONS = {
 const HR_SUBROLE_PERMISSIONS = {
   manager: [
     'hr:read', 'hr:write', 'employees:read', 'employees:write', 'payroll:read', 'payroll:write',
-    'attendance:read', 'attendance:write', 'leave:read', 'leave:write', 'reports:read', 'audit:read'
+    'attendance:read', 'attendance:write', 'leave:read', 'leave:write', 'reports:read', 'audit:read',
+    'finance:read'
   ],
   executive: [
     'hr:read', 'employees:read', 'attendance:read', 'attendance:write', 'leave:read', 'leave:write',
-    'reports:read'
+    'reports:read',
+    'finance:read'
   ],
   payroll_officer: [
-    'payroll:read', 'payroll:write', 'hr:read', 'employees:read', 'attendance:read', 'reports:read'
+    'payroll:read', 'payroll:write', 'hr:read', 'employees:read', 'attendance:read', 'reports:read',
+    'finance:read'
+  ]
+};
+
+/** When primary ERP role is finance — granular AR/AP, GL, payroll tie-in (UPR Phase 2). */
+const FINANCE_SUBROLE_PERMISSIONS = {
+  manager: [
+    'finance:read', 'finance:write',
+    'payroll:read', 'payroll:write',
+    'reports:read', 'analytics:read', 'audit:read',
+    'employees:read'
+  ],
+  accountant: [
+    'finance:read', 'finance:write',
+    'payroll:read',
+    'reports:read', 'analytics:read'
+  ],
+  analyst: [
+    'finance:read',
+    'reports:read', 'analytics:read'
+  ],
+  ap_officer: [
+    'finance:read', 'finance:write',
+    'reports:read'
+  ],
+  ar_officer: [
+    'finance:read', 'finance:write',
+    'reports:read'
   ]
 };
 
@@ -76,7 +106,10 @@ const HR_SUBROLE_PERMISSIONS = {
 function deptPermsToModuleActions(permissions, _departmentId) {
   if (!Array.isArray(permissions)) return [];
   const out = [];
-  const modules = ['projects', 'hr', 'documents', 'analytics', 'audit', 'clients', 'settings', 'nucleus'];
+  const modules = [
+    'projects', 'hr', 'finance', 'payroll', 'documents', 'analytics', 'audit', 'clients', 'settings', 'nucleus',
+    'attendance', 'leave', 'teams'
+  ];
   for (const p of permissions) {
     if (p === 'read') modules.forEach(m => out.push(m + ':read'));
     else if (p === 'write') modules.forEach(m => out.push(m + ':write'));
@@ -93,15 +126,15 @@ function deptPermsToModuleActions(permissions, _departmentId) {
  * Source C: TenantUser.roles[].permissions (resource:actions) and TenantRole.permissions if present
  * @param {string|ObjectId} userId
  * @param {string|ObjectId} tenantId
- * @param {{ hrSubRole?: string }} [opts] — hrSubRole when primaryRole is 'hr'
- * @returns {Promise<{ permissions: string[], departmentIds: string[], projectIds?: string[], hrSubRole?: string }>}
+ * @param {{ hrSubRole?: string, financeSubRole?: string }} [opts] — sub-roles when primaryRole is hr / finance
+ * @returns {Promise<{ permissions: string[], departmentIds: string[], projectIds?: string[], hrSubRole?: string, financeSubRole?: string }>}
  */
 async function resolveUserPermissions(userId, tenantId, opts = {}) {
   const tenantIdStr = String(tenantId);
   const userIdStr = String(userId);
 
   const tenantUser = await TenantUser.findOne({ userId, tenantId, status: 'active' })
-    .select('roles status hrSubRole')
+    .select('roles status hrSubRole financeSubRole')
     .lean();
   if (!tenantUser) {
     // Legacy / edge: active User in tenant org but no TenantUser row yet — grant base role perms
@@ -114,7 +147,7 @@ async function resolveUserPermissions(userId, tenantId, opts = {}) {
         User.findById(userId).select('orgId role status').lean()
       ]);
       if (!tenantDoc || !userDoc || userDoc.status !== 'active') {
-        return { permissions: [], departmentIds: [], hrSubRole: null };
+        return { permissions: [], departmentIds: [], hrSubRole: null, financeSubRole: null };
       }
       const tOrg = (tenantDoc.organizationId || tenantDoc.orgId)?.toString();
       const uOrgRaw = userDoc.orgId;
@@ -125,27 +158,39 @@ async function resolveUserPermissions(userId, tenantId, opts = {}) {
         if (primaryRole === 'hr') {
           basePerms = HR_SUBROLE_PERMISSIONS.manager || [];
         }
+        if (primaryRole === 'finance') {
+          basePerms = FINANCE_SUBROLE_PERMISSIONS.manager || [];
+        }
         return {
           permissions: [...basePerms],
           departmentIds: [],
-          hrSubRole: null
+          hrSubRole: null,
+          financeSubRole: null
         };
       }
     } catch (e) {
       console.warn('resolveUserPermissions org fallback failed:', e.message);
     }
-    return { permissions: [], departmentIds: [], hrSubRole: null };
+    return { permissions: [], departmentIds: [], hrSubRole: null, financeSubRole: null };
   }
 
   const primaryRole = tenantUser.roles?.[0]?.role || 'employee';
   let basePerms = BASE_ROLE_PERMISSIONS[primaryRole] || BASE_ROLE_PERMISSIONS.employee;
   const hrSubRole = opts.hrSubRole ?? tenantUser.hrSubRole ?? null;
+  const financeSubRole = opts.financeSubRole ?? tenantUser.financeSubRole ?? null;
 
   if (primaryRole === 'hr' && hrSubRole) {
     const hrPerms = HR_SUBROLE_PERMISSIONS[hrSubRole];
     if (hrPerms) basePerms = hrPerms;
   } else if (primaryRole === 'hr') {
     basePerms = HR_SUBROLE_PERMISSIONS.manager || []; // default HR to manager subset when no hrSubRole
+  }
+
+  if (primaryRole === 'finance' && financeSubRole) {
+    const finPerms = FINANCE_SUBROLE_PERMISSIONS[financeSubRole];
+    if (finPerms) basePerms = finPerms;
+  } else if (primaryRole === 'finance') {
+    basePerms = FINANCE_SUBROLE_PERMISSIONS.manager || [];
   }
 
   const deptAccess = await TenantDepartmentAccess.find({
@@ -207,7 +252,8 @@ async function resolveUserPermissions(userId, tenantId, opts = {}) {
   const result = {
     permissions,
     departmentIds: primaryRole === 'owner' ? ['*'] : departmentIds,
-    hrSubRole: primaryRole === 'hr' ? hrSubRole : null
+    hrSubRole: primaryRole === 'hr' ? hrSubRole : null,
+    financeSubRole: primaryRole === 'finance' ? financeSubRole : null
   };
   return result;
 }
@@ -216,8 +262,8 @@ async function resolveUserPermissions(userId, tenantId, opts = {}) {
  * Get resolved permissions for user in tenant (cache-first). On cache miss, resolve and cache.
  * @param {string|ObjectId} userId
  * @param {string|ObjectId} tenantId
- * @param {{ hrSubRole?: string }} [opts]
- * @returns {Promise<{ permissions: string[], departmentIds: string[], hrSubRole?: string }>}
+ * @param {{ hrSubRole?: string, financeSubRole?: string }} [opts]
+ * @returns {Promise<{ permissions: string[], departmentIds: string[], hrSubRole?: string, financeSubRole?: string }>}
  */
 async function getResolvedPermissions(userId, tenantId, opts = {}) {
   const tenantIdStr = String(tenantId);
@@ -274,7 +320,7 @@ function hasAnyPermission(permissions, module, actions) {
 }
 
 /**
- * Invalidate cache for a user (call on grant/revoke/expiry/offboard/hrSubRole/role change).
+ * Invalidate cache for a user (call on grant/revoke/expiry/offboard/hrSubRole/financeSubRole/role change).
  * Optionally add to revocation list so sensitive routes deny immediately.
  * @param {string|ObjectId} tenantId
  * @param {string|ObjectId} userId
@@ -299,6 +345,7 @@ async function invalidateResolvedForTenant(tenantId) {
 module.exports = {
   BASE_ROLE_PERMISSIONS,
   HR_SUBROLE_PERMISSIONS,
+  FINANCE_SUBROLE_PERMISSIONS,
   resolveUserPermissions,
   getResolvedPermissions,
   hasPermission,

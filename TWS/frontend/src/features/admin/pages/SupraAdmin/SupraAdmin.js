@@ -11,14 +11,12 @@ import SessionManagement from './sessions/SessionManagement';
 import DepartmentAccess from './departments/DepartmentAccess';
 import Departments from './departments/Departments';
 import SessionAnalytics from './analytics/SessionAnalytics';
-import DebugMenu from './debug/DebugMenu';
 import SystemMonitoring from './monitoring/SystemMonitoring';
 import SystemHealth from './monitoring/SystemHealth';
 import Infrastructure from './infrastructure/Infrastructure';
 import Settings from './settings/Settings';
 import DepartmentManagement from './departments/DepartmentManagement';
 import ERPManagement from './erp/ERPManagement';
-import DefaultContactManagement from './contacts/DefaultContactManagement';
 import RealTimeMonitoring from './monitoring/RealTimeMonitoring';
 
 const SupraAdmin = () => {
@@ -57,11 +55,9 @@ const SupraAdmin = () => {
         <Route path="department-access" element={<DepartmentAccess />} />
         <Route path="departments" element={<Departments />} />
         <Route path="session-analytics" element={<SessionAnalytics />} />
-        <Route path="default-contacts" element={<DefaultContactManagement />} />
         <Route path="department-management" element={<DepartmentManagement />} />
         <Route path="erp-management" element={<ERPManagement />} />
         <Route path="erp-management/:category" element={<ERPManagement />} />
-        <Route path="debug-menu" element={<DebugMenu />} />
         <Route path="system-monitoring" element={<SystemMonitoring />} />
         <Route path="system-health" element={<SystemHealth />} />
         <Route path="real-time-monitoring" element={<RealTimeMonitoring />} />

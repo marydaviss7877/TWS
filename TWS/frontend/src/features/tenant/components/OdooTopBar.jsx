@@ -84,6 +84,14 @@ const OdooTopBar = ({
   const initial      = (orgName  || 'O').charAt(0).toUpperCase();
   const userInitial  = (user?.fullName?.[0] ?? user?.email?.[0] ?? 'U').toUpperCase();
   const displayName  = user?.fullName || user?.email || 'User';
+  const avatarSrc = (() => {
+    const raw = user?.avatarUrl || user?.profilePicUrl;
+    if (!raw) return null;
+    if (raw.startsWith('/uploads/profile-pictures/')) {
+      return `/api/tenant/${tenantSlug}/organization${raw}`;
+    }
+    return raw;
+  })();
   const [logoError, setLogoError] = useState(false);
   // Reset error state whenever the logo URL changes (e.g. after a fresh upload)
   useEffect(() => { setLogoError(false); }, [orgLogoUrl]);
@@ -314,7 +322,7 @@ const OdooTopBar = ({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" aria-label="User menu">
               <Avatar className="h-6 w-6">
-                {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt={displayName} />}
+                {avatarSrc && <AvatarImage src={avatarSrc} alt={displayName} />}
                 <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary-500 to-accent-500 text-white">
                   {userInitial}
                 </AvatarFallback>

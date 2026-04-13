@@ -605,6 +605,7 @@ const verifyERPToken = async (req, res, next) => {
     // ============================================
     let roleForRequest = user.role;
     let hrSubRole = null;
+    let financeSubRole = null;
     try {
       const tenantUser = await TenantUser.findOne({
         userId: user._id,
@@ -617,6 +618,9 @@ const verifyERPToken = async (req, res, next) => {
         roleForRequest = (primaryRole === 'manager') ? 'project_manager' : primaryRole;
         if (primaryRole === 'hr' && tenantUser.hrSubRole) {
           hrSubRole = tenantUser.hrSubRole;
+        }
+        if (primaryRole === 'finance' && tenantUser.financeSubRole) {
+          financeSubRole = tenantUser.financeSubRole;
         }
       }
     } catch (err) {
@@ -632,6 +636,7 @@ const verifyERPToken = async (req, res, next) => {
       email: user.email,
       role: roleForRequest, // Per-tenant when TenantUser exists, else User.role
       hrSubRole, // Plan Phase 2: when role is 'hr', used for payroll vs leave vs roster
+      financeSubRole, // when role is 'finance', refines AR/AP vs analyst vs controller
       orgId: orgId,
       tenantId: tenant._id.toString(),
       workspaceRole: workspaceRole // From workspace membership if available

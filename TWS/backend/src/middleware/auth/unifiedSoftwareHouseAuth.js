@@ -473,14 +473,34 @@ const unifiedSoftwareHouseAuth = async (req, res, next) => {
     }
 
     // ============================================
-    // STEP 8: Set request context
+    // STEP 8: Set request context (TenantUser overrides User.role + sub-roles for UPR)
     // ============================================
+    const TenantUser = require('../../models/TenantUser');
+    let roleForRequest = userContext.role;
+    let hrSubRole = null;
+    let financeSubRole = null;
+    try {
+      const tu = await TenantUser.findOne({
+        userId: userContext._id,
+        tenantId: tenant._id,
+        status: 'active'
+      }).lean();
+      if (tu?.roles?.length > 0) {
+        const pr = tu.roles[0].role;
+        roleForRequest = pr === 'manager' ? 'project_manager' : pr;
+        if (pr === 'hr' && tu.hrSubRole) hrSubRole = tu.hrSubRole;
+        if (pr === 'finance' && tu.financeSubRole) financeSubRole = tu.financeSubRole;
+      }
+    } catch (_) { /* keep User.role */ }
+
     req.user = {
       _id: userContext._id,
       id: userContext._id,
       email: userContext.email,
       fullName: userContext.fullName,
-      role: userContext.role, // FROM DATABASE, not token
+      role: roleForRequest,
+      hrSubRole,
+      financeSubRole,
       orgId: orgId,
       tenantId: tenant._id.toString(),
       workspaceRole: workspaceRole

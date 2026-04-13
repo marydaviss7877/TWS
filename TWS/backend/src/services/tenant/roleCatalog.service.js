@@ -4,7 +4,11 @@
  */
 
 const PROJECT_MANAGEMENT_PERMISSIONS = require('../../config/projectManagementPermissions');
-const { BASE_ROLE_PERMISSIONS, HR_SUBROLE_PERMISSIONS } = require('./permissionResolver.service');
+const {
+  BASE_ROLE_PERMISSIONS,
+  HR_SUBROLE_PERMISSIONS,
+  FINANCE_SUBROLE_PERMISSIONS
+} = require('./permissionResolver.service');
 
 function humanizeKey(key) {
   return String(key)
@@ -69,6 +73,19 @@ function buildRoleCatalog() {
     };
   });
 
+  const financeEntries = Object.entries(FINANCE_SUBROLE_PERMISSIONS).map(([subKey, list]) => {
+    const permissionCodes = Array.isArray(list) ? [...new Set(list.filter(Boolean))].sort() : [];
+    const catalogSlug = `fin-${subKey}`;
+    return {
+      catalogSlug,
+      sourceKey: subKey,
+      name: `${humanizeKey(subKey)} (Finance sub-role)`,
+      description: `When primary role is Finance, sub-role ${humanizeKey(subKey)} (UPR).`,
+      permissionCodes,
+      permissionCount: permissionCodes.length
+    };
+  });
+
   return {
     softwareHouse: {
       title: 'Software House — project member roles',
@@ -88,6 +105,12 @@ function buildRoleCatalog() {
       description: 'Applies when the user\'s primary role is HR. Imported slugs use prefix hr-.',
       roleSystem: 'tenant_hr_subrole',
       entries: hrEntries
+    },
+    organizationFinanceSubroles: {
+      title: 'Organization — Finance sub-roles (UPR)',
+      description: 'Applies when the user\'s primary role is Finance. Imported slugs use prefix fin-.',
+      roleSystem: 'tenant_finance_subrole',
+      entries: financeEntries
     }
   };
 }

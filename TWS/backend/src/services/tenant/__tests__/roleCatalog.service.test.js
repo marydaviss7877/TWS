@@ -12,6 +12,10 @@ describe('roleCatalog.service', () => {
     for (const e of cat.organizationHrSubroles.entries) {
       expect(e.catalogSlug).toMatch(/^hr-/);
     }
+    expect(cat.organizationFinanceSubroles.entries.length).toBeGreaterThan(0);
+    for (const e of cat.organizationFinanceSubroles.entries) {
+      expect(e.catalogSlug).toMatch(/^fin-/);
+    }
     const shSlugs = new Set(cat.softwareHouse.entries.map((e) => e.catalogSlug));
     const orgSlugs = new Set(cat.organization.entries.map((e) => e.catalogSlug));
     for (const s of shSlugs) {

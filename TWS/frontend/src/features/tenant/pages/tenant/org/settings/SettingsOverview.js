@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import {
   CogIcon, ShieldCheckIcon, BellIcon,
   GlobeAltIcon, CurrencyDollarIcon, CalendarIcon, ClockIcon,
+  PhotoIcon, ArrowUpTrayIcon,
   Squares2X2Icon,
 } from '@heroicons/react/24/outline';
 
@@ -99,10 +100,11 @@ function SaveBtn({ saving, onClick, label = 'Save' }) {
 /* ─── main ───────────────────────────────────────────────────────────────────── */
 const SettingsOverview = () => {
   const { tenantSlug } = useParams();
-  const { tenant } = useTenantAuth();
+  const { tenant, updateUser } = useTenantAuth();
   const navigate = useNavigate();
   const [saving,  setSaving]  = useState(false);
   const [tab,     setTab]     = useState('general');
+  const [profilePicPreview, setProfilePicPreview] = useState(null);
 
   const [general, setGeneral] = useState({
     organizationName: '', timezone: 'Asia/Karachi',
@@ -210,6 +212,37 @@ const SettingsOverview = () => {
     finally { setSaving(false); }
   };
 
+  const uploadMyProfilePicture = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+    setSaving(true);
+    try {
+      const fd = new FormData();
+      fd.append('profilePic', file);
+      const res = await fetch(`/api/tenant/${tenantSlug}/organization/users/profile/picture`, {
+        method: 'POST',
+        credentials: 'include',
+        body: fd
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.message || 'Failed to upload profile picture');
+      setProfilePicPreview(URL.createObjectURL(file));
+      if (json?.data?.profilePicUrl) {
+        updateUser?.({ profilePicUrl: json.data.profilePicUrl });
+      }
+      toast.success('Profile picture updated');
+    } catch (err) {
+      toast.error(err.message || 'Failed to upload profile picture');
+    } finally {
+      setSaving(false);
+      e.target.value = '';
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
 
@@ -259,6 +292,23 @@ const SettingsOverview = () => {
             <div className={S.card}>
               <Sec>Preferences</Sec>
               <div className="space-y-2">
+                <div>
+                  <Lbl>My Profile Picture</Lbl>
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                      {profilePicPreview ? (
+                        <img src={profilePicPreview} alt="Profile preview" className="h-full w-full object-cover" />
+                      ) : (
+                        <PhotoIcon className="w-5 h-5 text-gray-400" />
+                      )}
+                    </div>
+                    <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs font-medium cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                      <ArrowUpTrayIcon className="w-3.5 h-3.5" />
+                      Upload
+                      <input type="file" accept="image/*" onChange={uploadMyProfilePicture} className="hidden" />
+                    </label>
+                  </div>
+                </div>
 
                 {/* Org name — full width */}
                 <div>

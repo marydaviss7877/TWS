@@ -17,8 +17,6 @@ import {
   MoonIcon,
   ComputerDesktopIcon,
   ClockIcon,
-  BeakerIcon,
-  BugAntIcon,
   ServerIcon,
   CloudIcon,
   ChevronDownIcon,
@@ -26,11 +24,6 @@ import {
   ShieldCheckIcon,
   BuildingOfficeIcon,
   ChartPieIcon,
-  ChatBubbleLeftRightIcon,
-  InboxIcon,
-  EnvelopeIcon,
-  MegaphoneIcon,
-  ChartBarSquareIcon,
   BoltIcon,
   CircleStackIcon,
   MagnifyingGlassIcon,
@@ -87,19 +80,6 @@ const SupraAdminLayout = ({ children }) => {
       ]
     },
     
-    // Communication
-    { 
-      name: 'Communication', 
-      icon: ChatBubbleLeftRightIcon, 
-      children: [
-        { name: 'Internal Messages', href: '/supra-admin/messaging', icon: InboxIcon },
-        { name: 'Compose Message', href: '/supra-admin/messaging/compose', icon: EnvelopeIcon },
-        { name: 'Announcements', href: '/supra-admin/messaging/announcements', icon: MegaphoneIcon },
-        { name: 'Default Contacts', href: '/supra-admin/default-contacts', icon: UserGroupIcon },
-        { name: 'Messaging Analytics', href: '/supra-admin/messaging-analytics', icon: ChartBarSquareIcon }
-      ]
-    },
-    
     // System
     { 
       name: 'System', 
@@ -120,16 +100,6 @@ const SupraAdminLayout = ({ children }) => {
       children: [
         { name: 'Infrastructure Overview', href: '/supra-admin/infrastructure', icon: CloudIcon },
         { name: 'Server Management', href: '/supra-admin/infrastructure', icon: ServerIcon }
-      ]
-    },
-    
-    // Testing & Development
-    { 
-      name: 'Testing', 
-      icon: BeakerIcon, 
-      children: [
-        { name: 'Debug Menu', href: '/supra-admin/debug-menu', icon: BugAntIcon },
-        { name: 'Test Session Management', href: '/supra-admin/test-session-management', icon: BeakerIcon }
       ]
     },
     

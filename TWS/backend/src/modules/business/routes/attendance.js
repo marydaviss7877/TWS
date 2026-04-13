@@ -59,7 +59,10 @@ router.post('/checkin', [
     if (employeeId) {
       const { getResolvedPermissions, hasPermission } = require('../../../services/tenant/permissionResolver.service');
       const tenantId = req.tenant?._id || req.user?.tenantId;
-      const resolved = await getResolvedPermissions(req.user._id, tenantId, { hrSubRole: req.user.hrSubRole });
+      const resolved = await getResolvedPermissions(req.user._id, tenantId, {
+        hrSubRole: req.user.hrSubRole,
+        financeSubRole: req.user.financeSubRole
+      });
       if (!hasPermission(resolved.permissions, 'hr', 'write')) {
         return res.status(403).json({ success: false, message: 'Not authorized to check in on behalf of another employee' });
       }
@@ -124,7 +127,10 @@ router.post('/checkout', [
     if (employeeId) {
       const { getResolvedPermissions, hasPermission } = require('../../../services/tenant/permissionResolver.service');
       const tenantId = req.tenant?._id || req.user?.tenantId;
-      const resolved = await getResolvedPermissions(req.user._id, tenantId, { hrSubRole: req.user.hrSubRole });
+      const resolved = await getResolvedPermissions(req.user._id, tenantId, {
+        hrSubRole: req.user.hrSubRole,
+        financeSubRole: req.user.financeSubRole
+      });
       if (!hasPermission(resolved.permissions, 'hr', 'write')) {
         return res.status(403).json({ success: false, message: 'Not authorized to check out on behalf of another employee' });
       }

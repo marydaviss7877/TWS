@@ -13,7 +13,9 @@ import {
   ClockIcon,
   CheckCircleIcon,
   XMarkIcon,
-  LockClosedIcon
+  LockClosedIcon,
+  PhotoIcon,
+  ArrowUpTrayIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import toast from 'react-hot-toast';
@@ -26,6 +28,8 @@ const EmployeeCreate = () => {
   const [success, setSuccess] = useState(false);
   const [portalPasswordHint, setPortalPasswordHint] = useState(null);
   const [sendPortalInvite, setSendPortalInvite] = useState(true);
+  const [profilePicFile, setProfilePicFile] = useState(null);
+  const [profilePicPreview, setProfilePicPreview] = useState(null);
   const [formData, setFormData] = useState({
     // Personal Information
     firstName: '',
@@ -63,6 +67,17 @@ const EmployeeCreate = () => {
       [name]: value
     }));
     setError(null);
+  };
+
+  const handleProfilePicChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size must be less than 5MB');
+      return;
+    }
+    setProfilePicFile(file);
+    setProfilePicPreview(URL.createObjectURL(file));
   };
 
   const handleSubmit = async (e) => {
@@ -148,6 +163,21 @@ const EmployeeCreate = () => {
       const response = await tenantApiService.createEmployee(tenantSlug, employeeData);
       if (!response?.employee) {
         throw new Error('Server did not return employee data. Check that you are logged in and try again.');
+      }
+
+      const createdUserId = response?.employee?.userId?._id || response?.employee?.userId;
+      if (profilePicFile && createdUserId) {
+        const picForm = new FormData();
+        picForm.append('profilePic', profilePicFile);
+        const picRes = await fetch(`/api/tenant/${tenantSlug}/organization/users/${createdUserId}/picture`, {
+          method: 'POST',
+          credentials: 'include',
+          body: picForm
+        });
+        if (!picRes.ok) {
+          const picErr = await picRes.json().catch(() => ({}));
+          throw new Error(picErr.message || 'Employee created but profile picture upload failed.');
+        }
       }
 
       if (response?.portalInviteSent) {
@@ -295,6 +325,25 @@ const EmployeeCreate = () => {
             Personal Information
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xl:gap-6">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Profile Picture
+              </label>
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                  {profilePicPreview ? (
+                    <img src={profilePicPreview} alt="Preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <PhotoIcon className="w-6 h-6 text-gray-400" />
+                  )}
+                </div>
+                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <ArrowUpTrayIcon className="w-4 h-4" />
+                  Upload Picture
+                  <input type="file" accept="image/*" onChange={handleProfilePicChange} className="hidden" />
+                </label>
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 First Name <span className="text-red-500">*</span>

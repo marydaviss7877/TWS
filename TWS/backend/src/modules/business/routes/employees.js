@@ -92,8 +92,9 @@ router.post('/', [
   body('department').optional().trim(),
   // Password is optional — auto-generated temp password when omitted
   body('password').optional().isLength({ min: 6 }),
-  body('erpRole').optional().isIn(['owner', 'admin', 'manager', 'project_manager', 'hr', 'employee', 'contractor']),
+  body('erpRole').optional().isIn(['owner', 'admin', 'manager', 'project_manager', 'hr', 'finance', 'employee', 'contractor']),
   body('hrSubRole').optional().isIn(['manager', 'executive', 'payroll_officer']),
+  body('financeSubRole').optional().isIn(['manager', 'accountant', 'analyst', 'ap_officer', 'ar_officer']),
   body('salary.base').optional().isNumeric(),
   body('contractType').optional().isIn(['full-time', 'part-time', 'contract', 'intern']),
   body('hireDate').optional().isISO8601()
@@ -135,6 +136,7 @@ router.post('/', [
   // ERP portal role defaults to 'employee'
   const erpRole = req.body.erpRole || 'employee';
   const hrSubRole = (erpRole === 'hr' && req.body.hrSubRole) ? req.body.hrSubRole : undefined;
+  const financeSubRole = (erpRole === 'finance' && req.body.financeSubRole) ? req.body.financeSubRole : undefined;
 
   // Auto-generate employeeId when not provided
   const employeeId = req.body.employeeId || `EMP${Date.now()}`;
@@ -274,6 +276,7 @@ router.post('/', [
         }
       };
       if (hrSubRole) tenantUserDoc.hrSubRole = hrSubRole;
+      if (financeSubRole) tenantUserDoc.financeSubRole = financeSubRole;
       await TenantUser.create(tenantUserDoc);
       const { invalidateResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
       await invalidateResolvedPermissions(tenantId, user._id);
@@ -919,12 +922,14 @@ router.post('/invite', [
   employeesWrite,
   body('email').isEmail().normalizeEmail(),
   body('fullName').optional().trim(),
-  body('erpRole').optional().isIn(['owner', 'admin', 'manager', 'project_manager', 'hr', 'employee', 'contractor']),
-  body('hrSubRole').optional().isIn(['manager', 'executive', 'payroll_officer'])
+  body('erpRole').optional().isIn(['owner', 'admin', 'manager', 'project_manager', 'hr', 'finance', 'employee', 'contractor']),
+  body('hrSubRole').optional().isIn(['manager', 'executive', 'payroll_officer']),
+  body('financeSubRole').optional().isIn(['manager', 'accountant', 'analyst', 'ap_officer', 'ar_officer'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const { email, erpRole = 'employee' } = req.body;
   const fullName = req.body.fullName || email.split('@')[0];
   const hrSubRole = (erpRole === 'hr' && req.body.hrSubRole) ? req.body.hrSubRole : undefined;
+  const financeSubRole = (erpRole === 'finance' && req.body.financeSubRole) ? req.body.financeSubRole : undefined;
 
   const tenantId = req.tenant?._id || req.user?.tenantId;
   if (!tenantId) {
@@ -972,12 +977,17 @@ router.post('/invite', [
     existingTU.invitation.invitationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     existingTU.status = 'pending';
     if (hrSubRole) existingTU.hrSubRole = hrSubRole;
+    if (financeSubRole) existingTU.financeSubRole = financeSubRole;
     await existingTU.save();
     tenantUser = existingTU;
   } else {
     tenantUser = await TenantUser.inviteUser(user._id, tenantId, req.user._id, erpRole);
     if (hrSubRole) {
       tenantUser.hrSubRole = hrSubRole;
+      await tenantUser.save();
+    }
+    if (financeSubRole) {
+      tenantUser.financeSubRole = financeSubRole;
       await tenantUser.save();
     }
   }

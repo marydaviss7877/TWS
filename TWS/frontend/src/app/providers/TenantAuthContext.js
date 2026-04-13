@@ -92,7 +92,7 @@ export const TenantAuthProvider = ({ children }) => {
       const res = await fetch(`/api/tenant/${slug}/organization/profile`, { credentials: 'include' });
       if (!res.ok) return;
       const json = await res.json();
-      const fresh = json.data?.tenant;
+      const fresh = json.data?.tenant || json.data;
       if (!fresh) return;
       const freshFields = {
         id: fresh._id || fresh.id,
@@ -104,6 +104,7 @@ export const TenantAuthProvider = ({ children }) => {
         erpModules: fresh.erpModules || [],
         erpCategory: fresh.erpCategory || 'software_house',
         logoUrl: fresh.branding?.logo || null,
+        branding: fresh.branding || null,
       };
       setTenant(prev => prev ? { ...prev, ...freshFields } : freshFields);
       // Sync localStorage so the next same-device load is also fast
@@ -173,10 +174,9 @@ export const TenantAuthProvider = ({ children }) => {
       }
       
       // SECURITY FIX: Check if user is authenticated via cookies (isMainAuth already checked above)
-      // For software house: may have isMainAuth but mainUserStr from /api/auth/me (fetch if missing)
+      // Always refresh /api/auth/me so profile fields (like profilePicUrl) stay current.
       let mainUser = mainUserStr ? (() => { try { return JSON.parse(mainUserStr); } catch { return null; } })() : null;
-      if (isMainAuth && !mainUser) {
-        // Fetch user from /api/auth/me (Software House login doesn't store user in localStorage initially)
+      if (isMainAuth) {
         try {
           const meResponse = await fetch('/api/auth/me', { method: 'GET', credentials: 'include' });
           if (meResponse.ok) {
@@ -262,8 +262,8 @@ export const TenantAuthProvider = ({ children }) => {
           try {
             const res = await fetch(`/api/tenant/${tenantSlug}/organization/profile`, { credentials: 'include' });
             if (res.ok) {
-              const json = await res.json();
-              const fresh = json.data?.tenant;
+                const json = await res.json();
+                const fresh = json.data?.tenant || json.data;
               if (fresh) {
                 const freshTenant = {
                   id: fresh._id || fresh.id,
@@ -274,7 +274,8 @@ export const TenantAuthProvider = ({ children }) => {
                   plan: fresh.subscription?.plan || fresh.plan,
                   erpModules: fresh.erpModules || [],
                   erpCategory: fresh.erpCategory || 'software_house',
-                  logoUrl: fresh.branding?.logo || null,
+                    logoUrl: fresh.branding?.logo || null,
+                    branding: fresh.branding || null,
                 };
                 setTenant(freshTenant);
                 // Cache for future same-device fast loads

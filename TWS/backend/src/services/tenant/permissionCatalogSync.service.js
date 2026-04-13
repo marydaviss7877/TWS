@@ -17,7 +17,8 @@ function flattenCatalogForSync() {
   const sections = [
     ['softwareHouse', catalog.softwareHouse],
     ['organization', catalog.organization],
-    ['organizationHrSubroles', catalog.organizationHrSubroles]
+    ['organizationHrSubroles', catalog.organizationHrSubroles],
+    ['organizationFinanceSubroles', catalog.organizationFinanceSubroles]
   ];
   const byCode = new Map();
 

@@ -21,6 +21,13 @@ import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext
 import { useTenantNav } from '../../../../contexts/TenantNavContext';
 import { APP_METADATA } from '../../../../../../constants/navigationConstants';
 import { cn } from '../../../../../../lib/utils';
+import {
+  loadRecentApps,
+  saveRecentApps,
+  pushRecentApp,
+  rankLauncherItem,
+  LAUNCHER_UI,
+} from '../../../../components/launcher/launcherUtils';
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getGreeting() {
   const h = new Date().getHours();
@@ -48,10 +55,11 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
     <div
       role="button"
       tabIndex={0}
+      data-launcher-card="true"
       onClick={() => { setPressed(true); setTimeout(() => setPressed(false), 200); onNavigate(item.path); }}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(item.path); } }}
       className={cn(
-        'group relative flex flex-col items-center gap-3 rounded-2xl p-4 pt-5 transition-all duration-200 cursor-pointer select-none overflow-visible',
+        `group relative flex flex-col items-center ${LAUNCHER_UI.cardGap} ${LAUNCHER_UI.cardRadius} ${LAUNCHER_UI.cardPadding} transition-all duration-200 cursor-pointer select-none overflow-visible`,
         'outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
         pressed && 'scale-95',
         isActive
@@ -83,23 +91,23 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
 
       {/* Gradient icon bubble */}
       <div className={cn(
-        'flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br shadow-md',
+        `flex items-center justify-center ${LAUNCHER_UI.iconWrap} bg-gradient-to-br shadow-md`,
         'group-hover:shadow-lg group-hover:scale-110 transition-all duration-300',
         meta.gradient
       )}>
-        {Icon && <Icon className="h-7 w-7 text-white drop-shadow-sm" />}
+        {Icon && <Icon className={`${LAUNCHER_UI.iconSize} text-white drop-shadow-sm`} />}
       </div>
 
       {/* Label + description */}
       <div className="text-center w-full">
         <p className={cn(
-          'text-[13px] font-semibold leading-tight truncate',
-          isActive ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-800 dark:text-gray-200'
+          `${LAUNCHER_UI.titleSize} font-semibold leading-tight truncate`,
+          isActive ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-800 dark:text-gray-100'
         )}>
           {item.label}
         </p>
         {meta.description && (
-          <p className="mt-0.5 text-[11px] leading-tight text-gray-400 dark:text-gray-500 truncate">
+          <p className={`mt-0.5 ${LAUNCHER_UI.descSize} leading-tight text-gray-500 dark:text-gray-400 truncate`}>
             {meta.description}
           </p>
         )}
@@ -134,7 +142,7 @@ const SectionLabel = ({ emoji, title, count, bookmarkSection }) => (
 
 // ── AppGrid ────────────────────────────────────────────────────────────────────
 const AppGrid = ({ items, activeAppKey, favoriteKeys, onNavigate, onToggleFav }) => (
-  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 sm:gap-3 lg:gap-4">
     {items.map(item => (
       <AppCard
         key={item.key}
@@ -180,9 +188,14 @@ const AppHome = () => {
 
   const [search,    setSearch]    = useState('');
   const [mounted,   setMounted]   = useState(false);
+  const [recentKeys, setRecentKeys] = useState([]);
   const searchRef = useRef(null);
 
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    setRecentKeys(loadRecentApps(tenantSlug));
+  }, [tenantSlug]);
 
   // Keyboard shortcut: "/" focuses search
   useEffect(() => {
@@ -203,17 +216,61 @@ const AppHome = () => {
   // Filter by search
   const q       = search.trim().toLowerCase();
   const visible = q
-    ? filteredMenuItems.filter(m =>
-        m.label.toLowerCase().includes(q) ||
-        (APP_METADATA[m.key]?.description ?? '').toLowerCase().includes(q)
-      )
+    ? filteredMenuItems
+      .filter((m) => rankLauncherItem(m, q, APP_METADATA) < 99)
+      .sort((a, b) => rankLauncherItem(a, q, APP_METADATA) - rankLauncherItem(b, q, APP_METADATA) || a.label.localeCompare(b.label))
     : filteredMenuItems;
 
-  const handleNavigate = (path) => navigate(path);
+  const persistRecentApp = (appKey) => {
+    if (!appKey) return;
+    setRecentKeys((prev) => {
+      const next = pushRecentApp(prev, appKey);
+      saveRecentApps(tenantSlug, next);
+      return next;
+    });
+  };
+
+  const handleNavigate = (path) => {
+    const hit = filteredMenuItems.find((m) => m.path === path);
+    persistRecentApp(hit?.key);
+    navigate(path);
+  };
 
   // Quick stats derived from available data
   const totalApps = filteredMenuItems.length;
   const totalFavs = favoriteKeys.length;
+  const recentItems = filteredMenuItems.filter((m) => recentKeys.includes(m.key));
+  recentItems.sort((a, b) => recentKeys.indexOf(a.key) - recentKeys.indexOf(b.key));
+
+  useEffect(() => {
+    const handleArrowNav = (e) => {
+      if (e.target?.tagName === 'INPUT' || e.target?.tagName === 'TEXTAREA') return;
+      if (!['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+      const cards = Array.from(document.querySelectorAll('[data-launcher-card="true"]'));
+      if (!cards.length) return;
+      const active = document.activeElement;
+      let idx = cards.findIndex((el) => el === active);
+      if (idx === -1) {
+        cards[0].focus();
+        return;
+      }
+      e.preventDefault();
+      const computed = window.getComputedStyle(cards[0].parentElement);
+      const columns = Math.max(1, computed.gridTemplateColumns.split(' ').length);
+      if (e.key === 'ArrowRight') idx = Math.min(cards.length - 1, idx + 1);
+      if (e.key === 'ArrowLeft') idx = Math.max(0, idx - 1);
+      if (e.key === 'ArrowDown') idx = Math.min(cards.length - 1, idx + columns);
+      if (e.key === 'ArrowUp') idx = Math.max(0, idx - columns);
+      cards[idx].focus();
+    };
+    window.addEventListener('keydown', handleArrowNav);
+    return () => window.removeEventListener('keydown', handleArrowNav);
+  }, []);
+
+  const clearRecent = () => {
+    setRecentKeys([]);
+    saveRecentApps(tenantSlug, []);
+  };
 
   return (
     <div
@@ -310,7 +367,7 @@ const AppHome = () => {
             />
             <QuickStat
               icon={BookmarkSolidIcon}
-              label="Pinned to Bar"
+              label="Pinned Apps"
               value={totalFavs || '—'}
               gradient="from-indigo-500 to-violet-600"
             />
@@ -357,6 +414,27 @@ const AppHome = () => {
             /* ── All apps (bookmarks live in the bar above) ── */
             visible.length > 0 && (
               <div>
+                {recentItems.length > 0 && (
+                  <div className="mb-7">
+                    <div className="flex items-center justify-between">
+                      <SectionLabel emoji="🕘" title="Recent Apps" count={recentItems.length} />
+                      <button
+                        type="button"
+                        onClick={clearRecent}
+                        className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline -mt-3"
+                      >
+                        Clear Recent
+                      </button>
+                    </div>
+                    <AppGrid
+                      items={recentItems}
+                      activeAppKey={activeAppKey}
+                      favoriteKeys={favoriteKeys}
+                      onNavigate={handleNavigate}
+                      onToggleFav={toggleFavorite}
+                    />
+                  </div>
+                )}
                 <SectionLabel emoji="📦" title="All Apps" count={visible.length} />
                 <AppGrid
                   items={visible}
@@ -373,7 +451,7 @@ const AppHome = () => {
         {/* ── Footer hint ──────────────────────────────────────────────────────── */}
         {!q && filteredMenuItems.length > 0 && (
           <p className="text-center text-[11px] text-gray-400 dark:text-gray-600 pb-4">
-            Hover any app and click the bookmark ribbon to pin it to the bar · Press{' '}
+            Hover any app and click the bookmark ribbon to pin it · Press{' '}
             <kbd className="inline-flex items-center rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-1 py-0.5 font-mono text-[10px]">
               /
             </kbd>{' '}

@@ -16,7 +16,7 @@ import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthCont
 
 // Lightweight inline invite modal — no extra file needed
 const InviteModal = ({ tenantSlug, onClose }) => {
-  const [form, setForm] = useState({ email: '', fullName: '', erpRole: '', hrSubRole: '' });
+  const [form, setForm] = useState({ email: '', fullName: '', erpRole: '', hrSubRole: '', financeSubRole: '' });
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(null);
   const [err, setErr] = useState(null);
@@ -76,6 +76,7 @@ const InviteModal = ({ tenantSlug, onClose }) => {
                 <option value="manager">Manager</option>
                 <option value="project_manager">Project Manager</option>
                 <option value="hr">HR</option>
+                <option value="finance">Finance</option>
                 <option value="admin">Admin</option>
                 <option value="contractor">Contractor</option>
               </select>
@@ -88,6 +89,19 @@ const InviteModal = ({ tenantSlug, onClose }) => {
                   <option value="manager">HR Manager</option>
                   <option value="executive">HR Executive</option>
                   <option value="payroll_officer">Payroll Officer</option>
+                </select>
+              </div>
+            )}
+            {form.erpRole === 'finance' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Finance Sub-Role</label>
+                <select name="financeSubRole" value={form.financeSubRole} onChange={handleChange} className="glass-input w-full px-4 py-2.5 rounded-xl">
+                  <option value="">Finance Manager (default)</option>
+                  <option value="manager">Finance Manager</option>
+                  <option value="accountant">Accountant</option>
+                  <option value="analyst">Analyst</option>
+                  <option value="ap_officer">AP Officer</option>
+                  <option value="ar_officer">AR Officer</option>
                 </select>
               </div>
             )}

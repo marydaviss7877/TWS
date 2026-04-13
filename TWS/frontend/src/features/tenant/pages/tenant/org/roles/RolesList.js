@@ -13,7 +13,8 @@ import { tenantApiService } from '../../../../../../shared/services/tenant/tenan
 const emptyRoleCatalog = {
   softwareHouse: { title: '', description: '', roleSystem: '', entries: [] },
   organization: { title: '', description: '', roleSystem: '', entries: [] },
-  organizationHrSubroles: { title: '', description: '', roleSystem: '', entries: [] }
+  organizationHrSubroles: { title: '', description: '', roleSystem: '', entries: [] },
+  organizationFinanceSubroles: { title: '', description: '', roleSystem: '', entries: [] }
 };
 
 function RoleCatalogSection({ section, searchTerm }) {
@@ -258,6 +259,7 @@ const RolesList = () => {
       <RoleCatalogSection section={catalog.softwareHouse} searchTerm={searchTerm} />
       <RoleCatalogSection section={catalog.organization} searchTerm={searchTerm} />
       <RoleCatalogSection section={catalog.organizationHrSubroles} searchTerm={searchTerm} />
+      <RoleCatalogSection section={catalog.organizationFinanceSubroles} searchTerm={searchTerm} />
 
       <details className="group border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
         <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-200 list-none">

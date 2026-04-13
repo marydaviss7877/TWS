@@ -238,37 +238,6 @@ const OrgProfile = () => {
         </div>
       )}
 
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between gap-3 mb-3 px-0.5">
-        <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-lg overflow-hidden shrink-0 ring-1 ring-gray-200 dark:ring-gray-700">
-            {logoUrl
-              ? <img src={logoUrl} alt={form.name} className="h-full w-full object-contain bg-white" />
-              : <div className="h-full w-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-bold text-sm">{initial}</div>
-            }
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h1 className="text-sm font-bold text-gray-900 dark:text-white">{form.name || 'Organization'}</h1>
-              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide ${PLAN_CLS[plan] || PLAN_CLS.starter}`}>{plan}</span>
-              <span className={`text-[10px] font-medium ${status === 'active' ? 'text-emerald-500' : 'text-gray-400'}`}>● {status}</span>
-            </div>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500">{cat} · /{tenantSlug}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
-          <button onClick={load} title="Refresh"
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-            <ArrowPathIcon className="h-3.5 w-3.5" />
-          </button>
-          {!isAdmin && (
-            <span className="flex items-center gap-1 text-[10px] text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700">
-              <PencilSquareIcon className="h-3 w-3" /> View only
-            </span>
-          )}
-        </div>
-      </div>
-
       {/* ── Layout ── */}
       <div className="flex flex-col md:flex-row gap-4">
 

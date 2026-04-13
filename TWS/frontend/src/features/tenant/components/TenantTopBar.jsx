@@ -49,6 +49,14 @@ const TenantTopBar = ({
   const initial = (orgName || 'O').charAt(0).toUpperCase();
   const userInitial = (user?.fullName?.[0] ?? user?.email?.[0] ?? 'U').toUpperCase();
   const displayName = user?.fullName || user?.email || 'User';
+  const avatarSrc = (() => {
+    const raw = user?.avatarUrl || user?.profilePicUrl;
+    if (!raw) return null;
+    if (raw.startsWith('/uploads/profile-pictures/')) {
+      return `/api/tenant/${tenantSlug}/organization${raw}`;
+    }
+    return raw;
+  })();
 
   return (
     <header className="flex h-10 shrink-0 items-center gap-1.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 sm:px-3 shadow-sm">
@@ -135,7 +143,7 @@ const TenantTopBar = ({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" aria-label="User menu">
               <Avatar className="h-6 w-6">
-                {user?.avatarUrl && <AvatarImage src={user.avatarUrl} alt={displayName} />}
+                {avatarSrc && <AvatarImage src={avatarSrc} alt={displayName} />}
                 <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary-500 to-accent-500 text-white">
                   {userInitial}
                 </AvatarFallback>

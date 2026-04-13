@@ -11,7 +11,12 @@ const MAX_DESCRIPTION = 1000;
 
 function flattenRoleCatalogRows() {
   const catalog = buildRoleCatalog();
-  const sections = [catalog.softwareHouse, catalog.organization, catalog.organizationHrSubroles];
+  const sections = [
+    catalog.softwareHouse,
+    catalog.organization,
+    catalog.organizationHrSubroles,
+    catalog.organizationFinanceSubroles
+  ];
   const rows = [];
   for (const section of sections) {
     for (const entry of section?.entries || []) {

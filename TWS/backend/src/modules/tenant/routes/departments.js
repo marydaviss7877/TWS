@@ -6,6 +6,11 @@ const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl'
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const Department = require('../../../models/Department');
 const DepartmentDashboardService = require('../../../services/analytics/department-dashboard.service');
+const {
+  DEFAULT_DEPARTMENT_TEMPLATE,
+  seedDepartmentTemplate,
+  syncDepartmentNameAssignments
+} = require('../../../services/tenant/departmentAssignmentSync.service');
 // Use standardized orgId helper utility
 const { ensureOrgId, getTenantFilter } = require('../../../utils/orgIdHelper');
 // Validation and ownership middleware
@@ -65,6 +70,34 @@ router.get('/', deptListAccess, ErrorHandler.asyncHandler(async (req, res) => {
     data: departments
   });
 }));
+
+// Create default template departments (idempotent; skips existing by code)
+router.post('/template',
+  requireRole(['owner', 'admin', 'super_admin']),
+  injectOwnership,
+  ErrorHandler.asyncHandler(async (req, res) => {
+    let orgId;
+    try {
+      orgId = await ensureOrgId(req);
+    } catch (err) {
+      return res.status(400).json({ success: false, message: 'Organization context could not be determined. Please log in again.' });
+    }
+
+    const tenantId = req.tenantId || req.user?.tenantId;
+    const result = await seedDepartmentTemplate({
+      tenantId,
+      orgId: req.body.orgId || orgId,
+      createdBy: req.body.createdBy || req.user?._id
+    });
+
+    res.status(201).json({
+      success: true,
+      data: result,
+      template: DEFAULT_DEPARTMENT_TEMPLATE,
+      message: `Template applied. Created ${result.created.length}, skipped ${result.skipped.length}.`
+    });
+  })
+);
 
 // Get all departments with their statistics (for overview) - must be before /:id
 router.get('/dashboard/overview', ErrorHandler.asyncHandler(async (req, res) => {
@@ -224,6 +257,8 @@ router.put('/:id',
       message: 'Department not found'
     });
   }
+
+  const oldName = department.name;
   
   // Check if code is being changed and if new code already exists
   if (code && code.toUpperCase().trim() !== department.code) {
@@ -286,10 +321,16 @@ router.put('/:id',
   }
   
   await department.save();
+
+  const nameSync = await syncDepartmentNameAssignments({
+    departmentDoc: department,
+    oldName,
+    newName: department.name
+  });
   
   res.json({
     success: true,
-    data: department,
+    data: { department, nameSync },
     message: 'Department updated successfully'
   });
 }));

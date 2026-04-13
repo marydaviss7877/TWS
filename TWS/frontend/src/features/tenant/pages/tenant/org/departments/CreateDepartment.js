@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import tenantApiService from '../../../../../../shared/services/tenant/tenant-api.service';
 
 const CreateDepartment = () => {
   const { tenantSlug } = useParams();
@@ -10,8 +11,29 @@ const CreateDepartment = () => {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
-    description: ''
+    description: '',
+    departmentHead: ''
   });
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+
+  React.useEffect(() => {
+    const fetchUsers = async () => {
+      if (!tenantSlug) return;
+      try {
+        setUsersLoading(true);
+        const data = await tenantApiService.getUsers(tenantSlug, { page: 1, limit: 200, status: 'active' });
+        const list = Array.isArray(data?.users) ? data.users : [];
+        setUsers(list);
+      } catch (error) {
+        console.error('Error fetching users for department head:', error);
+        setUsers([]);
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+    fetchUsers();
+  }, [tenantSlug]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,7 +61,10 @@ const CreateDepartment = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          departmentHead: formData.departmentHead || undefined
+        })
       });
       
       if (!response.ok) {
@@ -129,6 +154,30 @@ const CreateDepartment = () => {
               rows={3}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
+          </div>
+
+          {/* Department Head */}
+          <div>
+            <label htmlFor="departmentHead" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Department Head
+            </label>
+            <select
+              id="departmentHead"
+              name="departmentHead"
+              value={formData.departmentHead}
+              onChange={handleChange}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option value="">Select department head (optional)</option>
+              {users.map((user) => (
+                <option key={user._id} value={user._id}>
+                  {user.fullName || user.name || user.email}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {usersLoading ? 'Loading users...' : 'Choose a user to assign as department head.'}
+            </p>
           </div>
 
           {/* Submit Button */}

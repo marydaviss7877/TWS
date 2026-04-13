@@ -20,6 +20,15 @@ const HR_SUB_ROLES = [
   { value: 'payroll_officer', label: 'Payroll Officer (payroll only)' }
 ];
 
+const FINANCE_SUB_ROLES = [
+  { value: '', label: '— None —' },
+  { value: 'manager', label: 'Finance Manager' },
+  { value: 'accountant', label: 'Accountant' },
+  { value: 'analyst', label: 'Analyst (read-only)' },
+  { value: 'ap_officer', label: 'AP Officer' },
+  { value: 'ar_officer', label: 'AR Officer' }
+];
+
 const UserList = () => {
   const { tenantSlug } = useParams();
   const navigate = useNavigate();
@@ -39,6 +48,7 @@ const UserList = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [editHrSubRole, setEditHrSubRole] = useState('');
+  const [editFinanceSubRole, setEditFinanceSubRole] = useState('');
   const [saving, setSaving] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [passwordUser, setPasswordUser] = useState(null);
@@ -106,6 +116,7 @@ const UserList = () => {
   const openEditModal = async (user) => {
     setEditUser(user);
     setEditHrSubRole(user?.hrSubRole ?? '');
+    setEditFinanceSubRole(user?.financeSubRole ?? '');
     setEditModalOpen(true);
     if (user?._id) {
       try {
@@ -113,6 +124,7 @@ const UserList = () => {
         if (full) {
           setEditUser(full);
           setEditHrSubRole(full.hrSubRole ?? '');
+          setEditFinanceSubRole(full.financeSubRole ?? '');
         }
       } catch (e) {
         console.warn('Could not load user details', e);
@@ -124,6 +136,7 @@ const UserList = () => {
     setEditModalOpen(false);
     setEditUser(null);
     setEditHrSubRole('');
+    setEditFinanceSubRole('');
   };
 
   const openPasswordModal = (user) => {
@@ -166,10 +179,16 @@ const UserList = () => {
     if (!tenantSlug || !user?.email) return;
     setInviteSendingId(user._id);
     try {
+      const r = (user.role || '').toLowerCase();
+      let erpRole = 'employee';
+      if (r === 'hr') erpRole = 'hr';
+      else if (r === 'finance') erpRole = 'finance';
       await tenantApiService.inviteEmployee(tenantSlug, {
         email: user.email,
         fullName: user.fullName || user.email.split('@')[0],
-        erpRole: user.role === 'hr' ? 'hr' : 'employee'
+        erpRole,
+        ...(r === 'hr' && user.hrSubRole ? { hrSubRole: user.hrSubRole } : {}),
+        ...(r === 'finance' && user.financeSubRole ? { financeSubRole: user.financeSubRole } : {})
       });
       toast.success('Invitation sent');
       fetchUsers();
@@ -184,7 +203,16 @@ const UserList = () => {
     if (!editUser?._id || !tenantSlug) return;
     setSaving(true);
     try {
-      await tenantApiService.updateUser(tenantSlug, editUser._id, { hrSubRole: editHrSubRole || null });
+      const r = (editUser.role || '').toLowerCase();
+      const payload = {};
+      if (r === 'hr') payload.hrSubRole = editHrSubRole || null;
+      if (r === 'finance') payload.financeSubRole = editFinanceSubRole || null;
+      if (Object.keys(payload).length === 0) {
+        toast.success('No sub-role changes to save');
+        closeEditModal();
+        return;
+      }
+      await tenantApiService.updateUser(tenantSlug, editUser._id, payload);
       toast.success('User updated');
       fetchUsers();
       closeEditModal();
@@ -498,6 +526,21 @@ const UserList = () => {
                     ))}
                   </select>
                   <p className="text-xs text-gray-500 mt-1">Determines payroll vs leave vs roster access.</p>
+                </div>
+              )}
+              {(editUser.role === 'finance' || editUser.role === 'Finance') && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Finance sub-role</label>
+                  <select
+                    value={editFinanceSubRole}
+                    onChange={(e) => setEditFinanceSubRole(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    {FINANCE_SUB_ROLES.map((opt) => (
+                      <option key={opt.value || 'none'} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Refines AP/AR, reporting, and write access in Finance.</p>
                 </div>
               )}
               <div className="flex justify-end gap-2 pt-2">

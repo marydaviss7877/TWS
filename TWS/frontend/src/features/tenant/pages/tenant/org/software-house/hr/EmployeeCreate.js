@@ -17,7 +17,9 @@ import {
   AcademicCapIcon,
   GlobeAltIcon,
   ComputerDesktopIcon,
-  KeyIcon
+  KeyIcon,
+  PhotoIcon,
+  ArrowUpTrayIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import toast from 'react-hot-toast';
@@ -86,6 +88,8 @@ const EmployeeCreate = () => {
   const [successDetail, setSuccessDetail] = useState(null);
   const [sendPortalInvite, setSendPortalInvite] = useState(true);
   const [skillsInput, setSkillsInput] = useState('');
+  const [profilePicFile, setProfilePicFile] = useState(null);
+  const [profilePicPreview, setProfilePicPreview] = useState(null);
   // Departments loaded from API; falls back to the hardcoded list
   const [departmentOptions, setDepartmentOptions] = useState(SOFTWARE_HOUSE_DEPARTMENTS);
 
@@ -119,6 +123,7 @@ const EmployeeCreate = () => {
     department: '',
     erpRole: '',          // ERP portal role (defaults to 'employee' on backend)
     hrSubRole: '',        // Only relevant when erpRole === 'hr'
+    financeSubRole: '',   // Only relevant when erpRole === 'finance'
     seniorityLevel: 'mid',
     hireDate: '',
     contractType: 'full-time',
@@ -168,6 +173,17 @@ const EmployeeCreate = () => {
     }));
   };
 
+  const handleProfilePicChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+    setProfilePicFile(file);
+    setProfilePicPreview(URL.createObjectURL(file));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -200,6 +216,7 @@ const EmployeeCreate = () => {
         ...(formData.employeeId?.trim() ? { employeeId: formData.employeeId.trim() } : {}),
         ...(formData.erpRole ? { erpRole: formData.erpRole } : {}),
         ...(formData.erpRole === 'hr' && formData.hrSubRole ? { hrSubRole: formData.hrSubRole } : {}),
+        ...(formData.erpRole === 'finance' && formData.financeSubRole ? { financeSubRole: formData.financeSubRole } : {}),
         phone: formData.phone?.trim() || undefined,
         dateOfBirth: formData.dateOfBirth || undefined,
         gender: formData.gender || undefined,
@@ -245,6 +262,21 @@ const EmployeeCreate = () => {
       };
 
       const response = await tenantApiService.createEmployee(tenantSlug, employeeData);
+
+      const createdUserId = response?.employee?.userId?._id || response?.employee?.userId;
+      if (profilePicFile && createdUserId) {
+        const picForm = new FormData();
+        picForm.append('profilePic', profilePicFile);
+        const picRes = await fetch(`/api/tenant/${tenantSlug}/organization/users/${createdUserId}/picture`, {
+          method: 'POST',
+          credentials: 'include',
+          body: picForm
+        });
+        if (!picRes.ok) {
+          const picErr = await picRes.json().catch(() => ({}));
+          throw new Error(picErr.message || 'Employee created but profile picture upload failed.');
+        }
+      }
 
       if (response !== false) {
         if (response?.portalInviteSent) {
@@ -378,6 +410,25 @@ const EmployeeCreate = () => {
             Personal Information
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xl:gap-6">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Profile Picture
+              </label>
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                  {profilePicPreview ? (
+                    <img src={profilePicPreview} alt="Preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <PhotoIcon className="w-6 h-6 text-gray-400" />
+                  )}
+                </div>
+                <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <ArrowUpTrayIcon className="w-4 h-4" />
+                  Upload Picture
+                  <input type="file" accept="image/*" onChange={handleProfilePicChange} className="hidden" />
+                </label>
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 First Name <span className="text-red-500">*</span>
@@ -607,6 +658,7 @@ const EmployeeCreate = () => {
                 <option value="manager">Manager</option>
                 <option value="project_manager">Project Manager</option>
                 <option value="hr">HR</option>
+                <option value="finance">Finance</option>
                 <option value="admin">Admin</option>
                 <option value="contractor">Contractor</option>
               </select>
@@ -632,6 +684,29 @@ const EmployeeCreate = () => {
                 </select>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Fine-tunes payroll and leave access within the HR role.
+                </p>
+              </div>
+            )}
+            {formData.erpRole === 'finance' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Finance Sub-Role
+                </label>
+                <select
+                  name="financeSubRole"
+                  value={formData.financeSubRole}
+                  onChange={handleChange}
+                  className="glass-input w-full px-4 py-3 rounded-xl"
+                >
+                  <option value="">Finance Manager (default)</option>
+                  <option value="manager">Finance Manager — full finance + payroll</option>
+                  <option value="accountant">Accountant</option>
+                  <option value="analyst">Analyst — read-only</option>
+                  <option value="ap_officer">AP Officer</option>
+                  <option value="ar_officer">AR Officer</option>
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Refines module access for Finance portal users (aligned with UPR).
                 </p>
               </div>
             )}
