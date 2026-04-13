@@ -243,3 +243,85 @@
     transform: scale(1.05);
     box-shadow: 0 20px 40px rgba(255, 255, 255, 0.1);
 }
+
+/* ========== Day mode (global ThemeContext light) ========== */
+
+.sh-finance-page.day-mode {
+    --sh-finance-bg: #f4f6ff;
+    --sh-finance-surface: #ffffff;
+    --sh-finance-border: rgba(15, 23, 42, 0.08);
+    --sh-finance-text: #0d0e24;
+    --sh-finance-secondary: #48506e;
+}
+
+.sh-finance-page.day-mode .text-\[#8B8BA8\] {
+    color: #52526a !important;
+}
+
+.sh-finance-page.day-mode .text-\[#52526A\] {
+    color: #64748b !important;
+}
+
+.sh-finance-page.day-mode .text-white {
+    color: var(--sh-finance-text) !important;
+}
+
+.sh-finance-page.day-mode .sh-console-view .text-white {
+    color: #f8fafc !important;
+}
+
+.sh-finance-page.day-mode .sh-console-view .text-white\/80 {
+    color: rgba(248, 250, 252, 0.88) !important;
+}
+
+.sh-finance-page.day-mode .sh-finance-glass {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(15, 23, 42, 0.08);
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.06);
+}
+
+.sh-finance-page.day-mode .sh-ledger-card {
+    background: #ffffff;
+    border-color: rgba(15, 23, 42, 0.08);
+}
+
+.sh-finance-page.day-mode .sh-ledger-card:hover {
+    background: #ecfdf5;
+    border-color: rgba(16, 185, 129, 0.35);
+}
+
+.sh-finance-page.day-mode .sh-ledger-card .bg-white\/5 {
+    background: rgba(16, 185, 129, 0.12) !important;
+    box-shadow: inset 0 0 0 1px rgba(5, 150, 105, 0.22);
+}
+
+.sh-finance-page.day-mode .sh-ledger-card .text-white {
+    color: #047857 !important;
+}
+
+.sh-finance-page.day-mode .sh-ledger-metric {
+    color: #047857;
+    background: rgba(16, 185, 129, 0.22);
+    box-shadow: inset 0 0 0 1px rgba(5, 150, 105, 0.28);
+}
+
+.sh-finance-page.day-mode .sh-final-ledger {
+    background: radial-gradient(circle at bottom, rgba(59, 130, 246, 0.08), transparent 70%);
+}
+
+.sh-finance-page.day-mode footer.border-t {
+    border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+.sh-finance-page.day-mode .sh-spectral-viz {
+    background: linear-gradient(to top, var(--sh-finance-bg), transparent);
+}
+
+.sh-finance-page.day-mode .sh-viz-bar {
+    opacity: 0.45;
+}
+
+.sh-finance-page.day-mode nav a:hover,
+.sh-finance-page.day-mode footer a:hover {
+    color: var(--sh-finance-text) !important;
+}

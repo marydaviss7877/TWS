@@ -10,6 +10,7 @@ import {
   UserIcon,
   ClockIcon,
   PencilSquareIcon,
+  BookOpenIcon,
 } from '@heroicons/react/24/outline';
 
 // ---------------------------------------------------------------------------
@@ -32,6 +33,7 @@ export const getNavigationActions = (tenantSlug) => {
     { id: 'analytics',    label: 'Analytics',       icon: ChartBarIcon,              category: 'Navigate', path: `/${tenantSlug}/org/analytics` },
     { id: 'documents',    label: 'Documents',       icon: PencilSquareIcon,          category: 'Navigate', path: `/${tenantSlug}/org/documents` },
     { id: 'settings',     label: 'Settings',        icon: CogIcon,                   category: 'Navigate', path: `/${tenantSlug}/org/settings` },
+    { id: 'rulebook',     label: 'Org rule book',   icon: BookOpenIcon,              category: 'Navigate', path: `/${tenantSlug}/org/rulebook` },
     // --- Quick Create ---
     { id: 'create-task',    label: 'Add Task',        icon: ClipboardDocumentListIcon, category: 'Quick Create', path: `/${tenantSlug}/org/projects/tasks?create=task` },
     { id: 'create-project', label: 'Create Project',  icon: FolderIcon,                category: 'Quick Create', path: `/${tenantSlug}/org/projects?create=project` },
@@ -56,6 +58,7 @@ export const QUICK_ADD_ACTIONS = [
 // Replaces duplicate copies in TenantOrgLayout, useMenuFiltering, industryMenuBuilder.
 // ---------------------------------------------------------------------------
 export const MENU_KEY_MODULES = {
+  rulebook:             [],
   hr:                   ['hr', 'attendance', 'employees', 'payroll'],
   finance:              ['finance'],
   projects:             ['projects'],
@@ -126,7 +129,7 @@ export const SIDEBAR_SECTIONS = [
   { label: 'Finance',  keys: ['finance', 'payroll'] },
   { label: 'Insights', keys: ['analytics', 'reports', 'audit'] },
   { label: 'Content',  keys: ['documents'] },
-  { label: 'Settings', keys: ['settings'] },
+  { label: 'Settings', keys: ['settings', 'rulebook'] },
 ];
 
 // ---------------------------------------------------------------------------
@@ -152,6 +155,7 @@ export const APP_METADATA = {
   audit:              { gradient: 'from-yellow-500 to-amber-600',    description: 'Audit trail' },
   reports:            { gradient: 'from-lime-500 to-green-600',      description: 'Detailed reports' },
   settings:           { gradient: 'from-gray-500 to-slate-600',      description: 'Configuration' },
+  rulebook:           { gradient: 'from-amber-600 to-orange-600',    description: 'Session & security policy' },
   payroll:            { gradient: 'from-green-500 to-emerald-600',   description: 'Payroll management' },
 };
 

@@ -124,7 +124,17 @@ const SoftwareHouseDashboard = () => {
   const activeSprints  = dash.activeSprints   ?? [];
 
   const totalProjects = projects.totalProjects ?? 0;
-  const healthTotal   = (projects.onTrack ?? 0) + (projects.atRisk ?? 0) + (projects.delayed ?? 0);
+  const onTrack  = projects.onTrackProjects ?? projects.onTrack ?? 0;
+  const atRisk   = projects.atRiskProjects ?? projects.atRisk ?? 0;
+  const delayed  = projects.delayedProjects ?? projects.delayed ?? 0;
+  const healthTotal   = onTrack + atRisk + delayed;
+  const teamMembers =
+    m.team?.totalTeamMembers ?? m.team?.totalMembers ?? 0;
+  const avgVelocity =
+    sprints.averageVelocity ?? sprints.totalVelocity;
+  const codeCoverage =
+    dev.avgCodeCoverage ?? dev.averageCoverage;
+  const bugCount = dev.totalBugs ?? dev.bugCount;
 
   const QUICK_ACTIONS = [
     { label: 'New Project',   path: `/${tenantSlug}/org/projects?create=project`,     primary: true },
@@ -162,7 +172,7 @@ const SoftwareHouseDashboard = () => {
           sub={`${projects.completedProjects ?? 0} completed`}
         />
         <KpiCard
-          label="Team Members"       value={m.team?.totalMembers}
+          label="Team Members"       value={teamMembers}
           icon={UsersIcon}           color="text-emerald-600 dark:text-emerald-400"
           bg="bg-emerald-50 dark:bg-emerald-900/30"
         />
@@ -170,7 +180,7 @@ const SoftwareHouseDashboard = () => {
           label="Active Sprints"     value={sprints.activeSprints}
           icon={RocketLaunchIcon}    color="text-violet-600 dark:text-violet-400"
           bg="bg-violet-50 dark:bg-violet-900/30"
-          sub={sprints.averageVelocity ? `Avg velocity: ${sprints.averageVelocity}` : undefined}
+          sub={avgVelocity != null && avgVelocity > 0 ? `Avg velocity: ${avgVelocity}` : undefined}
         />
         <KpiCard
           label="Completed Projects" value={projects.completedProjects}
@@ -188,9 +198,9 @@ const SoftwareHouseDashboard = () => {
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Project Health</h3>
           {healthTotal > 0 ? (
             <div className="space-y-3">
-              <HealthBar label="On Track" count={projects.onTrack  ?? 0} total={healthTotal} colorClass="bg-emerald-500" />
-              <HealthBar label="At Risk"  count={projects.atRisk   ?? 0} total={healthTotal} colorClass="bg-amber-500" />
-              <HealthBar label="Delayed"  count={projects.delayed  ?? 0} total={healthTotal} colorClass="bg-red-500" />
+              <HealthBar label="On Track" count={onTrack} total={healthTotal} colorClass="bg-emerald-500" />
+              <HealthBar label="At Risk"  count={atRisk} total={healthTotal} colorClass="bg-amber-500" />
+              <HealthBar label="Delayed"  count={delayed} total={healthTotal} colorClass="bg-red-500" />
             </div>
           ) : (
             <p className="text-sm text-gray-400 dark:text-gray-600">No project health data yet</p>
@@ -207,7 +217,7 @@ const SoftwareHouseDashboard = () => {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Avg Velocity</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{sprints.averageVelocity ?? '—'}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">{avgVelocity ?? '—'}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -217,7 +227,7 @@ const SoftwareHouseDashboard = () => {
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Code Coverage</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-white">
-                  {dev.averageCoverage != null ? `${dev.averageCoverage}%` : '—'}
+                  {codeCoverage != null ? `${Math.round(codeCoverage)}%` : '—'}
                 </p>
               </div>
             </div>
@@ -227,7 +237,7 @@ const SoftwareHouseDashboard = () => {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Open Bugs</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{dev.bugCount ?? '—'}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">{bugCount ?? '—'}</p>
               </div>
             </div>
           </div>

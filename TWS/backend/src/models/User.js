@@ -79,7 +79,7 @@ const userSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'suspended', 'inactive'],
+    enum: ['active', 'pending', 'suspended', 'inactive'],
     default: 'active'
   },
   twoFAEnabled: {

@@ -111,12 +111,8 @@ const TimeTracking = () => {
     if (!isAuthenticated || !tenantSlug) return;
     
     try {
-      const response = await tenantApiService.getProjects(tenantSlug);
-      if (response?.success) {
-        setProjects(response.data || []);
-      } else {
-        setProjects([]);
-      }
+      const projectsList = await tenantApiService.getProjects(tenantSlug);
+      setProjects(Array.isArray(projectsList) ? projectsList : []);
     } catch (error) {
         console.error('Error fetching projects:', error);
       setProjects([]);

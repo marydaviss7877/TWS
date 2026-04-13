@@ -51,17 +51,6 @@ export const softwareHouseApi = {
     return axiosInstance.get(url, { headers: getTenantAuthHeaders() });
   },
 
-  // Development Methodology
-  getDevelopment: (tenantSlug) => {
-    const url = `/api/tenant/${tenantSlug}/software-house/development`;
-    return axiosInstance.get(url, { headers: getTenantAuthHeaders() });
-  },
-
-  updateDevelopment: (tenantSlug, development) => {
-    const url = `/api/tenant/${tenantSlug}/software-house/development`;
-    return axiosInstance.put(url, development, { headers: getTenantAuthHeaders() });
-  },
-
   // Metrics
   getMetrics: (tenantSlug) => {
     const url = `/api/tenant/${tenantSlug}/software-house/metrics`;

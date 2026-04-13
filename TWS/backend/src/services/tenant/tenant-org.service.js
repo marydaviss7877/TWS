@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Tenant = require('../../models/Tenant');
 const Organization = require('../../models/Organization');
 const User = require('../../models/User');
@@ -614,7 +615,17 @@ class TenantOrgService {
       const models = this.getTenantModels(tenantContext);
       const filter = this.getTenantFilter(tenantContext);
       // User model uses orgId and status (not tenantId/isActive)
-      const userFilter = { ...filter, status: status || 'active' };
+      const userFilter = { ...filter };
+      if (status) {
+        userFilter.status = status;
+      } else {
+        userFilter.status = { $in: ['active', 'pending', 'suspended'] };
+      }
+      // Shared-DB fallback can yield { tenantId } only; User has no tenantId field, so list would be empty.
+      if (userFilter.tenantId != null && userFilter.orgId == null && tenantContext.orgId) {
+        delete userFilter.tenantId;
+        userFilter.orgId = tenantContext.orgId;
+      }
       if (role) userFilter.role = role;
       if (department) userFilter.department = department;
 
@@ -630,8 +641,28 @@ class TenantOrgService {
         models.User.countDocuments(userFilter)
       ]);
 
+      const tenantMongoId = tenantContext.tenantId && mongoose.Types.ObjectId.isValid(String(tenantContext.tenantId))
+        ? new mongoose.Types.ObjectId(String(tenantContext.tenantId))
+        : null;
+      let userRows = users;
+      if (tenantMongoId && users.length) {
+        const TenantUser = require('../../models/TenantUser');
+        const ids = users.map((u) => u._id);
+        const tus = await TenantUser.find({ tenantId: tenantMongoId, userId: { $in: ids } })
+          .select('userId status')
+          .lean();
+        const byUser = Object.fromEntries(tus.map((t) => [String(t.userId), t.status]));
+        userRows = users.map((u) => {
+          const o = typeof u.toObject === 'function' ? u.toObject() : { ...u };
+          o.portalTenantStatus = byUser[String(u._id)] || null;
+          return o;
+        });
+      } else {
+        userRows = users.map((u) => (typeof u.toObject === 'function' ? u.toObject() : { ...u }));
+      }
+
       return {
-        users,
+        users: userRows,
         pagination: {
           current: page,
           pages: Math.ceil(total / limit),
@@ -646,24 +677,103 @@ class TenantOrgService {
   }
 
   /**
-   * Create user
+   * Create user (primary DB User document — same collection as POST /api/auth/login).
+   * Normalizes email like login, maps erpRole → User.role, ensures password, creates TenantUser.
    * @param {Object} tenantContext - Tenant context
    * @param {Object} userData - User data
-   * @returns {Object} Created user
+   * @returns {Object} Created user (may have _temporaryPassword when password was auto-generated)
    */
   async createUser(tenantContext, userData) {
-    const { tenantId, orgId, orgSlug } = tenantContext;
-    
+    const { tenantId, orgId } = tenantContext;
+    const validator = require('validator');
+    const crypto = require('crypto');
+
     try {
+      const rawEmail = String(userData.email || '').trim();
+      const emailNorm = validator.normalizeEmail(rawEmail, { gmail_remove_dots: false })
+        || rawEmail.toLowerCase();
+
+      const erpRole = userData.erpRole || userData.role || 'employee';
+      const tenantRoleEnum = ['owner', 'admin', 'manager', 'project_manager', 'hr', 'employee', 'contractor', 'client'];
+      const role = tenantRoleEnum.includes(erpRole) ? erpRole : 'employee';
+
+      let plainPassword = userData.password != null ? String(userData.password) : '';
+      let temporaryPassword = null;
+      if (!plainPassword || plainPassword.length < 6) {
+        temporaryPassword = crypto.randomBytes(4).toString('hex');
+        plainPassword = temporaryPassword;
+      }
+
+      const existing = await User.findOne({ email: emailNorm });
+      if (existing) {
+        throw new Error('A user with this email already exists');
+      }
+
+      const fullName = (userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || emailNorm).trim();
+
       const user = new User({
-        ...userData,
-        tenantId,
+        fullName,
+        email: emailNorm,
+        password: plainPassword,
+        role,
         orgId,
-        orgSlug,
-        module: 'users'
+        status: 'active',
+        emailVerified: false,
+        ...(userData.phone ? { phone: String(userData.phone).trim() } : {}),
+        ...(userData.jobTitle ? { jobTitle: String(userData.jobTitle).trim() } : {}),
+        ...(userData.department ? { department: String(userData.department).trim() } : {})
       });
 
       await user.save();
+
+      const mongoTenantId = tenantId && mongoose.Types.ObjectId.isValid(tenantId)
+        ? new mongoose.Types.ObjectId(tenantId)
+        : null;
+      if (mongoTenantId) {
+        try {
+          const TenantUser = require('../../models/TenantUser');
+          const tuSet = {
+            userId: user._id,
+            tenantId: mongoTenantId,
+            status: 'active',
+            roles: [{ role: erpRole, permissions: [], assignedAt: new Date() }]
+          };
+          if (erpRole === 'hr' && userData.hrSubRole) {
+            tuSet.hrSubRole = userData.hrSubRole;
+          }
+          await TenantUser.findOneAndUpdate(
+            { userId: user._id, tenantId: mongoTenantId },
+            { $set: tuSet },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+          );
+          const { invalidateResolvedPermissions } = require('./permissionResolver.service');
+          await invalidateResolvedPermissions(mongoTenantId, user._id).catch(() => {});
+        } catch (tuErr) {
+          console.warn('TenantUser provision on createUser (non-fatal):', tuErr.message);
+        }
+      }
+
+      const hasSeparateDb = !!(
+        tenantContext.hasSeparateDatabase &&
+        tenantContext.tenantConnection &&
+        tenantContext.tenantConnection.readyState === 1
+      );
+      if (hasSeparateDb) {
+        const models = this.getTenantModels(tenantContext);
+        try {
+          const lean = await User.findById(user._id).lean();
+          if (lean) {
+            await models.User.deleteMany({ email: lean.email, _id: { $ne: lean._id } });
+            await models.User.collection.replaceOne({ _id: lean._id }, lean, { upsert: true });
+          }
+        } catch (mErr) {
+          console.warn('createUser tenant User mirror failed:', mErr.message);
+        }
+      }
+
+      if (temporaryPassword) {
+        user._temporaryPassword = temporaryPassword;
+      }
       return user;
     } catch (error) {
       console.error('Error creating user:', error);
@@ -684,7 +794,7 @@ class TenantOrgService {
       const models = this.getTenantModels(tenantContext);
       const filter = this.getTenantFilter(tenantContext);
       
-      const user = await models.User.findOne({ _id: userId, ...filter, isActive: true })
+      const user = await models.User.findOne({ _id: userId, ...filter })
         .select('-password')
         .populate('department', 'name');
       
@@ -714,7 +824,7 @@ class TenantOrgService {
       const filter = this.getTenantFilter(tenantContext);
       
       const user = await models.User.findOneAndUpdate(
-        { _id: userId, ...filter, isActive: true },
+        { _id: userId, ...filter },
         { ...userData, updatedAt: new Date() },
         { new: true }
       ).select('-password');
@@ -731,29 +841,87 @@ class TenantOrgService {
   }
 
   /**
+   * Set a user's password from an org admin context (no current password).
+   * Updates primary User (login) and mirrors to tenant DB when applicable.
+   */
+  async setUserPasswordByAdmin(tenantContext, targetUserId, newPassword) {
+    const plain = String(newPassword || '').trim();
+    if (plain.length < 6) {
+      throw new Error('Password must be at least 6 characters');
+    }
+    const primary = await User.findById(targetUserId);
+    if (!primary) {
+      throw new Error('User not found');
+    }
+    const expectedOrg = tenantContext.orgId && String(tenantContext.orgId);
+    const userOrg = primary.orgId && (typeof primary.orgId === 'object' && primary.orgId._id
+      ? primary.orgId._id.toString()
+      : String(primary.orgId));
+    if (expectedOrg && userOrg !== expectedOrg) {
+      throw new Error('User not in this organization');
+    }
+    primary.password = plain;
+    if (primary.status === 'pending') {
+      primary.status = 'active';
+    }
+    await primary.save();
+
+    const hasSeparateDb = !!(
+      tenantContext.hasSeparateDatabase &&
+      tenantContext.tenantConnection &&
+      tenantContext.tenantConnection.readyState === 1
+    );
+    if (hasSeparateDb) {
+      const models = this.getTenantModels(tenantContext);
+      try {
+        const lean = await User.findById(primary._id).lean();
+        if (lean) {
+          await models.User.collection.replaceOne({ _id: lean._id }, lean, { upsert: true });
+        }
+      } catch (mErr) {
+        console.warn('setUserPasswordByAdmin tenant mirror failed:', mErr.message);
+      }
+    }
+    return true;
+  }
+
+  /**
    * Delete user (soft delete)
    * @param {Object} tenantContext - Tenant context
    * @param {String} userId - User ID
    * @returns {Boolean} Success status
    */
   async deleteUser(tenantContext, userId) {
-    const { tenantId } = tenantContext;
-    
     try {
       const models = this.getTenantModels(tenantContext);
       const filter = this.getTenantFilter(tenantContext);
-      
+
+      // User schema uses status: active|suspended|inactive — not isActive (see models/User.js)
       const user = await models.User.findOneAndUpdate(
-        { _id: userId, ...filter, isActive: true },
-        { 
-          isActive: false,
-          deletedAt: new Date(),
+        { _id: userId, ...filter, status: 'active' },
+        {
+          status: 'inactive',
           updatedAt: new Date()
         }
       );
 
       if (!user) {
         throw new Error('User not found');
+      }
+
+      const tid = tenantContext.tenantId;
+      if (tid) {
+        try {
+          const TenantUser = require('../../models/TenantUser');
+          await TenantUser.updateMany(
+            { userId, tenantId: tid },
+            { $set: { status: 'inactive' } }
+          );
+          const { invalidateResolvedPermissions } = require('./permissionResolver.service');
+          await invalidateResolvedPermissions(tid, userId).catch(() => {});
+        } catch (e) {
+          console.warn('TenantUser/cache cleanup on user delete:', e.message);
+        }
       }
 
       return true;
@@ -809,7 +977,7 @@ class TenantOrgService {
    */
   async getEmployees(tenantContext, options = {}) {
     const { tenantId } = tenantContext;
-    const { page = 1, limit = 20, department, status } = options;
+    const { page = 1, limit = 20, department, status, userId } = options;
     
     try {
       const models = this.getTenantModels(tenantContext);
@@ -822,6 +990,9 @@ class TenantOrgService {
         filter.status = { $in: ['active', 'probation', 'on-leave'] };
       }
       if (department) filter.department = department;
+      if (userId && /^[0-9a-fA-F]{24}$/.test(String(userId))) {
+        filter.userId = userId;
+      }
 
       const skip = (page - 1) * limit;
       
@@ -923,25 +1094,21 @@ class TenantOrgService {
    */
   async createEmployee(tenantContext, employeeData) {
     const { tenantId, orgId, orgSlug } = tenantContext;
+    const validator = require('validator');
+    const crypto = require('crypto');
 
     try {
       const models = this.getTenantModels(tenantContext);
       const baseFilter = this.getTenantFilter(tenantContext);
       let userId = employeeData.userId;
       let temporaryPassword = null;
+      let portalInviteSent = false;
+      let portalInviteSkipped = null;
 
       // Resolve fullName from fullName field OR firstName+lastName
       const resolvedFullName = (employeeData.fullName ||
         ([employeeData.firstName, employeeData.lastName].filter(Boolean).join(' ').trim()) ||
         employeeData.email || 'Employee').trim();
-
-      // Auto-generate a temporary password when none supplied
-      const crypto = require('crypto');
-      let resolvedPassword = employeeData.password;
-      if (!resolvedPassword) {
-        temporaryPassword = crypto.randomBytes(4).toString('hex'); // 8-char hex
-        resolvedPassword = temporaryPassword;
-      }
 
       // Auto-generate employeeId when not provided
       const employeeId = employeeData.employeeId || `EMP${Date.now()}`;
@@ -950,56 +1117,230 @@ class TenantOrgService {
       const erpRole = employeeData.erpRole || 'employee';
       const hrSubRole = (erpRole === 'hr' && employeeData.hrSubRole) ? employeeData.hrSubRole : undefined;
 
-      // If no userId but email provided, create/find User first
-      if (!userId && employeeData.email && orgId) {
-        const existingUser = await models.User.findOne({
-          email: (employeeData.email || '').toLowerCase().trim()
-        });
-        if (existingUser) {
-          userId = existingUser._id;
+      // Auth always uses the primary (default connection) User collection for POST /api/auth/login.
+      // When the tenant uses a separate DB, we still create the User on the primary DB, then mirror
+      // the same document (_id + hashed password) into the tenant DB so Employee.populate('userId') works.
+      const hasSeparateDb = !!(
+        tenantContext.hasSeparateDatabase &&
+        tenantContext.tenantConnection &&
+        tenantContext.tenantConnection.readyState === 1
+      );
+      const rawEmail = String(employeeData.email || '').trim();
+      const emailNorm = validator.normalizeEmail(rawEmail, { gmail_remove_dots: false })
+        || rawEmail.toLowerCase();
+      const resolvedTenantId = baseFilter.tenantId || tenantId;
+
+      const invitedByRaw = employeeData.invitedBy;
+      const invitedBy = (invitedByRaw && mongoose.Types.ObjectId.isValid(String(invitedByRaw)))
+        ? new mongoose.Types.ObjectId(String(invitedByRaw))
+        : invitedByRaw;
+      const passwordPlain = employeeData.password != null ? String(employeeData.password).trim() : '';
+      const passwordSupplied = passwordPlain.length >= 6;
+      const wantInvite = !!employeeData.sendPortalInvite && !passwordSupplied;
+
+      const mirrorPrimaryUserToTenant = async (uid) => {
+        if (!hasSeparateDb) return;
+        const lean = await User.findById(uid).lean();
+        if (!lean) throw new Error('User record missing after save');
+        try {
+          const TenantUser = require('../../models/TenantUser');
+          const staleUsers = await models.User.find({ email: lean.email, _id: { $ne: lean._id } }).select('_id').lean();
+          const staleIds = staleUsers.map((s) => s._id).filter(Boolean);
+          if (staleIds.length && resolvedTenantId) {
+            await TenantUser.updateMany(
+              { tenantId: resolvedTenantId, userId: { $in: staleIds } },
+              { $set: { userId: lean._id } }
+            );
+          }
+          if (staleIds.length) {
+            await models.Employee.updateMany(
+              { userId: { $in: staleIds } },
+              { $set: { userId: lean._id } }
+            );
+          }
+          await models.User.deleteMany({ email: lean.email, _id: { $ne: lean._id } });
+          await models.User.collection.replaceOne({ _id: lean._id }, lean, { upsert: true });
+        } catch (e) {
+          console.error('mirrorPrimaryUserToTenant failed:', e.message);
+          throw e;
+        }
+      };
+
+      const provisionTenantUserForEmployee = async (uid) => {
+        if (!resolvedTenantId) return;
+        try {
+          const TenantUser = require('../../models/TenantUser');
+          const existingTU = await TenantUser.findOne({ userId: uid, tenantId: resolvedTenantId });
+          const baseDoc = {
+            userId: uid,
+            tenantId: resolvedTenantId,
+            roles: [{ role: erpRole, permissions: [], assignedAt: new Date() }],
+            status: 'active',
+            tenantSpecificInfo: {
+              employeeId,
+              department: employeeData.department || 'General',
+              jobTitle: employeeData.jobTitle || '',
+              hireDate: employeeData.hireDate ? new Date(employeeData.hireDate) : new Date()
+            }
+          };
+          if (hrSubRole) baseDoc.hrSubRole = hrSubRole;
+          if (!existingTU) {
+            await TenantUser.create(baseDoc);
+          } else {
+            existingTU.status = 'active';
+            existingTU.roles = [{ role: erpRole, permissions: [], assignedAt: new Date() }];
+            existingTU.tenantSpecificInfo = {
+              ...existingTU.tenantSpecificInfo,
+              ...baseDoc.tenantSpecificInfo
+            };
+            if (hrSubRole) existingTU.hrSubRole = hrSubRole;
+            await existingTU.save();
+          }
+          const { invalidateResolvedPermissions } = require('./permissionResolver.service');
+          await invalidateResolvedPermissions(resolvedTenantId, uid).catch(() => {});
+        } catch (tuErr) {
+          console.warn('TenantUser provision failed (non-fatal):', tuErr.message);
+        }
+      };
+
+      const fireEmployeeInviteEmail = async (tenantUserDoc) => {
+        const envConfig = require('../../config/environment');
+        const frontendUrl = envConfig.get('FRONTEND_URL') || process.env.FRONTEND_URL || '';
+        const inviteLink = `${frontendUrl}/invite/accept?token=${tenantUserDoc.invitation.invitationToken}`;
+        const Organization = require('../../models/Organization');
+        const org = orgId ? await Organization.findById(orgId).select('name').lean() : null;
+        const inviter = invitedBy ? await User.findById(invitedBy).select('fullName').lean() : null;
+        const emailService = require('../integrations/email.service');
+        emailService.sendEmployeeInviteEmail(
+          { fullName: resolvedFullName, email: emailNorm },
+          { inviteLink, orgName: org?.name || 'your organisation', role: erpRole, inviterName: inviter?.fullName || 'An admin' }
+        ).catch((err) => console.warn('Invite email failed (non-fatal):', err.message));
+      };
+
+      const decorateInviteTenantUser = async (tu) => {
+        tu.tenantSpecificInfo = {
+          ...(tu.tenantSpecificInfo || {}),
+          employeeId,
+          department: employeeData.department || 'General',
+          jobTitle: employeeData.jobTitle || '',
+          hireDate: employeeData.hireDate ? new Date(employeeData.hireDate) : new Date()
+        };
+        if (hrSubRole && erpRole === 'hr') tu.hrSubRole = hrSubRole;
+        await tu.save();
+        const { invalidateResolvedPermissions } = require('./permissionResolver.service');
+        await invalidateResolvedPermissions(resolvedTenantId, tu.userId).catch(() => {});
+      };
+
+      /** @returns {'invited'|'already_active'} */
+      const runPortalInvitePath = async (uid) => {
+        const TenantUser = require('../../models/TenantUser');
+        const existingTU = await TenantUser.findOne({ userId: uid, tenantId: resolvedTenantId });
+        if (existingTU && existingTU.status === 'active') {
+          await provisionTenantUserForEmployee(uid);
+          return 'already_active';
+        }
+        let tenantUserDoc;
+        if (existingTU) {
+          existingTU.invitation = existingTU.invitation || {};
+          existingTU.invitation.invitationToken = crypto.randomBytes(32).toString('hex');
+          existingTU.invitation.invitationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+          existingTU.status = 'pending';
+          existingTU.roles = [{ role: erpRole, permissions: [], assignedBy: invitedBy, assignedAt: new Date() }];
+          await existingTU.save();
+          tenantUserDoc = existingTU;
         } else {
-          const user = new models.User({
-            email: (employeeData.email || '').toLowerCase().trim(),
+          tenantUserDoc = await TenantUser.inviteUser(uid, resolvedTenantId, invitedBy, erpRole);
+        }
+        await decorateInviteTenantUser(tenantUserDoc);
+        await fireEmployeeInviteEmail(tenantUserDoc);
+        const portalUser = await User.findById(uid);
+        if (portalUser && portalUser.status !== 'active') {
+          portalUser.status = 'pending';
+          await portalUser.save();
+          await mirrorPrimaryUserToTenant(uid);
+        }
+        return 'invited';
+      };
+
+      if (!userId && employeeData.email) {
+        if (!orgId) {
+          throw new Error(
+            'Organization context is missing; the server cannot create portal credentials for this employee.'
+          );
+        }
+        const existingMaster = await User.findOne({ email: emailNorm });
+        if (existingMaster) {
+          const masterOrgRaw = existingMaster.orgId;
+          const masterOrg = masterOrgRaw
+            ? (typeof masterOrgRaw === 'object' && masterOrgRaw._id
+              ? masterOrgRaw._id.toString()
+              : masterOrgRaw.toString())
+            : null;
+          if (masterOrg && String(masterOrg) !== String(orgId)) {
+            throw new Error(
+              'This email is already registered to another organization. ' +
+              'Use a different email, or add this person under Organization > Users if they should access this workspace.'
+            );
+          }
+          userId = existingMaster._id;
+          if (passwordSupplied) {
+            existingMaster.password = passwordPlain;
+            existingMaster.status = 'active';
+            await existingMaster.save();
+          }
+          await mirrorPrimaryUserToTenant(userId);
+          if (wantInvite) {
+            const inviteOutcome = await runPortalInvitePath(userId);
+            if (inviteOutcome === 'invited') {
+              portalInviteSent = true;
+            } else {
+              portalInviteSkipped = 'already_active';
+            }
+          } else {
+            await provisionTenantUserForEmployee(userId);
+          }
+        } else if (wantInvite) {
+          const userIdNew = new mongoose.Types.ObjectId();
+          const masterUser = new User({
+            _id: userIdNew,
+            email: emailNorm,
+            fullName: resolvedFullName,
+            password: crypto.randomBytes(16).toString('hex'),
+            orgId,
+            role: 'employee',
+            status: 'pending',
+            emailVerified: false
+          });
+          await masterUser.save();
+          userId = userIdNew;
+          await mirrorPrimaryUserToTenant(userId);
+          const inviteOutcome = await runPortalInvitePath(userId);
+          if (inviteOutcome === 'invited') {
+            portalInviteSent = true;
+          } else {
+            portalInviteSkipped = 'already_active';
+          }
+        } else {
+          let resolvedPassword = passwordSupplied ? passwordPlain : null;
+          if (!resolvedPassword) {
+            temporaryPassword = crypto.randomBytes(4).toString('hex');
+            resolvedPassword = temporaryPassword;
+          }
+          const userIdNew = new mongoose.Types.ObjectId();
+          const masterUser = new User({
+            _id: userIdNew,
+            email: emailNorm,
             fullName: resolvedFullName,
             password: resolvedPassword,
             orgId,
-            tenantId: baseFilter.tenantId || tenantId,
-            orgSlug,
             role: 'employee',
             status: 'active',
-            emailVerified: false,
-            mustChangePassword: temporaryPassword !== null,
-            module: 'users'
+            emailVerified: false
           });
-          await user.save();
-          userId = user._id;
-
-          // Provision TenantUser so the new hire has ERP portal access immediately
-          const resolvedTenantId = baseFilter.tenantId || tenantId;
-          if (resolvedTenantId) {
-            try {
-              const TenantUser = require('../../models/TenantUser');
-              const tenantUserDoc = {
-                userId,
-                tenantId: resolvedTenantId,
-                roles: [{ role: erpRole, permissions: [], assignedAt: new Date() }],
-                status: 'active',
-                tenantSpecificInfo: {
-                  employeeId,
-                  department: employeeData.department || 'General',
-                  jobTitle: employeeData.jobTitle || '',
-                  hireDate: employeeData.hireDate ? new Date(employeeData.hireDate) : new Date()
-                }
-              };
-              if (hrSubRole) tenantUserDoc.hrSubRole = hrSubRole;
-              await TenantUser.create(tenantUserDoc);
-
-              const { invalidateResolvedPermissions } = require('./permissionResolver.service');
-              await invalidateResolvedPermissions(resolvedTenantId, userId).catch(() => {});
-            } catch (tuErr) {
-              console.warn('TenantUser provision failed (non-fatal):', tuErr.message);
-            }
-          }
+          await masterUser.save();
+          userId = userIdNew;
+          await mirrorPrimaryUserToTenant(userId);
+          await provisionTenantUserForEmployee(userId);
         }
       }
 
@@ -1028,6 +1369,8 @@ class TenantOrgService {
       delete employeePayload.erpRole;
       delete employeePayload.hrSubRole;
       delete employeePayload.password;
+      delete employeePayload.sendPortalInvite;
+      delete employeePayload.invitedBy;
 
       const employee = new models.Employee(employeePayload);
       await employee.save();
@@ -1035,6 +1378,12 @@ class TenantOrgService {
       // Surface the temp password so the route handler can return it to the admin
       if (temporaryPassword) {
         employee._temporaryPassword = temporaryPassword;
+      }
+      if (portalInviteSent) {
+        employee._portalInviteSent = true;
+      }
+      if (portalInviteSkipped) {
+        employee._portalInviteSkipped = portalInviteSkipped;
       }
       return employee;
     } catch (error) {

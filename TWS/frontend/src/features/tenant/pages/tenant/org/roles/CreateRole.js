@@ -204,7 +204,11 @@ const CreateRole = () => {
             </div>
             {permissions.length === 0 && (
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                No permissions available. Create permissions first.
+                No assignable permission records yet. Go to{' '}
+                <strong className="font-medium text-gray-600 dark:text-gray-300">Permissions</strong>, open{' '}
+                <strong className="font-medium text-gray-600 dark:text-gray-300">Additional catalog (MongoDB)</strong>, then
+                click <strong className="font-medium text-gray-600 dark:text-gray-300">Import catalog</strong> (or create
+                custom permissions there).
               </p>
             )}
           </div>

@@ -12,9 +12,11 @@ import {
   MapPinIcon,
   ClockIcon,
   CheckCircleIcon,
-  XMarkIcon
+  XMarkIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import toast from 'react-hot-toast';
 
 const EmployeeCreate = () => {
   const { tenantSlug } = useParams();
@@ -22,15 +24,8 @@ const EmployeeCreate = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-
-  // Debug: Log component initialization
-  useEffect(() => {
-    console.log('=== EmployeeCreate Component Initialized ===');
-    console.log('Tenant Slug:', tenantSlug);
-    console.log('TenantApiService available:', !!tenantApiService);
-    console.log('CreateEmployee method available:', !!tenantApiService?.createEmployee);
-    console.log('Navigate function available:', !!navigate);
-  }, [tenantSlug, navigate]);
+  const [portalPasswordHint, setPortalPasswordHint] = useState(null);
+  const [sendPortalInvite, setSendPortalInvite] = useState(true);
   const [formData, setFormData] = useState({
     // Personal Information
     firstName: '',
@@ -57,7 +52,8 @@ const EmployeeCreate = () => {
     reportingManager: '',
     employmentStatus: 'active',
     probationPeriod: '',
-    notes: ''
+    notes: '',
+    portalPassword: ''
   });
 
   const handleChange = (e) => {
@@ -72,11 +68,7 @@ const EmployeeCreate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    console.log('Form submitted!');
-    console.log('Form data:', formData);
-    console.log('Tenant slug:', tenantSlug);
-    
+
     setLoading(true);
     setError(null);
     setSuccess(false);
@@ -111,6 +103,12 @@ const EmployeeCreate = () => {
         return;
       }
 
+      if (!sendPortalInvite && formData.portalPassword && formData.portalPassword.length < 6) {
+        setError('Portal password must be at least 6 characters, or leave it blank for a one-time generated password.');
+        setLoading(false);
+        return;
+      }
+
       // Generate employee ID if not provided
       const employeeId = formData.employeeId || `EMP${Date.now()}`;
       
@@ -136,22 +134,39 @@ const EmployeeCreate = () => {
         reportingManager: formData.reportingManager?.trim() || undefined,
         employmentStatus: formData.employmentStatus,
         probationPeriod: formData.probationPeriod ? parseInt(formData.probationPeriod) : undefined,
-        notes: formData.notes?.trim() || undefined
+        notes: formData.notes?.trim() || undefined,
+        ...(sendPortalInvite ? { sendPortalInvite: true } : {}),
+        ...(!sendPortalInvite && formData.portalPassword && formData.portalPassword.length >= 6
+          ? { password: formData.portalPassword }
+          : {})
       };
 
-      console.log('Prepared employee data:', JSON.stringify(employeeData, null, 2));
-      console.log('Calling tenantApiService.createEmployee...');
-
-      // Verify tenantApiService exists
       if (!tenantApiService || !tenantApiService.createEmployee) {
         throw new Error('API service not available. Please refresh the page.');
       }
 
-      // Call API to create employee
       const response = await tenantApiService.createEmployee(tenantSlug, employeeData);
-      
-      console.log('Employee created successfully:', response);
-      
+      if (!response?.employee) {
+        throw new Error('Server did not return employee data. Check that you are logged in and try again.');
+      }
+
+      if (response?.portalInviteSent) {
+        setPortalPasswordHint({ kind: 'invite' });
+        toast.success('Employee created. Portal invite email was sent.');
+      } else if (response?.portalInviteSkipped === 'already_active') {
+        setPortalPasswordHint({ kind: 'already_active' });
+        toast.success('Employee created. This email already has active portal access.');
+      } else if (response?.temporaryPassword) {
+        setPortalPasswordHint({ kind: 'generated', value: response.temporaryPassword });
+        toast.success('Employee created. Copy the one-time password from this screen.');
+      } else if (!sendPortalInvite && formData.portalPassword && formData.portalPassword.length >= 6) {
+        setPortalPasswordHint({ kind: 'custom' });
+        toast.success('Employee created. They can sign in with the password you set.');
+      } else {
+        setPortalPasswordHint(null);
+        toast.success('Employee created.');
+      }
+
       setSuccess(true);
       
       // Redirect to employee list after 2 seconds
@@ -224,6 +239,26 @@ const EmployeeCreate = () => {
             <div>
               <p className="font-bold text-green-900 dark:text-green-100">Employee created successfully!</p>
               <p className="text-sm text-green-700 dark:text-green-300">Redirecting to employee list...</p>
+              {portalPasswordHint?.kind === 'invite' && (
+                <p className="text-sm mt-2 text-green-800 dark:text-green-200">
+                  They will receive an email with a link to set their own password before first login.
+                </p>
+              )}
+              {portalPasswordHint?.kind === 'already_active' && (
+                <p className="text-sm mt-2 text-green-800 dark:text-green-200">
+                  No new invite was sent — portal access was already active for this email.
+                </p>
+              )}
+              {portalPasswordHint?.kind === 'generated' && (
+                <p className="text-sm font-mono mt-2 text-green-900 dark:text-green-100">
+                  One-time login password: <strong>{portalPasswordHint.value}</strong>
+                </p>
+              )}
+              {portalPasswordHint?.kind === 'custom' && (
+                <p className="text-sm mt-2 text-green-800 dark:text-green-200">
+                  They can log in at the employee portal with the password you entered.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -305,6 +340,50 @@ const EmployeeCreate = () => {
                 />
               </div>
             </div>
+            <div className="md:col-span-2">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={sendPortalInvite}
+                  onChange={(e) => {
+                    setSendPortalInvite(e.target.checked);
+                    setError(null);
+                  }}
+                  className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">
+                    Send portal invite email
+                  </span>
+                  <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Recommended: the new hire sets their own password via the link. Uses the same invite flow as Organization → Users.
+                  </span>
+                </span>
+              </label>
+            </div>
+            {!sendPortalInvite && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Optional: set portal password now
+                </label>
+                <div className="relative">
+                  <LockClosedIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="password"
+                    name="portalPassword"
+                    value={formData.portalPassword}
+                    onChange={handleChange}
+                    minLength={6}
+                    autoComplete="new-password"
+                    className="glass-input w-full pl-10 pr-4 py-3 rounded-xl"
+                    placeholder="Min 6 characters, or leave empty for a one-time generated password"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  If you leave this empty, a temporary password is shown once after save. Otherwise use Organization → Users → Change password later.
+                </p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Phone Number
@@ -595,10 +674,6 @@ const EmployeeCreate = () => {
           <button
             type="submit"
             disabled={loading}
-            onClick={(e) => {
-              console.log('Submit button clicked!');
-              console.log('Current form data:', formData);
-            }}
             className="glass-button px-6 py-3 rounded-xl hover-scale font-medium bg-gradient-to-r from-primary-500 to-accent-500 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {loading ? (

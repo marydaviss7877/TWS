@@ -170,6 +170,20 @@ const tenantApiService = {
     });
   },
 
+  /** Org admin: set a user's login password (no current password). */
+  setUserPasswordAdmin: async (tenantSlug, userId, newPassword) => {
+    const url = `/api/tenant/${tenantSlug}/organization/users/${userId}/admin-password`;
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ newPassword })
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(json.message || `Server error ${response.status}`);
+    return json;
+  },
+
   // Get HR overview
   getHROverview: async (tenantSlug) => {
     return makeRequest(`/api/tenant/${tenantSlug}/organization/hr`);
@@ -469,6 +483,12 @@ const tenantApiService = {
     return response || [];
   },
 
+  /** Single department by id (GET /api/tenant/:slug/departments/:id). Used by department dashboard. */
+  getDepartment: async (tenantSlug, departmentId) => {
+    const dept = await makeRequest(`/api/tenant/${tenantSlug}/departments/${departmentId}`);
+    return { data: dept || null };
+  },
+
   // Get projects overview
   getProjectsOverview: async (tenantSlug) => {
     return makeRequest(`/api/tenant/${tenantSlug}/organization/projects`);
@@ -477,7 +497,12 @@ const tenantApiService = {
   // Get projects (for project costing)
   getProjects: async (tenantSlug, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/projects?${queryParams}`);
+    const raw = await makeRequest(`/api/tenant/${tenantSlug}/organization/projects?${queryParams}`);
+    if (Array.isArray(raw)) return raw;
+    if (raw && Array.isArray(raw.projects)) return raw.projects;
+    if (raw && Array.isArray(raw.data)) return raw.data;
+    if (raw && typeof raw === 'object') return raw.list || raw.items || [];
+    return [];
   },
 
   // Create project
@@ -1093,10 +1118,34 @@ const tenantApiService = {
     });
   },
 
+  getRoleCatalog: async (tenantSlug) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/role-catalog`);
+  },
+
+  syncRolesFromCatalog: async (tenantSlug) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/roles/sync-from-catalog`, {
+      method: 'POST',
+      body: JSON.stringify({})
+    });
+  },
+
   // Permissions
+  /** Enforced permission catalog (Software House project roles + UPR); read-only. */
+  getPermissionCatalog: async (tenantSlug) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/permission-catalog`);
+  },
+
   getPermissions: async (tenantSlug, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
     return makeRequest(`/api/tenant/${tenantSlug}/permissions?${queryParams}`);
+  },
+
+  /** Idempotent: inserts Permission rows from server catalog for assignable roles UI. */
+  syncPermissionsFromCatalog: async (tenantSlug) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/permissions/sync-from-catalog`, {
+      method: 'POST',
+      body: JSON.stringify({})
+    });
   },
 
   createPermission: async (tenantSlug, permissionData) => {

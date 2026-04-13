@@ -68,6 +68,27 @@
     border-color: rgba(0, 0, 0, 0.06);
 }
 
+/* Icon wells + theme control: white/5 on white cards / light hero is effectively invisible */
+.sh-project-page.day-mode .sh-delivery-card .bg-white\/5 {
+    background: rgba(6, 182, 212, 0.1) !important;
+    box-shadow: inset 0 0 0 1px rgba(6, 182, 212, 0.22);
+}
+
+.sh-project-page.day-mode nav .border-white\/10.bg-white\/5 {
+    background: rgba(8, 145, 178, 0.1) !important;
+    border-color: rgba(8, 145, 178, 0.28) !important;
+}
+
+.sh-project-page.day-mode nav a:hover {
+    color: var(--sh-project-text) !important;
+}
+
+.sh-project-page.day-mode .text-white.font-mono.bg-white\/5 {
+    background: rgba(6, 182, 212, 0.08) !important;
+    color: var(--sh-project-text) !important;
+    border-color: rgba(6, 182, 212, 0.25) !important;
+}
+
 .sh-project-page.day-mode .sh-delivery-card:hover {
     background: #F0F9FF;
     border-color: rgba(6, 182, 212, 0.3);
@@ -117,7 +138,7 @@
 
 /* Day mode — step number watermark */
 .sh-project-page.day-mode .sh-step-number {
-    color: rgba(8, 145, 178, 0.08);
+    color: rgba(8, 145, 178, 0.14);
 }
 
 /* Day mode — glow orbs toned down (performance + readability) */

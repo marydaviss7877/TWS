@@ -458,7 +458,7 @@ const AccountsReceivable = () => {
             <button
               type="button"
               onClick={() => { setShowForm(false); setEditingInvoice(null); resetForm(); }}
-              className="glass-button p-2 rounded-xl hover-scale"
+              className="glass-button p-2 rounded-xl hover-scale text-gray-800 dark:text-gray-100 text-lg font-semibold leading-none border-gray-300/70 dark:border-white/20"
               title="Back to Invoices"
             >
               ←
@@ -558,8 +558,8 @@ const AccountsReceivable = () => {
           <div className="glass-card-premium p-6">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200/50 dark:border-gray-700/50">
               <h3 className="text-base font-semibold text-gray-900 dark:text-white">Billing Items</h3>
-              <button type="button" onClick={addBillingItem} className="glass-button px-3 py-2 rounded-xl hover-scale flex items-center gap-2 text-sm">
-                <PlusIcon className="h-4 w-4" /> Add Item
+              <button type="button" onClick={addBillingItem} className="glass-button px-3 py-2 rounded-xl hover-scale inline-flex items-center gap-2 text-sm text-gray-800 dark:text-gray-100 border-gray-300/70 dark:border-white/20">
+                <PlusIcon className="h-4 w-4 shrink-0 text-gray-700 dark:text-gray-200" aria-hidden /> Add Item
               </button>
             </div>
             <div className="space-y-3">
@@ -656,10 +656,10 @@ const AccountsReceivable = () => {
                 </div>
               </div>
               <div className="flex gap-3">
-                <button type="button" onClick={() => { setShowForm(false); setEditingInvoice(null); resetForm(); }} className="glass-button px-5 py-2.5 rounded-xl hover-scale">
+                <button type="button" onClick={() => { setShowForm(false); setEditingInvoice(null); resetForm(); }} className="glass-button px-5 py-2.5 rounded-xl hover-scale text-gray-800 dark:text-gray-100 border-gray-300/70 dark:border-white/20">
                   Cancel
                 </button>
-                <button type="submit" className="glass-button px-5 py-2.5 rounded-xl hover-scale bg-gradient-to-r from-primary-500 to-accent-500 text-white font-medium">
+                <button type="submit" className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl hover-scale bg-gradient-to-r from-primary-500 to-accent-500 text-white font-medium shadow-md hover:opacity-95 border border-primary-600/20 dark:border-white/10">
                   {editingInvoice ? 'Update Invoice' : 'Create Invoice'}
                 </button>
               </div>
@@ -704,24 +704,32 @@ const AccountsReceivable = () => {
           <div className="mt-6 flex flex-wrap gap-3">
             <button
               onClick={() => setShowForm(true)}
-              className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white"
+              type="button"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl hover-scale text-white bg-gradient-to-r from-primary-500 to-accent-500 shadow-md hover:opacity-95 border border-primary-600/20 dark:border-white/10"
             >
-              <PlusIcon className="w-5 h-5" />
+              <PlusIcon className="w-5 h-5 shrink-0" aria-hidden />
               <span className="font-medium">New Invoice</span>
             </button>
-            <button className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2">
-              <DocumentDuplicateIcon className="w-5 h-5" />
+            <button
+              type="button"
+              className="glass-button px-4 py-2 rounded-xl hover-scale inline-flex items-center gap-2 text-gray-800 dark:text-gray-100 border-gray-300/70 dark:border-white/20"
+            >
+              <DocumentDuplicateIcon className="w-5 h-5 shrink-0 text-gray-700 dark:text-gray-200" aria-hidden />
               <span className="font-medium">Bulk Actions</span>
             </button>
-            <button 
+            <button
+              type="button"
               onClick={handleViewAgingReport}
-              className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2"
+              className="glass-button px-4 py-2 rounded-xl hover-scale inline-flex items-center gap-2 text-gray-800 dark:text-gray-100 border-gray-300/70 dark:border-white/20"
             >
-              <ChartBarIcon className="w-5 h-5" />
+              <ChartBarIcon className="w-5 h-5 shrink-0 text-gray-700 dark:text-gray-200" aria-hidden />
               <span className="font-medium">Aging Report</span>
             </button>
-            <button className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2">
-              <ArrowDownTrayIcon className="w-5 h-5" />
+            <button
+              type="button"
+              className="glass-button px-4 py-2 rounded-xl hover-scale inline-flex items-center gap-2 text-gray-800 dark:text-gray-100 border-gray-300/70 dark:border-white/20"
+            >
+              <ArrowDownTrayIcon className="w-5 h-5 shrink-0 text-gray-700 dark:text-gray-200" aria-hidden />
               <span className="font-medium">Export Report</span>
             </button>
           </div>
@@ -797,15 +805,16 @@ const AccountsReceivable = () => {
             </div>
             <div className="flex items-center space-x-2">
               <button
+                type="button"
                 onClick={() => {
                   setSearchTerm('');
                   setFilterStatus('all');
                   setFilterClient('all');
                   setFilterProject('all');
                 }}
-                className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2"
+                className="glass-button px-4 py-2 rounded-xl hover-scale inline-flex items-center gap-2 text-gray-800 dark:text-gray-100 border-gray-300/70 dark:border-white/20"
               >
-                <FunnelIcon className="h-4 w-4" />
+                <FunnelIcon className="h-4 w-4 shrink-0 text-gray-700 dark:text-gray-200" aria-hidden />
                 <span className="font-medium">Clear</span>
               </button>
             </div>
@@ -978,10 +987,11 @@ const AccountsReceivable = () => {
               <p className="text-gray-600 dark:text-gray-400 mb-2">No invoices found</p>
               <p className="text-sm text-gray-500 dark:text-gray-500">Create your first invoice to get started</p>
               <button
+                type="button"
                 onClick={() => setShowForm(true)}
-                className="mt-4 glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white mx-auto"
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl hover-scale mx-auto text-white bg-gradient-to-r from-primary-500 to-accent-500 shadow-md hover:opacity-95 border border-primary-600/20 dark:border-white/10"
               >
-                <PlusIcon className="w-5 h-5" />
+                <PlusIcon className="w-5 h-5 shrink-0" aria-hidden />
                 <span className="font-medium">Create Invoice</span>
               </button>
             </div>
@@ -1116,13 +1126,13 @@ const AccountsReceivable = () => {
                       accountCode: '1110'
                     });
                   }}
-                  className="glass-button px-4 py-2 rounded-xl hover-scale"
+                  className="glass-button px-4 py-2 rounded-xl hover-scale text-gray-800 dark:text-gray-100 border-gray-300/70 dark:border-white/20"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="glass-button px-4 py-2 rounded-xl hover-scale bg-gradient-to-r from-primary-500 to-accent-500 text-white"
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-xl hover-scale bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-md hover:opacity-95 border border-primary-600/20 dark:border-white/10"
                 >
                   Record Payment
                 </button>

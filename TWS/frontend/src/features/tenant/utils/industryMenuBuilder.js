@@ -225,6 +225,13 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
       path: `/${tenantSlug}/org/audit`
     },
     {
+      key: 'rulebook',
+      icon: BookOpenIcon,
+      label: 'Org rule book',
+      path: `/${tenantSlug}/org/rulebook`,
+      description: 'Session, security, and acceptable use for this workspace'
+    },
+    {
       key: 'settings',
       icon: CogIcon,
       label: 'Settings',
@@ -352,12 +359,6 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         ]
       },
       {
-        key: 'development',
-        icon: WrenchScrewdriverIcon,
-        label: 'Development',
-        path: `/${tenantSlug}/org/software-house/development`
-      },
-      {
         key: 'time-tracking',
         icon: ClockIcon,
         label: 'Time Tracking',
@@ -481,6 +482,13 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         icon: HomeIcon,
         label: 'Dashboard',
         path: `/${tenantSlug}/org/dashboard`
+      },
+      {
+        key: 'rulebook',
+        icon: BookOpenIcon,
+        label: 'Org rule book',
+        path: `/${tenantSlug}/org/rulebook`,
+        description: 'Session, security, and acceptable use for this workspace'
       },
       {
         key: 'settings',

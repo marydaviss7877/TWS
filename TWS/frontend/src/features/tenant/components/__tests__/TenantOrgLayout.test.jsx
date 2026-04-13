@@ -26,7 +26,8 @@ jest.mock('../../../app/providers/TenantAuthContext', () => ({
       erpCategory: 'business'
     },
     isAuthenticated: true,
-    loading: false
+    loading: false,
+    logout: jest.fn()
   })
 }));
 

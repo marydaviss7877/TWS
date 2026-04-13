@@ -166,7 +166,7 @@ const FinanceOverview = () => {
       }
 
       try {
-        const projects = await tenantApiService.getProjectProfitability(tenantSlug);
+        const projects = await tenantApiService.getSHProjectProfitability(tenantSlug);
         setProjectProfitability(projects || []);
       } catch (err) {
         console.error('Error fetching project profitability:', err);

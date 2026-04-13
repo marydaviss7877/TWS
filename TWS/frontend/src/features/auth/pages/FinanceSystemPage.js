@@ -23,8 +23,10 @@ import {
 } from '@heroicons/react/24/outline';
 
 import './SoftwareHouseFinance.css';
+import { useTheme } from '../../../app/providers/ThemeContext';
 
 const FinanceSystemPage = () => {
+  const { isDarkMode } = useTheme();
   const [scrollY, setScrollY] = useState(0);
   const { scrollYProgress } = useScroll();
   const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0.8]);
@@ -47,7 +49,7 @@ const FinanceSystemPage = () => {
   ];
 
   return (
-    <div className="sh-finance-page">
+    <div className={`sh-finance-page${!isDarkMode ? ' day-mode' : ''}`}>
       {/* Premium Navigation */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrollY > 50 ? 'sh-finance-glass h-16 mt-4 mx-auto max-w-6xl inset-x-0' : 'h-20 bg-transparent'}`}>
         <div className="container mx-auto px-6 h-full flex items-center justify-between">

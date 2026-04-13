@@ -810,6 +810,29 @@ code {
   @apply backdrop-blur-sm bg-white/60 dark:bg-glass-dark-light/60 border border-gray-300/50 dark:border-white/20 hover:bg-white/80 dark:hover:bg-glass-dark-light/80 hover:shadow-depth dark:hover:shadow-dark-glass rounded-xl px-4 py-2 transition-all duration-250 ease-smooth;
 }
 
+/* Frosted glass + Tailwind gradient: remove opaque/blurred underlay so gradient + text-white stay readable */
+html:not(.dark) .glass-button[class*="bg-gradient-to"] {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.dark .glass-button[class*="bg-gradient-to"] {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html:not(.dark) .glass-button[class*="bg-gradient-to"]:hover,
+html:not(.dark) .glass-button[class*="bg-gradient-to"]:focus-visible {
+  background-color: transparent !important;
+}
+
+.dark .glass-button[class*="bg-gradient-to"]:hover,
+.dark .glass-button[class*="bg-gradient-to"]:focus-visible {
+  background-color: transparent !important;
+}
+
 .glass-input {
   @apply backdrop-blur-sm bg-white/70 dark:bg-glass-dark-base/70 border border-gray-300/60 dark:border-white/20 focus:bg-white/90 dark:focus:bg-glass-dark-base/90 focus:border-primary-500 dark:focus:border-primary-400 focus:ring-2 focus:ring-primary-500/30 dark:focus:ring-primary-400/30 rounded-xl px-4 py-3 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-250 ease-smooth;
 }

@@ -82,6 +82,43 @@
   box-shadow: var(--shadow-dark-md);
 }
 
+/*
+ * Tenant portal — glass-button + Tailwind gradient: frosted bg-color sits under
+ * the gradient and can wash out primary CTAs in day mode. Strip the frosted layer
+ * when a gradient utility is present.
+ */
+.tenant-org-layout .glass-button[class*="bg-gradient-to"] {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.tenant-org-layout .glass-button[class*="bg-gradient-to"]:hover,
+.tenant-org-layout .glass-button[class*="bg-gradient-to"]:focus-visible {
+  background-color: transparent !important;
+}
+
+/*
+ * Default label/icon color on secondary frosted buttons when no Tailwind text-*color*
+ * utility is used (text-sm alone still gets a readable body color). Icons inherit
+ * currentColor unless they declare their own text-* color.
+ */
+html:not(.dark) .tenant-org-layout .glass-button:not([class*="text-gray"]):not([class*="text-slate"]):not([class*="text-zinc"]):not([class*="text-neutral"]):not([class*="text-stone"]):not([class*="text-white"]):not([class*="text-black"]):not([class*="text-red"]):not([class*="text-orange"]):not([class*="text-amber"]):not([class*="text-yellow"]):not([class*="text-lime"]):not([class*="text-green"]):not([class*="text-emerald"]):not([class*="text-teal"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-indigo"]):not([class*="text-violet"]):not([class*="text-purple"]):not([class*="text-fuchsia"]):not([class*="text-pink"]):not([class*="text-rose"]) {
+  color: #0f172a;
+}
+
+html:not(.dark) .tenant-org-layout .glass-button:not([class*="text-gray"]):not([class*="text-slate"]):not([class*="text-zinc"]):not([class*="text-neutral"]):not([class*="text-stone"]):not([class*="text-white"]):not([class*="text-black"]):not([class*="text-red"]):not([class*="text-orange"]):not([class*="text-amber"]):not([class*="text-yellow"]):not([class*="text-lime"]):not([class*="text-green"]):not([class*="text-emerald"]):not([class*="text-teal"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-indigo"]):not([class*="text-violet"]):not([class*="text-purple"]):not([class*="text-fuchsia"]):not([class*="text-pink"]):not([class*="text-rose"]) svg:not([class*="text-gray"]):not([class*="text-slate"]):not([class*="text-zinc"]):not([class*="text-neutral"]):not([class*="text-stone"]):not([class*="text-white"]):not([class*="text-black"]):not([class*="text-red"]):not([class*="text-orange"]):not([class*="text-amber"]):not([class*="text-yellow"]):not([class*="text-lime"]):not([class*="text-green"]):not([class*="text-emerald"]):not([class*="text-teal"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-indigo"]):not([class*="text-violet"]):not([class*="text-purple"]):not([class*="text-fuchsia"]):not([class*="text-pink"]):not([class*="text-rose"]) {
+  color: #334155;
+}
+
+.dark .tenant-org-layout .glass-button:not([class*="text-gray"]):not([class*="text-slate"]):not([class*="text-zinc"]):not([class*="text-neutral"]):not([class*="text-stone"]):not([class*="text-white"]):not([class*="text-black"]):not([class*="text-red"]):not([class*="text-orange"]):not([class*="text-amber"]):not([class*="text-yellow"]):not([class*="text-lime"]):not([class*="text-green"]):not([class*="text-emerald"]):not([class*="text-teal"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-indigo"]):not([class*="text-violet"]):not([class*="text-purple"]):not([class*="text-fuchsia"]):not([class*="text-pink"]):not([class*="text-rose"]) {
+  color: #e2e8f0;
+}
+
+.dark .tenant-org-layout .glass-button:not([class*="text-gray"]):not([class*="text-slate"]):not([class*="text-zinc"]):not([class*="text-neutral"]):not([class*="text-stone"]):not([class*="text-white"]):not([class*="text-black"]):not([class*="text-red"]):not([class*="text-orange"]):not([class*="text-amber"]):not([class*="text-yellow"]):not([class*="text-lime"]):not([class*="text-green"]):not([class*="text-emerald"]):not([class*="text-teal"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-indigo"]):not([class*="text-violet"]):not([class*="text-purple"]):not([class*="text-fuchsia"]):not([class*="text-pink"]):not([class*="text-rose"]) svg:not([class*="text-gray"]):not([class*="text-slate"]):not([class*="text-zinc"]):not([class*="text-neutral"]):not([class*="text-stone"]):not([class*="text-white"]):not([class*="text-black"]):not([class*="text-red"]):not([class*="text-orange"]):not([class*="text-amber"]):not([class*="text-yellow"]):not([class*="text-lime"]):not([class*="text-green"]):not([class*="text-emerald"]):not([class*="text-teal"]):not([class*="text-cyan"]):not([class*="text-sky"]):not([class*="text-blue"]):not([class*="text-indigo"]):not([class*="text-violet"]):not([class*="text-purple"]):not([class*="text-fuchsia"]):not([class*="text-pink"]):not([class*="text-rose"]) {
+  color: #cbd5e1;
+}
+
 /* Scrollbar Styles */
 .glass-scrollbar::-webkit-scrollbar {
   width: 6px;

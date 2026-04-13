@@ -19,25 +19,35 @@ const BASE_ROLE_PERMISSIONS = {
   admin: [
     'projects:read', 'projects:write', 'tasks:read', 'tasks:write', 'documents:read', 'documents:write',
     'hr:read', 'hr:write', 'employees:read', 'employees:write', 'attendance:read', 'attendance:write',
-    'leave:read', 'leave:write', 'analytics:read', 'reports:read', 'audit:read', 'clients:read', 'clients:write',
+    'leave:read', 'leave:write', 'payroll:read', 'payroll:write',
+    'finance:read', 'finance:write',
+    'analytics:read', 'reports:read', 'audit:read', 'clients:read', 'clients:write',
     'settings:read', 'settings:write', 'nucleus:read', 'nucleus:write', 'teams:read', 'teams:write'
   ],
   manager: [
     'projects:read', 'tasks:read', 'tasks:write', 'documents:read', 'documents:write',
     'attendance:read', 'leave:read', 'leave:write', 'analytics:read', 'nucleus:read', 'nucleus:write',
-    'teams:read', 'teams:write'
+    'teams:read', 'teams:write',
+    'finance:read'
   ],
   project_manager: [
     'projects:read', 'projects:write', 'tasks:read', 'tasks:write', 'documents:read', 'documents:write',
-    'nucleus:read', 'nucleus:write', 'clients:read', 'analytics:read', 'teams:read', 'teams:write'
+    'nucleus:read', 'nucleus:write', 'clients:read', 'analytics:read', 'teams:read', 'teams:write',
+    'finance:read'
   ],
   hr: [], // resolved via HR_SUBROLE_PERMISSIONS when hrSubRole is set
+  finance: [], // resolved via FINANCE_SUBROLE_PERMISSIONS when financeSubRole is set
   employee: [
     'projects:read', 'tasks:read', 'documents:read', 'attendance:read', 'leave:read', 'leave:write',
-    'nucleus:read', 'payroll:read_own', 'teams:read'
+    'nucleus:read', 'payroll:read_own', 'teams:read',
+    // Employee portal: own HR profile only (GET /hr/employees?userId=<self>); not full roster
+    'employees:read_own',
+    'finance:read'
   ],
   contractor: [
-    'tasks:read', 'tasks:write', 'documents:read', 'nucleus:read', 'attendance:read', 'attendance:write'
+    'tasks:read', 'tasks:write', 'documents:read', 'nucleus:read', 'attendance:read', 'attendance:write',
+    'employees:read_own',
+    'finance:read'
   ],
   client: [
     'projects:read', 'nucleus:read', 'documents:read'
@@ -94,6 +104,36 @@ async function resolveUserPermissions(userId, tenantId, opts = {}) {
     .select('roles status hrSubRole')
     .lean();
   if (!tenantUser) {
+    // Legacy / edge: active User in tenant org but no TenantUser row yet — grant base role perms
+    // so employee portal (attendance, self employee record) is not hard-denied.
+    try {
+      const Tenant = require('../../models/Tenant');
+      const User = require('../../models/User');
+      const [tenantDoc, userDoc] = await Promise.all([
+        Tenant.findById(tenantId).select('organizationId orgId').lean(),
+        User.findById(userId).select('orgId role status').lean()
+      ]);
+      if (!tenantDoc || !userDoc || userDoc.status !== 'active') {
+        return { permissions: [], departmentIds: [], hrSubRole: null };
+      }
+      const tOrg = (tenantDoc.organizationId || tenantDoc.orgId)?.toString();
+      const uOrgRaw = userDoc.orgId;
+      const uOrg = (uOrgRaw && (typeof uOrgRaw === 'object' && uOrgRaw._id ? uOrgRaw._id : uOrgRaw))?.toString();
+      if (tOrg && uOrg && tOrg === uOrg) {
+        const primaryRole = userDoc.role || 'employee';
+        let basePerms = BASE_ROLE_PERMISSIONS[primaryRole] || BASE_ROLE_PERMISSIONS.employee;
+        if (primaryRole === 'hr') {
+          basePerms = HR_SUBROLE_PERMISSIONS.manager || [];
+        }
+        return {
+          permissions: [...basePerms],
+          departmentIds: [],
+          hrSubRole: null
+        };
+      }
+    } catch (e) {
+      console.warn('resolveUserPermissions org fallback failed:', e.message);
+    }
     return { permissions: [], departmentIds: [], hrSubRole: null };
   }
 
@@ -186,7 +226,16 @@ async function getResolvedPermissions(userId, tenantId, opts = {}) {
   const cached = await permissionCache.getResolved(tenantIdStr, userIdStr);
   if (cached) {
     try {
-      return JSON.parse(cached);
+      const parsed = JSON.parse(cached);
+      // Empty cache entries from before TenantUser/org fallback — re-resolve once
+      if (parsed && Array.isArray(parsed.permissions) && parsed.permissions.length === 0) {
+        const fresh = await resolveUserPermissions(userId, tenantId, opts);
+        if (fresh.permissions.length > 0) {
+          await permissionCache.setResolved(tenantIdStr, userIdStr, fresh);
+          return fresh;
+        }
+      }
+      return parsed;
     } catch (_) {}
   }
 

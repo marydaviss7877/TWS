@@ -6,8 +6,7 @@
  *   • Prominent centred search bar
  *   • Quick-action strip
  *   • 🔖 Bookmarks    (bookmark ribbon on card, persisted per tenant)
- *   • 🕐 Recent       (auto-tracked last 5 apps)
- *   • All Apps        (everything else the user can access)
+ *   • All Apps        (everything the user can access)
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -15,7 +14,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   BookmarkIcon as BookmarkOutlineIcon,
-  ClockIcon,
   Squares2X2Icon,
 } from '@heroicons/react/24/outline';
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
@@ -178,7 +176,6 @@ const AppHome = () => {
     activeAppKey,
     favoriteKeys,
     toggleFavorite,
-    recentApps,
   } = useTenantNav();
 
   const [search,    setSearch]    = useState('');
@@ -212,19 +209,11 @@ const AppHome = () => {
       )
     : filteredMenuItems;
 
-  const favSet    = new Set(favoriteKeys);
-  const recentSet = new Set((recentApps ?? []).map(a => a.key));
-
-  // Bookmarks live in the BookmarkBar above — not a separate section here.
-  const recentItems = q ? [] : visible.filter(m => recentSet.has(m.key));
-  const otherItems  = q ? visible : visible.filter(m => !recentSet.has(m.key));
-
   const handleNavigate = (path) => navigate(path);
 
   // Quick stats derived from available data
-  const totalApps   = filteredMenuItems.length;
-  const totalFavs   = favoriteKeys.length;
-  const totalRecent = (recentApps ?? []).length;
+  const totalApps = filteredMenuItems.length;
+  const totalFavs = favoriteKeys.length;
 
   return (
     <div
@@ -312,7 +301,7 @@ const AppHome = () => {
 
         {/* ── Quick stats strip ──────────────────────────────────────────────── */}
         {!q && (
-          <div className="grid grid-cols-3 gap-3 max-w-2xl mx-auto">
+          <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
             <QuickStat
               icon={Squares2X2Icon}
               label="Available Apps"
@@ -324,12 +313,6 @@ const AppHome = () => {
               label="Pinned to Bar"
               value={totalFavs || '—'}
               gradient="from-indigo-500 to-violet-600"
-            />
-            <QuickStat
-              icon={ClockIcon}
-              label="Recently Used"
-              value={totalRecent || '—'}
-              gradient="from-emerald-500 to-teal-600"
             />
           </div>
         )}
@@ -371,40 +354,19 @@ const AppHome = () => {
               </div>
             )
           ) : (
-            /* ── Normal sections ── */
-            <div className="space-y-8">
-              {/* Recent */}
-              {recentItems.length > 0 && (
-                <div>
-                  <SectionLabel emoji="🕐" title="Recent" count={recentItems.length} />
-                  <AppGrid
-                    items={recentItems}
-                    activeAppKey={activeAppKey}
-                    favoriteKeys={favoriteKeys}
-                    onNavigate={handleNavigate}
-                    onToggleFav={toggleFavorite}
-                  />
-                </div>
-              )}
-
-              {/* All Apps */}
-              {otherItems.length > 0 && (
-                <div>
-                  <SectionLabel
-                    emoji="📦"
-                    title={recentItems.length ? 'All Apps' : null}
-                    count={recentItems.length ? otherItems.length : 0}
-                  />
-                  <AppGrid
-                    items={otherItems}
-                    activeAppKey={activeAppKey}
-                    favoriteKeys={favoriteKeys}
-                    onNavigate={handleNavigate}
-                    onToggleFav={toggleFavorite}
-                  />
-                </div>
-              )}
-            </div>
+            /* ── All apps (bookmarks live in the bar above) ── */
+            visible.length > 0 && (
+              <div>
+                <SectionLabel emoji="📦" title="All Apps" count={visible.length} />
+                <AppGrid
+                  items={visible}
+                  activeAppKey={activeAppKey}
+                  favoriteKeys={favoriteKeys}
+                  onNavigate={handleNavigate}
+                  onToggleFav={toggleFavorite}
+                />
+              </div>
+            )
           )}
         </div>
 

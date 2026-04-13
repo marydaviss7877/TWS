@@ -3,6 +3,7 @@ const router = express.Router({ mergeParams: true });
 const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const Permission = require('../../../models/Permission');
+const { syncCatalogToOrgPermissions } = require('../../../services/tenant/permissionCatalogSync.service');
 
 // Test route to verify router is working
 router.get('/test', (req, res) => {
@@ -30,6 +31,33 @@ router.get('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) =>
     data: permissions
   });
 }));
+
+// Sync enforced catalog → Permission documents (idempotent; for role assignment UI)
+router.post(
+  '/sync-from-catalog',
+  authenticateToken,
+  requireRole(['owner', 'admin', 'super_admin']),
+  ErrorHandler.asyncHandler(async (req, res) => {
+    const tenantId = req.user.tenantId;
+    const orgId = req.user.orgId;
+    if (!tenantId && !orgId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tenant or organization context is required to import permissions.'
+      });
+    }
+    const summary = await syncCatalogToOrgPermissions({
+      tenantId,
+      orgId,
+      createdBy: req.user.userId || req.user._id
+    });
+    res.status(200).json({
+      success: true,
+      data: summary,
+      message: `Imported ${summary.created} new permission(s); ${summary.skipped} already existed.`
+    });
+  })
+);
 
 // Get permission by ID
 router.get('/:id', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {

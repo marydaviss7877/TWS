@@ -156,9 +156,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback(async (email, password) => {
     try {
-      const normalizedEmail = (email || '').toLowerCase().trim();
       const loginUrl = buildApiUrl('/api/auth/login');
-      
+      // Trim only; backend applies the same validator.normalizeEmail options as user creation.
+      const emailForLogin = String(email || '').trim();
+      const passwordForLogin = password == null ? '' : String(password).trim();
+
       // SECURITY FIX: Use fetch with credentials: 'include' to send/receive cookies
       const response = await fetch(loginUrl, {
         method: 'POST',
@@ -166,8 +168,8 @@ export const AuthProvider = ({ children }) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          email: normalizedEmail,
-          password
+          email: emailForLogin,
+          password: passwordForLogin
         }),
         credentials: 'include' // SECURITY FIX: Include cookies (HttpOnly tokens)
       });

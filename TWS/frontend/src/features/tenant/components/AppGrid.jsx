@@ -3,7 +3,6 @@
  *
  * Features:
  * - Full-screen backdrop with blur (like iOS App Library / Odoo home)
- * - Auto-tracked "Recent" section (top 5 visited apps)
  * - "Favourites" section (starred apps, persisted per tenant)
  * - Star/unstar any app with a single click
  * - Live search across all available apps
@@ -126,7 +125,6 @@ const AppGrid = ({
   orgName,
   orgLogoUrl,
   favoriteApps = [],
-  recentApps   = [],
   favoriteKeys = [],
   isFavorite,
   toggleFavorite,
@@ -172,12 +170,10 @@ const AppGrid = ({
       )
     : filteredMenuItems;
 
-  const favSet    = new Set(favoriteKeys);
-  const recentSet = new Set(recentApps.map(a => a.key));
+  const favSet = new Set(favoriteKeys);
 
-  const favItems    = visible.filter(m => favSet.has(m.key));
-  const recentItems = q ? [] : visible.filter(m => recentSet.has(m.key) && !favSet.has(m.key));
-  const otherItems  = visible.filter(m => !favSet.has(m.key) && !recentSet.has(m.key));
+  const favItems   = visible.filter(m => favSet.has(m.key));
+  const otherItems = visible.filter(m => !favSet.has(m.key));
 
   const orgInitial  = (orgName || tenantSlug || 'T').charAt(0).toUpperCase();
 
@@ -278,16 +274,7 @@ const AppGrid = ({
                 onToggleFav={toggleFavorite}
               />
               <GridSection
-                title="Recent"
-                emoji="🕐"
-                items={recentItems}
-                activeAppKey={activeAppKey}
-                favoriteKeys={favoriteKeys}
-                onNavigate={handleNavigate}
-                onToggleFav={toggleFavorite}
-              />
-              <GridSection
-                title={favItems.length || recentItems.length ? 'All Apps' : null}
+                title={favItems.length ? 'All Apps' : null}
                 items={otherItems}
                 activeAppKey={activeAppKey}
                 favoriteKeys={favoriteKeys}

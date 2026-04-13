@@ -286,3 +286,125 @@
     border-radius: 20px;
     color: var(--sh-hrm-secondary);
 }
+
+/* ========== Day mode (global ThemeContext light) ========== */
+
+.sh-hrm-page.day-mode {
+    --sh-hrm-bg: #faf5ff;
+    --sh-hrm-text: #0d0e24;
+    --sh-hrm-secondary: #52526a;
+    --sh-hrm-border: rgba(168, 85, 247, 0.22);
+    --sh-hrm-glass: rgba(255, 255, 255, 0.92);
+    --sh-hrm-glass-border: rgba(15, 23, 42, 0.08);
+}
+
+.sh-hrm-page.day-mode .sh-dot-grid {
+    background-image: radial-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+}
+
+.sh-hrm-page.day-mode .sh-noise-overlay {
+    opacity: 0.012;
+}
+
+.sh-hrm-page.day-mode .sh-glow-orb {
+    opacity: 0.06;
+}
+
+.sh-hrm-page.day-mode .text-\[#8B8BA8\] {
+    color: #52526a !important;
+}
+
+.sh-hrm-page.day-mode .text-\[#52526A\] {
+    color: #64748b !important;
+}
+
+.sh-hrm-page.day-mode .text-\[#F0F0F8\] {
+    color: var(--sh-hrm-text) !important;
+}
+
+.sh-hrm-page.day-mode .text-white {
+    color: var(--sh-hrm-text) !important;
+}
+
+.sh-hrm-page.day-mode .sh-matrix-view .text-white,
+.sh-hrm-page.day-mode .sh-matrix-view .sh-role-badge {
+    color: #f8fafc !important;
+}
+
+.sh-hrm-page.day-mode .sh-matrix-view .text-\[#8B8BA8\] {
+    color: #a8b0c4 !important;
+}
+
+.sh-hrm-page.day-mode .sh-hrm-glass {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(15, 23, 42, 0.08);
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.06);
+}
+
+.sh-hrm-page.day-mode .sh-talent-card {
+    background: #ffffff;
+    border-color: rgba(15, 23, 42, 0.08);
+}
+
+.sh-hrm-page.day-mode .sh-talent-card:hover {
+    background: #faf5ff;
+    border-color: rgba(168, 85, 247, 0.35);
+}
+
+.sh-hrm-page.day-mode .sh-talent-card .bg-white\/5 {
+    background: rgba(168, 85, 247, 0.12) !important;
+    box-shadow: inset 0 0 0 1px rgba(126, 34, 206, 0.22);
+}
+
+.sh-hrm-page.day-mode .sh-talent-card .text-white {
+    color: #6b21a8 !important;
+}
+
+.sh-hrm-page.day-mode .sh-hrm-title .italic {
+    background: linear-gradient(to bottom, #7c3aed, #a855f7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.sh-hrm-page.day-mode .text-white.font-mono.bg-white\/5 {
+    background: rgba(168, 85, 247, 0.1) !important;
+    color: var(--sh-hrm-text) !important;
+    border-color: rgba(168, 85, 247, 0.28) !important;
+}
+
+.sh-hrm-page.day-mode .sh-checklist-item {
+    border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+.sh-hrm-page.day-mode .sh-compliance-box {
+    background: linear-gradient(to right, rgba(168, 85, 247, 0.08), rgba(255, 255, 255, 0.6));
+}
+
+.sh-hrm-page.day-mode .sh-compliance-card {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(15, 23, 42, 0.08);
+}
+
+.sh-hrm-page.day-mode .sh-pill-upcoming {
+    background: rgba(168, 85, 247, 0.08);
+    border-color: rgba(168, 85, 247, 0.2);
+    color: var(--sh-hrm-secondary);
+}
+
+.sh-hrm-page.day-mode footer.border-t {
+    border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+.sh-hrm-page.day-mode .border-white\/5 {
+    border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+.sh-hrm-page.day-mode .bg-white\/\[0\.01\] {
+    background: rgba(168, 85, 247, 0.03) !important;
+}
+
+.sh-hrm-page.day-mode nav a:hover,
+.sh-hrm-page.day-mode footer a:hover {
+    color: var(--sh-hrm-text) !important;
+}

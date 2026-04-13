@@ -81,9 +81,12 @@ class JWTService {
 
       return decoded;
     } catch (error) {
+      // Preserve TokenExpiredError so middleware can return TOKEN_EXPIRED / "Token expired"
+      // and clients (e.g. tenant fetch retry) can trigger refresh. Wrapping in Error loses .name.
       if (error.name === 'TokenExpiredError') {
-        throw new Error('Token expired');
-      } else if (error.name === 'JsonWebTokenError') {
+        throw error;
+      }
+      if (error.name === 'JsonWebTokenError') {
         throw new Error('Invalid token');
       }
       throw error;

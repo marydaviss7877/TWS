@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
+import {
   PlusIcon,
   MagnifyingGlassIcon,
   PencilIcon,
   TrashIcon,
   ArrowPathIcon,
-  UserIcon,
-  XMarkIcon
+  XMarkIcon,
+  LockClosedIcon,
+  EnvelopeIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import toast from 'react-hot-toast';
@@ -39,6 +40,12 @@ const UserList = () => {
   const [editUser, setEditUser] = useState(null);
   const [editHrSubRole, setEditHrSubRole] = useState('');
   const [saving, setSaving] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [passwordUser, setPasswordUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+  const [inviteSendingId, setInviteSendingId] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -119,6 +126,60 @@ const UserList = () => {
     setEditHrSubRole('');
   };
 
+  const openPasswordModal = (user) => {
+    setPasswordUser(user);
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setPasswordModalOpen(true);
+  };
+
+  const closePasswordModal = () => {
+    setPasswordModalOpen(false);
+    setPasswordUser(null);
+    setNewPassword('');
+    setConfirmNewPassword('');
+  };
+
+  const submitAdminPassword = async () => {
+    if (!passwordUser?._id || !tenantSlug) return;
+    if (newPassword !== confirmNewPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setPwSaving(true);
+    try {
+      await tenantApiService.setUserPasswordAdmin(tenantSlug, passwordUser._id, newPassword);
+      toast.success('Password updated');
+      closePasswordModal();
+    } catch (error) {
+      toast.error(error?.message || 'Failed to update password');
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
+  const resendInvite = async (user) => {
+    if (!tenantSlug || !user?.email) return;
+    setInviteSendingId(user._id);
+    try {
+      await tenantApiService.inviteEmployee(tenantSlug, {
+        email: user.email,
+        fullName: user.fullName || user.email.split('@')[0],
+        erpRole: user.role === 'hr' ? 'hr' : 'employee'
+      });
+      toast.success('Invitation sent');
+      fetchUsers();
+    } catch (error) {
+      toast.error(error?.message || 'Failed to send invite');
+    } finally {
+      setInviteSendingId(null);
+    }
+  };
+
   const handleSaveHrSubRole = async () => {
     if (!editUser?._id || !tenantSlug) return;
     setSaving(true);
@@ -149,9 +210,22 @@ const UserList = () => {
     const colors = {
       active: 'bg-green-100 text-green-800',
       inactive: 'bg-red-100 text-red-800',
-      pending: 'bg-orange-100 text-orange-800'
+      pending: 'bg-orange-100 text-orange-800',
+      suspended: 'bg-yellow-100 text-yellow-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const portalBadge = (portalStatus) => {
+    if (!portalStatus) {
+      return <span className="text-xs text-gray-400">Not linked</span>;
+    }
+    const label = portalStatus === 'pending' ? 'Invite pending' : portalStatus.charAt(0).toUpperCase() + portalStatus.slice(1);
+    return (
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(portalStatus === 'pending' ? 'pending' : portalStatus === 'active' ? 'active' : portalStatus === 'suspended' ? 'suspended' : 'inactive')}`}>
+        {label}
+      </span>
+    );
   };
 
   return (
@@ -211,6 +285,7 @@ const UserList = () => {
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
                 <option value="pending">Pending</option>
+                <option value="suspended">Suspended</option>
               </select>
             </div>
             <div>
@@ -234,6 +309,9 @@ const UserList = () => {
                   User
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Portal login
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Role
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -253,7 +331,7 @@ const UserList = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center">
+                  <td colSpan="7" className="px-6 py-12 text-center">
                     <div className="flex items-center justify-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                       <span className="ml-2 text-gray-600">Loading users...</span>
@@ -262,7 +340,7 @@ const UserList = () => {
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
                     No users found
                   </td>
                 </tr>
@@ -280,9 +358,13 @@ const UserList = () => {
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{user.fullName}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-sm text-gray-500 line-clamp-1">{user.email}</div>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-gray-900">{user.email}</div>
+                      <div className="mt-1">{portalBadge(user.portalTenantStatus)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(user.role)}`}>
@@ -301,18 +383,37 @@ const UserList = () => {
                       {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center flex-wrap gap-1">
                         <button
+                          type="button"
                           onClick={() => openEditModal(user)}
                           className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
-                          title="Edit User"
+                          title="Edit user"
                         >
                           <PencilIcon className="h-4 w-4" />
                         </button>
                         <button
+                          type="button"
+                          onClick={() => openPasswordModal(user)}
+                          className="text-gray-700 hover:text-gray-900 p-1 rounded hover:bg-gray-100"
+                          title="Change password"
+                        >
+                          <LockClosedIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => resendInvite(user)}
+                          disabled={inviteSendingId === user._id}
+                          className="text-emerald-700 hover:text-emerald-900 p-1 rounded hover:bg-emerald-50 disabled:opacity-50"
+                          title="Resend portal invite"
+                        >
+                          <EnvelopeIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleDelete(user._id)}
                           className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                          title="Delete User"
+                          title="Deactivate portal (soft)"
                         >
                           <TrashIcon className="h-4 w-4" />
                         </button>
@@ -326,6 +427,51 @@ const UserList = () => {
         </div>
 
         {/* Edit User Modal (role / HR sub-role) */}
+        {passwordModalOpen && passwordUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Change password</h3>
+                <button type="button" onClick={closePasswordModal} className="p-1 rounded hover:bg-gray-100">
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Set a new login password for <span className="font-medium">{passwordUser.email}</span>. This does not reveal the current password.
+              </p>
+              <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3"
+                autoComplete="new-password"
+              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm password</label>
+              <input
+                type="password"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4"
+                autoComplete="new-password"
+              />
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={closePasswordModal} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={submitAdminPassword}
+                  disabled={pwSaving}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {pwSaving ? 'Saving…' : 'Save password'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {editModalOpen && editUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">

@@ -45,7 +45,7 @@ try {
 }
 
 /**
- * Log security events
+ * Log security events (waits for persistence — use for failures / audit trail)
  */
 async function logSecurityEvent(event, userId, details = {}) {
   try {
@@ -71,6 +71,21 @@ async function logSecurityEvent(event, userId, details = {}) {
   } catch (error) {
     console.error('Failed to log security event:', error);
   }
+}
+
+/** Success-path audit: do not block the HTTP response (audit save was adding seconds per request). */
+function logSecurityEventDeferred(event, userId, details = {}) {
+  if (!auditService) {
+    return;
+  }
+  void auditService
+    .logSecurityEvent(event, userId, details.orgId || null, {
+      ...details,
+      timestamp: new Date(),
+      resource: 'AUTH',
+      resourceId: userId?.toString() || 'unknown'
+    })
+    .catch((err) => console.error('Deferred security log failed:', err?.message || err));
 }
 
 /**
@@ -389,7 +404,7 @@ const unifiedSoftwareHouseAuth = async (req, res, next) => {
     // This fixes the issue where employee users don't have workspace entries but belong to the org
     if (!hasAccess && userOrgId && tenantOrgId && userOrgId === tenantOrgId) {
       hasAccess = true;
-      await logSecurityEvent('ORG_MEMBER_ACCESS', userId, {
+      logSecurityEventDeferred('ORG_MEMBER_ACCESS', userId, {
         tenantId: requestedTenantId,
         orgId: userOrgId,
         ip: req.ip,
@@ -402,7 +417,7 @@ const unifiedSoftwareHouseAuth = async (req, res, next) => {
       // For software house routes, allow super admin access
       // but log it for audit purposes
       hasAccess = true;
-      await logSecurityEvent('PLATFORM_ADMIN_ACCESS', userId, {
+      logSecurityEventDeferred('PLATFORM_ADMIN_ACCESS', userId, {
         tenantId: requestedTenantId,
         ip: req.ip,
         endpoint: req.path
@@ -497,11 +512,12 @@ const unifiedSoftwareHouseAuth = async (req, res, next) => {
     // STEP 9: Log successful authentication
     // ============================================
     const duration = Date.now() - startTime;
-    await logSecurityEvent('AUTH_SUCCESS', userId, {
+    logSecurityEventDeferred('AUTH_SUCCESS', userId, {
       tenantId: tenant._id.toString(),
       role: userContext.role,
       duration,
-      ip: req.ip
+      ip: req.ip,
+      orgId: orgId?.toString?.() || orgId
     });
 
     next();

@@ -92,6 +92,17 @@ module.exports = {
         });
       }
 
+      // html2pdf.js ships a sourceMappingURL for es6-promise.map but does not include the file;
+      // source-map-loader then warns on every compile. Ignore only that case.
+      const prevIgnore = webpackConfig.ignoreWarnings || [];
+      webpackConfig.ignoreWarnings = [
+        ...prevIgnore,
+        (warning) =>
+          typeof warning.message === 'string' &&
+          warning.message.includes('html2pdf.js') &&
+          warning.message.includes('Failed to parse source map'),
+      ];
+
       return webpackConfig;
     }
   },

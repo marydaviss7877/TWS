@@ -20,11 +20,16 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
+const validator = require('validator');
 const User = require('../../../models/User');
 const Organization = require('../../../models/Organization');
 const TWSAdmin = require('../../../models/TWSAdmin');
 
 const router = express.Router();
+
+// express-validator's normalizeEmail() uses validator defaults (removes Gmail dots).
+// User creation (HR / org) uses { gmail_remove_dots: false } — mismatch caused valid logins to 401.
+const AUTH_EMAIL_NORMALIZE = { gmail_remove_dots: false };
 
 // Middleware to check if database is connected
 const checkDatabaseConnection = (req, res, next) => {
@@ -54,12 +59,14 @@ router.get('/db-status', checkDatabaseConnection, ErrorHandler.asyncHandler(asyn
   };
   const email = (req.query.email || '').toLowerCase().trim();
   if (email) {
+    const normalized = validator.normalizeEmail(String(email).trim(), AUTH_EMAIL_NORMALIZE)
+      || String(email).trim().toLowerCase();
     const [userDoc, twsDoc] = await Promise.all([
-      User.findOne({ email }).select('_id email role status').lean(),
-      TWSAdmin.findOne({ email }).select('_id email role status').lean()
+      User.findOne({ email: normalized }).select('_id email role status').lean(),
+      TWSAdmin.findOne({ email: normalized }).select('_id email role status').lean()
     ]);
     payload.emailCheck = {
-      email,
+      email: normalized,
       inUser: !!userDoc,
       inTWSAdmin: !!twsDoc,
       userId: userDoc?._id?.toString() || null,
@@ -75,7 +82,7 @@ router.get('/db-status', checkDatabaseConnection, ErrorHandler.asyncHandler(asyn
 router.post('/register', 
   registrationLimiter, // SECURITY: Rate limiting (3 registrations per hour per IP)
   checkDatabaseConnection,
-  body('email').isEmail().normalizeEmail(),
+  body('email').isEmail().normalizeEmail(AUTH_EMAIL_NORMALIZE),
   body('password').isLength({ min: 6 }),
   body('fullName').notEmpty().trim(),
   body('role').optional().isIn(['super_admin', 'org_manager', 'pmo', 'project_manager', 'department_lead', 'contributor', 'client', 'reseller', 'owner', 'admin', 'hr', 'finance', 'manager', 'employee', 'contractor', 'auditor']),
@@ -138,29 +145,112 @@ router.post('/register',
 router.post('/login',
   authLimiter,
   checkDatabaseConnection,
-  body('email').isEmail().normalizeEmail(),
+  body('email').isEmail().normalizeEmail(AUTH_EMAIL_NORMALIZE),
   body('password').notEmpty(),
   handleValidationErrors,
   ErrorHandler.asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
-    // express-validator normalizeEmail() already lowercased + stripped Gmail dots
-    const normalizedEmail = (email || '').toLowerCase().trim();
+    const password = String(req.body.password ?? '').trim();
+    const rawEmail = String(req.body.email || '').trim();
+    const normalizedEmail = validator.normalizeEmail(rawEmail, AUTH_EMAIL_NORMALIZE)
+      || rawEmail.toLowerCase();
+
+    // #region agent log
+    const __emailShape = (s) => {
+      const at = String(s).indexOf('@');
+      if (at < 0) return { len: String(s).length, hasAt: false };
+      const local = String(s).slice(0, at);
+      const domain = String(s).slice(at + 1).toLowerCase();
+      return {
+        len: String(s).length,
+        hasAt: true,
+        localLen: local.length,
+        domainLen: domain.length,
+        dotInLocal: local.includes('.'),
+        plusInLocal: local.includes('+'),
+        isGmailFamily: domain === 'gmail.com' || domain === 'googlemail.com'
+      };
+    };
+    const __dbgLogin = (message, data) => {
+      const payload = {
+        sessionId: '58fcec',
+        location: 'authentication.js:POST /login',
+        message,
+        data: { ...data, dbName: mongoose.connection?.db?.databaseName || null },
+        timestamp: Date.now(),
+        runId: 'debug-login'
+      };
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const line = `${JSON.stringify(payload)}\n`;
+        const candidates = [
+          path.join(__dirname, '../../../../../../', 'debug-58fcec.log'),
+          path.join(process.cwd(), 'debug-58fcec.log'),
+          path.join(process.cwd(), '..', 'debug-58fcec.log')
+        ];
+        for (const logPath of candidates) {
+          try {
+            fs.appendFileSync(logPath, line);
+            break;
+          } catch (e) {
+            /* try next */
+          }
+        }
+      } catch (e) {
+        /* ignore */
+      }
+      if (typeof fetch === 'function') {
+        fetch('http://127.0.0.1:7747/ingest/f231b9ac-6c94-4015-8ae9-d7ed6229bd4b', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '58fcec' },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      }
+    };
+    __dbgLogin('login_after_normalize', {
+      hypothesisId: 'H1',
+      rawShape: __emailShape(rawEmail),
+      normShape: __emailShape(normalizedEmail),
+      rawEqNorm: rawEmail === normalizedEmail,
+      pwdLen: password.length
+    });
+    // #endregion
 
     // Single lookup in User model — supra admins are not here
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
+      // #region agent log
+      __dbgLogin('login_fail_no_user', { hypothesisId: 'H1', normShape: __emailShape(normalizedEmail) });
+      // #endregion
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
     if (user.status !== 'active') {
+      // #region agent log
+      __dbgLogin('login_fail_inactive', { hypothesisId: 'H4', userId: user._id?.toString(), status: user.status });
+      // #endregion
       return res.status(403).json({ success: false, message: 'Account is not active' });
     }
 
     const isPasswordValid = await user.comparePassword(password).catch(() => false);
     if (!isPasswordValid) {
+      // #region agent log
+      const pwd = user.password;
+      __dbgLogin('login_fail_bad_password', {
+        hypothesisId: 'H2',
+        userId: user._id?.toString(),
+        storedPwdLooksBcrypt: typeof pwd === 'string' && /^\$2[aby]?\$/.test(pwd),
+        storedPwdLen: typeof pwd === 'string' ? pwd.length : 0,
+        pwdLenAfterTrim: password.length
+      });
+      // #endregion
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
+
+    // #region agent log
+    __dbgLogin('login_ok', { hypothesisId: 'H0', userId: user._id?.toString(), role: user.role });
+    // #endregion
 
     // Update last login without triggering password re-hash
     await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } }).catch(() => {});
@@ -224,7 +314,7 @@ router.post('/login',
 router.post('/supra-admin/login',
   authLimiter,
   checkDatabaseConnection,
-  body('email').isEmail().normalizeEmail(),
+  body('email').isEmail().normalizeEmail(AUTH_EMAIL_NORMALIZE),
   body('password').notEmpty(),
   handleValidationErrors,
   ErrorHandler.asyncHandler(async (req, res) => {
@@ -430,43 +520,38 @@ router.get('/me', authenticateToken, ErrorHandler.asyncHandler(async (req, res) 
     userData.orgId = null;
     userData.tenantId = null;
   } else {
-    // Regular User - fetch fresh data with orgId populated (lean + select for speed)
-    const User = require('../../../models/User');
-    const user = await User.findById(req.user._id)
-      .select('_id email fullName role orgId phone department jobTitle profilePicUrl status')
-      .populate('orgId', 'slug name')
-      .lean();
-
-    if (!user) {
+    // Reuse user loaded by authenticateToken (avoids a second User.findById + populate — saves ~hundreds of ms per call)
+    const u = req.user && typeof req.user.toObject === 'function' ? req.user.toObject() : { ...req.user };
+    if (!u || !u._id) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    userData = { ...user };
+    userData = { ...u };
     
     // Ensure id field is set from _id for frontend compatibility
     if (userData._id && !userData.id) {
       userData.id = userData._id.toString();
     }
     
-    if (user.orgId) {
+    if (u.orgId) {
       // If orgId is already populated, use it directly
-      if (typeof user.orgId === 'object' && user.orgId.slug) {
+      if (typeof u.orgId === 'object' && u.orgId.slug) {
         userData.orgId = {
-          _id: user.orgId._id,
-          slug: user.orgId.slug,
-          name: user.orgId.name
+          _id: u.orgId._id,
+          slug: u.orgId.slug,
+          name: u.orgId.name
         };
         // Set tenantId for routing
         const tenantRoles = ['owner', 'admin', 'org_manager', 'project_manager', 'manager', 'employee', 'staff', 'developer', 'engineer', 'programmer'];
-        if (tenantRoles.includes(user.role)) {
-          userData.tenantId = user.orgId.slug;
+        if (tenantRoles.includes(u.role)) {
+          userData.tenantId = u.orgId.slug;
         }
       } else {
         const Organization = require('../../../models/Organization');
-        const org = await Organization.findById(user.orgId).select('slug name');
+        const org = await Organization.findById(u.orgId).select('slug name').lean();
         if (org) {
           userData.orgId = {
             _id: org._id,
@@ -474,7 +559,7 @@ router.get('/me', authenticateToken, ErrorHandler.asyncHandler(async (req, res) 
             name: org.name
           };
           const tenantRoles = ['owner', 'admin', 'org_manager', 'project_manager', 'manager', 'employee', 'staff', 'developer', 'engineer', 'programmer'];
-          if (tenantRoles.includes(user.role)) {
+          if (tenantRoles.includes(u.role)) {
             userData.tenantId = org.slug;
           }
         }
@@ -528,11 +613,12 @@ router.post('/change-password',
 router.post('/forgot-password',
   passwordResetLimiter, // SECURITY: Rate limiting (3 password reset requests per hour per IP)
   checkDatabaseConnection,
-  body('email').isEmail().normalizeEmail(),
+  body('email').isEmail().normalizeEmail(AUTH_EMAIL_NORMALIZE),
   handleValidationErrors,
   ErrorHandler.asyncHandler(async (req, res) => {
   const { email } = req.body;
-  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedEmail = validator.normalizeEmail(String(email || '').trim(), AUTH_EMAIL_NORMALIZE)
+    || String(email || '').trim().toLowerCase();
 
   // Find user
   const user = await User.findOne({ email: normalizedEmail });

@@ -10,18 +10,49 @@ const Project = require('../../../models/Project');
 const Card = require('../../../models/Card');
 const Sprint = require('../../../models/Sprint');
 const DevelopmentMetrics = require('../../../models/DevelopmentMetrics');
-const { TimeEntry, Transaction, Invoice, Bill, ProjectCosting, ChartOfAccounts, CashFlowForecast } = require('../../../models/Finance');
+const { TimeEntry, Transaction, Invoice, Bill, ProjectCosting, ChartOfAccounts, CashFlowForecast, Vendor } = require('../../../models/Finance');
 const Client = require('../../../models/Client');
 const Workspace = require('../../../models/Workspace');
 const ProjectMember = require('../../../models/ProjectMember');
 const tenantOrgService = require('../../../services/tenant/tenant-org.service');
 const timeTrackingService = require('../../../services/softwareHouse/timeTrackingService');
+const { getProjectMetricsForRequest } = require('../../../services/tenant/project-organization-metrics.service');
 
 // ✅ UNIFIED AUTHENTICATION MIDDLEWARE - Replaces unifiedSoftwareHouseAuth + verifyERPToken
 // Single middleware that handles all authentication, tenant context, and orgId resolution
 // Performance: 1-2 queries instead of 8-17 queries
 const unifiedSoftwareHouseAuth = require('../../../middleware/auth/unifiedSoftwareHouseAuth');
 const { checkUsageLimitSoftwareHouseOnly, checkReadOnlySoftwareHouseOnly } = require('../../../middleware/common/featureGate');
+
+/**
+ * orgId filter for find() and aggregation $match.
+ * Merges every plausible org id (JWT/middleware vs tenant document) so Project queries match stored shapes.
+ * Aggregation does not apply Mongoose casting; legacy docs may store orgId as a string.
+ */
+function buildOrgIdQueryFromSources(...sources) {
+  const idStrings = new Set();
+  const add = (v) => {
+    if (v == null || v === '') return;
+    let x = v;
+    if (typeof x === 'object' && x._id) x = x._id;
+    idStrings.add(String(x));
+  };
+  sources.forEach(add);
+  if (idStrings.size === 0) return {};
+  const candidates = [];
+  for (const s of idStrings) {
+    if (mongoose.Types.ObjectId.isValid(s)) {
+      try {
+        candidates.push(new mongoose.Types.ObjectId(s));
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    candidates.push(s);
+  }
+  const unique = [...new Map(candidates.map((v) => [String(v), v])).values()];
+  return { orgId: { $in: unique } };
+}
 
 // Get tenant software house configuration
 router.get('/config', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin']), ErrorHandler.asyncHandler(async (req, res) => {
@@ -419,89 +450,6 @@ router.post('/initialize', unifiedSoftwareHouseAuth, requireRole(['owner', 'admi
   });
 }));
 
-// ==================== DEVELOPMENT METHODOLOGY ====================
-
-// Get development methodology configuration
-router.get('/development', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
-  const tenantId = req.user.tenantId;
-  const orgId = req.user.orgId;
-  
-  const tenant = await Tenant.findOne({ _id: tenantId, orgId })
-    .select('softwareHouseConfig');
-  
-  if (!tenant || tenant.erpCategory !== 'software_house') {
-    return res.status(400).json({
-      success: false,
-      message: 'Tenant is not configured as a software house'
-    });
-  }
-  
-  res.json({
-    success: true,
-    data: {
-      defaultMethodology: tenant.softwareHouseConfig?.defaultMethodology || 'agile',
-      supportedMethodologies: tenant.softwareHouseConfig?.supportedMethodologies || ['agile'],
-      developmentSettings: tenant.softwareHouseConfig?.developmentSettings || {
-        defaultSprintDuration: 14,
-        storyPointScale: 'fibonacci',
-        codeQualityTracking: true
-      }
-    }
-  });
-}));
-
-// Update development methodology configuration
-router.put('/development', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin']), ErrorHandler.asyncHandler(async (req, res) => {
-  const tenantId = req.user.tenantId;
-  const orgId = req.user.orgId;
-  const {
-    defaultMethodology,
-    supportedMethodologies,
-    developmentSettings
-  } = req.body;
-  
-  const tenant = await Tenant.findOne({ _id: tenantId, orgId });
-  
-  if (!tenant || tenant.erpCategory !== 'software_house') {
-    return res.status(400).json({
-      success: false,
-      message: 'Tenant is not configured as a software house'
-    });
-  }
-  
-  if (!tenant.softwareHouseConfig) {
-    tenant.softwareHouseConfig = {};
-  }
-  
-  if (defaultMethodology) {
-    tenant.softwareHouseConfig.defaultMethodology = defaultMethodology;
-  }
-  
-  if (supportedMethodologies) {
-    tenant.softwareHouseConfig.supportedMethodologies = supportedMethodologies;
-  }
-  
-  if (developmentSettings) {
-    tenant.softwareHouseConfig.developmentSettings = {
-      ...tenant.softwareHouseConfig.developmentSettings,
-      ...developmentSettings
-    };
-  }
-
-  tenant.markModified('softwareHouseConfig');
-  await tenant.save();
-  
-  res.json({
-    success: true,
-    data: {
-      defaultMethodology: tenant.softwareHouseConfig.defaultMethodology,
-      supportedMethodologies: tenant.softwareHouseConfig.supportedMethodologies,
-      developmentSettings: tenant.softwareHouseConfig.developmentSettings
-    },
-    message: 'Development methodology configuration updated successfully'
-  });
-}));
-
 // ==================== TIME TRACKING ====================
 
 // Start timer
@@ -789,89 +737,79 @@ router.delete('/time-tracking/entries/:timeEntryId', unifiedSoftwareHouseAuth, r
 
 // Get tenant software house dashboard data
 router.get('/dashboard', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin', 'project_manager', 'employee', 'contractor']), ErrorHandler.asyncHandler(async (req, res) => {
-  const { tenantSlug } = req.params;
-
   try {
-    // Single tenant query — fetch all needed fields at once (was two sequential queries before)
-    let tenantInfo = await Tenant.findOne({ slug: tenantSlug })
-      .select('name _id erpCategory softwareHouseConfig erpModules organizationId orgId')
-      .lean();
-    if (!tenantInfo && /^[0-9a-f]{24}$/i.test(tenantSlug)) {
-      tenantInfo = await Tenant.findById(tenantSlug)
-        .select('name _id erpCategory softwareHouseConfig erpModules organizationId orgId')
-        .lean();
-    }
+    // Tenant already loaded by unifiedSoftwareHouseAuth (skip extra Tenant.findOne round-trip)
+    const tenantInfo = req.tenant;
     if (!tenantInfo) {
-      return res.status(404).json({ success: false, message: 'Tenant not found' });
+      return res.status(500).json({ success: false, message: 'Tenant context missing' });
     }
     if (tenantInfo.erpCategory !== 'software_house') {
       return res.status(400).json({ success: false, message: 'Tenant is not configured as a software house' });
     }
 
-    const orgId = tenantInfo.organizationId || tenantInfo.orgId || req.user?.orgId;
-    if (!orgId) {
+    // Same org + department scope as GET /organization/projects/metrics (Projects overview KPIs)
+    const { metricsQuery, data: orgProjectMetrics } = await getProjectMetricsForRequest(req);
+    if (!metricsQuery || !orgProjectMetrics) {
+      return res.status(500).json({ success: false, message: 'Organization context not available' });
+    }
+
+    const orgFilter = buildOrgIdQueryFromSources(
+      metricsQuery.orgId,
+      req.orgId,
+      req.user?.orgId,
+      tenantInfo.organizationId,
+      tenantInfo.orgId
+    );
+    if (!orgFilter.orgId?.$in?.length) {
       return res.status(400).json({ success: false, message: 'Tenant organization not configured' });
     }
 
-    const orgIdObj = mongoose.Types.ObjectId.isValid(orgId) ? new mongoose.Types.ObjectId(orgId) : orgId;
-
     const safeDefaults = {
       projects: { totalProjects: 0, activeProjects: 0, completedProjects: 0, onTrackProjects: 0, atRiskProjects: 0, delayedProjects: 0, totalBudget: 0, spentBudget: 0 },
-      sprints: { activeSprints: 0, completedSprints: 0, totalVelocity: 0 },
+      sprints: { activeSprints: 0, completedSprints: 0, totalVelocity: 0, averageVelocity: 0 },
       development: { avgCodeCoverage: 0, avgClientSatisfaction: 0, totalBugs: 0, totalFeatures: 0 },
       team: { totalTeamMembers: 0 }
     };
 
-    // Run all 6 data queries in parallel — previously sequential (each waited for the last)
     const [
       recentProjectsResult,
       activeSprintsResult,
-      projectMetricsResult,
       sprintMetricsResult,
       devMetricsResult,
       teamMetricsResult,
-    ] = await Promise.allSettled([
-      Project.find({ orgId: orgIdObj })
+    ] = await Promise.all([
+      Project.find(metricsQuery)
         .populate('clientId', 'name email')
         .select('name description status projectType methodology techStack budget timeline team clientId')
         .sort({ updatedAt: -1 })
         .limit(5)
-        .lean(),
+        .lean()
+        .then((value) => ({ status: 'fulfilled', value }))
+        .catch((reason) => ({ status: 'rejected', reason })),
 
-      Sprint.find({ orgId: orgIdObj, status: 'active' })
+      Sprint.find({ ...orgFilter, status: 'active' })
         .populate('projectId', 'name clientId')
         .select('name projectId startDate endDate status goal capacity metrics team')
         .sort({ startDate: -1 })
         .limit(3)
-        .lean(),
-
-      Project.aggregate([
-        { $match: { orgId: orgIdObj } },
-        { $group: {
-          _id: null,
-          totalProjects: { $sum: 1 },
-          activeProjects: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } },
-          completedProjects: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
-          onTrackProjects: { $sum: 0 },
-          atRiskProjects: { $sum: 0 },
-          delayedProjects: { $sum: 0 },
-          totalBudget: { $sum: { $ifNull: ['$budget.total', 0] } },
-          spentBudget: { $sum: { $ifNull: ['$budget.spent', 0] } }
-        }}
-      ]),
+        .lean()
+        .then((value) => ({ status: 'fulfilled', value }))
+        .catch((reason) => ({ status: 'rejected', reason })),
 
       Sprint.aggregate([
-        { $match: { orgId: orgIdObj } },
+        { $match: orgFilter },
         { $group: {
           _id: null,
           activeSprints: { $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] } },
           completedSprints: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
-          totalVelocity: { $avg: '$velocity' }
+          totalVelocity: { $avg: { $ifNull: ['$metrics.velocity', 0] } }
         }}
-      ]),
+      ])
+        .then((value) => ({ status: 'fulfilled', value }))
+        .catch((reason) => ({ status: 'rejected', reason })),
 
       DevelopmentMetrics.aggregate([
-        { $match: { orgId: orgIdObj } },
+        { $match: orgFilter },
         { $group: {
           _id: null,
           avgCodeCoverage: { $avg: { $ifNull: ['$codeQuality.codeCoverage', 0] } },
@@ -879,20 +817,41 @@ router.get('/dashboard', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin'
           totalBugs: { $sum: { $ifNull: ['$bugs.totalBugs', 0] } },
           totalFeatures: { $sum: { $ifNull: ['$features.featuresDelivered', 0] } }
         }}
-      ]),
+      ])
+        .then((value) => ({ status: 'fulfilled', value }))
+        .catch((reason) => ({ status: 'rejected', reason })),
 
       SoftwareHouseRole.aggregate([
-        { $match: { orgId: orgIdObj, isActive: true } },
+        { $match: { ...orgFilter, isActive: true } },
         { $group: { _id: null, totalTeamMembers: { $sum: 1 } } }
-      ]),
+      ])
+        .then((value) => ({ status: 'fulfilled', value }))
+        .catch((reason) => ({ status: 'rejected', reason })),
     ]);
 
     const recentProjects   = recentProjectsResult.status  === 'fulfilled' ? recentProjectsResult.value  : [];
     const activeSprints    = activeSprintsResult.status   === 'fulfilled' ? activeSprintsResult.value   : [];
-    const projectMetrics   = projectMetricsResult.status  === 'fulfilled' ? projectMetricsResult.value  : [];
     const sprintMetrics    = sprintMetricsResult.status   === 'fulfilled' ? sprintMetricsResult.value   : [];
     const devMetrics       = devMetricsResult.status      === 'fulfilled' ? devMetricsResult.value      : [];
     const teamMetrics      = teamMetricsResult.status     === 'fulfilled' ? teamMetricsResult.value     : [];
+
+    const projectsBlock = {
+      totalProjects: orgProjectMetrics.totalProjects,
+      activeProjects: orgProjectMetrics.activeProjects,
+      completedProjects: orgProjectMetrics.completedProjects,
+      onTrackProjects: orgProjectMetrics.onTrackProjects,
+      atRiskProjects: orgProjectMetrics.atRiskProjects,
+      delayedProjects: orgProjectMetrics.delayedProjects,
+      totalBudget: orgProjectMetrics.totalBudget,
+      spentBudget: orgProjectMetrics.spentBudget
+    };
+    const sprintsRaw = sprintMetrics[0] || safeDefaults.sprints;
+    const tv = sprintsRaw.totalVelocity;
+    const sprintsBlock = {
+      ...sprintsRaw,
+      averageVelocity: typeof tv === 'number' && !Number.isNaN(tv) ? Math.round(tv * 10) / 10 : 0
+    };
+    const teamRaw = teamMetrics[0] || safeDefaults.team;
 
     const dashboardData = {
       tenant: {
@@ -904,10 +863,13 @@ router.get('/dashboard', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin'
       recentProjects,
       activeSprints,
       metrics: {
-        projects: projectMetrics[0] || safeDefaults.projects,
-        sprints: sprintMetrics[0] || safeDefaults.sprints,
+        projects: projectsBlock,
+        sprints: sprintsBlock,
         development: devMetrics[0] || safeDefaults.development,
-        team: teamMetrics[0] || safeDefaults.team
+        team: {
+          ...teamRaw,
+          totalMembers: teamRaw.totalTeamMembers
+        }
       }
     };
 
@@ -924,6 +886,19 @@ router.get('/dashboard', unifiedSoftwareHouseAuth, requireRole(['owner', 'admin'
     });
   }
 }));
+
+// ==================== SOFTWARE-HOUSE FINANCE (READ) ====================
+require('./softwareHouseFinanceReads')(router, {
+  unifiedSoftwareHouseAuth,
+  requireRole,
+  Transaction,
+  Invoice,
+  Bill,
+  ChartOfAccounts,
+  CashFlowForecast,
+  Vendor,
+  ProjectCosting
+});
 
 // ==================== SOFTWARE-HOUSE FINANCE: CLIENTS ====================
 // Used by tenant finance UI (Accounts Receivable, client management)

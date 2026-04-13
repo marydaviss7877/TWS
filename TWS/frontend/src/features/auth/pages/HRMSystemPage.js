@@ -14,8 +14,10 @@ import {
 } from '@heroicons/react/24/outline';
 
 import './SoftwareHouseHRM.css';
+import { useTheme } from '../../../app/providers/ThemeContext';
 
 const HRMSystemPage = () => {
+    const { isDarkMode } = useTheme();
     const [scrollY, setScrollY] = useState(0);
     const { scrollYProgress } = useScroll();
 
@@ -53,7 +55,7 @@ const HRMSystemPage = () => {
     ];
 
     return (
-        <div className="sh-hrm-page sh-dot-grid min-h-screen">
+        <div className={`sh-hrm-page sh-dot-grid min-h-screen${!isDarkMode ? ' day-mode' : ''}`}>
             <div className="sh-noise-overlay" />
             <motion.div style={{ y: y1 }} className="sh-glow-orb sh-glow-1" />
             <motion.div style={{ y: y2 }} className="sh-glow-orb sh-glow-2" />

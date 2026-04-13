@@ -20,6 +20,7 @@ import {
   KeyIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
+import toast from 'react-hot-toast';
 
 // Software house–specific job roles
 const SOFTWARE_HOUSE_ROLES = [
@@ -82,7 +83,8 @@ const EmployeeCreate = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [tempPassword, setTempPassword] = useState(null);
+  const [successDetail, setSuccessDetail] = useState(null);
+  const [sendPortalInvite, setSendPortalInvite] = useState(true);
   const [skillsInput, setSkillsInput] = useState('');
   // Departments loaded from API; falls back to the hardcoded list
   const [departmentOptions, setDepartmentOptions] = useState(SOFTWARE_HOUSE_DEPARTMENTS);
@@ -171,6 +173,7 @@ const EmployeeCreate = () => {
     setLoading(true);
     setError(null);
     setSuccess(false);
+    setSuccessDetail(null);
 
     try {
       if (!formData.firstName || !formData.lastName || !formData.email || !formData.jobTitle) {
@@ -192,7 +195,8 @@ const EmployeeCreate = () => {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.trim().toLowerCase(),
-        ...(formData.password?.trim() ? { password: formData.password.trim() } : {}),
+        ...(sendPortalInvite ? { sendPortalInvite: true } : {}),
+        ...(!sendPortalInvite && formData.password?.trim() ? { password: formData.password.trim() } : {}),
         ...(formData.employeeId?.trim() ? { employeeId: formData.employeeId.trim() } : {}),
         ...(formData.erpRole ? { erpRole: formData.erpRole } : {}),
         ...(formData.erpRole === 'hr' && formData.hrSubRole ? { hrSubRole: formData.hrSubRole } : {}),
@@ -243,13 +247,20 @@ const EmployeeCreate = () => {
       const response = await tenantApiService.createEmployee(tenantSlug, employeeData);
 
       if (response !== false) {
-        // Show temporary password banner if the backend auto-generated one
-        if (response?.temporaryPassword) {
-          setTempPassword(response.temporaryPassword);
+        if (response?.portalInviteSent) {
+          setSuccessDetail({ kind: 'invite' });
+          toast.success('Team member created. Portal invite email was sent.');
+        } else if (response?.portalInviteSkipped === 'already_active') {
+          setSuccessDetail({ kind: 'skipped' });
+          toast.success('Team member created. This email already has active portal access.');
+        } else if (response?.temporaryPassword) {
+          setSuccessDetail({ kind: 'temp', password: response.temporaryPassword });
+        } else {
+          setSuccessDetail(null);
         }
         setSuccess(true);
-        if (!response?.temporaryPassword) {
-          // Navigate away immediately only when no temp password needs to be shown
+        const stayForMessage = !!(response?.temporaryPassword || response?.portalInviteSent || response?.portalInviteSkipped);
+        if (!stayForMessage) {
           setTimeout(() => {
             navigate(`/${tenantSlug}/org/software-house/hr/employees`);
           }, 2000);
@@ -293,16 +304,43 @@ const EmployeeCreate = () => {
             <CheckCircleIcon className="w-6 h-6 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="font-bold text-green-900 dark:text-green-100">Team member added successfully!</p>
-              {tempPassword ? (
+              {successDetail?.kind === 'temp' ? (
                 <>
                   <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                    A temporary password was auto-generated. Share it with the new hire — they will be prompted to change it on first login.
+                    A temporary password was auto-generated. Share it with the new hire once — use Organization → Users → Change password for updates later.
                   </p>
                   <div className="mt-3 flex items-center gap-3 bg-white dark:bg-gray-800 border border-green-300 dark:border-green-700 rounded-xl px-4 py-3">
                     <KeyIcon className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
-                    <span className="font-mono font-bold text-lg tracking-widest text-gray-900 dark:text-white">{tempPassword}</span>
+                    <span className="font-mono font-bold text-lg tracking-widest text-gray-900 dark:text-white">{successDetail.password}</span>
                   </div>
                   <button
+                    type="button"
+                    onClick={() => navigate(`/${tenantSlug}/org/software-house/hr/employees`)}
+                    className="mt-3 glass-button px-4 py-2 rounded-xl text-sm font-medium"
+                  >
+                    Go to Employee List
+                  </button>
+                </>
+              ) : successDetail?.kind === 'invite' ? (
+                <>
+                  <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                    An invite email was sent so they can set their own password before first login.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/${tenantSlug}/org/software-house/hr/employees`)}
+                    className="mt-3 glass-button px-4 py-2 rounded-xl text-sm font-medium"
+                  >
+                    Go to Employee List
+                  </button>
+                </>
+              ) : successDetail?.kind === 'skipped' ? (
+                <>
+                  <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                    No new invite was sent — this email already has active portal access.
+                  </p>
+                  <button
+                    type="button"
                     onClick={() => navigate(`/${tenantSlug}/org/software-house/hr/employees`)}
                     className="mt-3 glass-button px-4 py-2 rounded-xl text-sm font-medium"
                   >
@@ -386,26 +424,41 @@ const EmployeeCreate = () => {
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <KeyIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <div className="md:col-span-2">
+              <label className="flex items-start gap-3 cursor-pointer">
                 <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="glass-input w-full pl-10 pr-4 py-3 rounded-xl"
-                  placeholder="Leave empty for default temporary password"
-                  autoComplete="new-password"
+                  type="checkbox"
+                  checked={sendPortalInvite}
+                  onChange={(e) => setSendPortalInvite(e.target.checked)}
+                  className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 />
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Set a login password for this employee. If left empty, a default temporary password will be set.
-              </p>
+                <span>
+                  <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">Send portal invite email</span>
+                  <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Recommended: they set their password via the link. Uncheck to assign a password or one-time generated password instead.
+                  </span>
+                </span>
+              </label>
             </div>
+            {!sendPortalInvite && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Optional: set password now
+                </label>
+                <div className="relative">
+                  <KeyIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="glass-input w-full pl-10 pr-4 py-3 rounded-xl"
+                    placeholder="Leave empty for one-time generated password"
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone</label>
               <div className="relative">

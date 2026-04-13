@@ -1052,8 +1052,22 @@
     background: rgba(79, 110, 247, 0.04) !important;
 }
 
+/* Toolbar chrome above the grid lives outside .sh-mock-card — needs real contrast */
+.tws-landing-page.day-mode .sh-unified-dashboard-mock .bg-white\/5 {
+    background: rgba(79, 110, 247, 0.12) !important;
+    box-shadow: inset 0 0 0 1px rgba(79, 110, 247, 0.22);
+}
+.tws-landing-page.day-mode .sh-unified-dashboard-mock .text-white\/50 {
+    color: var(--tws-text-tertiary) !important;
+}
+
 /* Scan/cognitive load text stays dark for contrast */
 .tws-landing-page.day-mode .sh-tab-content-mock .text-gray-400 {
+    color: var(--tws-text-secondary) !important;
+}
+
+/* Pricing card body copy uses text-white/60 */
+.tws-landing-page.day-mode .sh-pricing-console .text-white\/60 {
     color: var(--tws-text-secondary) !important;
 }
 

@@ -2,7 +2,7 @@
  * TenantNavContext — shares filtered menu items + app navigation state
  * between TenantOrgLayout (provider) and any child page (consumer).
  *
- * This lets AppHome consume the same filteredMenuItems, favorites, recents, etc.
+ * This lets AppHome consume the same filteredMenuItems, favorites, etc.
  * that the layout already computed, without duplicating API calls or hook state.
  */
 
@@ -13,7 +13,6 @@ const TenantNavContext = React.createContext({
   activeAppKey:  null,
   activeApp:     null,
   favoriteApps:  [],
-  recentApps:    [],
   favoriteKeys:  [],
   isFavorite:    () => false,
   toggleFavorite: () => {},

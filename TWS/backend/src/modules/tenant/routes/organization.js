@@ -883,8 +883,8 @@ router.post('/hr/attendance/check-out', verifyERPToken, attendanceWrite, async (
 router.get('/hr/employees', verifyERPToken, employeesRead, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
-    const { page, limit, department, status } = req.query;
-    const data = await tenantOrgService.getEmployees(tenantContext, { page, limit, department, status });
+    const { page, limit, department, status, userId } = req.query;
+    const data = await tenantOrgService.getEmployees(tenantContext, { page, limit, department, status, userId });
     res.json({ success: true, data });
   } catch (error) {
     console.error('Get HR employees error:', error);
@@ -920,13 +920,23 @@ router.post('/hr/employees', verifyERPToken, employeesWrite, async (req, res) =>
     if (!employeeData.jobTitle) {
       return res.status(400).json({ success: false, message: 'jobTitle is required' });
     }
-    const employee = await tenantOrgService.createEmployee(tenantContext, employeeData);
+    const employee = await tenantOrgService.createEmployee(tenantContext, {
+      ...employeeData,
+      invitedBy: req.user?._id
+    });
     const temporaryPassword = employee._temporaryPassword || undefined;
+    const portalInviteSent = employee._portalInviteSent;
+    const portalInviteSkipped = employee._portalInviteSkipped;
+    delete employee._temporaryPassword;
+    delete employee._portalInviteSent;
+    delete employee._portalInviteSkipped;
     res.status(201).json({
       success: true,
       data: {
         employee,
-        ...(temporaryPassword && { temporaryPassword, mustChangePassword: true })
+        ...(temporaryPassword && { temporaryPassword, mustChangePassword: true }),
+        ...(portalInviteSent && { portalInviteSent: true }),
+        ...(portalInviteSkipped && { portalInviteSkipped })
       }
     });
   } catch (error) {
@@ -1111,10 +1121,21 @@ router.post('/users', verifyERPToken, checkReadOnlySoftwareHouseOnly, checkUsage
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const userData = req.body;
     const user = await tenantOrgService.createUser(tenantContext, userData);
-    res.json({ success: true, data: user });
+    const temp = user._temporaryPassword;
+    const payload = typeof user.toJSON === 'function' ? user.toJSON() : { ...user };
+    if (temp) {
+      payload.temporaryPassword = temp;
+      payload.mustChangePassword = true;
+    }
+    res.json({ success: true, data: payload });
   } catch (error) {
     console.error('Create user error:', error);
-    res.status(500).json({ success: false, message: 'Failed to create user', error: error.message });
+    const dup = /already exists/i.test(error.message || '');
+    res.status(dup ? 409 : 500).json({
+      success: false,
+      message: dup ? error.message : 'Failed to create user',
+      error: error.message
+    });
   }
 });
 
@@ -1127,15 +1148,33 @@ router.get('/users/:id', verifyERPToken, async (req, res) => {
     const user = await tenantOrgService.getUserById(tenantContext, id);
     const userObj = user?.toObject ? user.toObject() : { ...user };
     const TenantUser = require('../../../models/TenantUser');
-    const tenantUser = await TenantUser.findOne({ userId: id, tenantId, status: 'active' }).select('roles hrSubRole').lean();
+    const tenantUser = await TenantUser.findOne({ userId: id, tenantId }).select('roles hrSubRole status').lean();
     if (tenantUser) {
       userObj.role = tenantUser.roles?.[0]?.role || userObj.role;
       userObj.hrSubRole = tenantUser.hrSubRole ?? null;
+      userObj.portalTenantStatus = tenantUser.status;
     }
     res.json({ success: true, data: userObj });
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch user' });
+  }
+});
+
+// Admin: set user password (no "view password" — replaces hash; optional activation from pending)
+router.patch('/users/:id/admin-password', verifyERPToken, strictLimiter, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const newPassword = String(req.body.newPassword || '').trim();
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    }
+    await tenantOrgService.setUserPasswordByAdmin(tenantContext, req.params.id, newPassword);
+    res.json({ success: true, message: 'Password updated' });
+  } catch (error) {
+    const msg = error.message || 'Failed to set password';
+    const code = /not in this organization|not found/i.test(msg) ? 404 : 500;
+    res.status(code).json({ success: false, message: msg });
   }
 });
 
@@ -1154,7 +1193,7 @@ router.put('/users/:id', verifyERPToken, async (req, res) => {
       }
       const TenantUser = require('../../../models/TenantUser');
       const { invalidateResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
-      const tenantUser = await TenantUser.findOne({ userId: id, tenantId, status: 'active' });
+      const tenantUser = await TenantUser.findOne({ userId: id, tenantId });
       if (tenantUser) {
         tenantUser.hrSubRole = (hrSubRole === null || hrSubRole === '') ? undefined : hrSubRole;
         await tenantUser.save();
@@ -1522,7 +1561,11 @@ router.delete('/users/:id', verifyERPToken, async (req, res) => {
     res.json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
     console.error('Delete user error:', error);
-    res.status(500).json({ success: false, message: 'Failed to delete user' });
+    const notFound = error.message === 'User not found';
+    res.status(notFound ? 404 : 500).json({
+      success: false,
+      message: notFound ? 'User not found or already removed' : (error.message || 'Failed to delete user')
+    });
   }
 });
 
@@ -1811,6 +1854,30 @@ router.get('/me/permissions', verifyTenantOrgAccess, async (req, res) => {
   }
 });
 
+// Read-only catalog: enforced permissions (SH project roles + UPR base roles)
+router.get('/permission-catalog', verifyTenantOrgAccess, async (req, res) => {
+  try {
+    const { buildPermissionCatalog } = require('../../../services/tenant/permissionCatalog.service');
+    const data = buildPermissionCatalog();
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('GET /permission-catalog error:', err);
+    res.status(500).json({ success: false, message: 'Failed to load permission catalog' });
+  }
+});
+
+// Read-only catalog: UPR primary + HR sub-roles + Software House project roles
+router.get('/role-catalog', verifyTenantOrgAccess, async (req, res) => {
+  try {
+    const { buildRoleCatalog } = require('../../../services/tenant/roleCatalog.service');
+    const data = buildRoleCatalog();
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('GET /role-catalog error:', err);
+    res.status(500).json({ success: false, message: 'Failed to load role catalog' });
+  }
+});
+
 // ==================== USER DEPARTMENT ACCESS ====================
 
 // Get user departments (for navigation and access control)
@@ -1926,7 +1993,9 @@ console.log('✅ Tenant organization routes registered:', {
     'GET /settings',
     'PUT /settings',
     'GET /user-departments',
-    'GET /me/permissions'
+    'GET /me/permissions',
+    'GET /permission-catalog',
+    'GET /role-catalog'
   ]
 });
 

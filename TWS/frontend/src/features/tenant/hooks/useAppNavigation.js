@@ -1,17 +1,13 @@
 /**
  * useAppNavigation — Odoo-style app navigation state.
  *
- * Derives the active top-level app from the URL, tracks recently-visited
- * apps automatically, and lets users star favourites. No manual shortcuts
- * setup required — it all happens implicitly.
+ * Derives the active top-level app from the URL and lets users star favourites.
  */
 
-import { useMemo, useCallback, useEffect, useState } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
-const RECENTS_PREFIX   = 'tws-app-recents';
 const FAVORITES_PREFIX = 'tws-app-favorites';
-const MAX_RECENTS      = 5;
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
 function read(key, fallback) {
@@ -62,23 +58,7 @@ export function useAppNavigation(tenantSlug, filteredMenuItems = []) {
     [filteredMenuItems, activeAppKey]
   );
 
-  // Auto-track recent apps on navigation (skip dashboard — everyone goes there)
-  useEffect(() => {
-    if (!tenantSlug || !activeAppKey || activeAppKey === 'home') return;
-    const storageKey = `${RECENTS_PREFIX}-${tenantSlug}`;
-    const current = read(storageKey, []);
-    const updated  = [activeAppKey, ...current.filter(k => k !== activeAppKey)].slice(0, MAX_RECENTS);
-    write(storageKey, updated);
-  }, [activeAppKey, tenantSlug]);
-
   // ── Derived lists (re-computed when favVersion bumps) ────────────────────────
-  const recentApps = useMemo(() => {
-    if (!tenantSlug) return [];
-    const keys = read(`${RECENTS_PREFIX}-${tenantSlug}`, []);
-    return keys.map(k => filteredMenuItems.find(m => m.key === k)).filter(Boolean);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantSlug, filteredMenuItems, favVersion]);
-
   const favoriteKeys = useMemo(() => {
     if (!tenantSlug) return [];
     return read(`${FAVORITES_PREFIX}-${tenantSlug}`, []);
@@ -108,7 +88,6 @@ export function useAppNavigation(tenantSlug, filteredMenuItems = []) {
     activeAppKey,
     activeApp,
     favoriteApps,
-    recentApps,
     favoriteKeys,
     isFavorite,
     toggleFavorite,

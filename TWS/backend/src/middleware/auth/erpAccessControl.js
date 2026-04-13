@@ -83,7 +83,19 @@ function requireErpAccess(options = {}) {
       if (permissionModule && permissionAction) {
         const resolved = await getResolvedPermissions(req.user._id, tenantId, { hrSubRole: req.user.hrSubRole });
         const actions = Array.isArray(permissionAction) ? permissionAction : [permissionAction];
-        if (!hasAnyPermission(resolved.permissions, permissionModule, actions)) {
+        let permitted = hasAnyPermission(resolved.permissions, permissionModule, actions);
+        // Self-service: employees may read only their own row via ?userId=<login user id>
+        if (!permitted && permissionModule === 'employees' && actions.includes('read')) {
+          const qUid = req.query?.userId;
+          if (
+            qUid &&
+            String(qUid) === String(req.user._id) &&
+            hasPermission(resolved.permissions, 'employees', 'read_own')
+          ) {
+            permitted = true;
+          }
+        }
+        if (!permitted) {
           return res.status(403).json({ success: false, message: GENERIC_FORBIDDEN_MESSAGE });
         }
       } else if (allowedRoles && allowedRoles.length > 0) {

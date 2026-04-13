@@ -99,7 +99,6 @@ import ApprovalQueue from './documents/ApprovalQueue';
 import DocumentAuditView from './documents/DocumentAuditView';
 
 // Software House Components
-import Development from './software-house/Development';
 import TimeTracking from './software-house/TimeTracking';
 
 // Client Portal Components - REMOVED COMPLETELY
@@ -124,6 +123,7 @@ import CreateDepartment from './departments/CreateDepartment';
 import DepartmentDashboard from './departments/DepartmentDashboard';
 import DepartmentAccessManagement from './departments/DepartmentAccessManagement';
 import AuditLogPage from './audit/AuditLogPage';
+import TenantOrgRulebook from './TenantOrgRulebook';
 
 // Smart catch-all component to prevent redirect loops
 const CatchAllRoute = () => {
@@ -139,7 +139,7 @@ const CatchAllRoute = () => {
     }
     
     // Don't redirect valid routes (departments, users, roles, permissions, employee portal, etc.)
-    const validRoutes = ['/departments', '/users', '/roles', '/permissions', '/projects', '/hr', '/finance', '/analytics', '/settings', '/clients', '/operations', '/documents', '/software-house', '/employee-portal', '/audit'];
+    const validRoutes = ['/departments', '/users', '/roles', '/permissions', '/projects', '/hr', '/finance', '/analytics', '/settings', '/clients', '/operations', '/documents', '/software-house', '/employee-portal', '/audit', '/rulebook'];
     if (validRoutes.some(route => pathname.includes(route))) {
       return;
     }
@@ -279,6 +279,9 @@ const TenantOrg = () => {
 
           {/* Messaging Routes removed - only supra-admin messaging remains */}
 
+          {/* Organization rule book (all tenants) */}
+          <Route path="rulebook" element={<TenantOrgRulebook />} />
+
           {/* Settings Routes */}
           <Route path="settings" element={<SettingsOverview />} />
           <Route path="settings/organization" element={<OrgProfile />} />
@@ -295,7 +298,6 @@ const TenantOrg = () => {
           <Route path="profile" element={<UserProfile />} />
 
           {/* Software House Routes */}
-          <Route path="software-house/development" element={<Development />} />
           <Route path="software-house/time-tracking" element={<TimeTracking />} />
           
           {/* Client Portal Routes - REMOVED COMPLETELY */}

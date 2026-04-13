@@ -18,6 +18,7 @@ const GanttSettings = require('../../models/GanttSettings');
 const ganttChartService = require('../../services/ganttChartService');
 const projectIntegrationService = require('../../services/integrations/project-integration.service');
 const { getUserDepartmentIds, shouldFilterByDepartment } = require('../../services/tenant/userDepartmentsService');
+const { getProjectMetricsForRequest } = require('../../services/tenant/project-organization-metrics.service');
 const { getViewConfigForUserDepartments, applyViewConfigToProject, buildDefaultProjectDepartmentConfigs, normalizeProjectDepartmentConfigs } = require('../../utils/projectDepartmentView');
 const ProjectMember = require('../../models/ProjectMember');
 
@@ -854,8 +855,8 @@ exports.deleteProject = async (req, res) => {
  */
 exports.getProjectMetrics = async (req, res) => {
   try {
-    const orgId = await getOrgId(req);
-    if (!orgId) {
+    const { metricsQuery, data } = await getProjectMetricsForRequest(req);
+    if (!metricsQuery || !data) {
       console.error('❌ Organization ID not available in request context for metrics');
       return res.status(500).json({
         success: false,
@@ -863,77 +864,9 @@ exports.getProjectMetrics = async (req, res) => {
       });
     }
 
-    const metricsQuery = { orgId };
-    const tenantId = req.tenant?._id || req.tenantContext?.tenantId;
-    const userId = req.user?._id;
-    if (tenantId && userId) {
-      const filterByDept = await shouldFilterByDepartment(tenantId, userId);
-      if (filterByDept) {
-        const userDeptIds = await getUserDepartmentIds(tenantId, userId);
-        if (userDeptIds.length > 0) {
-          metricsQuery.$or = [
-            { primaryDepartmentId: { $in: userDeptIds } },
-            { departments: { $in: userDeptIds } }
-          ];
-        }
-      }
-    }
-
-    const [
-      totalProjects,
-      activeProjects,
-      completedProjects,
-      projects
-    ] = await Promise.all([
-      Project.countDocuments(metricsQuery),
-      Project.countDocuments({ ...metricsQuery, status: 'active' }),
-      Project.countDocuments({ ...metricsQuery, status: 'completed' }),
-      Project.find(metricsQuery)
-        .select('status budget metrics.timeline')
-        .lean()
-    ]);
-
-    // Calculate additional metrics
-    const onTrackProjects = projects.filter(p => 
-      p.status === 'active' && p.metrics?.completionRate >= 70
-    ).length;
-
-    const atRiskProjects = projects.filter(p => 
-      p.status === 'active' && p.metrics?.completionRate < 70 && p.metrics?.completionRate >= 50
-    ).length;
-
-    const delayedProjects = projects.filter(p => {
-      if (p.timeline?.endDate) {
-        return new Date(p.timeline.endDate) < new Date() && p.status !== 'completed';
-      }
-      return false;
-    }).length;
-
-    // Calculate budget totals
-    const totalBudget = projects.reduce((sum, p) => sum + (p.budget?.total || 0), 0);
-    const spentBudget = projects.reduce((sum, p) => sum + (p.budget?.spent || 0), 0);
-
-    // Calculate total hours
-    const totalHours = projects.reduce((sum, p) => sum + (p.timeline?.estimatedHours || 0), 0);
-
-    // Calculate utilization (simplified - would need actual hours from timesheets)
-    const utilization = totalProjects > 0 ? (activeProjects / totalProjects) * 100 : 0;
-
     res.json({
       success: true,
-      data: {
-        totalProjects,
-        activeProjects,
-        completedProjects,
-        onTrackProjects,
-        atRiskProjects,
-        delayedProjects,
-        totalTeamMembers: 0, // Would need to query User model
-        totalBudget,
-        spentBudget,
-        totalHours,
-        utilization: Math.round(utilization)
-      }
+      data
     });
   } catch (error) {
     console.error('Error fetching project metrics:', error);

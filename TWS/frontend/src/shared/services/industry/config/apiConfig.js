@@ -21,7 +21,7 @@ export const TENANT_API_BASE = '/api/tenant';
  * Builds a tenant API URL
  * 
  * @param {string} tenantSlug - Tenant identifier
- * @param {string} path - API path (e.g., 'software-house/development')
+ * @param {string} path - API path (e.g., 'software-house/tech-stack')
  * @param {string} resourceId - Optional resource ID
  * @returns {string} - Full API URL
  */
@@ -37,7 +37,6 @@ export const API_PATHS = {
   softwareHouse: {
     base: 'software-house',
     techStack: 'software-house/tech-stack',
-    development: 'software-house/development',
     timeTracking: 'software-house/time-tracking',
     codeQuality: 'software-house/code-quality',
   },

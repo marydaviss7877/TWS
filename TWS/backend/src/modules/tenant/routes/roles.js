@@ -4,6 +4,7 @@ const { authenticateToken, requireRole } = require('../../../middleware/auth/aut
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const Role = require('../../../models/Role');
 const Permission = require('../../../models/Permission');
+const { syncRoleCatalogToOrg } = require('../../../services/tenant/roleCatalogSync.service');
 
 // Test route to verify router is working
 router.get('/test', (req, res) => {
@@ -31,6 +32,38 @@ router.get('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) =>
     data: roles
   });
 }));
+
+// Sync enforced role catalog → Role documents (idempotent; intersects permission codes with DB)
+router.post(
+  '/sync-from-catalog',
+  authenticateToken,
+  requireRole(['owner', 'admin', 'super_admin']),
+  ErrorHandler.asyncHandler(async (req, res) => {
+    const tenantId = req.user.tenantId;
+    const orgId = req.user.orgId;
+    if (!tenantId && !orgId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tenant or organization context is required to import roles.'
+      });
+    }
+    const summary = await syncRoleCatalogToOrg({
+      tenantId,
+      orgId,
+      createdBy: req.user.userId || req.user._id
+    });
+    let message = `Imported ${summary.created} new role(s); ${summary.skipped} already existed.`;
+    if (summary.partialPermissions?.length > 0) {
+      message +=
+        ' Some permission codes were not in the database and were omitted from new roles — run Import catalog on Permissions first.';
+    }
+    res.status(200).json({
+      success: true,
+      data: summary,
+      message
+    });
+  })
+);
 
 // Get role by ID
 router.get('/:id', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {

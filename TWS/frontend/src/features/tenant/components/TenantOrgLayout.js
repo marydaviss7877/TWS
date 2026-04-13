@@ -3,7 +3,7 @@
  *
  * Navigation surface:
  *   - OdooTopBar:  app-grid trigger │ org logo │ active-app + sub-nav tabs │ search / actions
- *   - AppGrid:     full-screen app launcher overlay (recent + favourites + all apps)
+ *   - Command palette (Ctrl+K) for app search; bookmarks bar for favourites
  *   - Mobile:      app grid opens on hamburger tap; sub-nav hidden, accessible via grid
  *
  * No persistent sidebar — sub-module navigation lives in the top-bar tabs.
@@ -31,8 +31,10 @@ import OdooTopBar from './OdooTopBar';
 import BookmarkBar from './BookmarkBar';
 import SidebarNav from '../../../shared/components/navigation/SidebarNav';
 import Breadcrumbs from '../../../shared/components/navigation/Breadcrumbs';
+import IdleSessionGuard from './IdleSessionGuard';
 import { TenantPermissionsProvider } from '../contexts/TenantPermissionsContext';
 import { Sheet, SheetContent } from '../../../components/ui/sheet';
+import axiosInstance from '../../../shared/utils/axiosInstance';
 import './TenantOrgLayout.css';
 import '../styles/tenant-theme.css';
 import '../styles/tenant-tokens.css';
@@ -93,24 +95,24 @@ const TenantOrgLayout = ({ children }) => {
         if (!isAuthenticated || !user || !tenantSlug || authLoading) return;
         let active = true;
 
-        const get = async (url) => {
-            const res = await fetch(url, { method: 'GET', credentials: 'include', headers: { 'Content-Type': 'application/json' } });
-            if (!res.ok) {
-                if (res.status === 401) logoutRef.current();
-                return null;
-            }
-            const json = await res.json();
-            return json.data ?? null;
-        };
-
         (async () => {
-            const [depts, perms] = await Promise.all([
-                get(`/api/tenant/${tenantSlug}/organization/user-departments`),
-                get(`/api/tenant/${tenantSlug}/organization/me/permissions`),
-            ]);
-            if (!active) return;
-            setUserDepartments(depts || []);
-            setUserPermissions(perms);
+            try {
+                const [deptsRes, permsRes] = await Promise.all([
+                    axiosInstance.get(`/api/tenant/${tenantSlug}/organization/user-departments`),
+                    axiosInstance.get(`/api/tenant/${tenantSlug}/organization/me/permissions`),
+                ]);
+                if (!active) return;
+                setUserDepartments(deptsRes.data?.data ?? []);
+                setUserPermissions(permsRes.data?.data ?? null);
+            } catch (err) {
+                if (!active) return;
+                const status = err?.response?.status;
+                if (status === 401) logoutRef.current();
+                // Network / proxy / server down — avoid uncaught rejection (React error overlay)
+                console.warn('Tenant layout: could not load departments or permissions', err?.message || err);
+                setUserDepartments([]);
+                setUserPermissions(null);
+            }
         })();
 
         return () => { active = false; };
@@ -128,7 +130,6 @@ const TenantOrgLayout = ({ children }) => {
         activeAppKey,
         activeApp,
         favoriteApps,
-        recentApps,
         favoriteKeys,
         isFavorite,
         toggleFavorite,
@@ -278,7 +279,6 @@ const TenantOrgLayout = ({ children }) => {
                                 activeAppKey,
                                 activeApp,
                                 favoriteApps,
-                                recentApps,
                                 favoriteKeys,
                                 isFavorite,
                                 toggleFavorite,
@@ -302,6 +302,10 @@ const TenantOrgLayout = ({ children }) => {
         </div>
 
         {/* ── Portalled overlays ───────────────────────────────────────────── */}
+        <IdleSessionGuard
+            enabled={Boolean(isAuthenticated && !authLoading)}
+            onLogout={logout}
+        />
         <CommandPalette
             isOpen={commandPaletteOpen}
             onClose={() => { setCommandPaletteOpen(false); setCommandPaletteQuery(''); }}

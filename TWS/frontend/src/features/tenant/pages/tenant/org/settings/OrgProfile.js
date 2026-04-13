@@ -82,20 +82,6 @@ function Sel({ label, value, onChange, options, readOnly, span }) {
   );
 }
 
-function ColorF({ label, value, onChange }) {
-  return (
-    <div>
-      <Lbl>{label}</Lbl>
-      <div className="flex items-center gap-1.5">
-        <input type="color" value={value || '#3B82F6'} onChange={e => onChange(e.target.value)}
-          className="h-8 w-9 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer p-0.5 bg-white dark:bg-gray-900" />
-        <input type="text" value={value || '#3B82F6'} onChange={e => onChange(e.target.value)}
-          placeholder="#3B82F6" maxLength={7} className={`${S.input} font-mono`} />
-      </div>
-    </div>
-  );
-}
-
 /* ─── main ───────────────────────────────────────────────────────────────────── */
 const OrgProfile = () => {
   const { tenantSlug } = useParams();
@@ -142,9 +128,6 @@ const OrgProfile = () => {
         companySize:        d.businessInfo?.companySize         || '',
         taxId:              d.businessInfo?.taxId               || '',
         registrationNumber: d.businessInfo?.registrationNumber  || '',
-        primaryColor:   d.branding?.primaryColor   || '#3B82F6',
-        secondaryColor: d.branding?.secondaryColor || '#1E40AF',
-        customDomain:   d.branding?.customDomain   || '',
       };
       setForm(f); setSavedForm(f); setDirty(false);
     } catch (e) { setError(e.message); }
@@ -161,7 +144,6 @@ const OrgProfile = () => {
         contactInfo: { email: form.contactEmail, phone: form.contactPhone, website: form.contactWebsite,
           address: { street: form.addrStreet, city: form.addrCity, state: form.addrState, zipCode: form.addrZip, country: form.addrCountry } },
         businessInfo: { industry: form.industry, companySize: form.companySize, taxId: form.taxId, registrationNumber: form.registrationNumber },
-        branding: { primaryColor: form.primaryColor, secondaryColor: form.secondaryColor, customDomain: form.customDomain },
       };
       const res  = await fetch(`/api/tenant/${tenantSlug}/organization/profile`, {
         method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -449,52 +431,6 @@ const OrgProfile = () => {
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* Colors + inline preview */}
-            <div className={S.card}>
-              <Sec>Brand Colors</Sec>
-              <div className="grid grid-cols-2 gap-2">
-                {isAdmin ? (
-                  <>
-                    <ColorF label="Primary"   value={form.primaryColor}   onChange={set('primaryColor')} />
-                    <ColorF label="Secondary" value={form.secondaryColor} onChange={set('secondaryColor')} />
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <Lbl>Primary</Lbl>
-                      <div className="flex items-center gap-2 h-8">
-                        <div className="h-6 w-6 rounded shrink-0 border border-gray-200 dark:border-gray-700" style={{ background: form.primaryColor }} />
-                        <span className="text-xs font-mono text-gray-600 dark:text-gray-400">{form.primaryColor}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <Lbl>Secondary</Lbl>
-                      <div className="flex items-center gap-2 h-8">
-                        <div className="h-6 w-6 rounded shrink-0 border border-gray-200 dark:border-gray-700" style={{ background: form.secondaryColor }} />
-                        <span className="text-xs font-mono text-gray-600 dark:text-gray-400">{form.secondaryColor}</span>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-              {/* Inline preview */}
-              <div className="mt-2.5 flex items-center gap-2 pt-2.5 border-t border-gray-100 dark:border-gray-800">
-                <div className="h-7 w-7 rounded-lg shrink-0 flex items-center justify-center text-white text-xs font-bold"
-                  style={{ background: `linear-gradient(135deg,${form.primaryColor||'#3B82F6'},${form.secondaryColor||'#1E40AF'})` }}>
-                  {initial}
-                </div>
-                <button className="px-2.5 py-0.5 text-xs text-white rounded font-medium pointer-events-none"
-                  style={{ background: form.primaryColor || '#3B82F6' }}>Sample Button</button>
-                <span className="text-[10px] text-gray-400">Brand preview</span>
-              </div>
-            </div>
-
-            {/* Domain */}
-            <div className={S.card}>
-              <Sec>Domain & Identity</Sec>
-              <F label="Custom Domain" value={form.customDomain} onChange={set('customDomain')} placeholder="app.yourdomain.com" readOnly={!isAdmin} />
             </div>
           </>}
 

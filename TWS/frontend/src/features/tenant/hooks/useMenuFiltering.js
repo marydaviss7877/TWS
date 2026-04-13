@@ -17,7 +17,7 @@ export const useMenuFiltering = (menuItems, user, tenant, userDepartments, userP
   return useMemo(() => {
     if (!menuItems || !Array.isArray(menuItems)) return [];
 
-    const alwaysVisible = ['dashboard', 'settings'];
+    const alwaysVisible = ['dashboard', 'settings', 'rulebook'];
     const tenantModules = tenant?.erpModules || [];
     const deptModules = userDepartments
       .map(dept => dept.module || dept.department?.toLowerCase())

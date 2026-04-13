@@ -513,6 +513,9 @@ async function startServer() {
 
   // ── Step 2: finish initialization in the background ──────────────────────
   // Any failure here is logged but does NOT take down the already-listening server.
+  // IMPORTANT: Register HTTP routes before MongoDB connects. If Mongo is down or slow,
+  // clients still hit real handlers (e.g. POST /api/auth/login → 503 JSON from
+  // checkDatabaseConnection) instead of Express's default HTML "Cannot POST /...".
   (async () => {
     try {
       // Cache service
@@ -532,10 +535,43 @@ async function startServer() {
         console.warn('⚠️ Token Blacklist Service initialization failed:', e.message);
       }
 
-      // MongoDB
-      await connectToMongoDB();
+      // Routes + error middleware + 404 — must not depend on MongoDB being up
+      await loadRoutes();
+      await loadMiddleware();
 
-      // Job scheduler
+      app.use('*', (req, res) => {
+        res.status(404).json({
+          error: 'Not Found',
+          message: `Route ${req.originalUrl} not found`,
+          timestamp: new Date().toISOString()
+        });
+      });
+
+      console.log('✅ API routes registered (MongoDB may still be connecting)');
+
+      // MongoDB — retry so Docker/local Mongo can come up after the API port is open
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      let mongoAttempts = 0;
+      let mongoConnected = false;
+      while (!mongoConnected) {
+        try {
+          mongoAttempts += 1;
+          await connectToMongoDB();
+          mongoConnected = true;
+        } catch (error) {
+          console.error(`❌ MongoDB connection attempt ${mongoAttempts} failed:`, error.message);
+          try {
+            await mongoose.disconnect();
+          } catch (e) {
+            /* ignore */
+          }
+          const delayMs = Math.min(30000, 2000 * Math.min(mongoAttempts, 10));
+          console.warn(`⏳ Retrying MongoDB in ${delayMs / 1000}s...`);
+          await sleep(delayMs);
+        }
+      }
+
+      // Job scheduler (needs DB)
       try {
         const scheduler = require('./jobs/scheduler');
         scheduler.start();
@@ -552,19 +588,6 @@ async function startServer() {
       } catch (e) {
         console.warn('⚠️ Background workers failed to start:', e.message);
       }
-
-      // Routes
-      await loadRoutes();
-      await loadMiddleware();
-
-      // 404 handler — registered after all routes
-      app.use('*', (req, res) => {
-        res.status(404).json({
-          error: 'Not Found',
-          message: `Route ${req.originalUrl} not found`,
-          timestamp: new Date().toISOString()
-        });
-      });
 
       console.log('🗄️  Cache Service: Initialized');
       console.log('✅ Server fully initialized');
