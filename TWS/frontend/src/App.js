@@ -91,11 +91,15 @@ function App() {
                   (typeof user.orgId === 'object' && user.orgId?.slug) ? user.orgId.slug : null;
                 const adminRoles = ['admin', 'owner', 'super_admin', 'org_manager'];
                 const employeeRoles = ['employee', 'staff', 'developer', 'engineer', 'programmer', 'project_manager', 'manager', 'ceo', 'cfo', 'finance', 'hr', 'department_lead', 'pmo', 'contributor', 'contractor'];
+                const clientRoles = ['client', 'customer'];
                 if (tenantSlug) {
                   if (employeeRoles.includes(user?.role)) {
-                    return <Navigate to={tenantPath(tenantSlug, 'org', 'software-house', 'employee-portal')} replace />;
+                    return <Navigate to={tenantPath(tenantSlug, 'org', 'home')} replace />;
                   }
-                  return <Navigate to={tenantPath(tenantSlug, 'org', 'dashboard')} replace />;
+                  if (clientRoles.includes(user?.role)) {
+                    return <Navigate to={tenantPath(tenantSlug, 'org', 'client-portal')} replace />;
+                  }
+                  return <Navigate to={tenantPath(tenantSlug, 'org', 'home')} replace />;
                 }
               } catch (e) {
                 console.error('Error determining software house redirect:', e);
@@ -162,7 +166,7 @@ function App() {
           <Route path="/:tenantSlug/org/*" element={<TenantOrg />} />
 
           {user ? (
-            ['admin', 'finance_manager', 'finance', 'project_manager', 'owner', 'org_manager', 'manager', 'ceo', 'cfo', 'hr', 'employee', 'staff', 'developer', 'engineer', 'programmer', 'department_lead', 'pmo', 'contributor', 'contractor'].includes(user.role) ? (
+            ['admin', 'finance_manager', 'finance', 'project_manager', 'owner', 'org_manager', 'manager', 'ceo', 'cfo', 'hr', 'employee', 'staff', 'developer', 'engineer', 'programmer', 'department_lead', 'pmo', 'contributor', 'contractor', 'client', 'customer'].includes(user.role) ? (
               <Route path="/" element={<Navigate to={tenantPath((() => {
                 try {
                   const tenantData = JSON.parse(localStorage.getItem('tenantData'));
@@ -174,7 +178,7 @@ function App() {
                     (typeof user.orgId === 'object' && user.orgId?.slug) ? user.orgId.slug :
                       (typeof user.orgId === 'string') ? user.orgId : 'demo';
                 }
-              })(), 'org', 'dashboard')} replace />} />
+              })(), 'org', (['client', 'customer'].includes(user.role) ? 'client-portal' : 'home'))} replace />} />
             ) : (
               <>
                 <Route path="/" element={<Navigate to="/software-house" replace />} />

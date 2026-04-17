@@ -124,6 +124,10 @@ const TenantOrgLayout = ({ children }) => {
         [tenant?.erpCategory, tenantSlug]
     );
     const filteredMenuItems = useMenuFiltering(menuItems, user, tenant, userDepartments, userPermissions);
+    const isClientPortalRoute = useMemo(() => (
+        location.pathname.startsWith(`/${tenantSlug}/org/client-portal`) ||
+        location.pathname.startsWith(`/${tenantSlug}/org/client-`)
+    ), [location.pathname, tenantSlug]);
 
     // ── Odoo-style app navigation ─────────────────────────────────────────────
     const {
@@ -214,7 +218,7 @@ const TenantOrgLayout = ({ children }) => {
                     onProfile={() => user?.id && navigate(`/${tenantSlug}/org/users/${user.id}`)}
                     onLogout={logout}
                     onSearch={() => setCommandPaletteOpen(true)}
-                    onAddAction={handleAddAction}
+                    onAddAction={isClientPortalRoute ? undefined : handleAddAction}
                     isFullscreen={isFullscreen}
                     onFullscreenToggle={toggleFullscreen}
                     isDarkMode={isDarkMode}

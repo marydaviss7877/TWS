@@ -17,7 +17,10 @@ export const useMenuFiltering = (menuItems, user, tenant, userDepartments, userP
   return useMemo(() => {
     if (!menuItems || !Array.isArray(menuItems)) return [];
 
-    const alwaysVisible = ['dashboard', 'settings', 'rulebook'];
+    const isClientUser = ['client', 'customer'].includes(user?.role);
+    const alwaysVisible = isClientUser
+      ? ['dashboard', 'rulebook']
+      : ['dashboard', 'rulebook'];
     const tenantModules = tenant?.erpModules || [];
     const deptModules = userDepartments
       .map(dept => dept.module || dept.department?.toLowerCase())
@@ -29,11 +32,12 @@ export const useMenuFiltering = (menuItems, user, tenant, userDepartments, userP
     return menuItems.filter(item => {
       if (!item?.key) return false;
 
+      // Clients must never see admin settings module entry.
+      if (isClientUser && item.key === 'settings') return false;
+      if (item.key === 'settings') return user?.role === 'admin';
+
       // Always-visible items
       if (alwaysVisible.includes(item.key)) return true;
-
-      // Employee portal: only non-admin users
-      if (item.key === 'employee-portal') return !isOwnerOrAdmin;
 
       // Owner/Admin: always see every module in their ERP category.
       // Plan/module restrictions only apply to non-admin roles.

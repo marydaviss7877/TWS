@@ -84,9 +84,17 @@ const OdooTopBar = ({
   const initial      = (orgName  || 'O').charAt(0).toUpperCase();
   const userInitial  = (user?.fullName?.[0] ?? user?.email?.[0] ?? 'U').toUpperCase();
   const displayName  = user?.fullName || user?.email || 'User';
+  const isClientUser = ['client', 'customer'].includes(String(user?.role || '').toLowerCase());
+  const isAdminUser = String(user?.role || '').toLowerCase() === 'admin';
+  const [avatarError, setAvatarError] = useState(false);
   const avatarSrc = (() => {
     const raw = user?.avatarUrl || user?.profilePicUrl;
     if (!raw) return null;
+    if (raw.startsWith('/api/tenant/')) {
+      const match = raw.match(/\/uploads\/profile-pictures\/[^/?#]+/);
+      if (match) return match[0];
+      return raw;
+    }
     if (raw.startsWith('/uploads/profile-pictures/')) {
       return `/api/tenant/${tenantSlug}/organization${raw}`;
     }
@@ -95,6 +103,7 @@ const OdooTopBar = ({
   const [logoError, setLogoError] = useState(false);
   // Reset error state whenever the logo URL changes (e.g. after a fresh upload)
   useEffect(() => { setLogoError(false); }, [orgLogoUrl]);
+  useEffect(() => { setAvatarError(false); }, [user?.avatarUrl, user?.profilePicUrl, tenantSlug]);
 
   // ── Sub-nav: split children into visible + overflow ────────────────────────
   const children = activeApp?.children ?? [];
@@ -322,7 +331,7 @@ const OdooTopBar = ({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" aria-label="User menu">
               <Avatar className="h-6 w-6">
-                {avatarSrc && <AvatarImage src={avatarSrc} alt={displayName} />}
+                {avatarSrc && !avatarError && <AvatarImage src={avatarSrc} alt={displayName} onError={() => setAvatarError(true)} />}
                 <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary-500 to-accent-500 text-white">
                   {userInitial}
                 </AvatarFallback>
@@ -341,9 +350,11 @@ const OdooTopBar = ({
             <DropdownMenuItem onClick={() => navigate(`/${tenantSlug}/org/settings/organization`)}>
               <BuildingOfficeIcon className="h-4 w-4" /> Org Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate(`/${tenantSlug}/org/settings`)}>
-              <CogIcon className="h-4 w-4" /> Settings
-            </DropdownMenuItem>
+            {isAdminUser && (
+              <DropdownMenuItem onClick={() => navigate(`/${tenantSlug}/org/settings`)}>
+                <CogIcon className="h-4 w-4" /> Settings
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={onLogout}

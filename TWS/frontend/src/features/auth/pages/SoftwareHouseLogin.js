@@ -101,7 +101,9 @@ const SoftwareHouseLogin = () => {
                 }));
 
                 if (employeeRoles.includes(userRole)) {
-                    navigate(`/${tenantSlug}/org/software-house/employee-portal`);
+                    navigate(`/${tenantSlug}/org/home`);
+                } else if (clientRoles.includes(userRole)) {
+                    navigate(`/${tenantSlug}/org/client-portal`);
                 } else {
                     navigate(`/${tenantSlug}/org/home`);
                 }

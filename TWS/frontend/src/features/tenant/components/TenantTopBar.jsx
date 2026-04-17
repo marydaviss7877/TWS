@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
@@ -49,9 +49,18 @@ const TenantTopBar = ({
   const initial = (orgName || 'O').charAt(0).toUpperCase();
   const userInitial = (user?.fullName?.[0] ?? user?.email?.[0] ?? 'U').toUpperCase();
   const displayName = user?.fullName || user?.email || 'User';
+  const [logoError, setLogoError] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+  useEffect(() => { setLogoError(false); }, [orgLogoUrl]);
+  useEffect(() => { setAvatarError(false); }, [user?.avatarUrl, user?.profilePicUrl, tenantSlug]);
   const avatarSrc = (() => {
     const raw = user?.avatarUrl || user?.profilePicUrl;
     if (!raw) return null;
+    if (raw.startsWith('/api/tenant/')) {
+      const match = raw.match(/\/uploads\/profile-pictures\/[^/?#]+/);
+      if (match) return match[0];
+      return raw;
+    }
     if (raw.startsWith('/uploads/profile-pictures/')) {
       return `/api/tenant/${tenantSlug}/organization${raw}`;
     }
@@ -64,12 +73,17 @@ const TenantTopBar = ({
       {/* Left: Org logo */}
       <button
         type="button"
-        onClick={() => navigate(`/${tenantSlug}/org/dashboard`)}
+        onClick={() => navigate(`/${tenantSlug}/org/home`)}
         className="flex items-center gap-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 shrink-0"
         aria-label="Go to dashboard"
       >
-        {orgLogoUrl ? (
-          <img src={orgLogoUrl} alt={orgName} className="h-7 w-auto max-w-[100px] object-contain object-left" />
+        {orgLogoUrl && !logoError ? (
+          <img
+            src={orgLogoUrl}
+            alt={orgName}
+            className="h-7 w-auto max-w-[100px] object-contain object-left"
+            onError={() => setLogoError(true)}
+          />
         ) : (
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-primary-500 to-accent-500 text-white font-semibold text-xs shadow-sm">
             {initial}
@@ -143,7 +157,7 @@ const TenantTopBar = ({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" aria-label="User menu">
               <Avatar className="h-6 w-6">
-                {avatarSrc && <AvatarImage src={avatarSrc} alt={displayName} />}
+                {avatarSrc && !avatarError && <AvatarImage src={avatarSrc} alt={displayName} onError={() => setAvatarError(true)} />}
                 <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary-500 to-accent-500 text-white">
                   {userInitial}
                 </AvatarFallback>

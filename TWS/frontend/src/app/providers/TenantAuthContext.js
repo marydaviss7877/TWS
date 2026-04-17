@@ -35,6 +35,15 @@ export const TenantAuthProvider = ({ children }) => {
   // Check if tenantSlug is an ObjectId (24 hex characters) - if so, we need to get the actual slug
   const isObjectId = tenantSlug && /^[0-9a-f]{24}$/i.test(tenantSlug);
 
+  const normalizeProfilePicUrl = (url) => {
+    if (!url || typeof url !== 'string') return null;
+    if (url.startsWith('/api/tenant/')) {
+      const match = url.match(/\/uploads\/profile-pictures\/[^/?#]+/);
+      return match ? match[0] : url;
+    }
+    return url;
+  };
+
   useEffect(() => {
     // Don't initialize on login pages - let login handle authentication
     const isOnLoginPage = location.pathname.includes('/login') || 
@@ -224,7 +233,7 @@ export const TenantAuthProvider = ({ children }) => {
                     email: mainUser.email,
                     fullName: mainUser.fullName,
                     role: mainUser.role || 'owner',
-                    profilePicUrl: mainUser.profilePicUrl,
+                    profilePicUrl: normalizeProfilePicUrl(mainUser.profilePicUrl),
                     phone: mainUser.phone,
                     department: mainUser.department,
                     jobTitle: mainUser.jobTitle
@@ -289,7 +298,7 @@ export const TenantAuthProvider = ({ children }) => {
                     email: mainUser.email,
                     fullName: mainUser.fullName,
                     role: mainUser.role || 'owner',
-                    profilePicUrl: mainUser.profilePicUrl,
+                    profilePicUrl: normalizeProfilePicUrl(mainUser.profilePicUrl),
                     phone: mainUser.phone,
                     department: mainUser.department,
                     jobTitle: mainUser.jobTitle
@@ -357,7 +366,7 @@ export const TenantAuthProvider = ({ children }) => {
               email: tenantData.owner.email,
               fullName: tenantData.owner.fullName,
               role: tenantData.owner.role || 'owner',
-              profilePicUrl: tenantData.owner.profilePicUrl,
+              profilePicUrl: normalizeProfilePicUrl(tenantData.owner.profilePicUrl),
               phone: tenantData.owner.phone,
               department: tenantData.owner.department,
               jobTitle: tenantData.owner.jobTitle
@@ -373,7 +382,7 @@ export const TenantAuthProvider = ({ children }) => {
                 email: mainUser.email,
                 fullName: mainUser.fullName || `${mainUser.firstName || ''} ${mainUser.lastName || ''}`.trim(),
                 role: mainUser.role || 'admin',
-                profilePicUrl: mainUser.profilePicUrl,
+                profilePicUrl: normalizeProfilePicUrl(mainUser.profilePicUrl),
                 phone: mainUser.phone,
                 department: mainUser.department,
                 jobTitle: mainUser.jobTitle

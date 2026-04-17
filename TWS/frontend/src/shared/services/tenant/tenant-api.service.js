@@ -412,12 +412,12 @@ const tenantApiService = {
   // Get clients (for Accounts Receivable) (Software House specific)
   getClients: async (tenantSlug, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
-    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/clients?${queryParams}`);
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/projects/clients?${queryParams}`);
   },
 
   // Create client (Software House specific)
   createClient: async (tenantSlug, clientData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/clients`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/projects/clients`, {
       method: 'POST',
       body: JSON.stringify(clientData)
     });
@@ -425,15 +425,15 @@ const tenantApiService = {
 
   // Update client (Software House specific)
   updateClient: async (tenantSlug, clientId, clientData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/clients/${clientId}`, {
-      method: 'PUT',
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/projects/clients/${clientId}`, {
+      method: 'PATCH',
       body: JSON.stringify(clientData)
     });
   },
 
   // Delete client (Software House specific)
   deleteClient: async (tenantSlug, clientId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/clients/${clientId}`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/projects/clients/${clientId}`, {
       method: 'DELETE'
     });
   },

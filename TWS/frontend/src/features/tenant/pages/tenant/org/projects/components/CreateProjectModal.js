@@ -320,29 +320,33 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
                   </div>
                 </div>
 
-                {clients.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Client (Optional)
-                    </label>
-                    <select
-                      name="clientId"
-                      value={formData.clientId}
-                      onChange={handleInputChange}
-                      className={`w-full glass-input rounded-xl px-4 py-2 ${
-                        errors.clientId ? 'border-red-300 dark:border-red-700' : ''
-                      }`}
-                    >
-                      <option value="">No client assigned</option>
-                      {clients.map(client => (
-                        <option key={client._id || client.id} value={client._id || client.id}>
-                          {client.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.clientId && <p className="text-red-500 text-sm mt-1">{errors.clientId}</p>}
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Client (Optional)
+                  </label>
+                  <select
+                    name="clientId"
+                    value={formData.clientId}
+                    onChange={handleInputChange}
+                    disabled={clients.length === 0}
+                    className={`w-full glass-input rounded-xl px-4 py-2 ${
+                      errors.clientId ? 'border-red-300 dark:border-red-700' : ''
+                    } ${clients.length === 0 ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  >
+                    <option value="">No client assigned</option>
+                    {clients.map(client => (
+                      <option key={client._id || client.id} value={client._id || client.id}>
+                        {client.name}
+                      </option>
+                    ))}
+                  </select>
+                  {clients.length === 0 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      No eligible client users found. Create a client user from Users module first.
+                    </p>
+                  )}
+                  {errors.clientId && <p className="text-red-500 text-sm mt-1">{errors.clientId}</p>}
+                </div>
 
                 {departments.length > 0 && (
                   <>

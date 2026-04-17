@@ -365,50 +365,6 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         path: `/${tenantSlug}/org/software-house/time-tracking`
       },
       {
-        key: 'employee-portal',
-        icon: UserIcon,
-        label: 'Employee Portal',
-        path: `/${tenantSlug}/org/software-house/employee-portal`,
-        roles: ['employee'],
-        children: [
-          {
-            key: 'employee-portal-dashboard',
-            label: 'Dashboard',
-            path: `/${tenantSlug}/org/software-house/employee-portal`
-          },
-          {
-            key: 'employee-portal-profile',
-            label: 'My Profile',
-            path: `/${tenantSlug}/org/software-house/employee-portal/profile`
-          },
-          {
-            key: 'employee-portal-attendance',
-            label: 'Attendance',
-            path: `/${tenantSlug}/org/software-house/employee-portal/attendance`
-          },
-          {
-            key: 'employee-portal-leave',
-            label: 'Leave Requests',
-            path: `/${tenantSlug}/org/software-house/employee-portal/leave`
-          },
-          {
-            key: 'employee-portal-performance',
-            label: 'Performance',
-            path: `/${tenantSlug}/org/software-house/employee-portal/performance`
-          },
-          {
-            key: 'employee-portal-payroll',
-            label: 'Payroll',
-            path: `/${tenantSlug}/org/software-house/employee-portal/payroll`
-          },
-          {
-            key: 'employee-portal-documents',
-            label: 'Documents',
-            path: `/${tenantSlug}/org/software-house/employee-portal/documents`
-          }
-        ]
-      },
-      {
         key: 'clients',
         icon: BuildingOfficeIcon,
         label: 'Clients',

@@ -38,8 +38,15 @@ import HRRecruitment from './software-house/hr/HRRecruitment';
 import HROnboarding from './software-house/hr/HROnboarding';
 import HRTraining from './software-house/hr/HRTraining';
 
-// Software House Employee Portal
-import EmployeePortal from './software-house/employee-portal/EmployeePortal';
+// Employee Apps (launcher-first)
+import ClientDashboard from '../../../components/ClientPortal/ClientDashboard';
+import ClientSettings from '../../../components/ClientPortal/ClientSettings';
+import ClientOrganizationProfile from '../../../components/ClientPortal/ClientOrganizationProfile';
+import EmployeeProfileView from './software-house/employee-portal/EmployeeProfileView';
+import EmployeeAttendanceView from './software-house/employee-portal/EmployeeAttendanceView';
+import EmployeeLeaveRequests from './software-house/employee-portal/EmployeeLeaveRequests';
+import EmployeePerformanceView from './software-house/employee-portal/EmployeePerformanceView';
+import EmployeePayrollView from './software-house/employee-portal/EmployeePayrollView';
 
 // Finance Components
 import FinanceOverview from './finance/FinanceOverview';
@@ -124,6 +131,7 @@ import DepartmentDashboard from './departments/DepartmentDashboard';
 import DepartmentAccessManagement from './departments/DepartmentAccessManagement';
 import AuditLogPage from './audit/AuditLogPage';
 import TenantOrgRulebook from './TenantOrgRulebook';
+import { useTenantAuth } from '../../../../../app/providers/TenantAuthContext';
 
 // Smart catch-all component to prevent redirect loops
 const CatchAllRoute = () => {
@@ -138,8 +146,8 @@ const CatchAllRoute = () => {
       return;
     }
     
-    // Don't redirect valid routes (departments, users, roles, permissions, employee portal, etc.)
-    const validRoutes = ['/departments', '/users', '/roles', '/permissions', '/projects', '/hr', '/finance', '/analytics', '/settings', '/clients', '/operations', '/documents', '/software-house', '/employee-portal', '/audit', '/rulebook'];
+    // Don't redirect valid routes (departments, users, roles, permissions, etc.)
+    const validRoutes = ['/departments', '/users', '/roles', '/permissions', '/projects', '/hr', '/finance', '/analytics', '/settings', '/clients', '/operations', '/documents', '/software-house', '/employee', '/audit', '/rulebook'];
     if (validRoutes.some(route => pathname.includes(route))) {
       return;
     }
@@ -156,6 +164,86 @@ const CatchAllRoute = () => {
   return null; // This component only handles redirects
 };
 
+const CLIENT_ROLES = ['client', 'customer'];
+
+const ClientAccessGate = ({ children }) => {
+  const { user } = useTenantAuth();
+  const { tenantSlug } = useParams();
+  const location = useLocation();
+
+  if (!CLIENT_ROLES.includes(user?.role)) {
+    return children;
+  }
+
+  const allowedClientPrefixes = [
+    `/${tenantSlug}/org/client-portal`,
+    `/${tenantSlug}/org/settings/organization`,
+    `/${tenantSlug}/org/home`,
+  ];
+  const allowedClientExact = new Set([
+    `/${tenantSlug}/org`,
+    `/${tenantSlug}/org/`,
+  ]);
+
+  const isAllowed = allowedClientExact.has(location.pathname) ||
+    allowedClientPrefixes.some((path) => location.pathname.startsWith(path));
+  if (!isAllowed) {
+    return <Navigate to={`/${tenantSlug}/org/client-portal`} replace />;
+  }
+
+  return children;
+};
+
+const HomeRoute = () => {
+  const { user } = useTenantAuth();
+  if (CLIENT_ROLES.includes(user?.role)) {
+    return <Navigate to="../client-portal" replace />;
+  }
+  return <AppHome />;
+};
+
+const EmployeeOnlyRoute = ({ children }) => {
+  const { user } = useTenantAuth();
+  if (CLIENT_ROLES.includes(user?.role)) {
+    return <Navigate to="../client-portal" replace />;
+  }
+  if (['owner', 'admin', 'super_admin', 'org_manager'].includes(user?.role)) {
+    return <Navigate to="../home" replace />;
+  }
+  return children;
+};
+
+const ClientPortalRoute = () => {
+  const { user } = useTenantAuth();
+  const clientId = user?.clientId || user?._id || user?.id;
+  return <ClientDashboard clientId={clientId} />;
+};
+
+const OrganizationProfileRoute = () => {
+  const { user } = useTenantAuth();
+  if (CLIENT_ROLES.includes(user?.role)) {
+    return <ClientOrganizationProfile />;
+  }
+  return <OrgProfile />;
+};
+
+const SettingsRoute = () => {
+  const { user } = useTenantAuth();
+  if (CLIENT_ROLES.includes(user?.role)) {
+    return <Navigate to="../client-portal" replace />;
+  }
+  return <SettingsOverview />;
+};
+
+const AdminOnlySettingsRoute = ({ children }) => {
+  const { user } = useTenantAuth();
+  const { tenantSlug } = useParams();
+  if (user?.role !== 'admin') {
+    return <Navigate to={`/${tenantSlug}/org/home`} replace />;
+  }
+  return children;
+};
+
 const TenantOrg = () => {
   const { tenantSlug } = useParams();
   
@@ -163,10 +251,11 @@ const TenantOrg = () => {
     <TenantAuthProvider>
       <TenantThemeProvider tenantSlug={tenantSlug}>
         <TenantOrgLayout>
+          <ClientAccessGate>
           <Routes>
           {/* Dashboard Routes */}
           <Route index element={<Navigate to="home" replace />} />
-          <Route path="home" element={<AppHome />} />
+          <Route path="home" element={<HomeRoute />} />
           <Route path="dashboard" element={<DynamicDashboard />} />
           <Route path="dashboard/analytics" element={<DashboardAnalytics />} />
 
@@ -224,8 +313,14 @@ const TenantOrg = () => {
           <Route path="software-house/hr/onboarding" element={<HROnboarding />} />
           <Route path="software-house/hr/training" element={<HRTraining />} />
 
-          {/* Software House Employee Portal */}
-          <Route path="software-house/employee-portal/*" element={<EmployeePortal />} />
+          {/* Employee Apps (launcher-first, old employee-portal removed) */}
+          <Route path="employee/profile" element={<EmployeeOnlyRoute><EmployeeProfileView tenantSlug={tenantSlug} /></EmployeeOnlyRoute>} />
+          <Route path="employee/attendance" element={<EmployeeOnlyRoute><EmployeeAttendanceView tenantSlug={tenantSlug} /></EmployeeOnlyRoute>} />
+          <Route path="employee/leave" element={<EmployeeOnlyRoute><EmployeeLeaveRequests tenantSlug={tenantSlug} /></EmployeeOnlyRoute>} />
+          <Route path="employee/performance" element={<EmployeeOnlyRoute><EmployeePerformanceView tenantSlug={tenantSlug} /></EmployeeOnlyRoute>} />
+          <Route path="employee/payroll" element={<EmployeeOnlyRoute><EmployeePayrollView tenantSlug={tenantSlug} /></EmployeeOnlyRoute>} />
+          <Route path="client-portal/settings" element={<ClientSettings />} />
+          <Route path="client-portal/*" element={<ClientPortalRoute />} />
 
           {/* Finance Routes */}
           <Route path="finance" element={<FinanceOverview />} />
@@ -283,9 +378,9 @@ const TenantOrg = () => {
           <Route path="rulebook" element={<TenantOrgRulebook />} />
 
           {/* Settings Routes */}
-          <Route path="settings" element={<SettingsOverview />} />
-          <Route path="settings/organization" element={<OrgProfile />} />
-          <Route path="settings/workspace" element={<WorkspaceSettingsPage />} />
+          <Route path="settings" element={<AdminOnlySettingsRoute><SettingsRoute /></AdminOnlySettingsRoute>} />
+          <Route path="settings/organization" element={<AdminOnlySettingsRoute><OrganizationProfileRoute /></AdminOnlySettingsRoute>} />
+          <Route path="settings/workspace" element={<AdminOnlySettingsRoute><WorkspaceSettingsPage /></AdminOnlySettingsRoute>} />
 
           {/* Documents (built-in word processor) */}
           <Route path="documents" element={<DocumentsHub />} />
@@ -304,6 +399,8 @@ const TenantOrg = () => {
 
           {/* Client Routes */}
           <Route path="clients" element={<Clients />} />
+          <Route path="clients/new" element={<Clients />} />
+          <Route path="clients/:clientId/edit" element={<Clients />} />
           <Route path="clients/contracts" element={<ClientContracts />} />
           <Route path="clients/communications" element={<ClientCommunications />} />
           <Route path="clients/billing" element={<ClientBilling />} />
@@ -311,6 +408,7 @@ const TenantOrg = () => {
           {/* Catch all route - redirect to main org dashboard */}
           <Route path="*" element={<CatchAllRoute />} />
           </Routes>
+          </ClientAccessGate>
         </TenantOrgLayout>
       </TenantThemeProvider>
     </TenantAuthProvider>

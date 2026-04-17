@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon,
@@ -20,7 +20,8 @@ import {
   MapPinIcon,
   TagIcon,
   EyeIcon,
-  ArrowTopRightOnSquareIcon
+  ArrowTopRightOnSquareIcon,
+  ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 import tenantApiService from '../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../app/providers/TenantAuthContext';
@@ -313,8 +314,9 @@ const ClientCard = ({ client, onEdit, onDelete, onView, deletingClientId }) => {
 };
 
 const Clients = () => {
-  const { tenantSlug } = useParams();
+  const { tenantSlug, clientId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, loading: authLoading } = useTenantAuth();
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState([]);
@@ -322,7 +324,6 @@ const Clients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [deletingClientId, setDeletingClientId] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ 
@@ -371,6 +372,9 @@ const Clients = () => {
     tags: []
   });
   const [tagInput, setTagInput] = useState('');
+  const isCreateMode = location.pathname.endsWith('/clients/new');
+  const isEditMode = Boolean(clientId);
+  const isFormPage = isCreateMode || isEditMode;
 
   useEffect(() => {
     if (!authLoading && isAuthenticated && tenantSlug) {
@@ -379,6 +383,28 @@ const Clients = () => {
       setLoading(false);
     }
   }, [tenantSlug, isAuthenticated, authLoading]);
+
+  useEffect(() => {
+    if (!isFormPage) {
+      if (editingClient) {
+        setEditingClient(null);
+      }
+      return;
+    }
+
+    if (isCreateMode) {
+      setEditingClient(null);
+      resetForm();
+      return;
+    }
+
+    if (isEditMode) {
+      const selectedClient = clients.find((client) => client._id === clientId);
+      if (selectedClient) {
+        populateFormFromClient(selectedClient);
+      }
+    }
+  }, [isFormPage, isCreateMode, isEditMode, clientId, clients]);
 
   const fetchClients = async () => {
     if (!isAuthenticated || !tenantSlug) return;
@@ -435,48 +461,68 @@ const Clients = () => {
     });
   };
 
-  const handleEditClient = (client) => {
-    setEditingClient(client);
-    setFormData({
-      name: client.name || '',
-      type: client.type || 'company',
-      company: {
-        name: client.company?.name || '',
-        website: client.company?.website || '',
-        industry: client.company?.industry || '',
-        size: client.company?.size || '',
-        description: client.company?.description || ''
-      },
-      contact: {
-        primary: {
-          name: client.contact?.primary?.name || '',
-          email: client.contact?.primary?.email || '',
-          phone: client.contact?.primary?.phone || '',
-          title: client.contact?.primary?.title || ''
-        },
-        billing: {
-          name: client.contact?.billing?.name || '',
-          email: client.contact?.billing?.email || '',
-          phone: client.contact?.billing?.phone || ''
-        }
-      },
-      address: {
-        street: client.address?.street || '',
-        city: client.address?.city || '',
-        state: client.address?.state || '',
-        zipCode: client.address?.zipCode || '',
-        country: client.address?.country || ''
+  const normalizeClientToFormData = (client) => ({
+    name: client.name || '',
+    type: client.type || 'company',
+    company: {
+      name: typeof client.company === 'string' ? client.company : (client.company?.name || ''),
+      website: client.company?.website || '',
+      industry: client.company?.industry || '',
+      size: client.company?.size || '',
+      description: client.company?.description || ''
+    },
+    contact: {
+      primary: {
+        name: client.contact?.primary?.name || client.contactPerson || '',
+        email: client.contact?.primary?.email || client.email || '',
+        phone: client.contact?.primary?.phone || client.phone || '',
+        title: client.contact?.primary?.title || ''
       },
       billing: {
-        currency: client.billing?.currency || 'USD',
-        paymentTerms: client.billing?.paymentTerms || 'net_30',
-        taxRate: client.billing?.taxRate || 0
-      },
-      status: client.status || 'active',
-      notes: client.notes || '',
-      tags: client.tags || []
-    });
-    setIsClientModalOpen(true);
+        name: client.contact?.billing?.name || '',
+        email: client.contact?.billing?.email || '',
+        phone: client.contact?.billing?.phone || ''
+      }
+    },
+    address: {
+      street: client.address?.street || '',
+      city: client.address?.city || '',
+      state: client.address?.state || '',
+      zipCode: client.address?.zipCode || '',
+      country: client.address?.country || ''
+    },
+    billing: {
+      currency: client.billing?.currency || client.currency || 'USD',
+      paymentTerms: client.billing?.paymentTerms || client.paymentTerms || 'net_30',
+      taxRate: client.billing?.taxRate || 0
+    },
+    status: client.status || 'active',
+    notes: client.notes || '',
+    tags: client.tags || []
+  });
+
+  const buildClientApiPayload = () => ({
+    name: formData.name,
+    email: formData.contact.primary.email || '',
+    phone: formData.contact.primary.phone || '',
+    company: formData.company.name || '',
+    address: formData.address,
+    contactPerson: formData.contact.primary.name || '',
+    paymentTerms: formData.billing.paymentTerms || 'net_30',
+    status: formData.status || 'active',
+    notes: formData.notes || '',
+    tags: formData.tags || [],
+    billingAddress: formData.address,
+    currency: formData.billing.currency || 'USD'
+  });
+
+  const populateFormFromClient = (client) => {
+    setEditingClient(client);
+    setFormData(normalizeClientToFormData(client));
+  };
+
+  const handleEditClient = (client) => {
+    navigate(`/${tenantSlug}/org/clients/${client._id}/edit`);
   };
 
   const handleViewClient = (client) => {
@@ -514,31 +560,40 @@ const Clients = () => {
     e.preventDefault();
     
     try {
+      const apiPayload = buildClientApiPayload();
+      // #region agent log
+      fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H1',location:'Clients.js:handleSubmit:beforeApi',message:'submit client form',data:{tenantSlug,editingClientId:editingClient?._id||null,name:apiPayload.name||null,companyType:typeof apiPayload.company,paymentTerms:apiPayload.paymentTerms||null},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       let response;
       if (editingClient) {
-        response = await tenantApiService.updateClient(tenantSlug, editingClient._id, formData);
+        response = await tenantApiService.updateClient(tenantSlug, editingClient._id, apiPayload);
         if (response?.success) {
           toast.success('Client updated successfully');
-          setIsClientModalOpen(false);
-          setEditingClient(null);
           resetForm();
           fetchClients();
+          navigate(`/${tenantSlug}/org/clients`);
         } else {
           toast.error(response?.message || 'Failed to update client');
         }
       } else {
-        response = await tenantApiService.createClient(tenantSlug, formData);
+        response = await tenantApiService.createClient(tenantSlug, apiPayload);
         if (response?.success) {
           toast.success('Client created successfully');
-          setIsClientModalOpen(false);
           resetForm();
           fetchClients();
+          navigate(`/${tenantSlug}/org/clients`);
         } else {
           toast.error(response?.message || 'Failed to create client');
         }
       }
+      // #region agent log
+      fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H4',location:'Clients.js:handleSubmit:afterApi',message:'client API response received',data:{success:!!response?.success,message:response?.message||null,hasData:!!response?.data},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
     } catch (error) {
       console.error('Error saving client:', error);
+      // #region agent log
+      fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H5',location:'Clients.js:handleSubmit:catch',message:'client API request failed',data:{errorMessage:error?.message||null,status:error?.response?.status||null,serverMessage:error?.response?.data?.message||null,serverError:error?.response?.data?.error||null},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       toast.error(error.message || 'Failed to save client');
     }
   };
@@ -604,6 +659,16 @@ const Clients = () => {
     });
   };
 
+  const openCreateClientPage = () => {
+    resetForm();
+    navigate(`/${tenantSlug}/org/clients/new`);
+  };
+
+  const closeClientFormPage = () => {
+    resetForm();
+    navigate(`/${tenantSlug}/org/clients`);
+  };
+
   const filteredClients = clients.filter(client => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = 
@@ -633,21 +698,23 @@ const Clients = () => {
   return (
     <ErrorBoundary message="Failed to load clients. Please refresh the page.">
       <div className="space-y-8">
-        {/* Header Section - Premium Wolfstack Style */}
-        <div className="glass-card-premium p-8 text-center wolfstack-animate-fadeIn">
-          <h1 className="text-4xl font-bold font-heading text-gray-900 dark:text-white tracking-tight mb-4">
-            Client Management
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Manage your client relationships, track projects, and monitor revenue with our comprehensive client management solution.
-          </p>
-        </div>
+        {!isFormPage && (
+          <>
+            {/* Header Section - Premium Wolfstack Style */}
+            <div className="glass-card-premium p-8 text-center wolfstack-animate-fadeIn">
+              <h1 className="text-4xl font-bold font-heading text-gray-900 dark:text-white tracking-tight mb-4">
+                Client Management
+              </h1>
+              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Manage your client relationships, track projects, and monitor revenue with our comprehensive client management solution.
+              </p>
+            </div>
 
-        {/* Client Metrics */}
-        <ClientMetrics metrics={clientMetrics} />
+            {/* Client Metrics */}
+            <ClientMetrics metrics={clientMetrics} />
 
-        {/* Clients Management Section - Premium Wolfstack Style */}
-        <div className="glass-card-premium p-8 wolfstack-animate-fadeIn">
+            {/* Clients Management Section - Premium Wolfstack Style */}
+            <div className="glass-card-premium p-8 wolfstack-animate-fadeIn">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
             <div>
               <h2 className="text-2xl font-bold font-heading text-gray-900 dark:text-white tracking-tight mb-2">
@@ -659,10 +726,7 @@ const Clients = () => {
             </div>
             <button
              
-              onClick={() => {
-                resetForm();
-                setIsClientModalOpen(true);
-              }}
+              onClick={openCreateClientPage}
               className="wolfstack-button-primary w-full sm:w-auto"
             >
               <PlusIcon className="h-5 w-5 mr-2" />
@@ -764,10 +828,7 @@ const Clients = () => {
               </p>
               {!searchTerm && statusFilter === 'all' && (
                 <button
-                  onClick={() => {
-                    resetForm();
-                    setIsClientModalOpen(true);
-                  }}
+                  onClick={openCreateClientPage}
                   className="wolfstack-button-primary"
                 >
                   <PlusIcon className="h-5 w-5 mr-2" />
@@ -776,29 +837,36 @@ const Clients = () => {
               )}
             </div>
           )}
-        </div>
+            </div>
+          </>
+        )}
 
-        {/* Enhanced Add/Edit Client Modal - Premium Wolfstack Style */}
-        {isClientModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 wolfstack-animate-fadeIn">
-            <div className="glass-card-premium max-w-4xl w-full max-h-[90vh] overflow-y-auto wolfstack-animate-scaleIn">
-              <div className="sticky top-0 glass-card border-b border-gray-200/50 dark:border-white/10 p-6 flex items-center justify-between backdrop-blur-xl z-10">
+        {/* Add/Edit Client Full Page View */}
+        {isFormPage && (
+          <div className="glass-card-premium p-8 wolfstack-animate-fadeIn">
+            <div className="sticky top-0 glass-card border-b border-gray-200/50 dark:border-white/10 p-6 flex items-center justify-between backdrop-blur-xl z-10 rounded-xl mb-6">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={closeClientFormPage}
+                  className="p-2 glass-button hover-scale text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  title="Back to clients"
+                >
+                  <ArrowLeftIcon className="h-5 w-5" />
+                </button>
                 <h3 className="text-2xl font-bold font-heading text-gray-900 dark:text-white">
                   {editingClient ? 'Edit Client' : 'Add New Client'}
                 </h3>
-                <button
-                  onClick={() => {
-                    setIsClientModalOpen(false);
-                    setEditingClient(null);
-                    resetForm();
-                  }}
-                  className="p-2 glass-button hover-scale text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <XCircleIcon className="h-6 w-6" />
-                </button>
               </div>
+              <button
+                onClick={closeClientFormPage}
+                className="p-2 glass-button hover-scale text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <XCircleIcon className="h-6 w-6" />
+              </button>
+            </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-8">
 
                 {/* ── Section 1: Basic Information ── */}
                 <div className="glass-card p-6 space-y-4">
@@ -1242,7 +1310,7 @@ const Clients = () => {
                 <div className="flex items-center justify-end gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => { setIsClientModalOpen(false); setEditingClient(null); resetForm(); }}
+                    onClick={closeClientFormPage}
                     className="glass-button px-6 py-3 rounded-xl font-semibold hover-scale"
                   >
                     Cancel
@@ -1255,8 +1323,7 @@ const Clients = () => {
                   </button>
                 </div>
 
-              </form>
-            </div>
+            </form>
           </div>
         )}
 

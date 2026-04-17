@@ -1,288 +1,229 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  EyeIcon, 
-  CheckCircleIcon, 
-  XCircleIcon,
-  ClockIcon,
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, Route, Routes } from 'react-router-dom';
+import {
+  Squares2X2Icon,
+  BriefcaseIcon,
+  CurrencyDollarIcon,
   DocumentTextIcon,
-  CalendarIcon
+  UserCircleIcon,
+  MagnifyingGlassIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
+import ClientProjectsView from './ClientProjectsView';
+import ClientOrganizationProfile from './ClientOrganizationProfile';
+import ClientTimesheetsView from './ClientTimesheetsView';
+import { clientPortalApi } from './clientPortalApi';
+
+const APP_GRADIENTS = {
+  projects: 'from-indigo-500 to-violet-600',
+  invoices: 'from-emerald-500 to-teal-600',
+  documents: 'from-blue-500 to-cyan-600',
+  contact: 'from-amber-500 to-orange-600',
+  company: 'from-fuchsia-500 to-pink-600',
+  timesheets: 'from-sky-500 to-indigo-600'
+};
+
+const AppCard = ({ to, icon: Icon, title, description, badge, gradient }) => (
+  <Link
+    to={to}
+    className="group relative flex flex-col items-center gap-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/85 dark:bg-gray-800/60 p-3 sm:p-3.5 hover:shadow-lg hover:-translate-y-1 transition-all backdrop-blur-sm min-h-[150px]"
+  >
+    <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} shadow-md group-hover:scale-105 transition-transform`}>
+      <Icon className="h-6 w-6 text-white" />
+    </div>
+    <div className="text-center w-full">
+      <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white leading-tight">{title}</h3>
+      <p className="mt-1 text-[11px] text-gray-600 dark:text-gray-300 leading-tight">{description}</p>
+    </div>
+    <div className="flex justify-center w-full">
+      {badge ? (
+        <span className="text-[10px] px-2 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+          {badge}
+        </span>
+      ) : null}
+    </div>
+  </Link>
+);
+
+const ClientPortalLauncher = () => {
+  const [projectCount, setProjectCount] = useState(0);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const projects = await clientPortalApi.getProjects();
+        if (Array.isArray(projects)) setProjectCount(projects.length);
+      } catch (_) {
+        setProjectCount(0);
+      }
+    };
+    load();
+  }, []);
+
+  const apps = useMemo(() => ([
+    {
+      key: 'projects',
+      to: 'projects',
+      icon: BriefcaseIcon,
+      title: 'Project Overview',
+      description: 'Track project completion and active sprint deliverables.',
+      badge: `${projectCount} project${projectCount === 1 ? '' : 's'}`
+    },
+    {
+      key: 'timesheets',
+      to: 'timesheets',
+      icon: ClockIcon,
+      title: 'Timesheets',
+      description: 'View read-only timesheet summaries for your projects.',
+      badge: 'Read only'
+    },
+    {
+      key: 'invoices',
+      to: 'invoices',
+      icon: CurrencyDollarIcon,
+      title: 'Invoices',
+      description: 'View invoice status and download links shared by your vendor.',
+      badge: 'Read only'
+    },
+    {
+      key: 'documents',
+      to: 'documents',
+      icon: DocumentTextIcon,
+      title: 'Documents',
+      description: 'Access shared/approved deliverable documents.',
+      badge: 'Read only'
+    },
+    {
+      key: 'contact',
+      to: 'contact',
+      icon: UserCircleIcon,
+      title: 'Contact',
+      description: 'Organization profile and project contact information.',
+      badge: 'View only'
+    },
+    {
+      key: 'company',
+      to: '../settings/organization',
+      icon: Squares2X2Icon,
+      title: 'Company',
+      description: 'LinkedIn-style company profile of the organization you work with.',
+      badge: null
+    }
+  ]), [projectCount]);
+
+  const q = search.trim().toLowerCase();
+  const visibleApps = q
+    ? apps.filter((a) =>
+      a.title.toLowerCase().includes(q) ||
+      a.description.toLowerCase().includes(q) ||
+      a.key.toLowerCase().includes(q))
+    : apps;
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
+      <div className="text-center space-y-3">
+        <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+          Client Workspace
+        </p>
+        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
+          Welcome to <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">Client Portal</span>
+        </h1>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          Read-only workspace to track progress, deliverables, invoices, shared documents, and company contact.
+        </p>
+      </div>
+
+      <div className="relative max-w-2xl mx-auto">
+        <MagnifyingGlassIcon className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+        <input
+          type="search"
+          placeholder="Search client apps…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/70 backdrop-blur-sm py-3.5 pl-13 pr-4 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm outline-none transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:shadow-lg"
+          style={{ paddingLeft: '3.25rem' }}
+        />
+      </div>
+
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 sm:gap-3 lg:gap-4">
+        {visibleApps.map((app) => (
+          <AppCard
+            key={app.key}
+            to={app.to}
+            icon={app.icon}
+            title={app.title}
+            description={app.description}
+            badge={app.badge}
+            gradient={APP_GRADIENTS[app.key] || 'from-gray-500 to-gray-600'}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ClientInvoicesView = () => (
+  <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="mb-6 flex items-center justify-between">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Invoices</h2>
+      <Link to="../" className="text-sm text-blue-600 hover:text-blue-800">Back to Apps</Link>
+    </div>
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
+      <p className="text-sm text-gray-700 dark:text-gray-300">
+        Your invoice feed is configured as read-only. When invoices are published for your assigned projects,
+        they appear here with status and download links.
+      </p>
+    </div>
+  </div>
+);
+
+const ClientDocumentsView = () => (
+  <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="mb-6 flex items-center justify-between">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Documents</h2>
+      <Link to="../" className="text-sm text-blue-600 hover:text-blue-800">Back to Apps</Link>
+    </div>
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
+      <p className="text-sm text-gray-700 dark:text-gray-300">
+        Shared and approved project documents are available through project deliverables.
+        Open <span className="font-medium">Project Overview</span> to access download links by deliverable.
+      </p>
+    </div>
+  </div>
+);
+
+const ClientContactView = () => (
+  <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="mb-6 flex items-center justify-between">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Contact</h2>
+      <Link to="../" className="text-sm text-blue-600 hover:text-blue-800">Back to Apps</Link>
+    </div>
+    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
+      <p className="text-sm text-gray-700 dark:text-gray-300">
+        Use the company profile page for organization contact details:
+      </p>
+      <Link to="../settings/organization" className="mt-3 inline-block text-sm text-blue-600 hover:text-blue-800">
+        Open Company Profile
+      </Link>
+    </div>
+  </div>
+);
 
 const ClientDashboard = ({ clientId }) => {
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedProject, setSelectedProject] = useState(null);
-
-  useEffect(() => {
-    fetchClientProjects();
-  }, [clientId]);
-
-  const fetchClientProjects = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/clients/${clientId}/projects`, {
-        credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setProjects(data.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching client projects:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleApproval = async (cardId, approved) => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/cards/${cardId}/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include', // SECURITY FIX: Use cookies instead of localStorage token
-        body: JSON.stringify({ approved })
-      });
-
-      if (response.ok) {
-        // Refresh projects to show updated status
-        fetchClientProjects();
-      }
-    } catch (error) {
-      console.error('Error updating approval:', error);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
+  const safeClientId = useMemo(() => clientId, [clientId]);
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Client Portal</h1>
-        <p className="mt-2 text-gray-600">Review and approve project deliverables</p>
-      </div>
-
-      {selectedProject ? (
-        <ProjectDetailView 
-          project={selectedProject} 
-          onBack={() => setSelectedProject(null)}
-          onApproval={handleApproval}
-        />
-      ) : (
-        <ProjectsOverview 
-          projects={projects} 
-          onSelectProject={setSelectedProject}
-        />
-      )}
-    </div>
-  );
-};
-
-const ProjectsOverview = ({ projects, onSelectProject }) => {
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'on_hold': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {projects.map((project) => (
-        <div 
-          key={project._id}
-          className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => onSelectProject(project)}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-              {project.status.replace('_', ' ')}
-            </span>
-          </div>
-          
-          <p className="text-gray-600 mb-4">{project.description}</p>
-          
-          <div className="space-y-2">
-            <div className="flex items-center text-sm text-gray-500">
-              <CalendarIcon className="h-4 w-4 mr-2" />
-              Due: {new Date(project.endDate).toLocaleDateString()}
-            </div>
-            
-            <div className="flex items-center text-sm text-gray-500">
-              <DocumentTextIcon className="h-4 w-4 mr-2" />
-              {project.pendingApprovals || 0} items pending approval
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const ProjectDetailView = ({ project, onBack, onApproval }) => {
-  const [deliverables, setDeliverables] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchDeliverables();
-  }, [project._id]);
-
-  const fetchDeliverables = async () => {
-    try {
-      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${baseUrl}/api/client-portal/projects/${project._id}/deliverables`, {
-        credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDeliverables(data.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching deliverables:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="mb-6">
-        <button
-          onClick={onBack}
-          className="text-blue-600 hover:text-blue-800 mb-4"
-        >
-          ← Back to Projects
-        </button>
-        <h2 className="text-2xl font-bold text-gray-900">{project.name}</h2>
-        <p className="text-gray-600 mt-2">{project.description}</p>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-md">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Deliverables for Review</h3>
-        </div>
-        
-        <div className="divide-y divide-gray-200">
-          {deliverables.map((deliverable) => (
-            <DeliverableItem 
-              key={deliverable._id}
-              deliverable={deliverable}
-              onApproval={onApproval}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const DeliverableItem = ({ deliverable, onApproval }) => {
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'approved':
-        return <CheckCircleIcon className="h-5 w-5 text-green-600" />;
-      case 'rejected':
-        return <XCircleIcon className="h-5 w-5 text-red-600" />;
-      case 'pending':
-        return <ClockIcon className="h-5 w-5 text-yellow-600" />;
-      default:
-        return <EyeIcon className="h-5 w-5 text-gray-400" />;
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'approved': return 'text-green-600';
-      case 'rejected': return 'text-red-600';
-      case 'pending': return 'text-yellow-600';
-      default: return 'text-gray-500';
-    }
-  };
-
-  return (
-    <div className="px-6 py-4">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center mb-2">
-            {getStatusIcon(deliverable.status)}
-            <h4 className="ml-2 text-lg font-medium text-gray-900">{deliverable.title}</h4>
-            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(deliverable.status)}`}>
-              {deliverable.status}
-            </span>
-          </div>
-          
-          <p className="text-gray-600 mb-3">{deliverable.description}</p>
-          
-          {deliverable.attachments && deliverable.attachments.length > 0 && (
-            <div className="mb-3">
-              <p className="text-sm font-medium text-gray-700 mb-1">Attachments:</p>
-              <div className="space-y-1">
-                {deliverable.attachments.map((attachment, index) => (
-                  <a
-                    key={index}
-                    href={attachment.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 text-sm"
-                  >
-                    {attachment.name}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {deliverable.comments && deliverable.comments.length > 0 && (
-            <div className="mb-3">
-              <p className="text-sm font-medium text-gray-700 mb-1">Comments:</p>
-              <div className="space-y-1">
-                {deliverable.comments.map((comment, index) => (
-                  <p key={index} className="text-sm text-gray-600">
-                    <span className="font-medium">{comment.author}:</span> {comment.text}
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        
-        {deliverable.status === 'pending' && (
-          <div className="ml-4 flex space-x-2">
-            <button
-              onClick={() => onApproval(deliverable._id, true)}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
-            >
-              Approve
-            </button>
-            <button
-              onClick={() => onApproval(deliverable._id, false)}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium"
-            >
-              Reject
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+    <Routes>
+      <Route index element={<ClientPortalLauncher />} />
+      <Route path="projects" element={<ClientProjectsView clientId={safeClientId} />} />
+      <Route path="projects/:projectId" element={<ClientProjectsView clientId={safeClientId} />} />
+      <Route path="projects/:projectId/deliverables/:deliverableId" element={<ClientProjectsView clientId={safeClientId} />} />
+      <Route path="timesheets" element={<ClientTimesheetsView />} />
+      <Route path="invoices" element={<ClientInvoicesView />} />
+      <Route path="documents" element={<ClientDocumentsView />} />
+      <Route path="contact" element={<ClientContactView />} />
+      <Route path="company" element={<ClientOrganizationProfile />} />
+    </Routes>
   );
 };
 

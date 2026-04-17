@@ -21,6 +21,23 @@ const { getUserDepartmentIds, shouldFilterByDepartment } = require('../../servic
 const { getProjectMetricsForRequest } = require('../../services/tenant/project-organization-metrics.service');
 const { getViewConfigForUserDepartments, applyViewConfigToProject, buildDefaultProjectDepartmentConfigs, normalizeProjectDepartmentConfigs } = require('../../utils/projectDepartmentView');
 const ProjectMember = require('../../models/ProjectMember');
+const fs = require('fs');
+const path = require('path');
+
+// #region agent log
+// Repo root = TWS/ (workspace); avoid process.cwd() which is often backend/ when running nodemon.
+const AGENT_DEBUG_LOG = path.join(__dirname, '../../../../debug-772451.log');
+const agentDebugLog = (payload) => {
+  try {
+    fs.appendFileSync(
+      AGENT_DEBUG_LOG,
+      `${JSON.stringify({ sessionId: '772451', timestamp: Date.now(), ...payload })}\n`
+    );
+  } catch (_) {
+    /* ignore */
+  }
+};
+// #endregion
 
 // Helper function to get organization ID from request context
 // Simplified: Direct access from middleware (no fallbacks for security)
@@ -549,24 +566,24 @@ exports.createProject = async (req, res) => {
       ? tags.slice(0, 20).filter(tag => typeof tag === 'string' && tag.length <= 50)
       : [];
 
-    // SECURITY: Process client portal settings (if provided)
-    // Client Portal Settings - REMOVED COMPLETELY
-    // Default portal settings (disabled)
+    // SECURITY: Process client portal settings
+    // If a project is explicitly assigned to a client, enable client portal defaults.
+    const hasAssignedClient = Boolean(clientId);
     let portalSettings = {
-      isPortalProject: false,
-      portalVisibility: 'private',
-      allowClientPortal: false,
+      isPortalProject: hasAssignedClient,
+      portalVisibility: hasAssignedClient ? 'client_only' : 'private',
+      allowClientPortal: hasAssignedClient,
       clientCanCreateCards: false,
       clientCanEditCards: false,
-      requireClientApproval: false,
-      autoNotifyClient: false,
-      syncWithERP: false,
+      requireClientApproval: hasAssignedClient,
+      autoNotifyClient: hasAssignedClient,
+      syncWithERP: true,
       features: {
-        projectProgress: false,
-        timeTracking: false,
+        projectProgress: hasAssignedClient,
+        timeTracking: hasAssignedClient,
         invoices: false,
-        documents: false,
-        communication: false
+        documents: hasAssignedClient,
+        communication: hasAssignedClient
       }
     };
 
@@ -2539,8 +2556,14 @@ exports.getClients = async (req, res) => {
       });
     }
 
-    const clients = await Client.find({ orgId })
-      .select('name company slug type contact billing')
+    // Only return clients created from Users module flow.
+    // Those records are linked to a real User via `userId`.
+    const clients = await Client.find({
+      orgId,
+      userId: { $exists: true, $ne: null },
+      status: { $ne: 'inactive' }
+    })
+      .select('name company slug type contact billing userId')
       .sort({ name: 1 })
       .lean();
 
@@ -2572,6 +2595,9 @@ exports.createClient = async (req, res) => {
     // Get orgId directly from request context
     const orgId = await getOrgId(req);
     if (!orgId) {
+      // #region agent log
+      agentDebugLog({ runId: 'run1', hypothesisId: 'H0', location: 'projectsController.js:createClient:noOrg', message: 'missing orgId', data: { tenantSlug: req.params?.tenantSlug || null } });
+      // #endregion
       return res.status(500).json({ 
         success: false, 
         message: 'Organization context not available'
@@ -2579,6 +2605,10 @@ exports.createClient = async (req, res) => {
     }
     
     const { name, company, type = 'company', contact, billing } = req.body;
+    // #region agent log
+    agentDebugLog({ runId: 'run1', hypothesisId: 'H1', location: 'projectsController.js:createClient:entry', message: 'createClient entry', data: { hasOrgId: !!orgId, name: name || null, type: type || null, companyType: company == null ? 'null' : typeof company, hasContact: !!contact, hasBilling: !!billing } });
+    fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H1',location:'projectsController.js:createClient:entry',message:'createClient entry',data:{hasOrgId:!!orgId,name:name||null,type:type||null,hasCompany:!!company,hasContact:!!contact,hasBilling:!!billing},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
 
     if (!name) {
       return res.status(400).json({
@@ -2587,10 +2617,24 @@ exports.createClient = async (req, res) => {
       });
     }
 
-    // Generate slug from name
-    const slug = name.toLowerCase()
+    // Generate unique slug per organization to avoid E11000 duplicate errors
+    const baseSlug = (name || 'client')
+      .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .replace(/^-+|-+$/g, '') || 'client';
+    let slug = baseSlug;
+    let slugCounter = 1;
+    let collisionCount = 0;
+    // Keep trying until we find a free slug in this org
+    while (await Client.exists({ orgId, slug })) {
+      collisionCount += 1;
+      slug = `${baseSlug}-${slugCounter}`;
+      slugCounter += 1;
+    }
+    // #region agent log
+    agentDebugLog({ runId: 'run1', hypothesisId: 'H2', location: 'projectsController.js:createClient:slug', message: 'slug resolution complete', data: { baseSlug, finalSlug: slug, collisionCount } });
+    fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H2',location:'projectsController.js:createClient:slug',message:'slug resolution complete',data:{baseSlug,finalSlug:slug,collisionCount},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
 
     // Ownership fields: createdBy and orgId (Issue #4.4)
     const client = new Client({
@@ -2603,8 +2647,16 @@ exports.createClient = async (req, res) => {
       billing: billing || {},
       createdBy: req.user?._id || req.body.createdBy || null // Issue #4.4: Always set createdBy
     });
+    // #region agent log
+    agentDebugLog({ runId: 'run1', hypothesisId: 'H3', location: 'projectsController.js:createClient:beforeSave', message: 'attempting client save', data: { slug: client.slug, companyType: typeof client.company, companyPreview: typeof client.company === 'string' ? client.company.slice(0, 40) : null, hasCompanyName: !!(client.company && client.company.name), paymentTerms: client.billing?.paymentTerms || null } });
+    fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H3',location:'projectsController.js:createClient:beforeSave',message:'attempting client save',data:{slug:client.slug,companyType:typeof client.company,hasCompanyName:!!client.company?.name,paymentTerms:client.billing?.paymentTerms||null},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
 
     await client.save();
+    // #region agent log
+    agentDebugLog({ runId: 'run1', hypothesisId: 'H4', location: 'projectsController.js:createClient:afterSave', message: 'client save success', data: { clientId: String(client._id), slug: client.slug } });
+    fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H4',location:'projectsController.js:createClient:afterSave',message:'client save success',data:{clientId:String(client._id),slug:client.slug},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
 
     res.status(201).json({
       success: true,
@@ -2613,6 +2665,10 @@ exports.createClient = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating client:', error);
+    // #region agent log
+    agentDebugLog({ runId: 'run1', hypothesisId: 'H5', location: 'projectsController.js:createClient:catch', message: 'client save failed', data: { errorName: error?.name || null, errorCode: error?.code || null, errorMessage: error?.message || null, keyPattern: error?.keyPattern || null, keyValue: error?.keyValue || null } });
+    fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H5',location:'projectsController.js:createClient:catch',message:'client save failed',data:{errorName:error?.name||null,errorCode:error?.code||null,errorMessage:error?.message||null,keyPattern:error?.keyPattern||null,keyValue:error?.keyValue||null},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     res.status(500).json({
       success: false,
       message: 'Failed to create client',

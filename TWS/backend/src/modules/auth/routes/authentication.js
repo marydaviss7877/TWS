@@ -1,6 +1,8 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const path = require('path');
+const fs = require('fs').promises;
 const { body, validationResult } = require('express-validator');
 const { generateTokens, authenticateToken, setAuthCookies, clearAuthCookies } = require('../../../middleware/auth/auth');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
@@ -26,6 +28,19 @@ const Organization = require('../../../models/Organization');
 const TWSAdmin = require('../../../models/TWSAdmin');
 
 const router = express.Router();
+
+const getExistingProfilePicPathOrNull = async (relativePath) => {
+  if (!relativePath || typeof relativePath !== 'string' || !relativePath.startsWith('/uploads/profile-pictures/')) {
+    return relativePath || null;
+  }
+  try {
+    const absolutePath = path.join(process.cwd(), relativePath.replace(/^\//, ''));
+    await fs.access(absolutePath);
+    return relativePath;
+  } catch {
+    return null;
+  }
+};
 
 // express-validator's normalizeEmail() uses validator defaults (removes Gmail dots).
 // User creation (HR / org) uses { gmail_remove_dots: false } — mismatch caused valid logins to 401.
@@ -567,6 +582,10 @@ router.get('/me', authenticateToken, ErrorHandler.asyncHandler(async (req, res) 
     }
   }
   
+  if (!isTWSAdmin && userData?.profilePicUrl) {
+    userData.profilePicUrl = await getExistingProfilePicPathOrNull(userData.profilePicUrl);
+  }
+
   res.json({
     success: true,
     data: {

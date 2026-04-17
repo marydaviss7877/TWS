@@ -15,6 +15,11 @@ import {
   MagnifyingGlassIcon,
   BookmarkIcon as BookmarkOutlineIcon,
   Squares2X2Icon,
+  UserIcon,
+  CalendarIcon,
+  ClockIcon,
+  ChartBarIcon,
+  CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
@@ -189,13 +194,51 @@ const AppHome = () => {
   const [search,    setSearch]    = useState('');
   const [mounted,   setMounted]   = useState(false);
   const [recentKeys, setRecentKeys] = useState([]);
+  const [employeeStats, setEmployeeStats] = useState({
+    attendance: null,
+    leaveBalance: null,
+  });
   const searchRef = useRef(null);
+  const isClientUser = ['client', 'customer'].includes(String(user?.role || '').toLowerCase());
+  const isAdminUser = ['owner', 'admin', 'super_admin', 'org_manager'].includes(String(user?.role || '').toLowerCase());
+  const showEmployeeApps = !isClientUser && !isAdminUser;
 
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     setRecentKeys(loadRecentApps(tenantSlug));
   }, [tenantSlug]);
+
+  useEffect(() => {
+    let active = true;
+    if (!showEmployeeApps || !tenantSlug || !user?.id) return undefined;
+
+    const loadEmployeeStats = async () => {
+      try {
+        const attendanceRes = await fetch(`/api/tenant/${tenantSlug}/organization/hr/attendance?employeeId=${user.id}&stats=true`, {
+          credentials: 'include',
+        });
+        if (attendanceRes.ok && active) {
+          const data = await attendanceRes.json();
+          setEmployeeStats((prev) => ({ ...prev, attendance: data?.data || null }));
+        }
+      } catch (_) { /* best effort */ }
+
+      try {
+        const employeeRes = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees?userId=${user.id}`, {
+          credentials: 'include',
+        });
+        if (employeeRes.ok && active) {
+          const empData = await employeeRes.json();
+          const employee = empData?.data?.employees?.[0];
+          setEmployeeStats((prev) => ({ ...prev, leaveBalance: employee?.leaveBalance || null }));
+        }
+      } catch (_) { /* best effort */ }
+    };
+
+    loadEmployeeStats();
+    return () => { active = false; };
+  }, [showEmployeeApps, tenantSlug, user?.id]);
 
   // Keyboard shortcut: "/" focuses search
   useEffect(() => {
@@ -241,6 +284,13 @@ const AppHome = () => {
   const totalFavs = favoriteKeys.length;
   const recentItems = filteredMenuItems.filter((m) => recentKeys.includes(m.key));
   recentItems.sort((a, b) => recentKeys.indexOf(a.key) - recentKeys.indexOf(b.key));
+  const employeeApps = [
+    { key: 'employee-profile', label: 'My Profile', path: `/${tenantSlug}/org/employee/profile`, icon: UserIcon },
+    { key: 'employee-attendance', label: 'Attendance', path: `/${tenantSlug}/org/employee/attendance`, icon: ClockIcon },
+    { key: 'employee-leave', label: 'Leave Requests', path: `/${tenantSlug}/org/employee/leave`, icon: CalendarIcon },
+    { key: 'employee-performance', label: 'Performance', path: `/${tenantSlug}/org/employee/performance`, icon: ChartBarIcon },
+    { key: 'employee-payroll', label: 'Payroll', path: `/${tenantSlug}/org/employee/payroll`, icon: CurrencyDollarIcon },
+  ];
 
   useEffect(() => {
     const handleArrowNav = (e) => {
@@ -376,6 +426,47 @@ const AppHome = () => {
 
         {/* ── App grid ───────────────────────────────────────────────────────── */}
         <div>
+          {!q && showEmployeeApps && (
+            <div className="mb-7 space-y-4">
+              <SectionLabel emoji="👤" title="Employee Apps" count={employeeApps.length} />
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <QuickStat
+                  icon={ClockIcon}
+                  label="Present Days"
+                  value={employeeStats.attendance?.present ?? '—'}
+                  gradient="from-blue-500 to-indigo-600"
+                />
+                <QuickStat
+                  icon={CalendarIcon}
+                  label="Leave Balance"
+                  value={employeeStats.leaveBalance?.annual ?? '—'}
+                  gradient="from-emerald-500 to-green-600"
+                />
+                <QuickStat
+                  icon={ChartBarIcon}
+                  label="Late Days"
+                  value={employeeStats.attendance?.late ?? '—'}
+                  gradient="from-orange-500 to-amber-600"
+                />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                {employeeApps.map((item) => {
+                  const Icon = item.icon || Squares2X2Icon;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => navigate(item.path)}
+                      className="group rounded-xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/70 px-3 py-4 text-left hover:shadow-md transition-all"
+                    >
+                      <Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mb-2" />
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{item.label}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {q ? (
             /* ── Search results ── */
             visible.length > 0 ? (

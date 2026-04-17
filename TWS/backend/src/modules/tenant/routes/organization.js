@@ -24,6 +24,32 @@ const employeesWrite = requireErpAccess({ module: 'employees', action: 'write', 
 
 const TenantMiddleware = require('../../../middleware/tenant/tenantMiddleware');
 const { checkUsageLimitSoftwareHouseOnly, checkReadOnlySoftwareHouseOnly } = require('../../../middleware/common/featureGate');
+const CLIENT_PORTAL_ROLES = new Set(['client', 'customer']);
+
+const denyClientSettingsAccess = (req, res, next) => {
+  const role = String(req.user?.role || '').toLowerCase();
+  if (CLIENT_PORTAL_ROLES.has(role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Client users cannot access organization settings.',
+      code: 'CLIENT_SETTINGS_FORBIDDEN'
+    });
+  }
+  next();
+};
+
+const getExistingUploadPathOrNull = async (relativePath) => {
+  if (!relativePath || typeof relativePath !== 'string' || !relativePath.startsWith('/uploads/')) {
+    return null;
+  }
+  try {
+    const absolutePath = path.join(process.cwd(), relativePath.replace(/^\//, ''));
+    await fs.access(absolutePath);
+    return relativePath;
+  } catch {
+    return null;
+  }
+};
 
 // @deprecated - Use verifyERPToken middleware instead
 // This function is kept for backward compatibility but should not be used in new code
@@ -647,7 +673,10 @@ router.get('/profile', authenticateToken, async (req, res) => {
     const tenant = await Tenant.findOne({ slug: tenantSlug })
       .select('name slug description contactInfo businessInfo branding subscription erpCategory erpModules status createdAt');
     if (!tenant) return res.status(404).json({ success: false, message: 'Organization not found' });
-    res.json({ success: true, data: tenant });
+    const tenantObj = tenant.toObject();
+    const safeLogo = await getExistingUploadPathOrNull(tenantObj.branding?.logo);
+    tenantObj.branding = { ...(tenantObj.branding || {}), logo: safeLogo };
+    res.json({ success: true, data: tenantObj });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Error fetching organization profile', error: err.message });
   }
@@ -1368,7 +1397,7 @@ router.get('/users/profile', verifyERPToken, async (req, res) => {
           department: user.department,
           jobTitle: user.jobTitle,
           role: user.role,
-          profilePicUrl: user.profilePicUrl,
+          profilePicUrl: await getExistingUploadPathOrNull(user.profilePicUrl),
           status: user.status
         }
       }
@@ -1420,7 +1449,7 @@ router.patch('/users/profile', verifyERPToken, async (req, res) => {
           department: user.department,
           jobTitle: user.jobTitle,
           role: user.role,
-          profilePicUrl: user.profilePicUrl
+          profilePicUrl: await getExistingUploadPathOrNull(user.profilePicUrl)
         }
       }
     });
@@ -1686,7 +1715,7 @@ router.post('/reports/generate',
 // ==================== SETTINGS ROUTES ====================
 
 // Get all settings
-router.get('/settings', verifyTenantOrgAccess, async (req, res) => {
+router.get('/settings', verifyTenantOrgAccess, denyClientSettingsAccess, async (req, res) => {
   try {
     const tenantContext = await buildTenantContext(req);
     const { tenantId, orgId } = tenantContext;
@@ -1715,7 +1744,7 @@ router.get('/settings', verifyTenantOrgAccess, async (req, res) => {
 });
 
 // Update general settings
-router.put('/settings/general', verifyERPToken, async (req, res) => {
+router.put('/settings/general', verifyERPToken, denyClientSettingsAccess, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { tenantId, orgId } = tenantContext;
@@ -1737,7 +1766,7 @@ router.put('/settings/general', verifyERPToken, async (req, res) => {
 });
 
 // Update notification settings
-router.put('/settings/notifications', verifyERPToken, async (req, res) => {
+router.put('/settings/notifications', verifyERPToken, denyClientSettingsAccess, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { tenantId, orgId } = tenantContext;
@@ -1759,7 +1788,7 @@ router.put('/settings/notifications', verifyERPToken, async (req, res) => {
 });
 
 // Update security settings
-router.put('/settings/security', verifyERPToken, async (req, res) => {
+router.put('/settings/security', verifyERPToken, denyClientSettingsAccess, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { tenantId, orgId } = tenantContext;
@@ -1781,7 +1810,7 @@ router.put('/settings/security', verifyERPToken, async (req, res) => {
 });
 
 // Get theme settings
-router.get('/settings/theme', verifyTenantOrgAccess, async (req, res) => {
+router.get('/settings/theme', verifyTenantOrgAccess, denyClientSettingsAccess, async (req, res) => {
   try {
     console.log('🎨 GET /settings/theme called', { 
       tenantSlug: req.params.tenantSlug,
@@ -1825,7 +1854,7 @@ router.get('/settings/theme', verifyTenantOrgAccess, async (req, res) => {
 });
 
 // Update theme settings
-router.put('/settings/theme', verifyTenantOrgAccess, async (req, res) => {
+router.put('/settings/theme', verifyTenantOrgAccess, denyClientSettingsAccess, async (req, res) => {
   try {
     console.log('🎨 PUT /settings/theme called', { 
       tenantSlug: req.params.tenantSlug,
@@ -1872,7 +1901,7 @@ router.put('/settings/theme', verifyTenantOrgAccess, async (req, res) => {
 });
 
 // Update settings (legacy route - for backward compatibility)
-router.put('/settings', verifyERPToken, async (req, res) => {
+router.put('/settings', verifyERPToken, denyClientSettingsAccess, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const settingsData = req.body;

@@ -82,6 +82,66 @@ class TenantOrgService {
     console.warn('⚠️ WARNING: Using tenantId fallback - orgId should be available');
     return { tenantId };
   }
+
+  /**
+   * Ensure Users-module client accounts are linked to ProjectClient.
+   * This keeps project assignment and client portal identity in sync.
+   */
+  async syncProjectClientForUser(user, orgId, role) {
+    try {
+      const normalizedRole = String(role || user?.role || '').toLowerCase();
+      if (normalizedRole !== 'client' || !user?._id || !orgId) return;
+
+      const ProjectClient = require('../../models/Client');
+      const userId = user._id;
+      const email = String(user.email || '').trim().toLowerCase();
+      const name = String(user.fullName || email || 'Client').trim();
+
+      const existing = await ProjectClient.findOne({ orgId, userId });
+      if (existing) {
+        existing.name = existing.name || name;
+        existing.status = existing.status || 'active';
+        existing.contact = {
+          ...existing.contact,
+          primary: {
+            ...(existing.contact?.primary || {}),
+            email: existing.contact?.primary?.email || email
+          }
+        };
+        existing.portal = {
+          ...existing.portal,
+          enabled: existing.portal?.enabled !== false,
+          accessLevel: existing.portal?.accessLevel || 'approve'
+        };
+        await existing.save();
+        return;
+      }
+
+      const baseSlug = (name || 'client')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'client';
+      let slug = baseSlug;
+      let counter = 1;
+      while (await ProjectClient.exists({ orgId, slug })) {
+        slug = `${baseSlug}-${counter}`;
+        counter += 1;
+      }
+
+      await ProjectClient.create({
+        orgId,
+        userId,
+        name,
+        slug,
+        type: 'company',
+        status: 'active',
+        contact: { primary: { email } },
+        portal: { enabled: true, accessLevel: 'approve' }
+      });
+    } catch (error) {
+      console.warn('syncProjectClientForUser failed:', error.message);
+    }
+  }
   
   /**
    * Get dashboard overview data
@@ -725,6 +785,7 @@ class TenantOrgService {
       });
 
       await user.save();
+      await this.syncProjectClientForUser(user, orgId, role);
 
       const mongoTenantId = tenantId && mongoose.Types.ObjectId.isValid(tenantId)
         ? new mongoose.Types.ObjectId(tenantId)
@@ -820,7 +881,7 @@ class TenantOrgService {
    * @returns {Object} Updated user
    */
   async updateUser(tenantContext, userId, userData) {
-    const { tenantId } = tenantContext;
+    const { tenantId, orgId } = tenantContext;
     
     try {
       const models = this.getTenantModels(tenantContext);
@@ -835,6 +896,8 @@ class TenantOrgService {
       if (!user) {
         throw new Error('User not found');
       }
+
+      await this.syncProjectClientForUser(user, orgId, userData.erpRole || userData.role || user.role);
 
       return user;
     } catch (error) {
