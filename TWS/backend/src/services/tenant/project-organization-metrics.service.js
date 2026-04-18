@@ -4,6 +4,7 @@
  */
 
 const Project = require('../../models/Project');
+const ProjectMember = require('../../models/ProjectMember');
 const { getUserDepartmentIds, shouldFilterByDepartment } = require('./userDepartmentsService');
 
 async function resolveOrgIdForProjects(req) {
@@ -25,6 +26,7 @@ async function resolveOrgIdForProjects(req) {
 
 /**
  * Same filter shape as projectsController.getProjectMetrics (org + optional department scope).
+ * Honors ?departmentId= and ?primaryDepartmentId= like GET /organization/projects.
  */
 async function buildProjectMetricsQuery(req) {
   const orgId = await resolveOrgIdForProjects(req);
@@ -45,7 +47,26 @@ async function buildProjectMetricsQuery(req) {
       }
     }
   }
+
+  const { departmentId, primaryDepartmentId } = req.query || {};
+  if (primaryDepartmentId) {
+    metricsQuery.primaryDepartmentId = primaryDepartmentId;
+    delete metricsQuery.$or;
+  } else if (departmentId) {
+    metricsQuery.departments = departmentId;
+    delete metricsQuery.$or;
+  }
+
   return metricsQuery;
+}
+
+async function countDistinctProjectMembers(projectIds) {
+  if (!projectIds.length) return 0;
+  const userIds = await ProjectMember.distinct('userId', {
+    projectId: { $in: projectIds },
+    status: 'active'
+  });
+  return userIds.filter(Boolean).length;
 }
 
 async function computeProjectMetricsFromQuery(metricsQuery) {
@@ -59,7 +80,7 @@ async function computeProjectMetricsFromQuery(metricsQuery) {
     Project.countDocuments({ ...metricsQuery, status: 'active' }),
     Project.countDocuments({ ...metricsQuery, status: 'completed' }),
     Project.find(metricsQuery)
-      .select('status budget metrics.timeline')
+      .select('status budget metrics timeline')
       .lean()
   ]);
 
@@ -78,23 +99,47 @@ async function computeProjectMetricsFromQuery(metricsQuery) {
     return false;
   }).length;
 
+  const planningProjects = projects.filter(p => p.status === 'planning').length;
+  const onHoldProjects = projects.filter(p => p.status === 'on_hold').length;
+
   const totalBudget = projects.reduce((sum, p) => sum + (p.budget?.total || 0), 0);
   const spentBudget = projects.reduce((sum, p) => sum + (p.budget?.spent || 0), 0);
   const totalHours = projects.reduce((sum, p) => sum + (p.timeline?.estimatedHours || 0), 0);
-  const utilization = totalProjects > 0 ? (activeProjects / totalProjects) * 100 : 0;
+  const totalActualHours = projects.reduce((sum, p) => sum + (p.timeline?.actualHours || 0), 0);
+
+  const portfolioActivePct =
+    totalProjects > 0 ? Math.round((activeProjects / totalProjects) * 100) : 0;
+
+  const hoursUtilizationPct =
+    totalHours > 0 ? Math.round((totalActualHours / totalHours) * 100) : null;
+
+  const projectIds = projects.map(p => p._id).filter(Boolean);
+  const totalTeamMembers = await countDistinctProjectMembers(projectIds);
 
   return {
     totalProjects,
     activeProjects,
     completedProjects,
+    planningProjects,
+    onHoldProjects,
     onTrackProjects,
     atRiskProjects,
     delayedProjects,
-    totalTeamMembers: 0,
+    totalTeamMembers,
     totalBudget,
     spentBudget,
     totalHours,
-    utilization: Math.round(utilization)
+    totalActualHours,
+    /** % of projects in `active` status (portfolio mix), not hours capacity */
+    portfolioActivePct,
+    /** Estimated hours consumed (null when org has no estimated hours on projects) */
+    hoursUtilizationPct,
+    /**
+     * Back-compat: hours-based utilization when estimates exist; otherwise portfolio active %.
+     * Prefer `hoursUtilizationPct` / `portfolioActivePct` in new UI.
+     */
+    utilization:
+      hoursUtilizationPct != null ? hoursUtilizationPct : portfolioActivePct
   };
 }
 

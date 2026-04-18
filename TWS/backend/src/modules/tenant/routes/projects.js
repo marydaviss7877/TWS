@@ -10,6 +10,9 @@
  */
 
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs').promises;
 const router = express.Router({ mergeParams: true });
 const projectController = require('../../../controllers/tenant/projectsController');
 const { requireRole } = require('../../../middleware/auth/rbac');
@@ -127,6 +130,43 @@ router.get('/metrics', (req, res, next) => {
 const { injectOwnership, injectUpdateOwnership } = require('../../../middleware/validation/ownershipMiddleware');
 // Import resource access check middleware (Issue #9.1 Fix)
 const { validateResourceAccess } = require('../../../middleware/security/resourceAccessCheck');
+
+const projectLogoStorage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'uploads', 'project-logos');
+    await fs.mkdir(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const { projectId } = req.params;
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `project-${projectId}-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const projectLogoUpload = multer({
+  storage: projectLogoStorage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|gif|webp|svg/;
+    if (allowed.test(path.extname(file.originalname).toLowerCase()) && allowed.test(file.mimetype)) {
+      return cb(null, true);
+    }
+    cb(new Error('Only image files are allowed (jpeg, jpg, png, gif, webp, svg)'));
+  }
+});
+
+const projectLogoUploadMiddleware = (req, res, next) => {
+  projectLogoUpload.single('logo')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ success: false, message: 'Logo must be under 2 MB' });
+      }
+      return res.status(400).json({ success: false, message: err.message || 'Invalid file' });
+    }
+    next();
+  });
+};
 
 // Clients endpoints - MUST come before /:id route
 router.get('/clients', projectController.getClients);
@@ -270,9 +310,9 @@ router.post('/sprints',
   verifyERPToken,
   [
     body('name').notEmpty().trim().isLength({ min: 1, max: 255 }).withMessage('Sprint name is required'),
-    body('startDate').notEmpty().isISO8601().withMessage('Valid start date is required'),
-    body('endDate').notEmpty().isISO8601().withMessage('Valid end date is required'),
-    body('projectId').optional().isMongoId().withMessage('Invalid project ID format'),
+    body('startDate').notEmpty().isISO8601({ strict: false }).withMessage('Valid start date is required'),
+    body('endDate').notEmpty().isISO8601({ strict: false }).withMessage('Valid end date is required'),
+    body('projectId').notEmpty().isMongoId().withMessage('Valid project ID is required'),
     body('status').optional().isIn(['planning', 'active', 'completed', 'cancelled']).withMessage('Invalid status'),
     (req, res, next) => {
       const errors = validationResult(req);
@@ -324,6 +364,20 @@ router.delete('/:projectId/members/:memberId',
   verifyERPToken,
   requireRole(['admin', 'super_admin', 'org_manager', 'project_manager', 'pmo', 'owner']),
   projectController.removeProjectMember);
+
+router.post(
+  '/:projectId/logo',
+  verifyERPToken,
+  validateResourceAccess('Project', 'projectId'),
+  projectLogoUploadMiddleware,
+  projectController.uploadProjectLogo
+);
+router.delete(
+  '/:projectId/logo',
+  verifyERPToken,
+  validateResourceAccess('Project', 'projectId'),
+  projectController.deleteProjectLogo
+);
 
 // Generic parameterized routes - MUST come LAST to avoid conflicts with specific routes
 // This will match any remaining paths, but we validate ObjectId format in the controller

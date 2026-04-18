@@ -44,6 +44,7 @@ const TenantOrgLayout = ({ children }) => {
     const { tenantSlug } = useParams();
     const navigate       = useNavigate();
     const location       = useLocation();
+    const isHomeRoute    = location.pathname === `/${tenantSlug}/org/home`;
 
     // ── Auth / Theme ──────────────────────────────────────────────────────────
     const { user, logout, tenant, isAuthenticated, loading: authLoading } = useTenantAuth();
@@ -97,9 +98,16 @@ const TenantOrgLayout = ({ children }) => {
 
         (async () => {
             try {
+                const cacheBust = Date.now();
                 const [deptsRes, permsRes] = await Promise.all([
-                    axiosInstance.get(`/api/tenant/${tenantSlug}/organization/user-departments`),
-                    axiosInstance.get(`/api/tenant/${tenantSlug}/organization/me/permissions`),
+                    axiosInstance.get(`/api/tenant/${tenantSlug}/organization/user-departments`, {
+                        params: { _t: cacheBust },
+                        headers: { 'Cache-Control': 'no-cache' }
+                    }),
+                    axiosInstance.get(`/api/tenant/${tenantSlug}/organization/me/permissions`, {
+                        params: { _t: cacheBust },
+                        headers: { 'Cache-Control': 'no-cache' }
+                    }),
                 ]);
                 if (!active) return;
                 setUserDepartments(deptsRes.data?.data ?? []);
@@ -124,10 +132,6 @@ const TenantOrgLayout = ({ children }) => {
         [tenant?.erpCategory, tenantSlug]
     );
     const filteredMenuItems = useMenuFiltering(menuItems, user, tenant, userDepartments, userPermissions);
-    const isClientPortalRoute = useMemo(() => (
-        location.pathname.startsWith(`/${tenantSlug}/org/client-portal`) ||
-        location.pathname.startsWith(`/${tenantSlug}/org/client-`)
-    ), [location.pathname, tenantSlug]);
 
     // ── Odoo-style app navigation ─────────────────────────────────────────────
     const {
@@ -174,16 +178,6 @@ const TenantOrgLayout = ({ children }) => {
     });
 
     // ── Handlers ──────────────────────────────────────────────────────────────
-    const handleAddAction = (action) => {
-        const routes = {
-            task:    `/${tenantSlug}/org/projects/tasks?create=task`,
-            project: `/${tenantSlug}/org/projects?create=project`,
-            user:    `/${tenantSlug}/org/users/create`,
-            time:    `/${tenantSlug}/org/software-house/time-tracking`,
-        };
-        if (routes[action]) navigate(routes[action]);
-    };
-
     // ── Loading guard (must be after all hooks) ───────────────────────────────
     if (authLoading && !loadingTimeout && !isAuthenticated) {
         return (
@@ -204,7 +198,7 @@ const TenantOrgLayout = ({ children }) => {
             data-industry={tenant?.erpCategory || 'business'}
         >
             {/* Subtle background pattern */}
-            <div className="absolute inset-0 opacity-5 dark:opacity-10 pointer-events-none z-0">
+            <div className="absolute inset-0 hidden dark:block opacity-10 pointer-events-none z-0">
                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnptMC0xOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnpNMCA1NGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnptMTggMGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjEiLz48L2c+PC9zdmc+')] " />
             </div>
 
@@ -215,10 +209,9 @@ const TenantOrgLayout = ({ children }) => {
                     orgName={tenant?.name}
                     activeApp={activeApp}
                     user={user}
-                    onProfile={() => user?.id && navigate(`/${tenantSlug}/org/users/${user.id}`)}
+                    onProfile={() => navigate(`/${tenantSlug}/org/employee/profile`)}
                     onLogout={logout}
                     onSearch={() => setCommandPaletteOpen(true)}
-                    onAddAction={isClientPortalRoute ? undefined : handleAddAction}
                     isFullscreen={isFullscreen}
                     onFullscreenToggle={toggleFullscreen}
                     isDarkMode={isDarkMode}
@@ -276,8 +269,13 @@ const TenantOrgLayout = ({ children }) => {
                         ref={mainContentRef}
                         className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 glass-scrollbar transition-all duration-500"
                     >
-                        <div className="p-2 sm:p-3 md:p-4 lg:p-5 relative animate-fade-in">
-                            <Breadcrumbs className="mb-3 text-xs text-gray-500 dark:text-gray-400" />
+                        <div className="px-2 sm:px-3 md:px-4 lg:px-5 pb-2 sm:pb-3 md:pb-4 lg:pb-5 pt-0 relative animate-fade-in">
+                            <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-[#cddcff]/100 via-[#dce7ff]/78 to-transparent dark:hidden" />
+                            {!isHomeRoute && (
+                                <div className="-mx-2 sm:-mx-3 md:-mx-4 lg:-mx-5 mb-1 px-3 sm:px-4 md:px-5 py-1.5 border-b border-[#cfdbf6]/55 bg-gradient-to-b from-[#dde8ff]/48 via-[#e8efff]/30 to-transparent backdrop-blur-[1px] dark:border-gray-700/70 dark:bg-gray-900/70">
+                                    <Breadcrumbs className="text-xs text-slate-600/95 dark:text-gray-400" />
+                                </div>
+                            )}
                             <TenantNavProvider value={{
                                 filteredMenuItems,
                                 activeAppKey,

@@ -18,6 +18,9 @@ const PayrollManagement = () => {
   const canWritePayroll = hasModulePermission('payroll', 'write');
   const [loading, setLoading] = useState(true);
   const [payrollData, setPayrollData] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [analytics, setAnalytics] = useState({ monthlyTrend: [], statusBreakdown: [], averageNetPay: 0, payrollVelocityDays: 0 });
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     // Only fetch if authenticated and auth is not loading
@@ -33,28 +36,41 @@ const PayrollManagement = () => {
     
     try {
       setLoading(true);
-      const data = await tenantApiService.getPayrollData(tenantSlug);
+      const [data, analyticsData] = await Promise.all([
+        tenantApiService.getPayrollData(tenantSlug),
+        tenantApiService.getPayrollAnalytics(tenantSlug)
+      ]);
       if (data) {
         setPayrollData(data);
       } else {
         setPayrollData({ totalAmount: 0, employeeCount: 0, pendingCount: 0 });
       }
+      setAnalytics(analyticsData || { monthlyTrend: [], statusBreakdown: [], averageNetPay: 0, payrollVelocityDays: 0 });
     } catch (err) {
       console.error('Error fetching payroll data:', err);
       setPayrollData({ totalAmount: 0, employeeCount: 0, pendingCount: 0 });
+      setAnalytics({ monthlyTrend: [], statusBreakdown: [], averageNetPay: 0, payrollVelocityDays: 0 });
     } finally {
       setLoading(false);
     }
   };
 
+  const filteredRecords = (payrollData?.payrollRecords || []).filter((record) => {
+    if (statusFilter === 'all') return true;
+    return (record?.status || 'draft') === statusFilter;
+  });
+
   const handleProcessPayroll = async (payrollData) => {
     try {
+      setBusy(true);
       await tenantApiService.processPayroll(tenantSlug, payrollData);
       alert('Payroll processed successfully!');
       fetchPayrollData();
     } catch (error) {
       console.error('Error processing payroll:', error);
       alert(error.message || 'Failed to process payroll. Please try again.');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -63,13 +79,15 @@ const PayrollManagement = () => {
       return;
     }
     try {
-      const approvedBy = 'current-user-id'; // TODO: Get from auth context
-      await tenantApiService.approvePayroll(tenantSlug, payrollId, approvedBy);
+      setBusy(true);
+      await tenantApiService.approvePayroll(tenantSlug, payrollId);
       alert('Payroll approved successfully!');
       fetchPayrollData();
     } catch (error) {
       console.error('Error approving payroll:', error);
       alert(error.message || 'Failed to approve payroll. Please try again.');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -152,15 +170,90 @@ const PayrollManagement = () => {
         ))}
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="glass-card p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Average Net Pay</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-white">${Math.round(analytics.averageNetPay || 0).toLocaleString()}</p>
+        </div>
+        <div className="glass-card p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Approval Velocity</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-white">{(analytics.payrollVelocityDays || 0).toFixed(1)} days</p>
+        </div>
+        <div className="glass-card p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Dominant Status</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-white">{analytics.statusBreakdown?.[0]?._id || 'N/A'}</p>
+        </div>
+      </div>
+
       {/* Current Payroll Cycle */}
       <div className="glass-card-premium p-6 xl:p-8 hover-glow">
-        <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white mb-6">
-          Current Payroll Cycle
-        </h3>
-        <div className="text-center py-12">
-          <BanknotesIcon className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400 mb-2">Payroll processing interface</p>
-          <p className="text-sm text-gray-500 dark:text-gray-500">Detailed payroll processing features coming soon</p>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white">
+            Current Payroll Cycle
+          </h3>
+          {canWritePayroll && (
+            <button
+              onClick={() => {
+                const now = new Date();
+                const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+                const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
+                handleProcessPayroll({ periodStart, periodEnd, employeeIds: [] });
+              }}
+              disabled={busy}
+              className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white disabled:opacity-50"
+            >
+              <CheckCircleIcon className="w-5 h-5" />
+              <span className="font-medium">{busy ? 'Processing...' : 'Process Payroll'}</span>
+            </button>
+          )}
+        </div>
+        <div className="overflow-x-auto">
+          <div className="mb-4">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white dark:bg-gray-900 dark:border-gray-700 dark:text-gray-200"
+            >
+              <option value="all">All statuses</option>
+              <option value="draft">Draft</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="paid">Paid</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-700">
+                <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 dark:text-gray-300">Employee</th>
+                <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 dark:text-gray-300">Department</th>
+                <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 dark:text-gray-300">Gross</th>
+                <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 dark:text-gray-300">Deductions</th>
+                <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 dark:text-gray-300">Net</th>
+                <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 dark:text-gray-300">Status</th>
+                <th className="text-left py-3 px-4 text-sm font-bold text-gray-700 dark:text-gray-300">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRecords.map((record) => (
+                <tr key={record._id} className="border-b border-gray-100 dark:border-gray-800">
+                  <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{record?.userId?.fullName || 'N/A'}</td>
+                  <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{record?.employeeId?.department || 'N/A'}</td>
+                  <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">${(record?.grossPay || 0).toLocaleString()}</td>
+                  <td className="py-3 px-4 text-sm text-red-600 dark:text-red-400">-${(record?.deductions?.total || 0).toLocaleString()}</td>
+                  <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">${(record?.netPay || 0).toLocaleString()}</td>
+                  <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{record?.status || 'draft'}</td>
+                  <td className="py-3 px-4 text-sm">
+                    {(record?.status === 'pending' || record?.status === 'draft') ? (
+                      <button onClick={() => handleApprovePayroll(record._id)} className="text-primary-600 hover:text-primary-700 font-medium">Approve</button>
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

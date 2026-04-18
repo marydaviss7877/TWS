@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useParams } from 'react-router-dom';
 import tenantProjectApiService from '../services/tenantProjectApiService';
 import { handleApiError } from '../utils/errorHandler';
+import { toMongoIdString } from '../utils/validation';
 import { PROJECT_PRIORITY, CARD_TYPE, CARD_STATUS } from '../constants/projectConstants';
 import { showSuccess, showError } from '../utils/toastNotifications';
 
+/** Create / edit task — full-viewport right drawer (portaled to document.body so it is not clipped by workspace scroll areas). */
 const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultStatus = CARD_STATUS.TODO, defaultAssigneeId = '', initialTask = null }) => {
   const isEdit = !!initialTask;
   const { tenantSlug } = useParams();
@@ -180,6 +183,15 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
       }
       // If still missing, the backend will auto-resolve from the project — don't block the user
 
+      const pid = toMongoIdString(formData.projectId || projectId);
+      if (!pid) {
+        showError('Select a project');
+        setErrors({ projectId: 'Project is required' });
+        return;
+      }
+      const deptId = toMongoIdString(resolvedDeptId);
+      const assignee = toMongoIdString(formData.assigneeId);
+
       const taskData = {
         title: formData.title.trim(),
         description: formData.description?.trim() || undefined,
@@ -188,9 +200,9 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
         type: formData.type || CARD_TYPE.TASK,
         storyPoints: formData.storyPoints ? parseInt(formData.storyPoints, 10) : undefined,
         labels: formData.labels ? formData.labels.split(',').map(l => l.trim()).filter(Boolean) : [],
-        projectId: formData.projectId || undefined,
-        departmentId: resolvedDeptId || undefined,
-        assigneeId: formData.assigneeId || undefined,
+        projectId: pid,
+        ...(deptId ? { departmentId: deptId } : {}),
+        ...(assignee ? { assigneeId: assignee } : {}),
         startDate: formData.startDate || undefined,
         dueDate: formData.dueDate || undefined
       };
@@ -203,13 +215,11 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
         onClose();
         resetForm();
       } else {
-        const response = await tenantProjectApiService.createTask(tenantSlug, taskData);
-        if (response) {
-          showSuccess('Task created successfully!');
-          if (onTaskCreated) onTaskCreated();
-          onClose();
-          resetForm();
-        }
+        await tenantProjectApiService.createTask(tenantSlug, taskData);
+        showSuccess('Task created successfully!');
+        if (onTaskCreated) onTaskCreated();
+        onClose();
+        resetForm();
       }
     } catch (error) {
       const errorMessage = handleApiError(error).message;
@@ -246,6 +256,7 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
   };
 
   if (!isOpen) return null;
+  if (typeof document === 'undefined' || !document.body) return null;
 
   const getCardTypeOptions = () => {
     return Object.entries(CARD_TYPE).map(([key, value]) => ({
@@ -254,23 +265,37 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
     }));
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="glass-card-premium max-w-2xl w-full max-h-[90vh] overflow-hidden rounded-xl">
+  return createPortal(
+    <>
+      <div
+        className="fixed inset-0 z-[80] bg-black/30"
+        aria-hidden
+        onClick={handleClose}
+      />
+      <div
+        className="fixed inset-y-0 right-0 z-[90] flex w-full max-w-xl flex-col overflow-hidden border-l border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 animate-slide-in-right"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-task-panel-title"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold font-heading text-gray-900 dark:text-white">{isEdit ? 'Edit Task' : 'Create New Task'}</h2>
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+          <h2 id="create-task-panel-title" className="text-lg font-bold text-gray-900 dark:text-white sm:text-xl">
+            {isEdit ? 'Edit task' : 'New task'}
+          </h2>
           <button
+            type="button"
             onClick={handleClose}
-            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+            aria-label="Close"
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          {/* Scrollable fields */}
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6 glass-scrollbar">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Task Title *
@@ -328,38 +353,47 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Project <span className="text-gray-400 text-xs">(Optional)</span>
+                  Project
                 </label>
-                <select
-                  name="projectId"
-                  value={formData.projectId}
-                  onChange={(e) => {
-                    handleInputChange(e);
-                    // Auto-set department from selected project when not already chosen
-                    const selectedProject = projects.find(p => (p._id || p.id) === e.target.value);
-                    const firstDept = selectedProject?.departments?.[0];
-                    const autoDeptId = selectedProject?.primaryDepartmentId
-                      || (firstDept && (typeof firstDept === 'object' ? (firstDept._id || firstDept.id) : firstDept));
-                    if (autoDeptId && !formData.departmentId) {
-                      const id = typeof autoDeptId === 'object' ? (autoDeptId._id || autoDeptId.toString()) : autoDeptId;
-                      setFormData(prev => ({ ...prev, projectId: e.target.value, departmentId: id }));
-                    } else {
-                      setFormData(prev => ({ ...prev, projectId: e.target.value }));
-                    }
-                  }}
-                  className="w-full glass-input rounded-xl px-4 py-2"
-                  disabled={!!projectId}
-                >
-                  <option value="">No project (assign later)</option>
-                  {projects.map(project => (
-                    <option key={project._id || project.id} value={project._id || project.id}>
-                      {project.name || project.title}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  You can assign this task to a project later
-                </p>
+                {projectId ? (
+                  <div className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-800/60 dark:text-gray-200">
+                    {(() => {
+                      const p = projects.find((x) => String(x._id || x.id) === String(projectId));
+                      return p?.name || p?.title || 'Current project (from board)';
+                    })()}
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      name="projectId"
+                      value={formData.projectId}
+                      onChange={(e) => {
+                        handleInputChange(e);
+                        const selectedProject = projects.find((p) => (p._id || p.id) === e.target.value);
+                        const firstDept = selectedProject?.departments?.[0];
+                        const autoDeptId = selectedProject?.primaryDepartmentId
+                          || (firstDept && (typeof firstDept === 'object' ? (firstDept._id || firstDept.id) : firstDept));
+                        if (autoDeptId && !formData.departmentId) {
+                          const id = typeof autoDeptId === 'object' ? (autoDeptId._id || autoDeptId.toString()) : autoDeptId;
+                          setFormData((prev) => ({ ...prev, projectId: e.target.value, departmentId: id }));
+                        } else {
+                          setFormData((prev) => ({ ...prev, projectId: e.target.value }));
+                        }
+                      }}
+                      className="w-full glass-input rounded-xl px-4 py-2"
+                    >
+                      <option value="">No project (assign later)</option>
+                      {projects.map((proj) => (
+                        <option key={proj._id || proj.id} value={proj._id || proj.id}>
+                          {proj.name || proj.title}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      You can assign this task to a project later
+                    </p>
+                  </>
+                )}
               </div>
 
               <div>
@@ -491,28 +525,28 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
               />
             </div>
           </div>
-        </form>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="glass-button px-4 py-2 rounded-xl hover-scale text-gray-700 dark:text-gray-300"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="glass-button px-4 py-2 rounded-xl hover-scale bg-gradient-to-r from-primary-500 to-accent-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (isEdit ? 'Saving...' : 'Creating...') : (isEdit ? 'Save' : 'Create Task')}
-          </button>
-        </div>
+          {/* Footer — inside form for proper submit */}
+          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-gray-200 bg-gray-50/80 px-5 py-4 dark:border-gray-700 dark:bg-gray-800/50 sm:px-6">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="rounded-xl px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isLoading ? (isEdit ? 'Saving…' : 'Creating…') : (isEdit ? 'Save changes' : 'Create task')}
+            </button>
+          </div>
+        </form>
       </div>
-    </div>
+    </>,
+    document.body
   );
 };
 

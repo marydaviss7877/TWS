@@ -119,7 +119,17 @@ html:not(.dark) .tenant-org-layout .glass-button:not([class*="text-gray"]):not([
   color: #cbd5e1;
 }
 
-/* Scrollbar Styles */
+/* Scrollbar Styles — WebKit + Firefox (horizontal menus, boards, main pane) */
+.glass-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.22) rgba(0, 0, 0, 0.06);
+}
+
+.dark .glass-scrollbar,
+html.dark .glass-scrollbar {
+  scrollbar-color: rgba(255, 255, 255, 0.28) rgba(255, 255, 255, 0.06);
+}
+
 .glass-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -535,9 +545,9 @@ html:not(.dark) .tenant-org-layout .glass-button:not([class*="text-gray"]):not([
 
 /* Color Variables for Light/Dark Mode */
 :root {
-  --clean-light-pure: #ffffff;
-  --clean-light-soft: #f9fafb;
-  --primary-50: #eff6ff;
+  --clean-light-pure: #f4f6ff;
+  --clean-light-soft: #eef2ff;
+  --primary-50: #e7edff;
   --glass-dark-deepest: #0f172a;
   --glass-dark-deep: #1e293b;
   --glass-dark-base: #334155;

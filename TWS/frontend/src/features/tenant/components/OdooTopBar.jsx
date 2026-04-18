@@ -13,7 +13,6 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
-  PlusIcon,
   BellIcon,
   SunIcon,
   MoonIcon,
@@ -33,7 +32,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '../../../components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar';
-import { QUICK_ADD_ACTIONS, APP_METADATA } from '../../../constants/navigationConstants';
+import { APP_METADATA } from '../../../constants/navigationConstants';
 import { cn } from '../../../lib/utils';
 
 const MAX_VISIBLE_TABS = 6;
@@ -43,11 +42,11 @@ const SubNavTab = ({ item, isActive }) => (
   <Link
     to={item.path}
     className={cn(
-      'whitespace-nowrap rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-150 outline-none',
+      'shrink-0 whitespace-nowrap rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-150 outline-none',
       'focus-visible:ring-2 focus-visible:ring-primary-500',
       isActive
         ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/8 hover:text-gray-900 dark:hover:text-gray-100'
+        : 'text-slate-600 dark:text-gray-400 hover:bg-[#e8eeff] dark:hover:bg-white/8 hover:text-[#0d0e24] dark:hover:text-gray-100'
     )}
   >
     {item.label}
@@ -68,7 +67,6 @@ const OdooTopBar = ({
 
   // Utility
   onSearch,
-  onAddAction,
   isFullscreen  = false,
   onFullscreenToggle,
   isDarkMode    = false,
@@ -85,7 +83,8 @@ const OdooTopBar = ({
   const userInitial  = (user?.fullName?.[0] ?? user?.email?.[0] ?? 'U').toUpperCase();
   const displayName  = user?.fullName || user?.email || 'User';
   const isClientUser = ['client', 'customer'].includes(String(user?.role || '').toLowerCase());
-  const isAdminUser = String(user?.role || '').toLowerCase() === 'admin';
+  const isAdminUser = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner']
+    .includes(String(user?.role || '').toLowerCase());
   const [avatarError, setAvatarError] = useState(false);
   const avatarSrc = (() => {
     const raw = user?.avatarUrl || user?.profilePicUrl;
@@ -125,13 +124,13 @@ const OdooTopBar = ({
   const appMeta = activeApp ? (APP_METADATA[activeApp.key] ?? null) : null;
 
   return (
-    <header className="flex h-11 shrink-0 items-center gap-2 border-b border-gray-200 dark:border-gray-700/80 bg-white dark:bg-gray-900 px-2 sm:px-3 shadow-sm z-30 relative">
+    <header className="flex h-11 sm:h-12 shrink-0 items-center gap-1.5 sm:gap-2 border-b border-[#c9d6f4]/70 dark:border-gray-700/80 bg-[#dce7ff]/52 dark:bg-gray-900 px-2 sm:px-3 shadow-sm z-30 relative backdrop-blur-[2px]">
 
       {/* ── 1. Home / org logo ──────────────────────────────────────────── */}
       <button
         type="button"
         onClick={() => navigate(`/${tenantSlug}/org/home`)}
-        className="flex shrink-0 items-center gap-2 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        className="group flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-lg px-1 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 hover:bg-[#e8eeff] dark:hover:bg-gray-800 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(99,102,241,0.16)] active:translate-y-0 active:scale-[0.98]"
         aria-label="Go to home"
         title="Home"
       >
@@ -143,18 +142,18 @@ const OdooTopBar = ({
             onError={() => setLogoError(true)}
           />
         ) : (
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-accent-500 text-white font-bold text-xs shadow-sm">
+          <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-accent-500 text-white font-bold text-xs shadow-sm transition-transform duration-200 group-hover:scale-105 group-hover:rotate-[-4deg]">
             {initial}
           </div>
         )}
-        <HomeIcon className="hidden sm:block h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+        <HomeIcon className="hidden sm:block h-3.5 w-3.5 text-slate-400 dark:text-gray-500 transition-transform duration-200 group-hover:translate-x-0.5" />
       </button>
 
       {/* ── Divider ─────────────────────────────────────────────────────── */}
-      <div className="hidden md:block h-5 w-px bg-gray-200 dark:bg-gray-700 shrink-0" />
+      <div className="hidden md:block h-5 w-px bg-[#d7ddf3] dark:bg-gray-700 shrink-0" />
 
-      {/* ── 3. Active app name + sub-nav tabs (flex-1) ──────────────────── */}
-      <div className="hidden md:flex flex-1 items-center gap-1 min-w-0 overflow-hidden">
+      {/* ── 3. Active app name + sub-nav tabs (flex-1) — sub-nav scrolls horizontally like PM workspace tabs ── */}
+      <div className="hidden md:flex flex-1 items-center gap-1 min-w-0 min-h-0">
 
         {activeApp ? (
           <>
@@ -163,7 +162,7 @@ const OdooTopBar = ({
               to={activeApp.path}
               className={cn(
                 'flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm font-semibold shrink-0 transition-colors',
-                'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                'text-[#0d0e24] dark:text-white hover:bg-[#e8eeff] dark:hover:bg-gray-800'
               )}
             >
               {/* App colour dot */}
@@ -178,11 +177,14 @@ const OdooTopBar = ({
 
             {/* Sub-nav separator */}
             {children.length > 0 && (
-              <span className="text-gray-300 dark:text-gray-600 text-xs select-none shrink-0">/</span>
+              <span className="text-[#b9c3e6] dark:text-gray-600 text-xs select-none shrink-0">/</span>
             )}
 
-            {/* Sub-nav tabs */}
-            <nav className="flex items-center gap-0.5 overflow-x-auto no-scrollbar" aria-label={`${activeApp.label} sub-navigation`}>
+            {/* Sub-nav tabs — horizontal scroll + styled scrollbar (all viewports where this row is shown) */}
+            <nav
+              className="flex min-w-0 flex-1 flex-nowrap items-center gap-0.5 overflow-x-auto overflow-y-hidden py-0.5 pb-1 glass-scrollbar scroll-smooth"
+              aria-label={`${activeApp.label} sub-navigation`}
+            >
               {visibleTabs.map(item => (
                 <SubNavTab
                   key={item.key}
@@ -194,12 +196,13 @@ const OdooTopBar = ({
 
             {/* Overflow "More ▼" dropdown */}
             {overflowTabs.length > 0 && (
+              <div className="shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 gap-1 px-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 shrink-0"
+                    className="h-7 gap-1 px-2 text-xs text-slate-500 dark:text-gray-400 hover:text-[#0d0e24] dark:hover:text-gray-100 shrink-0"
                   >
                     More
                     <ChevronDownIcon className="h-3 w-3" />
@@ -217,6 +220,7 @@ const OdooTopBar = ({
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
+              </div>
             )}
           </>
         ) : (
@@ -224,7 +228,7 @@ const OdooTopBar = ({
           <button
             type="button"
             onClick={() => navigate(`/${tenantSlug}/org/settings/organization`)}
-            className="text-sm font-semibold text-gray-800 dark:text-gray-200 px-2 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+            className="text-sm font-semibold text-[#0d0e24] dark:text-gray-200 px-2 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
             title="Organization Profile"
           >
             {orgName}
@@ -239,7 +243,7 @@ const OdooTopBar = ({
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden h-8 w-8 text-gray-500 dark:text-gray-400"
+        className="md:hidden h-8 w-8 sm:h-9 sm:w-9 text-slate-500 dark:text-gray-400 hover:bg-[#e8eeff] dark:hover:bg-gray-800"
         onClick={onMobileMenu}
         aria-label="Open app menu"
       >
@@ -254,7 +258,7 @@ const OdooTopBar = ({
           variant="ghost"
           size="sm"
           onClick={onSearch}
-          className="hidden sm:flex h-7 items-center gap-1.5 rounded-xl px-2.5 text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+          className="hidden sm:flex h-7 w-7 lg:w-auto lg:px-2.5 items-center justify-center lg:justify-start gap-1.5 rounded-xl text-xs text-slate-500 dark:text-gray-500 bg-[#eef2ff] dark:bg-gray-800 border border-[#d2d6ee] dark:border-gray-700 hover:bg-[#e8eeff] dark:hover:bg-gray-700"
         >
           <MagnifyingGlassIcon className="h-3.5 w-3.5 shrink-0" />
           <span className="hidden lg:inline">Search…</span>
@@ -269,33 +273,13 @@ const OdooTopBar = ({
           onClick={onSearch}
           aria-label="Search"
         >
-          <MagnifyingGlassIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          <MagnifyingGlassIcon className="h-4 w-4 text-slate-500 dark:text-gray-400" />
         </Button>
-
-        {/* Quick Add */}
-        {onAddAction && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" className="h-7 px-2 gap-1 text-xs">
-                <PlusIcon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">New</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              {QUICK_ADD_ACTIONS.map(({ id, label, icon: Icon }) => (
-                <DropdownMenuItem key={id} onClick={() => onAddAction(id)}>
-                  <Icon className="h-4 w-4 text-primary-500 dark:text-primary-400" />
-                  {label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
 
         {/* Theme toggle */}
         {typeof onToggleTheme === 'function' && (
           <Button
-            variant="ghost" size="icon" className="h-7 w-7"
+            variant="ghost" size="icon" className="hidden sm:inline-flex h-7 w-7"
             onClick={onToggleTheme}
             title={isDarkMode ? 'Light mode' : 'Dark mode'}
           >
@@ -309,7 +293,7 @@ const OdooTopBar = ({
         {/* Fullscreen */}
         {typeof onFullscreenToggle === 'function' && (
           <Button
-            variant="ghost" size="icon" className="h-7 w-7"
+            variant="ghost" size="icon" className="hidden md:inline-flex h-7 w-7"
             onClick={onFullscreenToggle}
             title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
           >
@@ -321,7 +305,7 @@ const OdooTopBar = ({
         )}
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="h-7 w-7 relative" title="Notifications">
+        <Button variant="ghost" size="icon" className="hidden sm:inline-flex h-7 w-7 relative" title="Notifications">
           <BellIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
           <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden="true" />
         </Button>
@@ -329,7 +313,7 @@ const OdooTopBar = ({
         {/* Profile dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" aria-label="User menu">
+            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 rounded-full" aria-label="User menu">
               <Avatar className="h-6 w-6">
                 {avatarSrc && !avatarError && <AvatarImage src={avatarSrc} alt={displayName} onError={() => setAvatarError(true)} />}
                 <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary-500 to-accent-500 text-white">

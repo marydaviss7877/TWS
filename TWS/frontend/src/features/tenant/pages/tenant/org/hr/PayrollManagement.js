@@ -10,8 +10,7 @@ import {
   UserGroupIcon,
   DocumentTextIcon,
   EyeIcon,
-  PrinterIcon,
-  ShareIcon
+  PrinterIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
@@ -22,6 +21,10 @@ const PayrollManagement = () => {
   const canWritePayroll = hasModulePermission('payroll', 'write');
   const [loading, setLoading] = useState(true);
   const [payrollData, setPayrollData] = useState(null);
+  const [cycles, setCycles] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [analytics, setAnalytics] = useState({ monthlyTrend: [], statusBreakdown: [], averageNetPay: 0, payrollVelocityDays: 0 });
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     fetchPayrollData();
@@ -30,12 +33,71 @@ const PayrollManagement = () => {
   const fetchPayrollData = async () => {
     try {
       setLoading(true);
-      const data = await tenantApiService.getPayrollData(tenantSlug);
-      setPayrollData(data);
+      const [data, cyclesData, analyticsData] = await Promise.all([
+        tenantApiService.getPayrollData(tenantSlug),
+        tenantApiService.getPayrollCycles(tenantSlug),
+        tenantApiService.getPayrollAnalytics(tenantSlug)
+      ]);
+      setPayrollData(data || { totalAmount: 0, employeeCount: 0, pendingCount: 0, cycleCount: 0, payrollRecords: [] });
+      setCycles(cyclesData?.cycles || []);
+      setAnalytics(analyticsData || { monthlyTrend: [], statusBreakdown: [], averageNetPay: 0, payrollVelocityDays: 0 });
     } catch (err) {
       console.error('Error fetching payroll data:', err);
+      setPayrollData({ totalAmount: 0, employeeCount: 0, pendingCount: 0, cycleCount: 0, payrollRecords: [] });
+      setCycles([]);
+      setAnalytics({ monthlyTrend: [], statusBreakdown: [], averageNetPay: 0, payrollVelocityDays: 0 });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const filteredRecords = (payrollData?.payrollRecords || []).filter((record) => {
+    if (statusFilter === 'all') return true;
+    return (record?.status || 'draft') === statusFilter;
+  });
+
+  const runProcessPayroll = async () => {
+    if (!canWritePayroll || busy) return;
+    try {
+      setBusy(true);
+      const now = new Date();
+      const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
+      await tenantApiService.processPayroll(tenantSlug, { periodStart, periodEnd, employeeIds: [] });
+      await fetchPayrollData();
+    } catch (err) {
+      console.error('Payroll processing failed:', err);
+      alert(err?.message || 'Payroll processing failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const approveRecord = async (recordId) => {
+    if (!canWritePayroll || busy) return;
+    try {
+      setBusy(true);
+      await tenantApiService.approvePayroll(tenantSlug, recordId);
+      await fetchPayrollData();
+    } catch (err) {
+      console.error('Approve payroll failed:', err);
+      alert(err?.message || 'Approve payroll failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const markPaid = async (recordId) => {
+    if (!canWritePayroll || busy) return;
+    try {
+      setBusy(true);
+      await tenantApiService.markPayrollAsPaid(tenantSlug, recordId);
+      await fetchPayrollData();
+    } catch (err) {
+      console.error('Mark paid failed:', err);
+      alert(err?.message || 'Mark paid failed');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -118,20 +180,40 @@ const PayrollManagement = () => {
         ))}
       </div>
 
+      {/* Analytics Snapshot */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="glass-card p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Average Net Pay</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">${Math.round(analytics.averageNetPay || 0).toLocaleString()}</p>
+        </div>
+        <div className="glass-card p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Payroll Approval Velocity</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{(analytics.payrollVelocityDays || 0).toFixed(1)} days</p>
+        </div>
+        <div className="glass-card p-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Top Status</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.statusBreakdown?.[0]?._id || 'N/A'}</p>
+        </div>
+      </div>
+
       {/* Current Payroll Cycle */}
       <div className="glass-card-premium p-6 xl:p-8 hover-glow">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white">
-            Current Payroll Cycle - January 2024
+            Current Payroll Cycle
           </h3>
           <div className="flex items-center gap-3">
             <button className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2">
               <PrinterIcon className="w-5 h-5" />
               <span className="font-medium">Print</span>
             </button>
-            <button className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white">
+            <button
+              onClick={runProcessPayroll}
+              disabled={!canWritePayroll || busy}
+              className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white disabled:opacity-50"
+            >
               <CheckCircleIcon className="w-5 h-5" />
-              <span className="font-medium">Process Payroll</span>
+              <span className="font-medium">{busy ? 'Processing...' : 'Process Payroll'}</span>
             </button>
           </div>
         </div>
@@ -143,26 +225,42 @@ const PayrollManagement = () => {
               <CalendarIcon className="w-5 h-5 text-gray-400" />
               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Pay Period</span>
             </div>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">Jan 1 - Jan 31, 2024</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">
+              {cycles[0] ? `${new Date(cycles[0].startDate).toLocaleDateString()} - ${new Date(cycles[0].endDate).toLocaleDateString()}` : 'No active cycle'}
+            </p>
           </div>
           <div className="glass-card p-4">
             <div className="flex items-center gap-3 mb-2">
               <CheckCircleIcon className="w-5 h-5 text-gray-400" />
               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</span>
             </div>
-            <p className="text-lg font-bold text-green-600 dark:text-green-400">Ready for Processing</p>
+            <p className="text-lg font-bold text-green-600 dark:text-green-400">{cycles[0]?.status || 'N/A'}</p>
           </div>
           <div className="glass-card p-4">
             <div className="flex items-center gap-3 mb-2">
               <UserGroupIcon className="w-5 h-5 text-gray-400" />
               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Employees</span>
             </div>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">{payrollData?.employeeCount || 142}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">{payrollData?.employeeCount || 0}</p>
           </div>
         </div>
 
         {/* Employee Payroll List */}
         <div className="overflow-x-auto">
+          <div className="mb-4">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white dark:bg-gray-900 dark:border-gray-700 dark:text-gray-200"
+            >
+              <option value="all">All statuses</option>
+              <option value="draft">Draft</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="paid">Paid</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
@@ -177,41 +275,50 @@ const PayrollManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {[
-                { name: 'John Smith', department: 'Engineering', base: 12000, deductions: 2000, bonuses: 1500, status: 'approved' },
-                { name: 'Sarah Johnson', department: 'Management', base: 15000, deductions: 2500, bonuses: 2000, status: 'pending' },
-                { name: 'Michael Chen', department: 'Design', base: 10000, deductions: 1800, bonuses: 1000, status: 'approved' }
-              ].map((employee, index) => {
-                const netPay = employee.base - employee.deductions + employee.bonuses;
+              {filteredRecords.map((record, index) => {
+                const name = record?.userId?.fullName || `Employee ${index + 1}`;
+                const department = record?.employeeId?.department || 'N/A';
+                const base = record?.grossPay || 0;
+                const deductions = record?.deductions?.total || 0;
+                const bonuses = Math.max(0, (record?.netPay || 0) - (base - deductions));
+                const netPay = record?.netPay || 0;
                 return (
                   <tr key={index} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-                          <span className="text-white font-bold text-xs">{employee.name.charAt(0)}</span>
+                          <span className="text-white font-bold text-xs">{name.charAt(0)}</span>
                         </div>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">{employee.name}</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{name}</span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{employee.department}</td>
-                    <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">${employee.base.toLocaleString()}</td>
-                    <td className="py-3 px-4 text-sm text-red-600 dark:text-red-400">-${employee.deductions.toLocaleString()}</td>
-                    <td className="py-3 px-4 text-sm text-green-600 dark:text-green-400">+${employee.bonuses.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{department}</td>
+                    <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-white">${base.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-sm text-red-600 dark:text-red-400">-${deductions.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-sm text-green-600 dark:text-green-400">+${bonuses.toLocaleString()}</td>
                     <td className="py-3 px-4 text-sm font-bold text-gray-900 dark:text-white">${netPay.toLocaleString()}</td>
                     <td className="py-3 px-4">
                       <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                        employee.status === 'approved'
+                        record.status === 'approved' || record.status === 'paid'
                           ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                           : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                       }`}>
-                        {employee.status === 'approved' ? 'Approved' : 'Pending'}
+                        {record.status || 'draft'}
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <button className="text-primary-600 dark:text-primary-400 hover:underline text-sm font-medium flex items-center gap-1">
-                        <EyeIcon className="w-4 h-4" />
-                        View
-                      </button>
+                      <div className="flex items-center gap-3">
+                        {record.status === 'pending' || record.status === 'draft' ? (
+                          <button onClick={() => approveRecord(record._id)} className="text-primary-600 dark:text-primary-400 hover:underline text-sm font-medium">Approve</button>
+                        ) : null}
+                        {record.status === 'approved' ? (
+                          <button onClick={() => markPaid(record._id)} className="text-green-600 hover:underline text-sm font-medium">Mark Paid</button>
+                        ) : null}
+                        <button className="text-primary-600 dark:text-primary-400 hover:underline text-sm font-medium flex items-center gap-1">
+                          <EyeIcon className="w-4 h-4" />
+                          View
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -227,28 +334,24 @@ const PayrollManagement = () => {
           Recent Payroll Cycles
         </h3>
         <div className="space-y-3">
-          {[
-            { period: 'December 2023', date: '2023-12-31', employees: 142, total: 428000, status: 'completed' },
-            { period: 'November 2023', date: '2023-11-30', employees: 140, total: 420000, status: 'completed' },
-            { period: 'October 2023', date: '2023-10-31', employees: 138, total: 415000, status: 'completed' }
-          ].map((cycle, index) => (
+          {(cycles || []).map((cycle, index) => (
             <div key={index} className="glass-card p-4 flex items-center justify-between hover-lift">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow">
                   <BanknotesIcon className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{cycle.period}</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{cycle.name}</p>
                   <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    <span>{cycle.employees} employees</span>
-                    <span>Processed: {cycle.date}</span>
+                    <span>Frequency: {cycle.frequency}</span>
+                    <span>Processed: {cycle.processedAt ? new Date(cycle.processedAt).toLocaleDateString() : 'N/A'}</span>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-right">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">${cycle.total.toLocaleString()}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Total Amount</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{new Date(cycle.startDate).toLocaleDateString()} - {new Date(cycle.endDate).toLocaleDateString()}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Cycle Window</p>
                 </div>
                 <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                   {cycle.status}

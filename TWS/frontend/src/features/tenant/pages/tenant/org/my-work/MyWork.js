@@ -71,6 +71,23 @@ const FILTER_TABS = [
 
 const PRIORITY_OPTIONS = ['', 'urgent', 'high', 'medium', 'low'];
 const PAGE_SIZE = 12;
+const PANEL_CLASS =
+  'rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900';
+
+const QUICK_ACTION_STYLES = {
+  blue: {
+    bg: 'bg-blue-100 dark:bg-blue-900/30',
+    text: 'text-blue-600 dark:text-blue-400',
+  },
+  green: {
+    bg: 'bg-green-100 dark:bg-green-900/30',
+    text: 'text-green-600 dark:text-green-400',
+  },
+  purple: {
+    bg: 'bg-purple-100 dark:bg-purple-900/30',
+    text: 'text-purple-600 dark:text-purple-400',
+  },
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const isOverdue = (task) =>
@@ -89,14 +106,14 @@ const fmtDate = (d) => {
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-const StatCard = ({ label, value, icon: Icon, iconBg, iconColor, valueColor }) => (
-  <div className="glass-card-premium p-4">
+const StatCard = ({ label, value, icon: Icon, iconBg, iconColor, valueColor, isUrgent }) => (
+  <div className={`${PANEL_CLASS} ${isUrgent ? 'border-red-200 dark:border-red-800' : ''}`}>
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-        <p className={`text-2xl font-bold mt-0.5 ${valueColor || 'text-gray-900 dark:text-white'}`}>{value}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
+        <p className={`text-3xl font-bold mt-1 leading-none ${valueColor || 'text-gray-900 dark:text-white'}`}>{value}</p>
       </div>
-      <div className={`p-3 ${iconBg} rounded-xl`}>
+      <div className={`p-2.5 ${iconBg} rounded-lg`}>
         <Icon className={`w-5 h-5 ${iconColor}`} />
       </div>
     </div>
@@ -132,7 +149,7 @@ const TaskCard = ({ task, onStatusChange, statusMenuId, onToggleStatusMenu, upda
 
   return (
     <div
-      className={`glass-card p-4 hover:shadow-md transition-all duration-200 cursor-pointer group relative
+      className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md dark:border-gray-800 dark:bg-gray-900 transition-all duration-200 cursor-pointer group relative
         ${overdue ? 'border-l-2 border-red-400' : ''}
       `}
       onClick={() => navigate(`/${tenantSlug}/org/projects/tasks?taskId=${task._id || task.id}`)}
@@ -228,6 +245,7 @@ const MyWork = () => {
   const [updatingId,   setUpdatingId]   = useState(null);
   const [showCreate,   setShowCreate]   = useState(false);
   const [showPriorityMenu, setShowPriorityMenu] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const priorityBtnRef = useRef(null);
 
@@ -399,14 +417,14 @@ const MyWork = () => {
     { label: 'Request Leave', desc: 'Submit leave',       icon: CalendarIcon,     color: 'green',
       path: `${hrBase}/leave-requests` },
     { label: 'Attendance',    desc: 'Check in / out',     icon: CheckCircleIcon,  color: 'purple',
-      path: `${hrBase}/attendance` },
+      path: `/${tenantSlug}/org/employee/attendance` },
   ];
 
   const MY_LINKS = [
     { label: 'My Leave',    path: `${hrBase}/leave-requests` },
     { label: 'My Payroll',  path: `${hrBase}/payroll` },
     { label: 'My Expenses', path: `/${tenantSlug}/org/finance/time-expenses` },
-    { label: 'My Profile',  path: `/${tenantSlug}/org/users/${user?.id}` },
+    { label: 'My Profile',  path: `/${tenantSlug}/org/employee/profile` },
   ];
 
   const handleTaskCreated = () => { setShowCreate(false); loadTasks(); };
@@ -420,20 +438,20 @@ const MyWork = () => {
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-5 animate-fade-in pb-8" onClick={() => setStatusMenu(null)}>
+    <div className="space-y-4 animate-fade-in pb-8" onClick={() => setStatusMenu(null)}>
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className={`${PANEL_CLASS} flex flex-wrap items-center justify-between gap-3`}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Work</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">My Work</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
             {user?.fullName || user?.email || 'Your'} tasks &amp; activity
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           <button
             onClick={() => { loadTasks(); loadApprovals(); }}
-            className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             title="Refresh"
           >
             <ArrowPathIcon className="w-4 h-4" />
@@ -441,7 +459,7 @@ const MyWork = () => {
           <button
            
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-xl font-medium text-sm hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-semibold text-sm hover:bg-primary-700 transition-colors"
           >
             <PlusIcon className="w-4 h-4" />
             Add Task
@@ -466,15 +484,16 @@ const MyWork = () => {
       )}
 
       {/* ── Stats ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Total Tasks"  value={stats.totalTasks}     icon={ClipboardDocumentCheckIcon}
-          iconBg="bg-blue-50 dark:bg-blue-900/30"    iconColor="text-blue-600 dark:text-blue-400" />
+      <div className="grid grid-flow-col auto-cols-[minmax(180px,1fr)] lg:grid-flow-row lg:grid-cols-4 gap-3 overflow-x-auto pb-1">
+        <StatCard label="Overdue"      value={stats.overdueTasks}    icon={ExclamationTriangleIcon}
+          iconBg="bg-red-50 dark:bg-red-900/30"       iconColor="text-red-600 dark:text-red-400" isUrgent={stats.overdueTasks > 0}
+          valueColor={stats.overdueTasks > 0 ? 'text-red-600 dark:text-red-400' : undefined} />
         <StatCard label="In Progress"  value={stats.inProgressTasks} icon={ClockIcon}
           iconBg="bg-indigo-50 dark:bg-indigo-900/30" iconColor="text-indigo-600 dark:text-indigo-400" valueColor="text-indigo-600 dark:text-indigo-400" />
         <StatCard label="Completed"    value={stats.completedTasks}  icon={CheckCircleIcon}
           iconBg="bg-green-50 dark:bg-green-900/30"   iconColor="text-green-600 dark:text-green-400"  valueColor="text-green-600 dark:text-green-400" />
-        <StatCard label="Overdue"      value={stats.overdueTasks}    icon={ExclamationTriangleIcon}
-          iconBg="bg-red-50 dark:bg-red-900/30"       iconColor="text-red-600 dark:text-red-400"      valueColor={stats.overdueTasks > 0 ? 'text-red-600 dark:text-red-400' : undefined} />
+        <StatCard label="Total Tasks"  value={stats.totalTasks}     icon={ClipboardDocumentCheckIcon}
+          iconBg="bg-blue-50 dark:bg-blue-900/30"    iconColor="text-blue-600 dark:text-blue-400" />
       </div>
 
       {/* ── Main content + sidebar ───────────────────────────────────────────── */}
@@ -484,7 +503,7 @@ const MyWork = () => {
         <div className="lg:col-span-2 space-y-4">
 
           {/* Filter bar */}
-          <div className="glass-card-premium p-3 space-y-3">
+          <div className={`${PANEL_CLASS} space-y-3`}>
 
             {/* Search + priority + view toggle */}
             <div className="flex flex-wrap items-center gap-2">
@@ -496,7 +515,7 @@ const MyWork = () => {
                   placeholder="Search tasks…"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-8 py-1.5 text-sm bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 dark:text-gray-100 placeholder-gray-400"
+                  className="w-full pl-9 pr-8 h-11 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 dark:text-gray-100 placeholder-gray-400"
                 />
                 {search && (
                   <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -505,14 +524,24 @@ const MyWork = () => {
                 )}
               </div>
 
+              <button
+                onClick={() => setShowMobileFilters(prev => !prev)}
+                className="sm:hidden flex items-center gap-1.5 px-3 h-11 text-sm border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800"
+              >
+                <FunnelIcon className="w-4 h-4" />
+                Filters
+              </button>
+            </div>
+
+            <div className={`${showMobileFilters ? 'flex' : 'hidden'} sm:flex flex-col gap-3`}>
               {/* Priority filter */}
               <div className="relative" ref={priorityBtnRef}>
                 <button
                   onClick={e => { e.stopPropagation(); setShowPriorityMenu(p => !p); }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors
+                  className={`flex items-center gap-1.5 px-3 h-11 text-sm border rounded-lg transition-colors
                     ${priority
                       ? 'border-primary-400 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                 >
                   <FunnelIcon className="w-3.5 h-3.5" />
@@ -539,7 +568,7 @@ const MyWork = () => {
               </div>
 
               {/* View toggle */}
-              <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800/60">
+              <div className="flex items-center h-11 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800">
                 {[
                   { id: 'list',    icon: ListBulletIcon,  title: 'List' },
                   { id: 'status',  icon: Squares2X2Icon,  title: 'By Status' },
@@ -549,7 +578,7 @@ const MyWork = () => {
                     key={id}
                     onClick={() => setViewMode(id)}
                     title={title}
-                    className={`p-1.5 transition-colors ${viewMode === id
+                    className={`h-full px-3 transition-colors ${viewMode === id
                       ? 'bg-primary-600 text-white'
                       : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
@@ -561,7 +590,7 @@ const MyWork = () => {
             </div>
 
             {/* Tab filters */}
-            <div className="flex flex-wrap gap-1">
+            <div className="flex gap-1.5 overflow-x-auto pb-1">
               {FILTER_TABS.map(tab => {
                 const count = tab.id === 'all'     ? allTasks.length
                             : tab.id === 'today'   ? allTasks.filter(t => t.dueDate && new Date(t.dueDate) <= today).length
@@ -572,10 +601,12 @@ const MyWork = () => {
                   <button
                     key={tab.id}
                     onClick={() => { setFilter(tab.id); setVisibleCount(PAGE_SIZE); }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5
                       ${filter === tab.id
                         ? 'bg-primary-600 text-white'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        : tab.id === 'overdue'
+                          ? 'text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}
                   >
                     {tab.label}
@@ -634,7 +665,7 @@ const MyWork = () => {
             /* Grouped by status */
             <div className="space-y-4">
               {byStatus.map(group => (
-                <div key={group.status} className="glass-card-premium overflow-hidden">
+                <div key={group.status} className={`${PANEL_CLASS} overflow-hidden`}>
                   <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 dark:border-gray-700/60">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${group.style}`}>
                       {group.label}
@@ -662,7 +693,7 @@ const MyWork = () => {
             /* Grouped by project */
             <div className="space-y-4">
               {byProject.map(group => (
-                <div key={group.name} className="glass-card-premium overflow-hidden">
+                <div key={group.name} className={`${PANEL_CLASS} overflow-hidden`}>
                   <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 dark:border-gray-700/60">
                     <span className="text-sm font-semibold text-gray-900 dark:text-white">{group.name}</span>
                     <span className="text-xs text-gray-400 dark:text-gray-500">{group.tasks.length}</span>
@@ -692,7 +723,7 @@ const MyWork = () => {
 
           {/* Pending Approvals */}
           {approvals.length > 0 && (
-            <div className="glass-card-premium p-5">
+            <div className={PANEL_CLASS}>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   Pending Approvals
@@ -717,17 +748,17 @@ const MyWork = () => {
           )}
 
           {/* Quick Actions */}
-          <div className="glass-card-premium p-5">
+          <div className={PANEL_CLASS}>
             <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-3">Quick Actions</h2>
             <div className="space-y-2">
               {QUICK_ACTIONS.map(({ label, desc, icon: Icon, color, path }) => (
                 <button
                   key={label}
                   onClick={() => navigate(path)}
-                  className="w-full glass-card p-3 hover:shadow-md text-left flex items-center gap-3 transition-all"
+                  className="w-full rounded-xl border border-gray-200 bg-white p-3 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 text-left flex items-center gap-3 transition-all"
                 >
-                  <div className={`p-2 bg-${color}-100 dark:bg-${color}-900/30 rounded-lg shrink-0`}>
-                    <Icon className={`w-4 h-4 text-${color}-600 dark:text-${color}-400`} />
+                  <div className={`p-2 rounded-lg shrink-0 ${(QUICK_ACTION_STYLES[color] || QUICK_ACTION_STYLES.blue).bg}`}>
+                    <Icon className={`w-4 h-4 ${(QUICK_ACTION_STYLES[color] || QUICK_ACTION_STYLES.blue).text}`} />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">{label}</p>
@@ -739,7 +770,7 @@ const MyWork = () => {
           </div>
 
           {/* My Links */}
-          <div className="glass-card-premium p-5">
+          <div className={PANEL_CLASS}>
             <h2 className="text-sm font-bold text-gray-900 dark:text-white mb-3">My Links</h2>
             <div className="space-y-1">
               {MY_LINKS.map(({ label, path }) => (
@@ -757,7 +788,7 @@ const MyWork = () => {
 
           {/* Recent Projects */}
           {projects.length > 0 && (
-            <div className="glass-card-premium p-5">
+            <div className={PANEL_CLASS}>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold text-gray-900 dark:text-white">My Projects</h2>
                 <button onClick={() => navigate(`/${tenantSlug}/org/projects`)} className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
@@ -790,6 +821,25 @@ const MyWork = () => {
           defaultAssigneeId={user?.id}
         />
       )}
+
+      <div className="sm:hidden fixed bottom-4 left-4 right-4 z-40 rounded-2xl border border-gray-200 bg-white/95 backdrop-blur p-2 shadow-lg dark:border-gray-800 dark:bg-gray-900/95">
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            onClick={() => { loadTasks(); loadApprovals(); }}
+            className="col-span-1 h-11 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800"
+            title="Refresh"
+          >
+            <ArrowPathIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="col-span-2 h-11 rounded-lg bg-primary-600 text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary-700"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Add Task
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -267,39 +267,48 @@ class ProjectIntegrationService {
   }
 
   /**
-   * Sync sprint metrics from tasks and timesheets
+   * Sync sprint metrics from tasks and timesheets (story points + hours).
    */
   async syncSprintMetrics(orgId, sprintId) {
-    const sprint = await Sprint.findById(sprintId);
+    const mongoose = require('mongoose');
+    const oid = (id) => (id && mongoose.Types.ObjectId.isValid(id)) ? new mongoose.Types.ObjectId(id) : id;
+    const sprint = await Sprint.findById(oid(sprintId));
     if (!sprint) return;
 
     const tasks = await Task.find({
-      orgId,
+      orgId: oid(orgId),
       sprintId: sprint._id
-    });
+    }).lean();
 
-    const completedTasks = tasks.filter(t => t.status === 'completed');
-    const totalEstimatedHours = tasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
-    const totalActualHours = tasks.reduce((sum, t) => sum + (t.actualHours || 0), 0);
+    const completedTasks = tasks.filter((t) => t.status === 'completed' || t.status === 'done');
+    const totalStoryPoints = tasks.reduce((sum, t) => sum + (Number(t.storyPoints) || 0), 0);
+    const completedStoryPoints = completedTasks.reduce((sum, t) => sum + (Number(t.storyPoints) || 0), 0);
+    const prevCommitted = sprint.capacity?.committedStoryPoints;
+    const committedStoryPoints =
+      prevCommitted != null && prevCommitted > 0 ? prevCommitted : totalStoryPoints;
 
-    // Get timesheet entries for sprint
     const Finance = require('../../models/Finance');
     const TimeEntry = Finance.TimeEntry;
-    
+
     const timeEntries = await TimeEntry.find({
-      orgId,
+      orgId: oid(orgId),
       sprintId: sprint._id,
       status: { $in: ['approved', 'billed', 'invoiced'] }
-    });
+    }).lean();
 
-    const sprintActualHours = timeEntries.reduce((sum, entry) => sum + entry.hours, 0);
+    const sprintActualHours = timeEntries.reduce((sum, entry) => sum + (Number(entry.hours) || 0), 0);
 
-    sprint.capacity.actualHours = sprintActualHours;
-    sprint.capacity.completedStoryPoints = completedTasks.length;
+    sprint.capacity = {
+      ...(sprint.capacity || {}),
+      totalStoryPoints,
+      committedStoryPoints,
+      completedStoryPoints,
+      actualHours: sprintActualHours
+    };
 
-    // Calculate velocity
     if (sprint.status === 'completed') {
-      sprint.metrics.velocity = sprint.capacity.completedStoryPoints;
+      sprint.metrics = sprint.metrics || {};
+      sprint.metrics.velocity = completedStoryPoints;
     }
 
     await sprint.save();
@@ -465,6 +474,7 @@ class ProjectIntegrationService {
         totalEstimatedHours,
         totalActualHours,
         hoursVariance: totalActualHours - totalEstimatedHours,
+        totalSprints: sprints.length,
         activeSprints: activeSprints.length,
         completedMilestones: completedMilestones.length,
         totalMilestones: milestones.length

@@ -120,6 +120,7 @@ class PayrollService {
       for (const employee of employees) {
         // Check if payroll already exists for this period
         const existing = await PayrollRecord.findOne({
+          orgId,
           employeeId: employee._id,
           periodStart: new Date(periodStart),
           periodEnd: new Date(periodEnd)
@@ -159,7 +160,7 @@ class PayrollService {
         let grossPay = 0;
         if (payFrequency === 'monthly') {
           grossPay = baseSalary;
-        } else if (payFrequency === 'bi-weekly') {
+        } else if (payFrequency === 'biweekly' || payFrequency === 'bi-weekly') {
           grossPay = (baseSalary * 12) / 26;
         } else if (payFrequency === 'weekly') {
           grossPay = (baseSalary * 12) / 52;
@@ -189,6 +190,7 @@ class PayrollService {
 
         // Create payroll record
         const payrollRecord = new PayrollRecord({
+          orgId,
           employeeId: employee._id,
           userId: employee.userId,
           periodStart: new Date(periodStart),

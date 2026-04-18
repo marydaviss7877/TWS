@@ -12,59 +12,59 @@ const { setSecureCookie, setRefreshTokenCookie, clearSecureCookie } = require('.
 
 const router = express.Router();
 
-// Add a simple test route to verify the router is working
 router.get('/test', (req, res) => {
-  console.log('🔵 TENANT AUTH TEST ROUTE HIT');
   res.json({ message: 'Tenant auth router is working' });
 });
 
-// Debug endpoint to check tenant credentials
-router.post('/debug-tenant', async (req, res) => {
-  try {
-    const { username } = req.body;
-    
-    if (!username) {
-      return res.status(400).json({
-        success: false,
-        message: 'Username is required'
-      });
-    }
-    
-    const tenant = await Tenant.findOne({ 'ownerCredentials.username': username.toLowerCase() });
-    
-    if (!tenant) {
-      return res.status(404).json({
-        success: false,
-        message: 'Tenant not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      tenant: {
-        id: tenant._id,
-        name: tenant.name,
-        slug: tenant.slug,
-        status: tenant.status,
-        ownerCredentials: {
-          username: tenant.ownerCredentials.username,
-          email: tenant.ownerCredentials.email,
-          fullName: tenant.ownerCredentials.fullName,
-          isActive: tenant.ownerCredentials.isActive,
-          hasPassword: !!tenant.ownerCredentials.password,
-          passwordLength: tenant.ownerCredentials.password?.length,
-          lastLogin: tenant.ownerCredentials.lastLogin
-        }
+// Never expose owner/tenant resolution by username in production.
+if (process.env.NODE_ENV === 'development') {
+  router.post('/debug-tenant', async (req, res) => {
+    try {
+      const { username } = req.body;
+
+      if (!username) {
+        return res.status(400).json({
+          success: false,
+          message: 'Username is required'
+        });
       }
-    });
-  } catch (error) {
-    console.error('Debug tenant error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-});
+
+      const tenant = await Tenant.findOne({ 'ownerCredentials.username': username.toLowerCase() });
+
+      if (!tenant) {
+        return res.status(404).json({
+          success: false,
+          message: 'Tenant not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        tenant: {
+          id: tenant._id,
+          name: tenant.name,
+          slug: tenant.slug,
+          status: tenant.status,
+          ownerCredentials: {
+            username: tenant.ownerCredentials.username,
+            email: tenant.ownerCredentials.email,
+            fullName: tenant.ownerCredentials.fullName,
+            isActive: tenant.ownerCredentials.isActive,
+            hasPassword: !!tenant.ownerCredentials.password,
+            passwordLength: tenant.ownerCredentials.password?.length,
+            lastLogin: tenant.ownerCredentials.lastLogin
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Debug tenant error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  });
+}
 
 // Tenant Owner Login
 router.post('/login', 
@@ -74,55 +74,27 @@ router.post('/login',
     body('password').notEmpty().withMessage('Password is required')
   ], async (req, res) => {
   try {
-    console.log('🔵 LOGIN ROUTE HIT - Request received');
-    console.log('🔵 Request body:', req.body);
-    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('🔴 VALIDATION ERRORS:', errors.array());
-      return res.status(400).json({ 
-        success: false, 
-        errors: errors.array() 
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
       });
     }
 
     const { username, password } = req.body;
     const normalizedUsername = username.toLowerCase().trim();
-    
-    console.log('Tenant login attempt:', { username: normalizedUsername, passwordLength: password?.length });
 
     // Find tenant by owner username OR email (for better UX)
     // Try username first
     let tenant = await Tenant.findOne({ 'ownerCredentials.username': normalizedUsername });
-    
+
     // If not found by username, try email
     if (!tenant) {
       tenant = await Tenant.findOne({ 'ownerCredentials.email': normalizedUsername });
     }
-    
-    console.log('Tenant found:', tenant ? 'Yes' : 'No', tenant ? `Status: ${tenant.status}` : '');
-    console.log('Tenant details:', tenant ? {
-      id: tenant._id,
-      name: tenant.name,
-      slug: tenant.slug,
-      status: tenant.status,
-      ownerUsername: tenant.ownerCredentials.username,
-      ownerEmail: tenant.ownerCredentials.email,
-      ownerIsActive: tenant.ownerCredentials.isActive,
-      hasPassword: !!tenant.ownerCredentials.password
-    } : 'No tenant found');
-    
+
     if (!tenant) {
-      console.log('❌ Tenant not found for username/email:', normalizedUsername);
-      console.log('💡 Available tenants (first 5):');
-      try {
-        const allTenants = await Tenant.find({}).limit(5).select('name slug ownerCredentials.username ownerCredentials.email');
-        allTenants.forEach(t => {
-          console.log(`  - Name: ${t.name}, Slug: ${t.slug}, Username: ${t.ownerCredentials?.username}, Email: ${t.ownerCredentials?.email}`);
-        });
-      } catch (err) {
-        console.error('Error fetching tenants for debug:', err);
-      }
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -146,61 +118,19 @@ router.post('/login',
     }
 
 
-    // Verify username or email match (already verified above, but log it)
     const isUsernameMatch = tenant.ownerCredentials.username === normalizedUsername;
     const isEmailMatch = tenant.ownerCredentials.email === normalizedUsername;
-    
-    console.log('Credentials verification:', { 
-      provided: normalizedUsername, 
-      expectedUsername: tenant.ownerCredentials.username,
-      expectedEmail: tenant.ownerCredentials.email,
-      usernameMatch: isUsernameMatch,
-      emailMatch: isEmailMatch
-    });
-    
-    // Note: We already found the tenant by username or email above, so this check is redundant
-    // But we'll keep it for logging purposes
+
     if (!isUsernameMatch && !isEmailMatch) {
-      console.error('CRITICAL: Tenant found but credentials don\'t match!');
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
     }
 
-    // Verify password
     const isPasswordValid = await bcrypt.compare(password, tenant.ownerCredentials.password);
-    console.log('Password check:', { 
-      provided: password, 
-      providedLength: password.length,
-      hashLength: tenant.ownerCredentials.password.length,
-      hashStart: tenant.ownerCredentials.password.substring(0, 10) + '...',
-      valid: isPasswordValid
-    });
-    
-    // Additional password debugging
+
     if (!isPasswordValid) {
-      console.log('Password verification failed. Debugging info:');
-      console.log('- Provided password:', password);
-      console.log('- Stored hash length:', tenant.ownerCredentials.password.length);
-      console.log('- Hash starts with:', tenant.ownerCredentials.password.substring(0, 20));
-      console.log('- Username match:', tenant.ownerCredentials.username === username.toLowerCase());
-    }
-    
-    // Additional debugging
-    console.log('Full login data:', {
-      usernameProvided: username,
-      usernameFromDB: tenant.ownerCredentials.username,
-      usernameMatch: tenant.ownerCredentials.username === username.toLowerCase(),
-      passwordProvided: password,
-      passwordValid: isPasswordValid,
-      tenantSlug: tenant.slug
-    });
-    
-    if (!isPasswordValid) {
-      console.log('❌ Password verification failed for tenant:', tenant.name);
-      console.log('💡 Password provided length:', password.length);
-      console.log('💡 Stored password hash length:', tenant.ownerCredentials.password.length);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'

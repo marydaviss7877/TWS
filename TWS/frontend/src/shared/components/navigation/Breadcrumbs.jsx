@@ -83,27 +83,27 @@ const Breadcrumbs = ({ items, separator = '/', className = '' }) => {
   }
 
   return (
-    <nav 
-      className={`flex items-center space-x-2 text-sm ${className}`}
+    <nav
+      className={`max-w-full min-w-0 overflow-x-auto overflow-y-hidden glass-scrollbar scroll-smooth pb-0.5 text-sm ${className}`}
       aria-label="Breadcrumb"
     >
-      <ol className="flex items-center space-x-2">
+      <ol className="flex w-max min-w-full flex-nowrap items-center gap-x-2 pr-1">
         {breadcrumbItems.map((item, index) => {
           const isLast = index === breadcrumbItems.length - 1;
           const Icon = item.icon;
 
           return (
-            <li key={index} className="flex items-center">
+            <li key={index} className="flex shrink-0 items-center">
               {index > 0 && (
-                <ChevronRightIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 mx-2 flex-shrink-0" />
+                <ChevronRightIcon className="w-4 h-4 text-slate-400 dark:text-gray-500 mx-2 flex-shrink-0" />
               )}
               
               {isLast || !item.path ? (
                 <span 
                   className={`font-medium ${
                     isLast 
-                      ? 'text-gray-900 dark:text-white' 
-                      : 'text-gray-500 dark:text-gray-400'
+                      ? 'text-[#0d0e24] dark:text-white' 
+                      : 'text-slate-500 dark:text-gray-400'
                   }`}
                   aria-current={isLast ? 'page' : undefined}
                 >
@@ -113,7 +113,7 @@ const Breadcrumbs = ({ items, separator = '/', className = '' }) => {
               ) : (
                 <Link
                   to={item.path}
-                  className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                  className="flex items-center text-slate-600 dark:text-gray-300 hover:text-[#0d0e24] dark:hover:text-white transition-colors"
                 >
                   {Icon && <Icon className="w-4 h-4 inline-block mr-1" />}
                   {item.label}

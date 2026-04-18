@@ -151,16 +151,27 @@ const tenantApiService = {
   },
 
   // Get user by ID
-  getUserById: async (tenantSlug, userId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/users/${userId}`);
+  getUserById: async (tenantSlug, userId, options = {}) => {
+    const params = new URLSearchParams();
+    if (options.cacheBust) params.set('_t', String(Date.now()));
+    const query = params.toString();
+    const suffix = query ? `?${query}` : '';
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/users/${userId}${suffix}`);
   },
 
   // Update user
   updateUser: async (tenantSlug, userId, userData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/users/${userId}`, {
+    const response = await fetch(`/api/tenant/${tenantSlug}/organization/users/${userId}`, {
       method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(userData)
     });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || json.success === false) {
+      throw new Error(json.message || `Server error ${response.status}`);
+    }
+    return json.data || json;
   },
 
   // Delete user
@@ -230,6 +241,10 @@ const tenantApiService = {
   getPayrollData: async (tenantSlug, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
     return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/payroll?${queryParams}`);
+  },
+
+  getPayrollAnalytics: async (tenantSlug) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/payroll/analytics`);
   },
 
   // Get attendance data
@@ -672,6 +687,27 @@ const tenantApiService = {
     });
   },
 
+  // Get org leave policy
+  getLeavePolicy: async (tenantSlug) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/leave-policy`);
+  },
+
+  // Save org leave policy
+  saveLeavePolicy: async (tenantSlug, policyData) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/leave-policy`, {
+      method: 'PUT',
+      body: JSON.stringify(policyData)
+    });
+  },
+
+  // Apply org leave policy to all active employees
+  applyLeavePolicy: async (tenantSlug) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/leave-policy/apply`, {
+      method: 'POST',
+      body: JSON.stringify({})
+    });
+  },
+
   // ===== HR Training APIs =====
   
   // Get training data
@@ -1061,19 +1097,136 @@ const tenantApiService = {
     });
   },
 
-  // Attendance
-  checkIn: async (tenantSlug, employeeId, checkInData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/attendance/check-in`, {
+  markPayrollAsPaid: async (tenantSlug, payrollId, paymentMethod = 'bank-transfer') => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/payroll/${payrollId}/mark-paid`, {
       method: 'POST',
-      body: JSON.stringify({ employeeId, ...checkInData })
+      body: JSON.stringify({ paymentMethod })
     });
   },
 
-  checkOut: async (tenantSlug, employeeId, checkOutData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/attendance/check-out`, {
+  getPayrollCycles: async (tenantSlug) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/payroll/cycles`);
+  },
+
+  createPayrollCycle: async (tenantSlug, cycleData) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/payroll/cycles`, {
       method: 'POST',
+      body: JSON.stringify(cycleData)
+    });
+  },
+
+  closePayrollCycle: async (tenantSlug, cycleId) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/payroll/cycles/${cycleId}/close`, {
+      method: 'POST'
+    });
+  },
+
+  // Attendance
+  checkIn: async (tenantSlug, employeeId, checkInData) => {
+    const response = await fetch(`/api/tenant/${tenantSlug}/organization/hr/attendance/check-in`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ employeeId, ...checkInData })
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || json.success === false) {
+      throw new Error(json.message || `Check-in failed (${response.status})`);
+    }
+    return json.data || json;
+  },
+
+  checkOut: async (tenantSlug, employeeId, checkOutData) => {
+    const response = await fetch(`/api/tenant/${tenantSlug}/organization/hr/attendance/check-out`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ employeeId, ...checkOutData })
     });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || json.success === false) {
+      throw new Error(json.message || `Check-out failed (${response.status})`);
+    }
+    return json.data || json;
+  },
+
+  updateAttendancePunch: async (tenantSlug, attendanceId, payload) => {
+    const response = await fetch(`/api/tenant/${tenantSlug}/organization/hr/attendance/${attendanceId}/punch`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || json.success === false) {
+      throw new Error(json.message || `Failed to update attendance punch (${response.status})`);
+    }
+    return json.data || json;
+  },
+
+  markAttendanceAbsent: async (tenantSlug, attendanceId, reason) => {
+    const response = await fetch(`/api/tenant/${tenantSlug}/organization/hr/attendance/${attendanceId}/mark-absent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ reason })
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || json.success === false) {
+      throw new Error(json.message || `Failed to mark absent (${response.status})`);
+    }
+    return json.data || json;
+  },
+
+  requestAttendanceCorrectionOnBehalf: async (tenantSlug, attendanceId, reason) => {
+    const response = await fetch(`/api/tenant/${tenantSlug}/organization/hr/attendance/${attendanceId}/request-correction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ reason })
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || json.success === false) {
+      throw new Error(json.message || `Failed to request correction (${response.status})`);
+    }
+    return json.data || json;
+  },
+
+  getAttendancePendingCorrections: async (tenantSlug, params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/attendance/pending-corrections?${queryParams}`);
+  },
+
+  decideAttendanceCorrection: async (tenantSlug, attendanceId, correctionId, status, comments = '') => {
+    const response = await fetch(`/api/tenant/${tenantSlug}/organization/hr/attendance/${attendanceId}/corrections/${correctionId}/decision`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ status, comments })
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || json.success === false) {
+      throw new Error(json.message || `Failed to ${status} correction (${response.status})`);
+    }
+    return json.data || json;
+  },
+
+  getAttendanceAuditTrail: async (tenantSlug, attendanceId) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/attendance/${attendanceId}/audit`);
+  },
+
+  bulkAttendanceAction: async (tenantSlug, payload) => {
+    const response = await fetch(`/api/tenant/${tenantSlug}/organization/hr/attendance/bulk-action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || json.success === false) {
+      throw new Error(json.message || `Bulk action failed (${response.status})`);
+    }
+    return json.data || json;
   },
 
   getAttendanceReports: async (tenantSlug, params = {}) => {

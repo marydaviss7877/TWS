@@ -75,6 +75,16 @@ const taskSchema = new mongoose.Schema({
     enum: ['low', 'medium', 'high', 'critical'],
     default: 'medium'
   },
+  type: {
+    type: String,
+    trim: true,
+    default: 'task'
+  },
+  storyPoints: {
+    type: Number,
+    min: 0,
+    default: null
+  },
   assignee: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

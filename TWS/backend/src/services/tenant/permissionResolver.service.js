@@ -38,7 +38,7 @@ const BASE_ROLE_PERMISSIONS = {
   hr: [], // resolved via HR_SUBROLE_PERMISSIONS when hrSubRole is set
   finance: [], // resolved via FINANCE_SUBROLE_PERMISSIONS when financeSubRole is set
   employee: [
-    'projects:read', 'tasks:read', 'documents:read', 'attendance:read', 'leave:read', 'leave:write',
+    'projects:read', 'tasks:read', 'documents:read', 'attendance:read', 'attendance:write_own', 'leave:read', 'leave:write',
     'nucleus:read', 'payroll:read_own', 'teams:read',
     // Employee portal: own HR profile only (GET /hr/employees?userId=<self>); not full roster
     'employees:read_own',
@@ -133,8 +133,12 @@ async function resolveUserPermissions(userId, tenantId, opts = {}) {
   const tenantIdStr = String(tenantId);
   const userIdStr = String(userId);
 
-  const tenantUser = await TenantUser.findOne({ userId, tenantId, status: 'active' })
-    .select('roles status hrSubRole financeSubRole')
+  const tenantUser = await TenantUser.findOne({
+    userId,
+    tenantId,
+    status: { $in: ['active', 'pending'] }
+  })
+    .select('roles status hrSubRole financeSubRole metadata.customFields.permissionOverrides')
     .lean();
   if (!tenantUser) {
     // Legacy / edge: active User in tenant org but no TenantUser row yet — grant base role perms
@@ -247,13 +251,21 @@ async function resolveUserPermissions(userId, tenantId, opts = {}) {
     deptPerms,
     rolePerms
   );
-  const permissions = [...new Set(all)];
+  let permissions = [...new Set(all)];
+  const deniedPermissionCodes = Array.isArray(tenantUser?.metadata?.customFields?.permissionOverrides?.deny)
+    ? tenantUser.metadata.customFields.permissionOverrides.deny
+    : [];
+  if (deniedPermissionCodes.length > 0 && !permissions.includes('*:*')) {
+    const denySet = new Set(deniedPermissionCodes.map((c) => String(c).trim().toLowerCase()));
+    permissions = permissions.filter((p) => !denySet.has(String(p).trim().toLowerCase()));
+  }
 
   const result = {
     permissions,
     departmentIds: primaryRole === 'owner' ? ['*'] : departmentIds,
     hrSubRole: primaryRole === 'hr' ? hrSubRole : null,
-    financeSubRole: primaryRole === 'finance' ? financeSubRole : null
+    financeSubRole: primaryRole === 'finance' ? financeSubRole : null,
+    deniedPermissionCodes
   };
   return result;
 }

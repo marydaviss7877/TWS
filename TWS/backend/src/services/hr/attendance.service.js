@@ -1,6 +1,15 @@
 const Attendance = require('../../models/Attendance');
 const Employee = require('../../models/Employee');
 
+function normalizeDeviceValue(device) {
+  if (!device) return undefined;
+  if (typeof device === 'string') return device;
+  if (typeof device === 'object') {
+    return device.userAgent || device.type || undefined;
+  }
+  return String(device);
+}
+
 class AttendanceService {
   /**
    * Get attendance records
@@ -42,7 +51,11 @@ class AttendanceService {
       if (startDate || endDate) {
         query.date = {};
         if (startDate) query.date.$gte = new Date(startDate);
-        if (endDate) query.date.$lte = new Date(endDate);
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          query.date.$lte = end;
+        }
       }
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -84,7 +97,8 @@ class AttendanceService {
       const employeeQuery = {
         $or: [
           { _id: employeeId },
-          { employeeId: employeeId }
+          { employeeId: employeeId },
+          { userId: employeeId }
         ]
       };
       if (orgId) {
@@ -122,7 +136,7 @@ class AttendanceService {
       attendance.checkIn = {
         timestamp: new Date(),
         location: checkInData.location || {},
-        device: checkInData.device || {},
+        device: normalizeDeviceValue(checkInData.device),
         photoUrl: checkInData.photoUrl,
         photoHash: checkInData.photoHash,
         biometricData: checkInData.biometricData || {},
@@ -153,13 +167,17 @@ class AttendanceService {
    */
   async checkOut(orgId, employeeId, checkOutData) {
     try {
-      const employee = await Employee.findOne({
+      const employeeQuery = {
         $or: [
           { _id: employeeId },
-          { employeeId: employeeId }
-        ],
-        orgId: orgId
-      });
+          { employeeId: employeeId },
+          { userId: employeeId }
+        ]
+      };
+      if (orgId) {
+        employeeQuery.$and = [{ $or: [{ organizationId: orgId }, { orgId: orgId }] }];
+      }
+      const employee = await Employee.findOne(employeeQuery);
 
       if (!employee) {
         throw new Error('Employee not found');
@@ -185,7 +203,7 @@ class AttendanceService {
       attendance.checkOut = {
         timestamp: new Date(),
         location: checkOutData.location || {},
-        device: checkOutData.device || {},
+        device: normalizeDeviceValue(checkOutData.device),
         photoUrl: checkOutData.photoUrl,
         photoHash: checkOutData.photoHash,
         biometricData: checkOutData.biometricData || {},
@@ -253,7 +271,11 @@ class AttendanceService {
       if (startDate || endDate) {
         query.date = {};
         if (startDate) query.date.$gte = new Date(startDate);
-        if (endDate) query.date.$lte = new Date(endDate);
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          query.date.$lte = end;
+        }
       }
 
       const records = await Attendance.find(query)

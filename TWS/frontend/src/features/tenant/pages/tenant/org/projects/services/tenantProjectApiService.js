@@ -5,47 +5,20 @@
  */
 
 import tenantApiService from '../../../../../../../shared/services/tenant/tenant-api.service';
+import { refreshToken as refreshSessionCookies } from '../../../../../../../shared/services/auth/token-refresh.service';
 import { API_ENDPOINTS, ERROR_MESSAGES } from '../constants/projectConstants';
-
-// SECURITY FIX: Refresh tenant token using cookies
-const refreshTenantToken = async () => {
-  try {
-    // SECURITY FIX: Refresh token using cookies (credentials: 'include')
-    const response = await fetch('/api/tenant-auth/refresh', {
-      method: 'POST',
-      credentials: 'include', // SECURITY FIX: Include cookies
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Token refresh failed');
-    }
-
-    const data = await response.json();
-    if (data.success) {
-      // SECURITY FIX: Tokens are now in HttpOnly cookies, not in response
-      // No need to store in localStorage
-      return 'cookie-based'; // Success indicator
-    }
-
-    throw new Error('Invalid refresh response');
-  } catch (error) {
-    // SECURITY FIX: Only clear user data, tokens are in cookies
-    localStorage.removeItem('tenantData');
-    // Redirect to landing page
-    window.location.href = '/landing';
-    throw error;
-  }
-};
 
 // Helper to process response with timeout handling
 const processResponse = async (response) => {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const error = new Error(errorData.message || `API request failed: ${response.status} ${response.statusText}`);
+    let msg = errorData.message || `API request failed: ${response.status} ${response.statusText}`;
+    const errs = errorData.errors;
+    if (Array.isArray(errs) && errs.length) {
+      const detail = errs.map((e) => e.msg || e.message || JSON.stringify(e)).filter(Boolean).join('; ');
+      if (detail) msg = `${msg}: ${detail}`;
+    }
+    const error = new Error(msg);
     error.status = response.status;
     error.data = errorData;
     error.isApiError = true;
@@ -125,8 +98,9 @@ const makeRequest = async (endpoint, options = {}, retry = true) => {
         // SECURITY FIX: Add exponential backoff (1 second delay)
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // SECURITY FIX: Attempt to refresh token using cookies
-        await refreshTenantToken();
+        // Use shared refresh (tries /api/auth/refresh then /api/tenant-auth/refresh).
+        // Org staff use main auth cookies; tenant-only refresh would 403 and wrongly log users out.
+        await refreshSessionCookies();
         
         // SECURITY FIX: Clear retry counter on success
         sessionStorage.removeItem(retryKey);
@@ -242,6 +216,55 @@ class TenantProjectApiService {
     } catch (error) {
       throw this.handleError(error, ERROR_MESSAGES.VALIDATION_ERROR);
     }
+  }
+
+  /**
+   * Upload project workspace logo (multipart field: logo)
+   * @param {string} tenantSlug
+   * @param {string} projectId
+   * @param {File} file
+   * @returns {Promise<{ logoUrl?: string }>}
+   */
+  async uploadProjectLogo(tenantSlug, projectId, file) {
+    if (!projectId || !file) {
+      throw new Error('Project ID and file are required');
+    }
+    const form = new FormData();
+    form.append('logo', file);
+    const url = `/api/tenant/${tenantSlug}/organization/projects/${projectId}/logo`;
+    const response = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      body: form
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const err = new Error(json.message || 'Failed to upload project logo');
+      err.status = response.status;
+      throw err;
+    }
+    return json.data || json;
+  }
+
+  /**
+   * Remove project logo
+   */
+  async deleteProjectLogo(tenantSlug, projectId) {
+    if (!projectId) {
+      throw new Error('Project ID is required');
+    }
+    const url = `/api/tenant/${tenantSlug}/organization/projects/${projectId}/logo`;
+    const response = await fetch(url, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const err = new Error(json.message || 'Failed to remove project logo');
+      err.status = response.status;
+      throw err;
+    }
+    return json.data || json;
   }
 
   /**
@@ -529,6 +552,23 @@ class TenantProjectApiService {
       return await makeRequest(API_ENDPOINTS.PROJECT_SPRINTS(tenantSlug), {
         method: 'POST',
         body: JSON.stringify(sprintData)
+      });
+    } catch (error) {
+      throw this.handleError(error, ERROR_MESSAGES.VALIDATION_ERROR);
+    }
+  }
+
+  /**
+   * Update a sprint (e.g. status: planning → active)
+   * @param {string} tenantSlug
+   * @param {string} sprintId
+   * @param {Object} updates — partial fields (status, goal, dates, …)
+   */
+  async updateSprint(tenantSlug, sprintId, updates) {
+    try {
+      return await makeRequest(API_ENDPOINTS.PROJECT_SPRINT(tenantSlug, sprintId), {
+        method: 'PATCH',
+        body: JSON.stringify(updates)
       });
     } catch (error) {
       throw this.handleError(error, ERROR_MESSAGES.VALIDATION_ERROR);

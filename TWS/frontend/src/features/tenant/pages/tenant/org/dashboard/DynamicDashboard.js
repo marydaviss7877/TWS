@@ -1,21 +1,9 @@
 import React from 'react';
-import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
-import DashboardOverview from './DashboardOverview';
-import SoftwareHouseDashboard from '../../../../../dashboard/pages/SoftwareHouseDashboard';
+import TenantAdminDashboard from './TenantAdminDashboard';
 
 /**
- * Dynamic Dashboard Component
- * Selects the appropriate dashboard based on tenant's ERP category (Software House only).
+ * Tenant org `/dashboard` — unified tenant admin command center.
  */
-const DynamicDashboard = () => {
-  const { tenant } = useTenantAuth();
-  const erpCategory = tenant?.erpCategory || 'software_house';
-
-  if (erpCategory === 'software_house') {
-    return <SoftwareHouseDashboard />;
-  }
-  return <DashboardOverview />;
-};
+const DynamicDashboard = () => <TenantAdminDashboard />;
 
 export default DynamicDashboard;
-

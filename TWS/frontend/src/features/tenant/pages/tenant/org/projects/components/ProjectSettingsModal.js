@@ -1,9 +1,10 @@
 /**
- * ProjectSettingsModal — tabbed project settings panel.
+ * Project settings — right slide-over panel (same interaction pattern as the task drawer on the board).
  * Tabs: General | Timeline | Budget | Departments | Danger
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   XMarkIcon,
   InformationCircleIcon,
@@ -11,6 +12,7 @@ import {
   CurrencyDollarIcon,
   BuildingOfficeIcon,
   ExclamationTriangleIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
 import { useParams } from 'react-router-dom';
 import tenantProjectApiService from '../services/tenantProjectApiService';
@@ -64,6 +66,15 @@ function Field({ label, error, children }) {
   );
 }
 
+function getProjectLogoApiUrl(url, tenantSlug) {
+  if (!url || !tenantSlug) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/uploads/project-logos/')) {
+    return `/api/tenant/${tenantSlug}/organization${url}`;
+  }
+  return url;
+}
+
 /* ─── Main component ─────────────────────────────────────────────────────────── */
 const ProjectSettingsModal = ({ isOpen, onClose, project, projectId: projectIdProp, onSaved }) => {
   const { tenantSlug } = useParams();
@@ -87,6 +98,16 @@ const ProjectSettingsModal = ({ isOpen, onClose, project, projectId: projectIdPr
   const [clients,    setClients]    = useState([]);
   const [departments,setDepartments]= useState([]);
   const [dangerConfirm, setDangerConfirm] = useState('');
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoRemoving, setLogoRemoving] = useState(false);
+  const [headerLogoBroken, setHeaderLogoBroken] = useState(false);
+  const logoFileInputRef = useRef(null);
+
+  const logoApiUrl = getProjectLogoApiUrl(project?.logoUrl, tenantSlug);
+
+  useEffect(() => {
+    setHeaderLogoBroken(false);
+  }, [project?.logoUrl, tenantSlug]);
 
   /* ── fetch reference data ── */
   useEffect(() => {
@@ -186,6 +207,40 @@ const ProjectSettingsModal = ({ isOpen, onClose, project, projectId: projectIdPr
     }
   };
 
+  const handleProjectLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !projectId) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showError('Image must be 2 MB or smaller');
+      return;
+    }
+    setLogoUploading(true);
+    try {
+      await tenantProjectApiService.uploadProjectLogo(tenantSlug, projectId, file);
+      showSuccess('Project logo updated');
+      if (onSaved) await onSaved();
+    } catch (err) {
+      showError(err.message || 'Failed to upload logo');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const handleProjectLogoRemove = async () => {
+    if (!projectId || !project?.logoUrl) return;
+    setLogoRemoving(true);
+    try {
+      await tenantProjectApiService.deleteProjectLogo(tenantSlug, projectId);
+      showSuccess('Project logo removed');
+      if (onSaved) await onSaved();
+    } catch (err) {
+      showError(err.message || 'Failed to remove logo');
+    } finally {
+      setLogoRemoving(false);
+    }
+  };
+
   const handleArchive = async () => {
     if (dangerConfirm !== (project?.name || '')) return;
     setIsDangerLoading(true);
@@ -199,6 +254,7 @@ const ProjectSettingsModal = ({ isOpen, onClose, project, projectId: projectIdPr
   };
 
   if (!isOpen) return null;
+  if (typeof document === 'undefined' || !document.body) return null;
 
   const projectTypeOptions = Object.entries(PROJECT_TYPE).map(([k, v]) => ({
     label: k.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' '), value: v,
@@ -206,37 +262,61 @@ const ProjectSettingsModal = ({ isOpen, onClose, project, projectId: projectIdPr
 
   const currentStatusDot = PROJECT_STATUS_OPTIONS.find(s => s.value === formData.status)?.dot || 'bg-gray-400';
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4" onClick={onClose}>
-      <div className="glass-card-premium max-w-2xl w-full max-h-[90vh] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
-        onClick={e => e.stopPropagation()}>
-
-        {/* Modal header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+  return createPortal(
+    <>
+      <div
+        className="fixed inset-0 z-[80] bg-black/30"
+        aria-hidden
+        onClick={onClose}
+      />
+      <div
+        className="fixed inset-y-0 right-0 z-[90] flex w-full max-w-xl flex-col overflow-hidden border-l border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 animate-slide-in-right"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="project-settings-panel-title"
+      >
+        {/* Panel header */}
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
-              {(project?.name || 'P').charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{project?.name || 'Project'}</h2>
+            {logoApiUrl && !headerLogoBroken ? (
+              <img
+                src={logoApiUrl}
+                alt=""
+                className="w-9 h-9 rounded-xl object-cover ring-1 ring-gray-200 dark:ring-gray-600 shrink-0"
+                onError={() => setHeaderLogoBroken(true)}
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                {(project?.name || 'P').charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0">
+              <h2 id="project-settings-panel-title" className="truncate text-lg font-bold leading-tight text-gray-900 dark:text-white">
+                {project?.name || 'Project'}
+              </h2>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <div className={`w-2 h-2 rounded-full ${currentStatusDot}`} />
                 <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">{formData.status}</span>
               </div>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+            aria-label="Close project settings"
+          >
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700 px-4 shrink-0 overflow-x-auto no-scrollbar">
+        <div className="flex min-h-0 min-w-0 shrink-0 flex-nowrap items-stretch gap-0 overflow-x-auto overflow-y-hidden border-b border-gray-200 px-3 pb-0.5 dark:border-gray-700 glass-scrollbar scroll-smooth sm:px-4">
           {TABS.map(tab => (
-            <button key={tab.key}
+            <button key={tab.key} type="button"
               onClick={() => setActiveTab(tab.key)}
               className={[
-                'flex items-center gap-1.5 px-3 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
+                'flex shrink-0 items-center gap-1.5 px-3 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors',
                 activeTab === tab.key
                   ? (tab.danger ? 'border-red-500 text-red-600 dark:text-red-400' : 'border-primary-500 text-primary-600 dark:text-primary-400')
                   : (tab.danger ? 'border-transparent text-red-400 dark:text-red-500 hover:text-red-500' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'),
@@ -248,7 +328,7 @@ const ProjectSettingsModal = ({ isOpen, onClose, project, projectId: projectIdPr
         </div>
 
         {/* Tab content */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4 space-y-4 sm:px-6 sm:py-5 glass-scrollbar">
 
           {/* ── General ── */}
           {activeTab === 'general' && (
@@ -262,6 +342,54 @@ const ProjectSettingsModal = ({ isOpen, onClose, project, projectId: projectIdPr
                 <textarea name="description" value={formData.description} onChange={handleInputChange}
                   rows={3} className="w-full glass-input rounded-xl px-4 py-2" placeholder="Describe the project…" />
               </Field>
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/40 p-4">
+                <FieldLabel>Project logo</FieldLabel>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                  Optional image for the project header (JPEG, PNG, WebP, GIF, or SVG, max 2 MB).
+                </p>
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-600">
+                    {logoApiUrl && !headerLogoBroken ? (
+                      <img
+                        src={logoApiUrl}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        onError={() => setHeaderLogoBroken(true)}
+                      />
+                    ) : (
+                      <PhotoIcon className="h-8 w-8 text-gray-300 dark:text-gray-600" aria-hidden />
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <input
+                      ref={logoFileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,.jpg,.jpeg,.png,.gif,.webp,.svg"
+                      className="hidden"
+                      onChange={handleProjectLogoUpload}
+                    />
+                    <button
+                      type="button"
+                      disabled={logoUploading || !projectId}
+                      onClick={() => logoFileInputRef.current?.click()}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                    >
+                      <PhotoIcon className="h-4 w-4 shrink-0" />
+                      {logoUploading ? 'Uploading…' : project?.logoUrl ? 'Replace image' : 'Upload image'}
+                    </button>
+                    {project?.logoUrl && (
+                      <button
+                        type="button"
+                        disabled={logoRemoving}
+                        onClick={handleProjectLogoRemove}
+                        className="inline-flex items-center justify-center rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
+                      >
+                        {logoRemoving ? 'Removing…' : 'Remove logo'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Type">
                   <select name="projectType" value={formData.projectType} onChange={handleInputChange} className="w-full glass-input rounded-xl px-4 py-2">
@@ -446,21 +574,29 @@ const ProjectSettingsModal = ({ isOpen, onClose, project, projectId: projectIdPr
           )}
         </form>
 
-        {/* Footer — only show Save on non-danger tabs */}
+        {/* Footer — pinned like task drawer; Save hidden on Danger tab */}
         {activeTab !== 'danger' && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 shrink-0 bg-gray-50/60 dark:bg-gray-800/40">
-            <button type="button" onClick={onClose}
-              className="px-4 py-2 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-gray-200 bg-gray-50/80 px-5 py-4 dark:border-gray-700 dark:bg-gray-800/50 sm:px-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
               Cancel
             </button>
-            <button type="button" onClick={handleSubmit} disabled={isLoading}
-              className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-primary-500 to-accent-500 text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
               {isLoading ? 'Saving…' : 'Save changes'}
             </button>
           </div>
         )}
       </div>
-    </div>
+    </>,
+    document.body
   );
 };
 

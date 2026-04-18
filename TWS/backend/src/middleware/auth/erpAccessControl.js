@@ -9,6 +9,7 @@ const User = require('../../models/User');
 const TenantDepartmentAccess = require('../../models/TenantDepartmentAccess');
 const Workspace = require('../../models/Workspace');
 const Project = require('../../models/Project');
+const Employee = require('../../models/Employee');
 const permissionCache = require('../../services/tenant/permissionCache.service');
 const { getResolvedPermissions, hasPermission, hasAnyPermission } = require('../../services/tenant/permissionResolver.service');
 
@@ -96,6 +97,23 @@ function requireErpAccess(options = {}) {
             hasPermission(resolved.permissions, 'employees', 'read_own')
           ) {
             permitted = true;
+          }
+        }
+        // Self-service: employees may write only their own attendance rows with attendance:write_own
+        if (!permitted && permissionModule === 'attendance' && actions.includes('write')) {
+          const targetEmployeeId = req.body?.employeeId || req.query?.employeeId;
+          if (targetEmployeeId && hasPermission(resolved.permissions, 'attendance', 'write_own')) {
+            const ownEmployeeQuery = {
+              $or: [{ _id: targetEmployeeId }, { employeeId: targetEmployeeId }, { userId: targetEmployeeId }],
+              userId: req.user._id
+            };
+            if (orgId) {
+              ownEmployeeQuery.$and = [{ $or: [{ organizationId: orgId }, { orgId }] }];
+            }
+            const ownEmployee = await Employee.findOne(ownEmployeeQuery).select('_id userId').lean();
+            if (ownEmployee && String(ownEmployee.userId) === String(req.user._id)) {
+              permitted = true;
+            }
           }
         }
         if (!permitted) {

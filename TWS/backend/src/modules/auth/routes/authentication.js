@@ -169,103 +169,21 @@ router.post('/login',
     const normalizedEmail = validator.normalizeEmail(rawEmail, AUTH_EMAIL_NORMALIZE)
       || rawEmail.toLowerCase();
 
-    // #region agent log
-    const __emailShape = (s) => {
-      const at = String(s).indexOf('@');
-      if (at < 0) return { len: String(s).length, hasAt: false };
-      const local = String(s).slice(0, at);
-      const domain = String(s).slice(at + 1).toLowerCase();
-      return {
-        len: String(s).length,
-        hasAt: true,
-        localLen: local.length,
-        domainLen: domain.length,
-        dotInLocal: local.includes('.'),
-        plusInLocal: local.includes('+'),
-        isGmailFamily: domain === 'gmail.com' || domain === 'googlemail.com'
-      };
-    };
-    const __dbgLogin = (message, data) => {
-      const payload = {
-        sessionId: '58fcec',
-        location: 'authentication.js:POST /login',
-        message,
-        data: { ...data, dbName: mongoose.connection?.db?.databaseName || null },
-        timestamp: Date.now(),
-        runId: 'debug-login'
-      };
-      try {
-        const fs = require('fs');
-        const path = require('path');
-        const line = `${JSON.stringify(payload)}\n`;
-        const candidates = [
-          path.join(__dirname, '../../../../../../', 'debug-58fcec.log'),
-          path.join(process.cwd(), 'debug-58fcec.log'),
-          path.join(process.cwd(), '..', 'debug-58fcec.log')
-        ];
-        for (const logPath of candidates) {
-          try {
-            fs.appendFileSync(logPath, line);
-            break;
-          } catch (e) {
-            /* try next */
-          }
-        }
-      } catch (e) {
-        /* ignore */
-      }
-      if (typeof fetch === 'function') {
-        fetch('http://127.0.0.1:7747/ingest/f231b9ac-6c94-4015-8ae9-d7ed6229bd4b', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '58fcec' },
-          body: JSON.stringify(payload)
-        }).catch(() => {});
-      }
-    };
-    __dbgLogin('login_after_normalize', {
-      hypothesisId: 'H1',
-      rawShape: __emailShape(rawEmail),
-      normShape: __emailShape(normalizedEmail),
-      rawEqNorm: rawEmail === normalizedEmail,
-      pwdLen: password.length
-    });
-    // #endregion
-
     // Single lookup in User model — supra admins are not here
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
-      // #region agent log
-      __dbgLogin('login_fail_no_user', { hypothesisId: 'H1', normShape: __emailShape(normalizedEmail) });
-      // #endregion
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
     if (user.status !== 'active') {
-      // #region agent log
-      __dbgLogin('login_fail_inactive', { hypothesisId: 'H4', userId: user._id?.toString(), status: user.status });
-      // #endregion
       return res.status(403).json({ success: false, message: 'Account is not active' });
     }
 
     const isPasswordValid = await user.comparePassword(password).catch(() => false);
     if (!isPasswordValid) {
-      // #region agent log
-      const pwd = user.password;
-      __dbgLogin('login_fail_bad_password', {
-        hypothesisId: 'H2',
-        userId: user._id?.toString(),
-        storedPwdLooksBcrypt: typeof pwd === 'string' && /^\$2[aby]?\$/.test(pwd),
-        storedPwdLen: typeof pwd === 'string' ? pwd.length : 0,
-        pwdLenAfterTrim: password.length
-      });
-      // #endregion
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
-
-    // #region agent log
-    __dbgLogin('login_ok', { hypothesisId: 'H0', userId: user._id?.toString(), role: user.role });
-    // #endregion
 
     // Update last login without triggering password re-hash
     await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } }).catch(() => {});

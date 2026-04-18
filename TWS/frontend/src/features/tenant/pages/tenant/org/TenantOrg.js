@@ -6,7 +6,6 @@ import { TenantAuthProvider } from '../../../../../app/providers/TenantAuthConte
 import { TenantThemeProvider } from '../../../providers/TenantThemeProvider';
 
 // Dashboard Components
-import DashboardOverview from './dashboard/DashboardOverview';
 import DashboardAnalytics from './dashboard/DashboardAnalytics';
 import DynamicDashboard from './dashboard/DynamicDashboard';
 import AppHome from './dashboard/AppHome';
@@ -165,13 +164,15 @@ const CatchAllRoute = () => {
 };
 
 const CLIENT_ROLES = ['client', 'customer'];
+const ADMIN_ROLES = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner'];
 
 const ClientAccessGate = ({ children }) => {
   const { user } = useTenantAuth();
   const { tenantSlug } = useParams();
   const location = useLocation();
+  const normalizedRole = String(user?.role || '').toLowerCase();
 
-  if (!CLIENT_ROLES.includes(user?.role)) {
+  if (!CLIENT_ROLES.includes(normalizedRole)) {
     return children;
   }
 
@@ -196,7 +197,8 @@ const ClientAccessGate = ({ children }) => {
 
 const HomeRoute = () => {
   const { user } = useTenantAuth();
-  if (CLIENT_ROLES.includes(user?.role)) {
+  const normalizedRole = String(user?.role || '').toLowerCase();
+  if (CLIENT_ROLES.includes(normalizedRole)) {
     return <Navigate to="../client-portal" replace />;
   }
   return <AppHome />;
@@ -204,11 +206,23 @@ const HomeRoute = () => {
 
 const EmployeeOnlyRoute = ({ children }) => {
   const { user } = useTenantAuth();
-  if (CLIENT_ROLES.includes(user?.role)) {
+  const normalizedRole = String(user?.role || '').toLowerCase();
+  if (CLIENT_ROLES.includes(normalizedRole)) {
     return <Navigate to="../client-portal" replace />;
   }
-  if (['owner', 'admin', 'super_admin', 'org_manager'].includes(user?.role)) {
+  if (ADMIN_ROLES.includes(normalizedRole)) {
     return <Navigate to="../home" replace />;
+  }
+  return children;
+};
+
+const HROnlyRoute = ({ children }) => {
+  const { user } = useTenantAuth();
+  const { tenantSlug } = useParams();
+  const normalizedRole = String(user?.role || '').toLowerCase();
+  const hrRoles = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner', 'hr', 'project_manager', 'manager'];
+  if (!hrRoles.includes(normalizedRole)) {
+    return <Navigate to={`/${tenantSlug}/org/home`} replace />;
   }
   return children;
 };
@@ -221,7 +235,8 @@ const ClientPortalRoute = () => {
 
 const OrganizationProfileRoute = () => {
   const { user } = useTenantAuth();
-  if (CLIENT_ROLES.includes(user?.role)) {
+  const normalizedRole = String(user?.role || '').toLowerCase();
+  if (CLIENT_ROLES.includes(normalizedRole)) {
     return <ClientOrganizationProfile />;
   }
   return <OrgProfile />;
@@ -229,7 +244,8 @@ const OrganizationProfileRoute = () => {
 
 const SettingsRoute = () => {
   const { user } = useTenantAuth();
-  if (CLIENT_ROLES.includes(user?.role)) {
+  const normalizedRole = String(user?.role || '').toLowerCase();
+  if (CLIENT_ROLES.includes(normalizedRole)) {
     return <Navigate to="../client-portal" replace />;
   }
   return <SettingsOverview />;
@@ -238,7 +254,8 @@ const SettingsRoute = () => {
 const AdminOnlySettingsRoute = ({ children }) => {
   const { user } = useTenantAuth();
   const { tenantSlug } = useParams();
-  if (user?.role !== 'admin') {
+  const normalizedRole = String(user?.role || '').toLowerCase();
+  if (!ADMIN_ROLES.includes(normalizedRole)) {
     return <Navigate to={`/${tenantSlug}/org/home`} replace />;
   }
   return children;
@@ -252,7 +269,8 @@ const TenantOrg = () => {
       <TenantThemeProvider tenantSlug={tenantSlug}>
         <TenantOrgLayout>
           <ClientAccessGate>
-          <Routes>
+          {/* basename required: nested <Routes> otherwise matches /dashboard not /:slug/org/dashboard */}
+          <Routes basename={tenantSlug ? `/${tenantSlug}/org` : undefined}>
           {/* Dashboard Routes */}
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<HomeRoute />} />
@@ -305,7 +323,7 @@ const TenantOrg = () => {
           <Route path="software-house/hr/employees" element={<EmployeeList />} />
           <Route path="software-house/hr/employees/create" element={<EmployeeCreate />} />
           <Route path="software-house/hr/employees/:id" element={<EmployeeDetail />} />
-          <Route path="software-house/hr/payroll" element={<PayrollManagement />} />
+          <Route path="software-house/hr/payroll" element={<HROnlyRoute><PayrollManagement /></HROnlyRoute>} />
           <Route path="software-house/hr/attendance" element={<AttendanceManagement />} />
           <Route path="software-house/hr/leave-requests" element={<HRLeaveRequests />} />
           <Route path="software-house/hr/performance" element={<HRPerformance />} />

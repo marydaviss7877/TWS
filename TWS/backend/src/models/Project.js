@@ -75,6 +75,11 @@ const projectSchema = new mongoose.Schema({
     trim: true
   },
   description: String,
+  /** Custom logo for workspace header / branding (relative path, e.g. /uploads/project-logos/...) */
+  logoUrl: {
+    type: String,
+    trim: true
+  },
   // Software House Specific Project Type
   projectType: {
     type: String,

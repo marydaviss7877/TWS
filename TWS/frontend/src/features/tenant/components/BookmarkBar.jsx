@@ -20,16 +20,13 @@ const BookmarkBar = ({ items = [], activeAppKey, onRemove }) => {
   if (!items.length) return null;
 
   return (
-    <div className="flex-shrink-0 z-20 relative border-b border-gray-200/80 dark:border-gray-700/60 bg-gray-50/90 dark:bg-gray-900/80 backdrop-blur-sm">
-      <div
-        className="flex items-center gap-0.5 px-3 h-9 overflow-x-auto"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
+    <div className="flex-shrink-0 z-20 relative min-w-0 border-b border-[#d7ddf3]/90 dark:border-gray-700/60 bg-[#eef2ff]/90 dark:bg-gray-900/80 backdrop-blur-sm">
+      <div className="flex h-9 min-w-0 items-center gap-0.5 overflow-x-auto overflow-y-hidden px-3 py-0.5 glass-scrollbar scroll-smooth">
 
         {/* ── "Bookmarks" label ─────────────────────────────────────────── */}
-        <div className="flex items-center gap-1.5 pr-3 mr-1 border-r border-gray-200 dark:border-gray-700/70 flex-shrink-0">
+        <div className="flex items-center gap-1.5 pr-3 mr-1 border-r border-[#d7ddf3] dark:border-gray-700/70 flex-shrink-0">
           <BookmarkIcon className="h-3.5 w-3.5 text-indigo-400 dark:text-indigo-500" />
-          <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 tracking-wide select-none">
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-gray-500 tracking-wide select-none">
             Bookmarks
           </span>
         </div>
@@ -53,8 +50,8 @@ const BookmarkBar = ({ items = [], activeAppKey, onRemove }) => {
                   'text-[12px] font-medium max-w-[144px]',
                   'transition-colors duration-150 select-none',
                   active
-                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white hover:shadow-sm'
+                    ? 'bg-[#f7f9ff] dark:bg-gray-800 text-[#0d0e24] dark:text-white border border-[#d2d6ee] shadow-sm'
+                    : 'text-slate-600 dark:text-gray-400 hover:bg-[#f7f9ff] dark:hover:bg-gray-800 hover:text-[#0d0e24] dark:hover:text-white hover:shadow-sm'
                 )}
               >
                 {/* Tiny gradient icon */}

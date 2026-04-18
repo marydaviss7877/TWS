@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { 
   PlusIcon, 
   PlayIcon, 
@@ -18,14 +18,23 @@ import { SPRINT_STATUS } from './constants/projectConstants';
 import CreateSprintModal from './components/CreateSprintModal';
 import { showSuccess, showError } from './utils/toastNotifications';
 
+function getSprintProjectId(sprint) {
+  const p = sprint?.projectId;
+  if (!p) return null;
+  if (typeof p === 'object' && p._id != null) return String(p._id);
+  return String(p);
+}
+
 const SprintManagement = () => {
   const { tenantSlug } = useParams();
+  const navigate = useNavigate();
   const [sprints, setSprints] = useState([]);
   const [activeSprint, setActiveSprint] = useState(null);
   const [selectedSprint, setSelectedSprint] = useState(null);
   const [showSprintDetails, setShowSprintDetails] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sprintStatusBusy, setSprintStatusBusy] = useState(false);
 
   useEffect(() => {
     if (tenantSlug) {
@@ -128,6 +137,42 @@ const SprintManagement = () => {
 
   const handleSprintCreated = () => {
     fetchSprints();
+  };
+
+  const handleUpdateSprintStatus = async (sprint, nextStatus) => {
+    const sid = sprint?._id || sprint?.id;
+    if (!sid || !tenantSlug) return;
+
+    if (nextStatus === SPRINT_STATUS.ACTIVE) {
+      const pid = getSprintProjectId(sprint);
+      const otherActive = sprints.find(
+        (s) =>
+          s.status === SPRINT_STATUS.ACTIVE &&
+          String(s._id || s.id) !== String(sid) &&
+          getSprintProjectId(s) === pid
+      );
+      if (
+        otherActive &&
+        !window.confirm(
+          `Another sprint (“${otherActive.name || 'Untitled'}”) is already active for this project. Start this one anyway?`
+        )
+      ) {
+        return;
+      }
+    }
+
+    try {
+      setSprintStatusBusy(true);
+      const updated = await tenantProjectApiService.updateSprint(tenantSlug, sid, { status: nextStatus });
+      setSelectedSprint(updated);
+      showSuccess('Sprint updated');
+      await fetchSprints();
+    } catch (error) {
+      console.error('Error updating sprint:', error);
+      showError(error.message || 'Failed to update sprint');
+    } finally {
+      setSprintStatusBusy(false);
+    }
   };
 
   if (loading) {
@@ -350,16 +395,65 @@ const SprintManagement = () => {
       {showSprintDetails && selectedSprint && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="glass-card-premium p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 {selectedSprint.name || `Sprint ${selectedSprint.sprintNumber || ''}`}
               </h2>
-              <button
-                onClick={() => setShowSprintDetails(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                {(selectedSprint.status === SPRINT_STATUS.PLANNING ||
+                  selectedSprint.status === SPRINT_STATUS.CANCELLED) && (
+                  <button
+                    type="button"
+                    disabled={sprintStatusBusy}
+                    onClick={() => handleUpdateSprintStatus(selectedSprint, SPRINT_STATUS.ACTIVE)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    <PlayIcon className="w-4 h-4" />
+                    Start sprint
+                  </button>
+                )}
+                {selectedSprint.status === SPRINT_STATUS.ACTIVE && (
+                  <button
+                    type="button"
+                    disabled={sprintStatusBusy}
+                    onClick={() => handleUpdateSprintStatus(selectedSprint, SPRINT_STATUS.COMPLETED)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    <CheckCircleIcon className="w-4 h-4" />
+                    Mark complete
+                  </button>
+                )}
+                {selectedSprint.status === SPRINT_STATUS.ACTIVE && (
+                  <button
+                    type="button"
+                    disabled={sprintStatusBusy}
+                    onClick={() => handleUpdateSprintStatus(selectedSprint, SPRINT_STATUS.PLANNING)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+                  >
+                    Pause (back to planning)
+                  </button>
+                )}
+                {getSprintProjectId(selectedSprint) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSprintDetails(false);
+                      navigate(`/${tenantSlug}/org/projects/${getSprintProjectId(selectedSprint)}/board`);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-semibold hover:opacity-90"
+                  >
+                    Open project board
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowSprintDetails(false)}
+                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

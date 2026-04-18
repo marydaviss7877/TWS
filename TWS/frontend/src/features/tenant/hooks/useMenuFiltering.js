@@ -17,7 +17,8 @@ export const useMenuFiltering = (menuItems, user, tenant, userDepartments, userP
   return useMemo(() => {
     if (!menuItems || !Array.isArray(menuItems)) return [];
 
-    const isClientUser = ['client', 'customer'].includes(user?.role);
+    const normalizedRole = String(user?.role || '').toLowerCase();
+    const isClientUser = ['client', 'customer'].includes(normalizedRole);
     const alwaysVisible = isClientUser
       ? ['dashboard', 'rulebook']
       : ['dashboard', 'rulebook'];
@@ -26,7 +27,7 @@ export const useMenuFiltering = (menuItems, user, tenant, userDepartments, userP
       .map(dept => dept.module || dept.department?.toLowerCase())
       .filter(Boolean);
     const allAvailableModules = [...new Set([...tenantModules, ...deptModules])];
-    const isOwnerOrAdmin = user?.role === 'owner' || user?.role === 'admin';
+    const isOwnerOrAdmin = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner'].includes(normalizedRole);
     const permModules = userPermissions?.modules;
 
     return menuItems.filter(item => {
@@ -34,7 +35,7 @@ export const useMenuFiltering = (menuItems, user, tenant, userDepartments, userP
 
       // Clients must never see admin settings module entry.
       if (isClientUser && item.key === 'settings') return false;
-      if (item.key === 'settings') return user?.role === 'admin';
+      if (item.key === 'settings') return isOwnerOrAdmin;
 
       // Always-visible items
       if (alwaysVisible.includes(item.key)) return true;

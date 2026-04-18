@@ -4,9 +4,8 @@ import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext
 import toast from 'react-hot-toast';
 import RoleAssignment from '../../../../components/RoleAssignment';
 
-// This component can be used for both:
-// 1. /tenant/:tenantSlug/org/users/:id - View/edit any user's profile
-// 2. /tenant/:tenantSlug/org/profile - View/edit current user's profile
+// Legacy profile page used for account-level fields.
+// Primary end-user profile navigation now goes to /org/employee/profile.
 import {
   UserIcon,
   CameraIcon,
@@ -255,7 +254,7 @@ const UserProfile = () => {
         <div className="flex items-center justify-between">
     <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              My Profile
+              Account Profile
             </h1>
             <p className="text-gray-600 mt-1">Manage your personal information and account settings</p>
           </div>

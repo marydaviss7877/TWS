@@ -17,6 +17,7 @@ import {
   XMarkIcon,
   ArrowPathIcon,
   Bars2Icon,
+  ArrowsUpDownIcon,
 } from '@heroicons/react/24/outline';
 import tenantProjectApiService from './services/tenantProjectApiService';
 import { CARD_TYPE, CARD_STATUS, PROJECT_PRIORITY } from './constants/projectConstants';
@@ -24,6 +25,7 @@ import CreateTaskModal from './components/CreateTaskModal';
 import QuickAddTask from './components/QuickAddTask';
 import { showSuccess, showError } from './utils/toastNotifications';
 import { PROJECT_WORKSPACE_EVENTS } from '../../../../components/ProjectWorkspaceLayout';
+import { toMongoIdString } from './utils/validation';
 
 /* ─── helpers ──────────────────────────────────────────────────────────────── */
 
@@ -72,6 +74,61 @@ function fmtDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+}
+
+const PRIORITY_RANK = { low: 0, medium: 1, high: 2, urgent: 3, critical: 3 };
+
+function taskDueTime(t) {
+  if (!t?.dueDate) return null;
+  return new Date(t.dueDate).getTime();
+}
+
+function taskCreatedTime(t) {
+  const d = t?.createdAt || t?.updatedAt;
+  return d ? new Date(d).getTime() : 0;
+}
+
+function compareBoardTasks(a, b, sortKey, sortDir) {
+  if (sortKey === 'manual') return 0;
+  const mul = sortDir === 'asc' ? 1 : -1;
+  switch (sortKey) {
+    case 'title': {
+      const sa = (a.title || a.name || '').toLowerCase();
+      const sb = (b.title || b.name || '').toLowerCase();
+      return mul * sa.localeCompare(sb, undefined, { sensitivity: 'base' });
+    }
+    case 'dueDate': {
+      const ta = taskDueTime(a);
+      const tb = taskDueTime(b);
+      if (ta == null && tb == null) return 0;
+      if (ta == null) return 1;
+      if (tb == null) return -1;
+      return mul * (ta - tb);
+    }
+    case 'priority': {
+      const pa = PRIORITY_RANK[String(a.priority || 'medium').toLowerCase()] ?? 1;
+      const pb = PRIORITY_RANK[String(b.priority || 'medium').toLowerCase()] ?? 1;
+      return mul * (pa - pb);
+    }
+    case 'storyPoints': {
+      const sa = a.storyPoints != null && a.storyPoints !== '' ? Number(a.storyPoints) : null;
+      const sb = b.storyPoints != null && b.storyPoints !== '' ? Number(b.storyPoints) : null;
+      if (sa == null && sb == null) return 0;
+      if (sa == null) return 1;
+      if (sb == null) return -1;
+      return mul * (sa - sb);
+    }
+    case 'created': {
+      return mul * (taskCreatedTime(a) - taskCreatedTime(b));
+    }
+    default:
+      return 0;
+  }
+}
+
+function sortTaskListForBoard(list, sortKey, sortDir) {
+  if (sortKey === 'manual' || !list?.length) return list;
+  return [...list].sort((x, y) => compareBoardTasks(x, y, sortKey, sortDir));
 }
 
 function initials(name = '') {
@@ -540,6 +597,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
 
   const [viewMode, setViewMode]             = useState(defaultView);
   const [searchTerm, setSearchTerm]         = useState('');
+  const [searchExpanded, setSearchExpanded] = useState(false);
   const [filterProject, setFilterProject]   = useState(scopeProjectId || 'all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterDepartment, setFilterDepartment] = useState('all');
@@ -566,6 +624,11 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
   const [timerStartedAt, setTimerStartedAt] = useState(null);
   const [, setTimerTick]                    = useState(0);
   const searchInputRef = useRef(null);
+  const sortPanelRef = useRef(null);
+
+  const [boardSortKey, setBoardSortKey] = useState('manual');
+  const [boardSortDir, setBoardSortDir] = useState('asc');
+  const [sortPanelOpen, setSortPanelOpen] = useState(false);
 
   /* ── timer tick ── */
   useEffect(() => {
@@ -574,12 +637,19 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
     return () => clearInterval(interval);
   }, [timerTaskId, timerStartedAt]);
 
-  /* ── keyboard shortcut N → new task ── */
+  /* ── keyboard shortcuts: N → new task, / → search (when not typing in a field) ── */
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === 'n' && !e.metaKey && !e.ctrlKey &&
-          !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+      const tag = document.activeElement?.tagName;
+      const inField = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag);
+      if (e.key === 'n' && !e.metaKey && !e.ctrlKey && !inField) {
         setIsCreateModalOpen(true);
+        return;
+      }
+      if (e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey && !inField) {
+        e.preventDefault();
+        setSearchExpanded(true);
+        requestAnimationFrame(() => searchInputRef.current?.focus());
       }
     };
     window.addEventListener('keydown', handler);
@@ -601,25 +671,31 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
   }, [location.search, location.pathname]);
 
   useEffect(() => {
-    const onFocusSearch = () => searchInputRef.current?.focus();
-    const onToggleFilter = () => {};
+    const onFocusSearch = () => {
+      setSearchExpanded(true);
+      requestAnimationFrame(() => searchInputRef.current?.focus());
+    };
+    const onToggleFilter = () => setSortPanelOpen((v) => !v);
+    const onToggleSort = () => setSortPanelOpen((v) => !v);
     window.addEventListener(PROJECT_WORKSPACE_EVENTS.FOCUS_SEARCH, onFocusSearch);
     window.addEventListener(PROJECT_WORKSPACE_EVENTS.TOGGLE_FILTER, onToggleFilter);
+    window.addEventListener(PROJECT_WORKSPACE_EVENTS.TOGGLE_SORT, onToggleSort);
     return () => {
       window.removeEventListener(PROJECT_WORKSPACE_EVENTS.FOCUS_SEARCH, onFocusSearch);
       window.removeEventListener(PROJECT_WORKSPACE_EVENTS.TOGGLE_FILTER, onToggleFilter);
+      window.removeEventListener(PROJECT_WORKSPACE_EVENTS.TOGGLE_SORT, onToggleSort);
     };
   }, []);
+
+  useEffect(() => {
+    if (!sortPanelOpen) return;
+    sortPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [sortPanelOpen]);
 
   /* ── data fetching ── */
   useEffect(() => {
     if (scopeProjectId) setFilterProject(scopeProjectId);
   }, [scopeProjectId]);
-
-  useEffect(() => {
-    if (tenantSlug) { fetchTasks(); fetchProjects(); fetchDepartments(); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenantSlug]);
 
   useEffect(() => {
     if (!tenantSlug || !scopeProjectId) return;
@@ -687,8 +763,18 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
     } catch {}
   };
 
+  useEffect(() => {
+    if (tenantSlug) {
+      fetchProjects();
+      fetchDepartments();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (tenantSlug) fetchTasks(); }, [filterDepartment]);
+  }, [tenantSlug]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (tenantSlug) fetchTasks();
+  }, [tenantSlug, filterProject, filterDepartment, fetchTasks]);
 
   /* ── drag & drop ── */
   const handleDragStart = (e, task, columnId) => {
@@ -724,19 +810,36 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
 
   /* ── task actions ── */
   const handleQuickAddTask = async (taskData) => {
-    const projectId = scopeProjectId || (filterProject !== 'all' ? filterProject : null);
-    if (!projectId) { showError('Select a project first.'); throw new Error('no project'); }
+    const rawProject = scopeProjectId || (filterProject !== 'all' ? filterProject : null);
+    const projectId = toMongoIdString(rawProject);
+    if (!projectId) {
+      showError('Select a project first.');
+      throw new Error('no project');
+    }
     let departmentId;
-    const cached = projects.find(p => (p._id || p.id) === projectId);
+    const cached = projects.find((p) => String(p._id || p.id) === String(projectId));
     if (cached) {
       const fd = cached?.departments?.[0];
-      departmentId = cached.primaryDepartmentId || (fd && (typeof fd === 'object' ? fd._id || fd.id : String(fd)));
-      if (departmentId && typeof departmentId === 'object') departmentId = String(departmentId);
+      const rawDept =
+        cached.primaryDepartmentId ||
+        (fd && (typeof fd === 'object' ? (fd._id || fd.id) : fd));
+      departmentId = toMongoIdString(rawDept);
     }
-    if (!departmentId && filterDepartment !== 'all') departmentId = filterDepartment;
-    if (!departmentId && departments.length > 0) departmentId = departments[0]._id || departments[0].id;
+    if (!departmentId && filterDepartment !== 'all') {
+      departmentId = toMongoIdString(filterDepartment);
+    }
+    if (!departmentId && departments.length > 0) {
+      departmentId = toMongoIdString(departments[0]._id || departments[0].id);
+    }
     const priority = taskData.priority === 'urgent' ? 'critical' : (taskData.priority || PROJECT_PRIORITY.MEDIUM);
-    await tenantProjectApiService.createTask(tenantSlug, { ...taskData, projectId, departmentId, priority, type: CARD_TYPE.TASK });
+    const payload = {
+      ...taskData,
+      projectId,
+      priority,
+      type: CARD_TYPE.TASK,
+    };
+    if (departmentId) payload.departmentId = departmentId;
+    await tenantProjectApiService.createTask(tenantSlug, payload);
     showSuccess('Task created');
     fetchTasks();
   };
@@ -807,6 +910,8 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
   };
 
   /* ── filter ── */
+  const applyBoardSort = (colTasks) => sortTaskListForBoard(colTasks, boardSortKey, boardSortDir);
+
   const filteredByColumn = (colTasks, colId) => colTasks.filter(task => {
     const term = searchTerm.toLowerCase();
     const matchSearch   = (task.title || task.name || '').toLowerCase().includes(term) ||
@@ -850,18 +955,22 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
     onTimerStop: handleTimerStop,
   };
 
+  const listTaskRows = Object.entries(tasks).flatMap(([colId, colTasks]) =>
+    applyBoardSort(filteredByColumn(colTasks, colId)).map((task) => ({ task, colId }))
+  );
+
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-3 sm:space-y-4 animate-fade-in min-w-0 max-w-full">
       {/* ── Non-scoped header ── */}
       {!hideScopedHeader && (
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">Project Board</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{totalTasks} task{totalTasks !== 1 ? 's' : ''} · Press <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-mono">N</kbd> to create</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">Project Board</h1>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">{totalTasks} task{totalTasks !== 1 ? 's' : ''} · <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-mono">N</kbd> new · <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs font-mono">/</kbd> search</p>
           </div>
           <button
             onClick={() => { setSelectedColumnForTask(null); setIsCreateModalOpen(true); }}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-semibold flex items-center gap-2 hover:opacity-90"
+            className="w-full sm:w-auto shrink-0 justify-center px-4 py-2.5 sm:py-2 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-semibold inline-flex items-center gap-2 hover:opacity-90"
           >
             <PlusIcon className="w-4 h-4" />
             New Task
@@ -869,75 +978,198 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
         </div>
       )}
 
-      {/* ── Toolbar ── */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {/* View toggle */}
-        <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0">
-          <button onClick={() => setViewMode('kanban')} title="Board"
-            className={`p-1.5 transition-colors ${viewMode === 'kanban' ? 'bg-primary-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
-            <Squares2X2Icon className="w-4 h-4" />
-          </button>
-          <button onClick={() => setViewMode('list')} title="List"
-            className={`p-1.5 border-l border-gray-200 dark:border-gray-700 transition-colors ${viewMode === 'list' ? 'bg-primary-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
-            <Bars3Icon className="w-4 h-4" />
+      {/* Search (driven from project header or / — not inline in the filter toolbar) */}
+      {(searchExpanded || searchTerm.length > 0) && (
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="relative flex-1 min-w-0">
+            <MagnifyingGlassIcon className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              ref={searchInputRef}
+              type="search"
+              placeholder="Search tasks…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onBlur={() => {
+                window.setTimeout(() => {
+                  if (document.activeElement === searchInputRef.current) return;
+                  const v = searchInputRef.current?.value ?? '';
+                  if (v) return;
+                  setSearchExpanded(false);
+                }, 200);
+              }}
+              className="w-full pl-8 pr-3 py-1.5 text-sm glass-input rounded-lg"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => { setSearchTerm(''); setSearchExpanded(false); }}
+            className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
+            title="Close search"
+            aria-label="Close search"
+          >
+            <XMarkIcon className="w-4 h-4" />
           </button>
         </div>
+      )}
 
-        {/* Search */}
-        <div className="relative flex-1 min-w-[160px]">
-          <MagnifyingGlassIcon className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input ref={searchInputRef} type="text" placeholder="Search tasks… (or press /)"
-            value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 text-sm glass-input rounded-lg" />
+      {/* ── Toolbar: stacks on narrow viewports; filters use full width on phones ── */}
+      <div className="flex flex-col gap-2 min-w-0 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0">
+            <button type="button" onClick={() => setViewMode('kanban')} title="Board"
+              className={`p-2 sm:p-1.5 transition-colors ${viewMode === 'kanban' ? 'bg-primary-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+              <Squares2X2Icon className="w-4 h-4" />
+            </button>
+            <button type="button" onClick={() => setViewMode('list')} title="List"
+              className={`p-2 sm:p-1.5 border-l border-gray-200 dark:border-gray-700 transition-colors ${viewMode === 'list' ? 'bg-primary-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+              <Bars3Icon className="w-4 h-4" />
+            </button>
+          </div>
+          {(searchTerm || (!scopeProjectId && filterProject !== 'all') || filterPriority !== 'all' || filterDepartment !== 'all') && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                setSearchExpanded(false);
+                setFilterPriority('all');
+                setFilterDepartment('all');
+                if (!scopeProjectId) setFilterProject('all');
+              }}
+              className="text-xs text-primary-500 hover:underline shrink-0 ml-auto sm:ml-0"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
-
-        {/* Filters */}
         {!scopeProjectId && (
-          <select value={filterProject} onChange={e => setFilterProject(e.target.value)} className="glass-input px-2 py-1.5 text-sm rounded-lg">
-            <option value="all">All Projects</option>
-            {projects.map(p => <option key={p._id || p.id} value={p._id || p.id}>{p.name || p.title}</option>)}
-          </select>
-        )}
-        <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="glass-input px-2 py-1.5 text-sm rounded-lg">
-          <option value="all">All Priorities</option>
-          <option value="urgent">Urgent</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-        </select>
-        <select value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)} className="glass-input px-2 py-1.5 text-sm rounded-lg">
-          <option value="all">All Depts</option>
-          {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
-        </select>
-
-        {/* Active filter count */}
-        {(searchTerm || filterPriority !== 'all' || filterDepartment !== 'all') && (
-          <button onClick={() => { setSearchTerm(''); setFilterPriority('all'); setFilterDepartment('all'); }}
-            className="text-xs text-primary-500 hover:underline shrink-0">Clear filters</button>
+          <div className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-stretch sm:gap-2">
+            <select
+              value={filterProject}
+              onChange={(e) => setFilterProject(e.target.value)}
+              className="glass-input w-full min-w-0 px-2 py-2 sm:py-1.5 text-sm rounded-lg sm:flex-1 sm:min-w-[min(100%,12rem)]"
+            >
+              <option value="all">All Projects</option>
+              {projects.map(p => <option key={p._id || p.id} value={p._id || p.id}>{p.name || p.title}</option>)}
+            </select>
+          </div>
         )}
       </div>
 
-      {/* ── Kanban Board ── */}
+      {sortPanelOpen && (
+        <div
+          ref={sortPanelRef}
+          className="flex flex-col gap-4 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm min-w-0"
+          role="region"
+          aria-label="Board sort and filter options"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Sort & filter</span>
+            <button
+              type="button"
+              onClick={() => setSortPanelOpen(false)}
+              className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              aria-label="Close panel"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">Sort board by</p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <select
+                value={boardSortKey}
+                onChange={(e) => setBoardSortKey(e.target.value)}
+                className="glass-input w-full min-w-0 px-2 py-2 sm:py-1.5 text-sm rounded-lg sm:w-auto sm:min-w-[160px]"
+              >
+                <option value="manual">Default (manual order)</option>
+                <option value="title">Title</option>
+                <option value="dueDate">Due date</option>
+                <option value="priority">Priority (order)</option>
+                <option value="storyPoints">Story points</option>
+                <option value="created">Date created</option>
+              </select>
+              <button
+                type="button"
+                disabled={boardSortKey === 'manual'}
+                onClick={() => setBoardSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+                className={`inline-flex w-full sm:w-auto justify-center items-center gap-1.5 px-2 py-2 sm:py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 ${
+                  boardSortKey === 'manual'
+                    ? 'opacity-40 cursor-not-allowed'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+                title={boardSortDir === 'asc' ? 'Ascending' : 'Descending'}
+              >
+                <ArrowsUpDownIcon className="w-4 h-4 text-gray-400 shrink-0" />
+                {boardSortDir === 'asc' ? 'Ascending' : 'Descending'}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2 border-t border-gray-200 pt-3 dark:border-gray-700">
+            <p className="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">Show tasks</p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <select
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+                className="glass-input w-full min-w-0 px-2 py-2 sm:py-1.5 text-sm rounded-lg sm:flex-1 sm:min-w-[min(100%,11rem)]"
+              >
+                <option value="all">All priorities</option>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              {departments.length > 0 && (
+                <select
+                  value={filterDepartment}
+                  onChange={(e) => setFilterDepartment(e.target.value)}
+                  className="glass-input w-full min-w-0 px-2 py-2 sm:py-1.5 text-sm rounded-lg sm:flex-1 sm:min-w-[min(100%,14rem)]"
+                >
+                  <option value="all">All departments</option>
+                  {departments.map((d) => (
+                    <option key={d._id} value={d._id}>{d.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Kanban Board: always one row (x-axis); narrow viewports scroll horizontally ── */}
       {viewMode === 'kanban' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="min-w-0 -mx-1 px-1 sm:mx-0 sm:px-0 overflow-x-auto overflow-y-visible pb-2 glass-scrollbar scroll-smooth">
+          <div className="flex flex-row flex-nowrap gap-3 sm:gap-4 items-stretch w-max min-w-full sm:min-w-0 sm:w-full">
           {columns.map(col => {
-            const colTasks = filteredByColumn(tasks[col.id], col.id);
+            const colTasks = applyBoardSort(filteredByColumn(tasks[col.id], col.id));
             const isDragTarget = dragOverColumn === col.id;
             return (
-              <div key={col.id} className="flex flex-col min-h-0">
-                {/* Column header */}
-                <div className={`rounded-xl p-3 mb-3 flex items-center justify-between bg-gradient-to-r ${col.color}`}>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${col.dot} bg-white/80`} />
-                    <h3 className="text-white font-bold text-sm">{col.title}</h3>
-                    <span className="bg-white/25 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{colTasks.length}</span>
+              <div
+                key={col.id}
+                className="flex flex-col min-h-0 w-[min(85vw,18rem)] shrink-0 sm:w-0 sm:min-w-0 sm:flex-1 sm:basis-0 sm:max-w-none"
+              >
+                {/* Column header — compact on narrow columns; title stays one line; + scales down with width */}
+                <div
+                  className={`mb-2 flex min-h-0 min-w-0 flex-nowrap items-center justify-between gap-1.5 rounded-lg bg-gradient-to-r px-2 py-1 sm:mb-3 sm:gap-2 sm:rounded-xl sm:px-2.5 sm:py-1.5 md:py-2 md:pl-3 md:pr-2 ${col.color}`}
+                >
+                  <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 sm:gap-2">
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full sm:h-2 sm:w-2 ${col.dot} bg-white/80`} aria-hidden />
+                    <h3 className="min-w-0 flex-1 truncate text-sm font-bold leading-tight text-white">
+                      {col.title}
+                    </h3>
+                    <span className="shrink-0 rounded-full bg-white/25 px-1 py-0.5 text-[10px] font-bold tabular-nums leading-none text-white sm:px-1.5 sm:text-xs sm:leading-none">
+                      {colTasks.length}
+                    </span>
                   </div>
                   <button
+                    type="button"
                     onClick={() => { setSelectedColumnForTask(col.id); setIsCreateModalOpen(true); }}
-                    className="p-1 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/20 text-white transition-colors hover:bg-white/30 sm:h-7 sm:w-7 sm:rounded-lg md:h-8 md:w-8"
                     title={`Add task to ${col.title}`}
+                    aria-label={`Add task to ${col.title}`}
                   >
-                    <PlusIcon className="w-3.5 h-3.5" />
+                    <PlusIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
                   </button>
                 </div>
 
@@ -946,7 +1178,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
                   onDragOver={e => handleDragOver(e, col.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={e => handleDrop(e, col.id)}
-                  className={`flex-1 space-y-2 min-h-[300px] rounded-xl p-1 transition-all duration-150 ${isDragTarget ? 'bg-primary-50 dark:bg-primary-900/10 ring-2 ring-primary-400 ring-dashed' : ''}`}
+                  className={`flex-1 space-y-2 min-h-[220px] min-[480px]:min-h-[260px] md:min-h-[300px] rounded-xl p-1 transition-all duration-150 touch-pan-y ${isDragTarget ? 'bg-primary-50 dark:bg-primary-900/10 ring-2 ring-primary-400 ring-dashed' : ''}`}
                 >
                   {colTasks.map(task => (
                     <TaskCard key={task._id || task.id} task={task} columnId={col.id} {...sharedCardProps} />
@@ -972,78 +1204,142 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
               </div>
             );
           })}
+          </div>
         </div>
       )}
 
-      {/* ── List View ── */}
+      {/* ── List View: cards on small screens, table from md up ── */}
       {viewMode === 'list' && (
-        <div className="glass-card-premium rounded-2xl overflow-hidden">
-          {/* List header */}
-          <div className="grid grid-cols-[1fr_100px_100px_80px_32px] gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-            <span>Task</span>
-            <span>Assignee</span>
-            <span>Status</span>
-            <span>Due</span>
-            <span />
-          </div>
-
-          {Object.entries(tasks).flatMap(([colId, colTasks]) =>
-            filteredByColumn(colTasks, colId).map(task => {
-              const overdue = !task.completedAt && isOverdue(task.dueDate);
-              const assignee = task.assignee || orgUsers.find(u => (u._id || u.id) === task.assigneeId);
-              return (
-                <div
-                  key={task._id || task.id}
-                  onClick={() => setTaskDrawer(task)}
-                  className="grid grid-cols-[1fr_100px_100px_80px_32px] gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer items-center group"
-                >
-                  {/* Title + type */}
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`w-1 h-8 rounded-full shrink-0 ${(PRIORITY_BORDER[task.priority || 'medium'] || '').replace('border-l-', 'bg-')}`} />
-                    <span className="text-sm">{TYPE_ICON[task.type || 'task']}</span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{task.title || task.name}</p>
-                      {task.projectId?.name && (
-                        <p className="text-xs text-gray-400 truncate">📁 {task.projectId.name}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Assignee */}
-                  <div>
-                    {assignee ? <Avatar user={assignee} /> : <span className="text-xs text-gray-400">—</span>}
-                  </div>
-
-                  {/* Status */}
-                  <span className={`inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit ${STATUS_COLOR[colId]}`}>
-                    {STATUS_LABEL[colId]}
-                  </span>
-
-                  {/* Due date */}
-                  <span className={`text-xs ${overdue ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
-                    {task.dueDate ? fmtDate(task.dueDate) : '—'}
-                  </span>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => setConfirmDelete(task)}
-                      className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                      <TrashIcon className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-
-          {totalTasks === 0 && (
-            <div className="text-center py-16">
+        <div className="glass-card-premium rounded-2xl overflow-hidden min-w-0">
+          {totalTasks === 0 ? (
+            <div className="text-center py-12 sm:py-16 px-4">
               <ClipboardDocumentCheckIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
               <p className="text-gray-500 dark:text-gray-400 font-medium">No tasks found</p>
-              <button onClick={() => setIsCreateModalOpen(true)} className="mt-3 text-sm text-primary-500 hover:underline">
+              <button type="button" onClick={() => setIsCreateModalOpen(true)} className="mt-3 text-sm text-primary-500 hover:underline">
                 Create your first task
               </button>
             </div>
+          ) : (
+            <>
+              <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                {listTaskRows.map(({ task, colId }) => {
+                  const overdue = !task.completedAt && isOverdue(task.dueDate);
+                  const assignee = task.assignee || orgUsers.find(u => (u._id || u.id) === task.assigneeId);
+                  const priBar = (PRIORITY_BORDER[task.priority || 'medium'] || '').replace('border-l-', 'bg-');
+                  return (
+                    <div
+                      key={task._id || task.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setTaskDrawer(task)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setTaskDrawer(task);
+                        }
+                      }}
+                      className="p-3 w-full text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 min-w-0 flex-1">
+                          <span className={`w-1 self-stretch min-h-[2.5rem] rounded-full shrink-0 ${priBar}`} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white break-words">
+                              <span className="mr-1">{TYPE_ICON[task.type || 'task']}</span>
+                              {task.title || task.name}
+                            </p>
+                            {task.projectId?.name && (
+                              <p className="text-xs text-gray-400 mt-0.5 truncate">📁 {task.projectId.name}</p>
+                            )}
+                          </div>
+                        </div>
+                        <span className={`shrink-0 inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLOR[colId]}`}>
+                          {STATUS_LABEL[colId]}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-2 pl-3 text-xs text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-2">
+                          {assignee ? <Avatar user={assignee} /> : <span>—</span>}
+                        </div>
+                        <span className={overdue ? 'text-red-500 font-semibold' : ''}>
+                          {task.dueDate ? fmtDate(task.dueDate) : '—'}
+                        </span>
+                      </div>
+                      <div className="mt-2 flex justify-end" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete(task)}
+                          className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          aria-label="Delete task"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
+                <div className="min-w-[640px]">
+                  <div className="grid grid-cols-[1fr_100px_100px_80px_32px] gap-2 px-4 py-2 border-b border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                    <span>Task</span>
+                    <span>Assignee</span>
+                    <span>Status</span>
+                    <span>Due</span>
+                    <span />
+                  </div>
+                  {listTaskRows.map(({ task, colId }) => {
+                    const overdue = !task.completedAt && isOverdue(task.dueDate);
+                    const assignee = task.assignee || orgUsers.find(u => (u._id || u.id) === task.assigneeId);
+                    return (
+                      <div
+                        key={task._id || task.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setTaskDrawer(task)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setTaskDrawer(task);
+                          }
+                        }}
+                        className="grid grid-cols-[1fr_100px_100px_80px_32px] gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer items-center group"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`w-1 h-8 rounded-full shrink-0 ${(PRIORITY_BORDER[task.priority || 'medium'] || '').replace('border-l-', 'bg-')}`} />
+                          <span className="text-sm shrink-0">{TYPE_ICON[task.type || 'task']}</span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{task.title || task.name}</p>
+                            {task.projectId?.name && (
+                              <p className="text-xs text-gray-400 truncate">📁 {task.projectId.name}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          {assignee ? <Avatar user={assignee} /> : <span className="text-xs text-gray-400">—</span>}
+                        </div>
+                        <span className={`inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit ${STATUS_COLOR[colId]}`}>
+                          {STATUS_LABEL[colId]}
+                        </span>
+                        <span className={`text-xs ${overdue ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                          {task.dueDate ? fmtDate(task.dueDate) : '—'}
+                        </span>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDelete(task)}
+                            className="p-1 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          >
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
           )}
         </div>
       )}

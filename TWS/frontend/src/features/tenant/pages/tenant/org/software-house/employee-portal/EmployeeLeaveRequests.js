@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../../../../../../app/providers/AuthContext';
+import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthContext';
 import toast from 'react-hot-toast';
 import {
   CalendarIcon,
@@ -9,12 +9,18 @@ import {
   XCircleIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 
 const EmployeeLeaveRequests = ({ tenantSlug }) => {
-  const { user } = useAuth();
+  const { user } = useTenantAuth();
   const [loading, setLoading] = useState(true);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [leaveBalance, setLeaveBalance] = useState({
+    annual: 0,
+    sick: 0,
+    personal: 0
+  });
+  const [policyBalance, setPolicyBalance] = useState({
     annual: 0,
     sick: 0,
     personal: 0
@@ -27,17 +33,20 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
     reason: '',
     days: 0
   });
+  const currentUserId = user?._id || user?.id;
 
   useEffect(() => {
+    if (!tenantSlug || !currentUserId) return;
     fetchLeaveData();
-  }, [tenantSlug, user]);
+  }, [tenantSlug, currentUserId]);
 
   const fetchLeaveData = async () => {
     try {
+      if (!tenantSlug || !currentUserId) return;
       setLoading(true);
       
       // Fetch employee data to get leave balance
-      const empResponse = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees?userId=${user.id}`, {
+      const empResponse = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees?userId=${currentUserId}`, {
         credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
       });
 
@@ -53,14 +62,27 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
         }
       }
 
+      // Fetch org leave policy (source of entitlement configuration)
+      const policyData = await tenantApiService.getLeavePolicy(tenantSlug);
+      if (policyData?.policy) {
+        setPolicyBalance({
+          annual: Number(policyData.policy?.annual?.daysPerYear ?? 0),
+          sick: Number(policyData.policy?.sick?.daysPerYear ?? 0),
+          personal: Number(policyData.policy?.personal?.daysPerYear ?? 0)
+        });
+      }
+
       // Fetch leave requests
-      const requestsResponse = await fetch(`/api/tenant/${tenantSlug}/organization/hr/leave-requests?employeeId=${user.id}`, {
+      const requestsResponse = await fetch(`/api/tenant/${tenantSlug}/organization/hr/leave-requests`, {
         credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
       });
 
       if (requestsResponse.ok) {
         const requestsData = await requestsResponse.json();
         setLeaveRequests(requestsData.data?.leaveRequests || []);
+      } else {
+        const errData = await requestsResponse.json().catch(() => ({}));
+        toast.error(errData.message || 'Failed to load leave requests');
       }
     } catch (error) {
       console.error('Failed to fetch leave data:', error);
@@ -104,16 +126,17 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
         return;
       }
 
-      const response = await fetch(`/api/tenant/${tenantSlug}/leave-requests`, {
+      const response = await fetch(`/api/tenant/${tenantSlug}/organization/hr/leave-requests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         credentials: 'include', // SECURITY FIX: Use cookies instead of localStorage token
         body: JSON.stringify({
-          ...formData,
-          days,
-          employeeId: user.id
+          type: formData.type,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          reason: formData.reason
         })
       });
 
@@ -189,7 +212,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
             <CalendarIcon className="h-6 w-6 text-blue-600" />
           </div>
           <p className="text-3xl font-bold text-gray-900">{leaveBalance.annual}</p>
-          <p className="text-sm text-gray-500 mt-1">days remaining</p>
+          <p className="text-sm text-gray-500 mt-1">days remaining · policy: {policyBalance.annual}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-2">
@@ -197,7 +220,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
             <CalendarIcon className="h-6 w-6 text-red-600" />
           </div>
           <p className="text-3xl font-bold text-gray-900">{leaveBalance.sick}</p>
-          <p className="text-sm text-gray-500 mt-1">days remaining</p>
+          <p className="text-sm text-gray-500 mt-1">days remaining · policy: {policyBalance.sick}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-2">
@@ -205,7 +228,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
             <CalendarIcon className="h-6 w-6 text-purple-600" />
           </div>
           <p className="text-3xl font-bold text-gray-900">{leaveBalance.personal}</p>
-          <p className="text-sm text-gray-500 mt-1">days remaining</p>
+          <p className="text-sm text-gray-500 mt-1">days remaining · policy: {policyBalance.personal}</p>
         </div>
       </div>
 

@@ -84,6 +84,14 @@ class MetricsService {
       registers: [this.register]
     });
 
+    // Deprecated attendance compatibility endpoint usage
+    this.deprecatedAttendanceRequests = new client.Counter({
+      name: 'deprecated_attendance_requests_total',
+      help: 'Total requests to deprecated attendance compatibility endpoints',
+      labelNames: ['endpoint', 'method'],
+      registers: [this.register]
+    });
+
     // Response time histogram
     this.responseTime = new client.Histogram({
       name: 'api_response_time_seconds',
@@ -217,6 +225,10 @@ class MetricsService {
   recordHttpRequest(method, route, statusCode, duration) {
     this.apiRequests.inc({ method, route, status_code: statusCode });
     this.responseTime.observe({ method, route }, duration);
+  }
+
+  incrementDeprecatedAttendanceRequests(endpoint, method = 'POST') {
+    this.deprecatedAttendanceRequests.inc({ endpoint, method });
   }
 
   setRedisConnections(count) {

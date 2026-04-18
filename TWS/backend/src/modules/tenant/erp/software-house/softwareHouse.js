@@ -18,6 +18,14 @@ const timeTrackingService = require('../../../../services/softwareHouse/time-tra
 const verifyERPToken = require('../../../../middleware/auth/verifyERPToken');
 router.use(verifyERPToken);
 
+/** Roles that can read software-house workspace data (dashboard, project lists, etc.) */
+const SOFTWARE_HOUSE_TEAM_READ_ROLES = [
+  'owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner',
+  'project_manager', 'manager', 'employee', 'contractor', 'contributor',
+  'developer', 'engineer', 'programmer', 'staff',
+  'hr', 'finance', 'ceo', 'cfo', 'department_lead', 'pmo',
+];
+
 // Get tenant software house configuration
 router.get('/config', requireRole(['owner', 'admin']), ErrorHandler.asyncHandler(async (req, res) => {
   const tenantId = req.tenantId || req.user?.tenantId;
@@ -212,7 +220,7 @@ router.get('/metrics', requireRole(['owner', 'admin', 'project_manager']), Error
 }));
 
 // Get tenant projects with software house details
-router.get('/projects', requireRole(['owner', 'admin', 'project_manager', 'employee', 'contractor']), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/projects', requireRole(SOFTWARE_HOUSE_TEAM_READ_ROLES), ErrorHandler.asyncHandler(async (req, res) => {
   const tenantId = req.user.tenantId;
   const orgId = req.user.orgId;
   const { status, projectType, methodology } = req.query;
@@ -244,7 +252,7 @@ router.get('/projects', requireRole(['owner', 'admin', 'project_manager', 'emplo
 }));
 
 // Get tenant active sprints
-router.get('/sprints', requireRole(['owner', 'admin', 'project_manager', 'employee', 'contractor']), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/sprints', requireRole(SOFTWARE_HOUSE_TEAM_READ_ROLES), ErrorHandler.asyncHandler(async (req, res) => {
   const tenantId = req.user.tenantId;
   const orgId = req.user.orgId;
   const { status } = req.query;
@@ -836,7 +844,7 @@ router.put('/client-portal/project/:projectId', requireRole(['owner', 'admin', '
 }));
 
 // Get tenant software house dashboard data
-router.get('/dashboard', requireRole(['owner', 'admin', 'project_manager', 'employee', 'contractor']), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/dashboard', requireRole(SOFTWARE_HOUSE_TEAM_READ_ROLES), ErrorHandler.asyncHandler(async (req, res) => {
   const tenant = req.tenant;
   const orgId = req.orgId || req.tenantContext?.orgId || req.user?.orgId;
   

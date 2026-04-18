@@ -56,15 +56,8 @@ const SoftwareHouseLogin = () => {
                 else if (clientRoles.includes(userRole))   allowedPortal = 'client';
 
                 if (allowedPortal && selectedPortal !== allowedPortal) {
-                    const portalNames = { admin: 'Admin', employee: 'Employee', client: 'Client' };
-                    validationBlockedRef.current = true;
-                    localStorage.removeItem('user');
-                    localStorage.removeItem('tenantData');
-                    setError(`Access denied. Switch to the ${portalNames[allowedPortal]} portal.`);
-                    setLoading(false);
-                    window.history.replaceState(null, '', '/software-house-login');
-                    setTimeout(() => logout().catch(console.error), 100);
-                    return;
+                    // Auto-align the portal selector with authenticated role to avoid false logout loops.
+                    setSelectedPortal(allowedPortal);
                 }
 
                 let tenantSlug = result.user?.tenantId || (typeof result.user?.orgId === 'object' ? result.user.orgId.slug : null) || result.user?.orgId?.slug;

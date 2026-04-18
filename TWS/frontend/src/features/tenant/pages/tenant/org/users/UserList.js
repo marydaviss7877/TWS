@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   PlusIcon,
@@ -29,6 +29,64 @@ const FINANCE_SUB_ROLES = [
   { value: 'ar_officer', label: 'AR Officer' }
 ];
 
+const ERP_ROLES = [
+  { value: 'employee', label: 'Employee' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'project_manager', label: 'Project Manager' },
+  { value: 'hr', label: 'HR' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'owner', label: 'Owner' },
+  { value: 'contractor', label: 'Contractor' },
+  { value: 'client', label: 'Client' }
+];
+
+const ROLE_DEFAULT_PERMISSIONS = {
+  owner: ['*:*'],
+  admin: [
+    'projects:read', 'projects:write', 'tasks:read', 'tasks:write', 'documents:read', 'documents:write',
+    'hr:read', 'hr:write', 'employees:read', 'employees:write', 'attendance:read', 'attendance:write',
+    'leave:read', 'leave:write', 'payroll:read', 'payroll:write',
+    'finance:read', 'finance:write',
+    'analytics:read', 'reports:read', 'audit:read', 'clients:read', 'clients:write',
+    'settings:read', 'settings:write', 'nucleus:read', 'nucleus:write', 'teams:read', 'teams:write'
+  ],
+  manager: [
+    'projects:read', 'tasks:read', 'tasks:write', 'documents:read', 'documents:write',
+    'attendance:read', 'leave:read', 'leave:write', 'analytics:read', 'nucleus:read', 'nucleus:write',
+    'teams:read', 'teams:write', 'finance:read'
+  ],
+  project_manager: [
+    'projects:read', 'projects:write', 'tasks:read', 'tasks:write', 'documents:read', 'documents:write',
+    'nucleus:read', 'nucleus:write', 'clients:read', 'analytics:read', 'teams:read', 'teams:write',
+    'finance:read'
+  ],
+  employee: [
+    'projects:read', 'tasks:read', 'documents:read', 'attendance:read', 'attendance:write_own',
+    'leave:read', 'leave:write', 'nucleus:read', 'payroll:read_own', 'teams:read', 'employees:read_own', 'finance:read'
+  ],
+  contractor: [
+    'tasks:read', 'tasks:write', 'documents:read', 'nucleus:read', 'attendance:read', 'attendance:write',
+    'employees:read_own', 'finance:read'
+  ],
+  client: ['projects:read', 'nucleus:read', 'documents:read'],
+  hr: [],
+  finance: []
+};
+
+const normalizePermissionCodeList = (codes) => {
+  if (!Array.isArray(codes)) return [];
+  const seen = new Set();
+  const normalized = [];
+  for (const raw of codes) {
+    const code = String(raw || '').trim().toLowerCase();
+    if (!code || seen.has(code)) continue;
+    seen.add(code);
+    normalized.push(code);
+  }
+  return normalized;
+};
+
 const UserList = () => {
   const { tenantSlug } = useParams();
   const navigate = useNavigate();
@@ -47,8 +105,16 @@ const UserList = () => {
   });
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editUser, setEditUser] = useState(null);
+  const [editRole, setEditRole] = useState('employee');
   const [editHrSubRole, setEditHrSubRole] = useState('');
   const [editFinanceSubRole, setEditFinanceSubRole] = useState('');
+  const [permissionCatalogEntries, setPermissionCatalogEntries] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [selectedCustomPermissions, setSelectedCustomPermissions] = useState([]);
+  const [selectedDeniedPermissions, setSelectedDeniedPermissions] = useState([]);
+  const customPermissionsRef = useRef([]);
+  const deniedPermissionsRef = useRef([]);
+  const [roleDefaultPermissionCodes, setRoleDefaultPermissionCodes] = useState([]);
   const [saving, setSaving] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [passwordUser, setPasswordUser] = useState(null);
@@ -60,6 +126,12 @@ const UserList = () => {
   useEffect(() => {
     fetchUsers();
   }, [tenantSlug, pagination.current, pagination.pageSize, filters]);
+
+  useEffect(() => {
+    if (!editModalOpen) return;
+    const defaults = ROLE_DEFAULT_PERMISSIONS[String(editRole || '').toLowerCase()] || [];
+    setRoleDefaultPermissionCodes(defaults);
+  }, [editRole, editModalOpen]);
 
   const fetchUsers = async () => {
     try {
@@ -114,29 +186,42 @@ const UserList = () => {
   };
 
   const openEditModal = async (user) => {
-    setEditUser(user);
-    setEditHrSubRole(user?.hrSubRole ?? '');
-    setEditFinanceSubRole(user?.financeSubRole ?? '');
-    setEditModalOpen(true);
+    let sourceUser = user;
     if (user?._id) {
       try {
-        const full = await tenantApiService.getUserById(tenantSlug, user._id);
-        if (full) {
-          setEditUser(full);
-          setEditHrSubRole(full.hrSubRole ?? '');
-          setEditFinanceSubRole(full.financeSubRole ?? '');
-        }
+        const full = await tenantApiService.getUserById(tenantSlug, user._id, { cacheBust: true });
+        if (full) sourceUser = full;
       } catch (e) {
         console.warn('Could not load user details', e);
       }
     }
+    const initialRole = String(sourceUser?.role || 'employee').toLowerCase();
+    setEditUser(sourceUser);
+    setEditRole(initialRole);
+    setEditHrSubRole(sourceUser?.hrSubRole ?? '');
+    setEditFinanceSubRole(sourceUser?.financeSubRole ?? '');
+    const normalizedCustom = normalizePermissionCodeList(sourceUser?.customPermissionCodes);
+    const normalizedDenied = normalizePermissionCodeList(sourceUser?.deniedPermissionCodes);
+    customPermissionsRef.current = normalizedCustom;
+    deniedPermissionsRef.current = normalizedDenied;
+    setSelectedCustomPermissions(normalizedCustom);
+    setSelectedDeniedPermissions(normalizedDenied);
+    setRoleDefaultPermissionCodes(ROLE_DEFAULT_PERMISSIONS[initialRole] || []);
+    setEditModalOpen(true);
+    fetchPermissionCatalog();
   };
 
   const closeEditModal = () => {
     setEditModalOpen(false);
     setEditUser(null);
+    setEditRole('employee');
     setEditHrSubRole('');
     setEditFinanceSubRole('');
+    customPermissionsRef.current = [];
+    deniedPermissionsRef.current = [];
+    setSelectedCustomPermissions([]);
+    setSelectedDeniedPermissions([]);
+    setRoleDefaultPermissionCodes([]);
   };
 
   const openPasswordModal = (user) => {
@@ -199,21 +284,78 @@ const UserList = () => {
     }
   };
 
-  const handleSaveHrSubRole = async () => {
+  const fetchPermissionCatalog = async () => {
+    if (!tenantSlug) return;
+    try {
+      setCatalogLoading(true);
+      const data = await tenantApiService.getPermissionCatalog(tenantSlug);
+      const sections = [
+        ...(data?.softwareHouse?.entries || []),
+        ...(data?.organization?.entries || []),
+        ...(data?.organizationHrSubroles?.entries || []),
+        ...(data?.organizationFinanceSubroles?.entries || [])
+      ];
+      const seen = new Set();
+      const entries = [];
+      for (const row of sections) {
+        const code = String(row?.code || '').trim().toLowerCase();
+        if (!code || seen.has(code)) continue;
+        seen.add(code);
+        entries.push({
+          code,
+          module: row?.module || 'general',
+          access: Array.isArray(row?.accessTypes) ? row.accessTypes.join(', ') : ''
+        });
+      }
+      setPermissionCatalogEntries(entries.sort((a, b) => a.code.localeCompare(b.code)));
+    } catch (error) {
+      console.warn('Could not load permission catalog', error);
+      setPermissionCatalogEntries([]);
+    } finally {
+      setCatalogLoading(false);
+    }
+  };
+
+  const toggleCustomPermission = (code) => {
+    if (roleDefaultPermissionCodes.includes(code)) return;
+    const current = customPermissionsRef.current;
+    const next = current.includes(code) ? current.filter((c) => c !== code) : [...current, code];
+    customPermissionsRef.current = next;
+    setSelectedCustomPermissions(next);
+  };
+
+  const toggleDeniedPermission = (code) => {
+    if (!roleDefaultPermissionCodes.includes(code)) return;
+    const current = deniedPermissionsRef.current;
+    const next = current.includes(code) ? current.filter((c) => c !== code) : [...current, code];
+    deniedPermissionsRef.current = next;
+    setSelectedDeniedPermissions(next);
+  };
+
+  const handleSaveRoleAndPermissions = async () => {
     if (!editUser?._id || !tenantSlug) return;
     setSaving(true);
     try {
-      const r = (editUser.role || '').toLowerCase();
-      const payload = {};
-      if (r === 'hr') payload.hrSubRole = editHrSubRole || null;
-      if (r === 'finance') payload.financeSubRole = editFinanceSubRole || null;
-      if (Object.keys(payload).length === 0) {
-        toast.success('No sub-role changes to save');
-        closeEditModal();
-        return;
-      }
+      const normalizedRole = String(editRole || 'employee').toLowerCase();
+      const roleDefaults = ROLE_DEFAULT_PERMISSIONS[normalizedRole] || [];
+      // Persist only denies that belong to the selected role defaults.
+      const effectiveDenied = normalizePermissionCodeList(deniedPermissionsRef.current)
+        .filter((code) => roleDefaults.includes(code));
+      const payload = {
+        role: normalizedRole,
+        customPermissionCodes: normalizePermissionCodeList(customPermissionsRef.current),
+        deniedPermissionCodes: effectiveDenied
+      };
+      console.log('[UPRDBG][save payload]', {
+        userId: editUser._id,
+        role: payload.role,
+        customPermissionCodes: payload.customPermissionCodes,
+        deniedPermissionCodes: payload.deniedPermissionCodes
+      });
+      payload.hrSubRole = normalizedRole === 'hr' ? (editHrSubRole || null) : null;
+      payload.financeSubRole = normalizedRole === 'finance' ? (editFinanceSubRole || null) : null;
       await tenantApiService.updateUser(tenantSlug, editUser._id, payload);
-      toast.success('User updated');
+      toast.success('Role and permissions updated');
       fetchUsers();
       closeEditModal();
     } catch (error) {
@@ -454,7 +596,7 @@ const UserList = () => {
           </table>
         </div>
 
-        {/* Edit User Modal (role / HR sub-role) */}
+        {/* Edit User Modal (role / overrides) */}
         {passwordModalOpen && passwordUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
@@ -512,8 +654,19 @@ const UserList = () => {
               <p className="text-sm text-gray-600 mb-4">
                 {editUser.fullName} ({editUser.email})
               </p>
-              <p className="text-sm text-gray-500 mb-2">Role: <span className="font-medium text-gray-700">{editUser.role || '—'}</span></p>
-              {(editUser.role === 'hr' || editUser.role === 'HR') && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Portal role</label>
+                <select
+                  value={editRole}
+                  onChange={(e) => setEditRole(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  {ERP_ROLES.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              {editRole === 'hr' && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">HR sub-role</label>
                   <select
@@ -528,7 +681,7 @@ const UserList = () => {
                   <p className="text-xs text-gray-500 mt-1">Determines payroll vs leave vs roster access.</p>
                 </div>
               )}
-              {(editUser.role === 'finance' || editUser.role === 'Finance') && (
+              {editRole === 'finance' && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Finance sub-role</label>
                   <select
@@ -543,12 +696,64 @@ const UserList = () => {
                   <p className="text-xs text-gray-500 mt-1">Refines AP/AR, reporting, and write access in Finance.</p>
                 </div>
               )}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Custom permission overrides
+                  </label>
+                  <span className="text-xs text-gray-500">
+                    {roleDefaultPermissionCodes.length} role default, {selectedCustomPermissions.length} custom, {selectedDeniedPermissions.length} denied
+                  </span>
+                </div>
+                <div className="max-h-52 overflow-y-auto border border-gray-300 rounded-lg p-2 space-y-1 bg-gray-50">
+                  {catalogLoading ? (
+                    <p className="text-xs text-gray-500 px-2 py-1">Loading permission catalog...</p>
+                  ) : permissionCatalogEntries.length === 0 ? (
+                    <p className="text-xs text-gray-500 px-2 py-1">No permission catalog found.</p>
+                  ) : (
+                    permissionCatalogEntries.map((entry) => (
+                      <label key={entry.code} className="flex items-start gap-2 px-2 py-1 rounded hover:bg-white cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={
+                            (roleDefaultPermissionCodes.includes(entry.code) && !selectedDeniedPermissions.includes(entry.code)) ||
+                            selectedCustomPermissions.includes(entry.code)
+                          }
+                          onChange={() =>
+                            roleDefaultPermissionCodes.includes(entry.code)
+                              ? toggleDeniedPermission(entry.code)
+                              : toggleCustomPermission(entry.code)
+                          }
+                          className="mt-0.5"
+                        />
+                        <span className="text-xs">
+                          <span className="font-mono text-gray-800">{entry.code}</span>
+                          <span className="text-gray-500 ml-2">({entry.module}{entry.access ? ` - ${entry.access}` : ''})</span>
+                          {roleDefaultPermissionCodes.includes(entry.code) && (
+                            <span className="ml-2 inline-flex px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[10px] font-semibold">
+                              role default
+                            </span>
+                          )}
+                          {selectedDeniedPermissions.includes(entry.code) && (
+                            <span className="ml-2 inline-flex px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-semibold">
+                              denied
+                            </span>
+                          )}
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Role defaults auto-tick when you change role. Uncheck a role default to deny it for this user; tick others to add custom access.
+                </p>
+              </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button onClick={closeEditModal} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                   Cancel
                 </button>
                 <button
-                  onClick={handleSaveHrSubRole}
+                  onClick={handleSaveRoleAndPermissions}
                   disabled={saving}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >

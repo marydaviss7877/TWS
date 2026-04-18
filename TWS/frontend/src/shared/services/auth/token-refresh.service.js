@@ -49,25 +49,20 @@ export const refreshToken = async () => {
   // Create new refresh promise
   activeRefreshPromise = (async () => {
     try {
-      // SECURITY FIX: Try tenant auth refresh first (for tenant owners)
-      // Then fall back to main auth refresh (for education users)
-      // Cookies are sent automatically with credentials: 'include'
-      
-      let refreshEndpoint = '/api/tenant-auth/refresh';
-      let response = await fetch(refreshEndpoint, {
+      // Try main auth refresh first (software-house / org staff via /api/auth/login).
+      // Then tenant-owner refresh (/api/tenant-auth/login). Same cookie names; only one chain is valid.
+      let response = await fetch('/api/auth/refresh', {
         method: 'POST',
-        credentials: 'include', // SECURITY FIX: Include cookies
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         }
       });
 
-      // If tenant auth refresh fails, try main auth refresh
       if (!response.ok) {
-        refreshEndpoint = '/api/auth/refresh';
-        response = await fetch(refreshEndpoint, {
+        response = await fetch('/api/tenant-auth/refresh', {
           method: 'POST',
-          credentials: 'include', // SECURITY FIX: Include cookies
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json'
           }

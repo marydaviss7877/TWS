@@ -262,6 +262,7 @@ export const sanitizeProjectNameForApi = (name) => {
  */
 export const sanitizeProjectData = (data) => {
   const sanitized = { ...data };
+  delete sanitized.logoUrl;
 
   if (sanitized.name) {
     sanitized.name = sanitizeProjectNameForApi(sanitized.name);
@@ -300,4 +301,24 @@ export const sanitizeProjectData = (data) => {
 
   return sanitized;
 };
+
+/**
+ * Normalize populated refs / ObjectIds to a 24-char hex Mongo id string.
+ * Returns undefined when missing or not a valid id (never "[object Object]").
+ */
+export function toMongoIdString(value) {
+  if (value == null || value === '') return undefined;
+  if (typeof value === 'string') {
+    return /^[0-9a-f]{24}$/i.test(value.trim()) ? value.trim() : undefined;
+  }
+  if (typeof value === 'object') {
+    const inner = value._id ?? value.id ?? value.$oid;
+    if (inner != null) return toMongoIdString(inner);
+  }
+  if (typeof value?.toString === 'function') {
+    const s = String(value);
+    if (/^[0-9a-f]{24}$/i.test(s)) return s;
+  }
+  return undefined;
+}
 

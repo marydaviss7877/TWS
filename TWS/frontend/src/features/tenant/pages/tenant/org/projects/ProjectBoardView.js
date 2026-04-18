@@ -10,7 +10,7 @@ import ProjectTasks from './ProjectTasks';
 const ProjectBoardView = () => {
   const { projectId } = useParams();
   return (
-    <div className="p-4">
+    <div className="min-w-0 max-w-full px-2 py-3 sm:px-4 sm:py-4 md:px-5 md:py-4">
       <ProjectTasks
         scopeProjectId={projectId}
         defaultView="kanban"

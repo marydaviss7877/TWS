@@ -15,9 +15,6 @@ import {
   ExclamationTriangleIcon,
   ClockIcon,
   ArrowPathIcon,
-  BugAntIcon,
-  ShieldCheckIcon,
-  BoltIcon,
 } from '@heroicons/react/24/outline';
 import { softwareHouseApi } from '../../../shared/services/industry/softwareHouseApi';
 
@@ -119,7 +116,6 @@ const SoftwareHouseDashboard = () => {
   const m              = dash.metrics         ?? {};
   const projects       = m.projects           ?? {};
   const sprints        = m.sprints            ?? {};
-  const dev            = m.development        ?? {};
   const recentProjects = dash.recentProjects  ?? [];
   const activeSprints  = dash.activeSprints   ?? [];
 
@@ -132,9 +128,6 @@ const SoftwareHouseDashboard = () => {
     m.team?.totalTeamMembers ?? m.team?.totalMembers ?? 0;
   const avgVelocity =
     sprints.averageVelocity ?? sprints.totalVelocity;
-  const codeCoverage =
-    dev.avgCodeCoverage ?? dev.averageCoverage;
-  const bugCount = dev.totalBugs ?? dev.bugCount;
 
   const QUICK_ACTIONS = [
     { label: 'New Project',   path: `/${tenantSlug}/org/projects?create=project`,     primary: true },
@@ -190,58 +183,18 @@ const SoftwareHouseDashboard = () => {
         />
       </div>
 
-      {/* Project Health + Dev Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-        {/* Project Health */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Project Health</h3>
-          {healthTotal > 0 ? (
-            <div className="space-y-3">
-              <HealthBar label="On Track" count={onTrack} total={healthTotal} colorClass="bg-emerald-500" />
-              <HealthBar label="At Risk"  count={atRisk} total={healthTotal} colorClass="bg-amber-500" />
-              <HealthBar label="Delayed"  count={delayed} total={healthTotal} colorClass="bg-red-500" />
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400 dark:text-gray-600">No project health data yet</p>
-          )}
-        </div>
-
-        {/* Dev Stats */}
-        <div className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Dev Stats</h3>
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center shrink-0">
-                <BoltIcon className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Avg Velocity</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{avgVelocity ?? '—'}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center shrink-0">
-                <ShieldCheckIcon className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Code Coverage</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">
-                  {codeCoverage != null ? `${Math.round(codeCoverage)}%` : '—'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 bg-red-50 dark:bg-red-900/30 rounded-lg flex items-center justify-center shrink-0">
-                <BugAntIcon className="h-4.5 w-4.5 text-red-600 dark:text-red-400" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Open Bugs</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{bugCount ?? '—'}</p>
-              </div>
-            </div>
+      {/* Project Health */}
+      <div className="bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Project Health</h3>
+        {healthTotal > 0 ? (
+          <div className="space-y-3">
+            <HealthBar label="On Track" count={onTrack} total={healthTotal} colorClass="bg-emerald-500" />
+            <HealthBar label="At Risk"  count={atRisk} total={healthTotal} colorClass="bg-amber-500" />
+            <HealthBar label="Delayed"  count={delayed} total={healthTotal} colorClass="bg-red-500" />
           </div>
-        </div>
+        ) : (
+          <p className="text-sm text-gray-400 dark:text-gray-600">No project health data yet</p>
+        )}
       </div>
 
       {/* Recent Projects + Active Sprints + Quick Actions */}

@@ -65,7 +65,80 @@ ChartJS.register(
   Filler
 );
 
-const ProjectsOverview = () => {
+function sumLifeCycleCounts(projects) {
+  let planning = 0;
+  let active = 0;
+  let onHold = 0;
+  let completed = 0;
+  let other = 0;
+  (projects || []).forEach((p) => {
+    const s = (p.status || '').toLowerCase().replace(/-/g, '_');
+    if (s === 'planning') planning += 1;
+    else if (s === 'active') active += 1;
+    else if (s === 'on_hold') onHold += 1;
+    else if (s === 'completed') completed += 1;
+    else other += 1;
+  });
+  return { planning, active, onHold, completed, other };
+}
+
+function buildMetricsFromProjectsList(projects) {
+  const lc = sumLifeCycleCounts(projects);
+  const totalProjects = projects.length;
+  const activeProjects = projects.filter((p) => p.status === 'active').length;
+  const completedProjects = projects.filter((p) => p.status === 'completed').length;
+
+  const totalBudget = projects.reduce((sum, p) => sum + (p.budget?.total || p.budget || 0), 0);
+  const spentBudget = projects.reduce((sum, p) => sum + (p.budget?.spent || p.spent || 0), 0);
+  const totalHours = projects.reduce((sum, p) => sum + (p.timeline?.estimatedHours || 0), 0);
+  const totalActualHours = projects.reduce((sum, p) => sum + (p.timeline?.actualHours || 0), 0);
+
+  const portfolioActivePct =
+    totalProjects > 0 ? Math.round((activeProjects / totalProjects) * 100) : 0;
+  const hoursUtilizationPct =
+    totalHours > 0 ? Math.round((totalActualHours / totalHours) * 100) : null;
+
+  const onTrackProjects = projects.filter(
+    (p) => p.status === 'active' && (p.metrics?.completionRate ?? 0) >= 70
+  ).length;
+  const atRiskProjects = projects.filter((p) => {
+    if (p.status !== 'active') return false;
+    const cr = p.metrics?.completionRate;
+    return cr != null && cr < 70 && cr >= 50;
+  }).length;
+  const delayedProjects = projects.filter((p) => {
+    if (p.timeline?.endDate) {
+      return new Date(p.timeline.endDate) < new Date() && p.status !== 'completed';
+    }
+    return false;
+  }).length;
+
+  return {
+    totalProjects,
+    activeProjects,
+    completedProjects,
+    planningProjects: lc.planning,
+    onHoldProjects: lc.onHold,
+    totalTeamMembers: 0,
+    onTrackProjects,
+    atRiskProjects,
+    delayedProjects,
+    totalBudget,
+    spentBudget,
+    totalHours,
+    portfolioActivePct,
+    hoursUtilizationPct,
+    utilization: hoursUtilizationPct != null ? hoursUtilizationPct : portfolioActivePct
+  };
+}
+
+function formatHoursSummary(totalHours) {
+  if (totalHours == null || totalHours <= 0) return '0';
+  if (totalHours < 1000) return `${Math.round(totalHours)} hrs`;
+  return `${(totalHours / 1000).toFixed(1)}k hrs`;
+}
+
+const ProjectsOverviewContent = () => {
   const { tenantSlug } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -101,6 +174,8 @@ const ProjectsOverview = () => {
     totalProjects: 0,
     activeProjects: 0,
     completedProjects: 0,
+    planningProjects: 0,
+    onHoldProjects: 0,
     totalTeamMembers: 0,
     onTrackProjects: 0,
     atRiskProjects: 0,
@@ -108,6 +183,8 @@ const ProjectsOverview = () => {
     totalBudget: 0,
     spentBudget: 0,
     totalHours: 0,
+    portfolioActivePct: 0,
+    hoursUtilizationPct: null,
     utilization: 0
   });
 
@@ -134,76 +211,128 @@ const ProjectsOverview = () => {
 
   const fetchDepartments = useCallback(async () => {
     try {
+      const urlParams = new URLSearchParams(location.search);
+      const scopedDeptId = urlParams.get('departmentId') || '';
+
       const data = await tenantProjectApiService.getDepartments(tenantSlug);
       if (data) {
-        const departmentsList = Array.isArray(data) ? data : data.departments || [];
+        let departmentsList = Array.isArray(data) ? data : data.departments || [];
+        if (scopedDeptId) {
+          departmentsList = departmentsList.filter(
+            (d) => String(d._id) === String(scopedDeptId)
+          );
+        }
         setDepartments(departmentsList);
-        
-        // Fetch stats for each department using tenantApiService
-        const statsPromises = departmentsList.map(async (dept) => {
+
+        const fetchDeptStats = async (dept) => {
           try {
-            // SECURITY FIX: Use credentials: 'include' instead of Authorization header
             const response = await fetch(`/api/tenant/${tenantSlug}/departments/${dept._id}/dashboard/stats`, {
               method: 'GET',
-              credentials: 'include', // SECURITY FIX: Include cookies (HttpOnly tokens)
-              headers: {
-                'Content-Type': 'application/json'
-              }
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' }
             });
-            
             if (response.ok) {
               const statsData = await response.json();
               return { ...dept, stats: statsData?.data?.stats || statsData?.stats || {} };
             }
             return { ...dept, stats: {} };
-          } catch (err) {
+          } catch {
             return { ...dept, stats: {} };
           }
-        });
-        
-        const deptStats = await Promise.all(statsPromises);
-        setDepartmentStats(deptStats);
+        };
+
+        const CONCURRENCY = 5;
+        const results = new Array(departmentsList.length);
+        let cursor = 0;
+        const worker = async () => {
+          while (true) {
+            const i = cursor;
+            cursor += 1;
+            if (i >= departmentsList.length) break;
+            results[i] = await fetchDeptStats(departmentsList[i]);
+          }
+        };
+        await Promise.all(
+          Array.from({ length: Math.min(CONCURRENCY, departmentsList.length) }, () => worker())
+        );
+        setDepartmentStats(results.filter(Boolean));
       }
     } catch (error) {
       console.error('Error fetching departments:', error);
     }
-  }, [tenantSlug]);
+  }, [tenantSlug, location.search]);
 
   const fetchOverviewData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const [metricsResponse, projectsResponse, allProjectsResponse, milestonesResponse] = await Promise.all([
-        tenantProjectApiService.getProjectMetrics(tenantSlug).catch(() => ({})),
-        tenantProjectApiService.getProjects(tenantSlug, { limit: 6, sort: 'updatedAt' }).catch(() => ({ projects: [] })),
-        // Fetch all projects (no limit) so trend/velocity/health charts use full dataset
-        tenantProjectApiService.getProjects(tenantSlug, { limit: 200, sort: 'createdAt' }).catch(() => ({ projects: [] })),
+
+      const urlParams = new URLSearchParams(location.search);
+      const departmentId = urlParams.get('departmentId') || undefined;
+      const primaryDepartmentId = urlParams.get('primaryDepartmentId') || undefined;
+
+      const projectQuery = {
+        limit: 200,
+        sort: 'updatedAt',
+        ...(departmentId ? { departmentId } : {}),
+        ...(primaryDepartmentId ? { primaryDepartmentId } : {})
+      };
+      const metricsQuery = {
+        ...(departmentId ? { departmentId } : {}),
+        ...(primaryDepartmentId ? { primaryDepartmentId } : {})
+      };
+
+      const [metricsResponse, projectsPayload, milestonesResponse] = await Promise.all([
+        tenantProjectApiService.getProjectMetrics(tenantSlug, metricsQuery).catch(() => null),
+        tenantProjectApiService.getProjects(tenantSlug, projectQuery).catch(() => ({ projects: [] })),
         tenantApiService.getProjectMilestones(tenantSlug, { upcoming: true, limit: 5 }).catch(() => ({ milestones: [] }))
       ]);
 
-      // Set metrics
-      if (metricsResponse && Object.keys(metricsResponse).length > 0) {
+      const allP =
+        projectsPayload?.projects || (Array.isArray(projectsPayload) ? projectsPayload : []);
+      setAllProjects(allP);
+      setRecentProjects(allP.slice(0, 6));
+
+      const baseFromList = buildMetricsFromProjectsList(allP);
+
+      if (metricsResponse && typeof metricsResponse === 'object') {
         setMetrics({
-          totalProjects: metricsResponse.totalProjects || 0,
-          activeProjects: metricsResponse.activeProjects || 0,
-          completedProjects: metricsResponse.completedProjects || 0,
-          totalTeamMembers: metricsResponse.totalTeamMembers || 0,
-          onTrackProjects: metricsResponse.onTrackProjects || 0,
-          atRiskProjects: metricsResponse.atRiskProjects || 0,
-          delayedProjects: metricsResponse.delayedProjects || 0,
-          totalBudget: metricsResponse.totalBudget || 0,
-          spentBudget: metricsResponse.spentBudget || 0,
-          totalHours: metricsResponse.totalHours || 0,
-          utilization: metricsResponse.utilization || 0
+          totalProjects: metricsResponse.totalProjects ?? baseFromList.totalProjects,
+          activeProjects: metricsResponse.activeProjects ?? 0,
+          completedProjects: metricsResponse.completedProjects ?? 0,
+          planningProjects: metricsResponse.planningProjects ?? baseFromList.planningProjects,
+          onHoldProjects: metricsResponse.onHoldProjects ?? baseFromList.onHoldProjects,
+          totalTeamMembers: metricsResponse.totalTeamMembers ?? 0,
+          onTrackProjects: metricsResponse.onTrackProjects ?? 0,
+          atRiskProjects: metricsResponse.atRiskProjects ?? 0,
+          delayedProjects: metricsResponse.delayedProjects ?? 0,
+          totalBudget: metricsResponse.totalBudget ?? baseFromList.totalBudget,
+          spentBudget: metricsResponse.spentBudget ?? baseFromList.spentBudget,
+          totalHours: metricsResponse.totalHours ?? baseFromList.totalHours,
+          portfolioActivePct:
+            metricsResponse.portfolioActivePct ?? baseFromList.portfolioActivePct,
+          hoursUtilizationPct:
+            metricsResponse.hoursUtilizationPct != null
+              ? metricsResponse.hoursUtilizationPct
+              : baseFromList.hoursUtilizationPct,
+          utilization:
+            metricsResponse.utilization != null
+              ? metricsResponse.utilization
+              : baseFromList.utilization
         });
+      } else if (allP.length > 0) {
+        setMetrics(baseFromList);
       } else {
-        // Use projects overview data as fallback
         const overviewData = await tenantApiService.getProjectsOverview(tenantSlug).catch(() => ({}));
+        const fallbackProjects = Array.isArray(overviewData.projects) ? overviewData.projects : [];
+        setRecentProjects(fallbackProjects.slice(0, 6));
+        setAllProjects(fallbackProjects);
         setMetrics({
           totalProjects: overviewData.totalProjects || 0,
           activeProjects: overviewData.activeProjects || 0,
           completedProjects: overviewData.completedProjects || 0,
+          planningProjects: 0,
+          onHoldProjects: 0,
           totalTeamMembers: 0,
           onTrackProjects: 0,
           atRiskProjects: 0,
@@ -211,23 +340,12 @@ const ProjectsOverview = () => {
           totalBudget: 0,
           spentBudget: 0,
           totalHours: 0,
+          portfolioActivePct: 0,
+          hoursUtilizationPct: null,
           utilization: 0
         });
-        setRecentProjects(overviewData.projects || []);
       }
 
-      // Set recent projects (6 items for cards)
-      if (projectsResponse?.projects) {
-        setRecentProjects(projectsResponse.projects);
-      } else if (projectsResponse && Array.isArray(projectsResponse)) {
-        setRecentProjects(projectsResponse);
-      }
-
-      // Set all projects (full dataset for charts)
-      const allP = allProjectsResponse?.projects || (Array.isArray(allProjectsResponse) ? allProjectsResponse : []);
-      setAllProjects(allP);
-
-      // Set milestones
       let milestones = [];
       if (milestonesResponse?.milestones) {
         milestones = milestonesResponse.milestones;
@@ -236,14 +354,13 @@ const ProjectsOverview = () => {
         milestones = milestonesResponse;
         setUpcomingMilestones(milestones);
       }
-
     } catch (err) {
       console.error('Error fetching overview data:', err);
       setError('Failed to load projects overview data');
     } finally {
       setLoading(false);
     }
-  }, [tenantSlug]);
+  }, [tenantSlug, location.search]);
 
   useEffect(() => {
     if (tenantSlug) {
@@ -269,11 +386,11 @@ const ProjectsOverview = () => {
     const urlParams = new URLSearchParams(location.search);
     if (urlParams.get('create') === 'project') {
       setIsCreateModalOpen(true);
-      // Clean up URL
-      const newUrl = location.pathname;
-      window.history.replaceState({}, '', newUrl);
+      urlParams.delete('create');
+      const next = urlParams.toString();
+      navigate({ pathname: location.pathname, search: next ? `?${next}` : '' }, { replace: true });
     }
-  }, [location.search, location.pathname]);
+  }, [location.search, location.pathname, navigate]);
 
   // Generate comprehensive chart data
   const generateChartData = useCallback((projects, milestones) => {
@@ -285,31 +402,35 @@ const ProjectsOverview = () => {
       months.push(date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
     }
 
-    // Project Status Distribution (Pie Chart)
-    const projectStatusData = {
-      labels: ['On Track', 'At Risk', 'Delayed', 'Completed'],
-      datasets: [{
-        data: [
-          metrics.onTrackProjects,
-          metrics.atRiskProjects,
-          metrics.delayedProjects,
-          metrics.completedProjects
-        ],
-        backgroundColor: [
-          'rgba(34, 197, 94, 0.8)',
-          'rgba(234, 179, 8, 0.8)',
-          'rgba(239, 68, 68, 0.8)',
-          'rgba(59, 130, 246, 0.8)'
-        ],
-        borderColor: [
-          'rgba(34, 197, 94, 1)',
-          'rgba(234, 179, 8, 1)',
-          'rgba(239, 68, 68, 1)',
-          'rgba(59, 130, 246, 1)'
-        ],
-        borderWidth: 2
-      }]
-    };
+    // Project lifecycle status (Pie) — from project list so Planning portfolios are visible
+    const lc = sumLifeCycleCounts(projects);
+    const lifecycleTotal = lc.planning + lc.active + lc.onHold + lc.completed + lc.other;
+    const projectStatusData =
+      lifecycleTotal > 0
+        ? {
+            labels: ['Planning', 'Active', 'On hold', 'Completed', 'Other'],
+            datasets: [
+              {
+                data: [lc.planning, lc.active, lc.onHold, lc.completed, lc.other],
+                backgroundColor: [
+                  'rgba(148, 163, 184, 0.85)',
+                  'rgba(59, 130, 246, 0.85)',
+                  'rgba(234, 179, 8, 0.85)',
+                  'rgba(34, 197, 94, 0.85)',
+                  'rgba(107, 114, 128, 0.85)'
+                ],
+                borderColor: [
+                  'rgba(148, 163, 184, 1)',
+                  'rgba(59, 130, 246, 1)',
+                  'rgba(234, 179, 8, 1)',
+                  'rgba(34, 197, 94, 1)',
+                  'rgba(107, 114, 128, 1)'
+                ],
+                borderWidth: 2
+              }
+            ]
+          }
+        : null;
 
     // Project Type Distribution (Doughnut Chart)
     const typeCounts = {};
@@ -395,50 +516,73 @@ const ProjectsOverview = () => {
         pointRadius: 5
       }]
     };
+    const completionTrendHasData = completionByMonth.some((n) => n > 0);
 
-    // Team Allocation (Bar Chart)
-    const teamAllocationData = {
-      labels: projectSlice.length > 0
-        ? projectSlice.map(p => (p.name || p.title || 'Project').substring(0, 12))
-        : ['No Projects'],
-      datasets: [{
-        label: 'Team Members',
-        data: projectSlice.length > 0
-          ? projectSlice.map(p => p.team?.members?.length || p.team?.length || p.teamMembers?.length || 0)
-          : [0],
-        backgroundColor: 'rgba(168, 85, 247, 0.8)',
-        borderColor: 'rgba(168, 85, 247, 1)',
-        borderWidth: 2
-      }]
-    };
+    // Team Allocation (Bar Chart) — omit when no roster counts on sampled projects
+    const teamCounts =
+      projectSlice.length > 0
+        ? projectSlice.map(
+            (p) => p.team?.members?.length || p.team?.length || p.teamMembers?.length || 0
+          )
+        : [];
+    const teamAllocationData =
+      projectSlice.length > 0 && teamCounts.some((c) => c > 0)
+        ? {
+            labels: projectSlice.map((p) => (p.name || p.title || 'Project').substring(0, 12)),
+            datasets: [
+              {
+                label: 'Team Members',
+                data: teamCounts,
+                backgroundColor: 'rgba(168, 85, 247, 0.8)',
+                borderColor: 'rgba(168, 85, 247, 1)',
+                borderWidth: 2
+              }
+            ]
+          }
+        : null;
 
     // Milestone Status (Doughnut Chart)
+    const normMilestoneStatus = (s) => (s || '').toLowerCase().replace(/-/g, '_');
     const milestoneStatusCounts = {
-      completed: milestones.filter(m => m.status === 'completed').length,
-      in_progress: milestones.filter(m => m.status === 'in_progress').length,
-      pending: milestones.filter(m => !m.status || m.status === 'pending').length
+      completed: milestones.filter((m) => normMilestoneStatus(m.status) === 'completed').length,
+      in_progress: milestones.filter((m) =>
+        ['in_progress', 'inprogress'].includes(normMilestoneStatus(m.status))
+      ).length,
+      pending: milestones.filter((m) => {
+        const n = normMilestoneStatus(m.status);
+        return !m.status || n === 'pending' || n === 'planned';
+      }).length
     };
-    const milestoneStatusData = {
-      labels: ['Completed', 'In Progress', 'Pending'],
-      datasets: [{
-        data: [
-          milestoneStatusCounts.completed,
-          milestoneStatusCounts.in_progress,
-          milestoneStatusCounts.pending
-        ],
-        backgroundColor: [
-          'rgba(34, 197, 94, 0.8)',
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(234, 179, 8, 0.8)'
-        ],
-        borderColor: [
-          'rgba(34, 197, 94, 1)',
-          'rgba(59, 130, 246, 1)',
-          'rgba(234, 179, 8, 1)'
-        ],
-        borderWidth: 2
-      }]
-    };
+    const milestoneSum =
+      milestoneStatusCounts.completed +
+      milestoneStatusCounts.in_progress +
+      milestoneStatusCounts.pending;
+    const milestoneStatusData =
+      milestoneSum > 0
+        ? {
+            labels: ['Completed', 'In Progress', 'Pending'],
+            datasets: [
+              {
+                data: [
+                  milestoneStatusCounts.completed,
+                  milestoneStatusCounts.in_progress,
+                  milestoneStatusCounts.pending
+                ],
+                backgroundColor: [
+                  'rgba(34, 197, 94, 0.8)',
+                  'rgba(59, 130, 246, 0.8)',
+                  'rgba(234, 179, 8, 0.8)'
+                ],
+                borderColor: [
+                  'rgba(34, 197, 94, 1)',
+                  'rgba(59, 130, 246, 1)',
+                  'rgba(234, 179, 8, 1)'
+                ],
+                borderWidth: 2
+              }
+            ]
+          }
+        : null;
 
     // Project Health Radar — all values derived from real data
     const totalActive = Math.max(metrics.activeProjects, 1);
@@ -453,9 +597,15 @@ const ProjectsOverview = () => {
     const qualityScore = projects.length > 0
       ? Math.round(projects.reduce((sum, p) => sum + (p.completionPercentage || p.progress || 0), 0) / projects.length)
       : 0;
-    // Team Satisfaction: utilization score (healthy range = high score); penalise >100% overload
-    const util = metrics.utilization || 0;
-    const teamScore = util > 0 ? Math.round(Math.min(util, 100) * (util <= 80 ? 1 : util <= 100 ? 0.9 : 0.7)) : 0;
+    // Team Satisfaction: prefer logged hours vs estimates; else portfolio active %
+    const util =
+      metrics.hoursUtilizationPct != null && metrics.hoursUtilizationPct > 0
+        ? metrics.hoursUtilizationPct
+        : metrics.portfolioActivePct || 0;
+    const teamScore =
+      util > 0
+        ? Math.round(Math.min(util, 100) * (util <= 80 ? 1 : util <= 100 ? 0.9 : 0.7))
+        : 0;
     // Client Satisfaction: inverse of at-risk ratio across all projects
     const clientScore = Math.round((1 - metrics.atRiskProjects / totalAll) * 100);
     // Scope: inverse of delayed ratio
@@ -540,18 +690,19 @@ const ProjectsOverview = () => {
         pointRadius: 5
       }]
     };
+    const velocityHasData = velocityByMonth.some((n) => n > 0);
 
     setChartData({
       projectStatus: projectStatusData,
       projectTypeDistribution: projectTypeData,
       budgetComparison: budgetData,
-      projectTimeline: completionTrendData,
+      projectTimeline: completionTrendHasData ? completionTrendData : null,
       teamAllocation: teamAllocationData,
-      completionTrend: completionTrendData,
+      completionTrend: completionTrendHasData ? completionTrendData : null,
       milestoneStatus: milestoneStatusData,
       projectHealth: projectHealthData,
       budgetUtilization: budgetUtilizationData,
-      projectVelocity: projectVelocityData
+      projectVelocity: velocityHasData ? projectVelocityData : null
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metrics]);
@@ -577,7 +728,7 @@ const ProjectsOverview = () => {
     { 
       label: 'Active Projects', 
       value: metrics.activeProjects, 
-      change: `${metrics.completedProjects} completed`,
+      change: `${metrics.completedProjects} completed · ${metrics.planningProjects} planning`,
       icon: ClipboardDocumentListIcon, 
       iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600',
       trend: 'up'
@@ -585,7 +736,10 @@ const ProjectsOverview = () => {
     { 
       label: 'Team Members', 
       value: metrics.totalTeamMembers || 0, 
-      change: metrics.utilization ? `${metrics.utilization}% utilized` : 'No data',
+      change:
+        metrics.totalTeamMembers > 0
+          ? `${metrics.portfolioActivePct}% of projects are active`
+          : 'Distinct people on projects',
       icon: UsersIcon, 
       iconBg: 'bg-gradient-to-br from-purple-500 to-pink-600',
       trend: 'up'
@@ -616,8 +770,13 @@ const ProjectsOverview = () => {
     },
     { 
       label: 'Total Hours', 
-      value: metrics.totalHours > 0 ? `${(metrics.totalHours / 1000).toFixed(1)}K` : '0', 
-      change: metrics.utilization ? `${metrics.utilization}% utilization` : 'No tracking',
+      value: formatHoursSummary(metrics.totalHours), 
+      change:
+        metrics.hoursUtilizationPct != null
+          ? `${metrics.hoursUtilizationPct}% of estimated hours logged`
+          : metrics.totalHours > 0
+            ? 'Log time to measure utilization'
+            : 'Set timeline estimates on projects',
       icon: ClockIcon, 
       iconBg: 'bg-gradient-to-br from-indigo-500 to-blue-600',
       trend: 'up'
@@ -634,17 +793,25 @@ const ProjectsOverview = () => {
 
   const getStatusColor = (status) => {
     const statusColors = {
-      'on_track': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
-      'at_risk': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
-      'delayed': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
-      'active': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-      'completed': 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+      planning: 'bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-200',
+      on_hold: 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200',
+      on_track: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+      at_risk: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+      delayed: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+      active: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+      completed: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
     };
-    return statusColors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
+    const key = (status || '').toLowerCase().replace(/-/g, '_');
+    return statusColors[key] || 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
   };
 
   const getStatusLabel = (status) => {
-    switch (status) {
+    const key = (status || '').toLowerCase().replace(/-/g, '_');
+    switch (key) {
+      case 'planning':
+        return 'Planning';
+      case 'on_hold':
+        return 'On hold';
       case 'on_track':
         return 'On Track';
       case 'at_risk':
@@ -658,6 +825,19 @@ const ProjectsOverview = () => {
       default:
         return status?.charAt(0).toUpperCase() + status?.slice(1) || 'Unknown';
     }
+  };
+
+  const scopedDepartmentId = new URLSearchParams(location.search).get('departmentId');
+
+  const progressBarClassFor = (raw) => {
+    const s = (raw || '').toLowerCase().replace(/-/g, '_');
+    if (s === 'planning') return 'bg-sky-500';
+    if (s === 'on_hold') return 'bg-amber-500';
+    if (s === 'on_track') return 'bg-green-500';
+    if (s === 'at_risk') return 'bg-yellow-500';
+    if (s === 'delayed') return 'bg-red-500';
+    if (s === 'completed') return 'bg-emerald-600';
+    return 'bg-blue-500';
   };
 
   if (loading) {
@@ -721,7 +901,6 @@ const ProjectsOverview = () => {
             </button>
           )}
           <button
-           
             onClick={() => setIsCreateModalOpen(true)}
             className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white"
           >
@@ -731,11 +910,32 @@ const ProjectsOverview = () => {
         </div>
       </div>
 
+      {scopedDepartmentId && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50/80 dark:bg-primary-900/20 px-4 py-3 text-sm text-primary-900 dark:text-primary-100">
+          <span>Showing projects scoped to one department.</span>
+          <button
+            type="button"
+            onClick={() => {
+              const sp = new URLSearchParams(location.search);
+              sp.delete('departmentId');
+              const next = sp.toString();
+              navigate(
+                { pathname: location.pathname, search: next ? `?${next}` : '' },
+                { replace: true }
+              );
+            }}
+            className="font-medium text-primary-700 dark:text-primary-300 hover:underline"
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
+
       {/* Stats Grid - Expanded */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
+        {stats.map((stat) => (
           <div 
-            key={index} 
+            key={stat.label} 
             className={`glass-card-premium p-5 hover-glow transition-all duration-300 ${stat.onClick ? 'cursor-pointer' : ''}`}
             onClick={stat.onClick}
           >
@@ -762,7 +962,10 @@ const ProjectsOverview = () => {
 
       {/* Project Health Overview */}
       <div className="glass-card-premium p-6">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Project Health Overview</h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Health Overview</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4">
+          On Track and At Risk include only projects in <span className="font-medium">active</span> status (completion-based). Delayed uses past due dates.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
             <div className="flex items-center justify-center mb-2">
@@ -808,13 +1011,13 @@ const ProjectsOverview = () => {
 
       {/* Charts Row 1: Project Status & Project Type Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Project Status Distribution */}
+        {/* Project lifecycle (list-derived) */}
         <div className="glass-card-premium p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Status Distribution</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Lifecycle by status</h3>
             <FolderIcon className="w-5 h-5 text-gray-400" />
           </div>
-          {chartData.projectStatus && (
+          {chartData.projectStatus ? (
             <div className="h-64">
               <Pie 
                 data={chartData.projectStatus}
@@ -837,6 +1040,11 @@ const ProjectsOverview = () => {
                   }
                 }}
               />
+            </div>
+          ) : (
+            <div className="flex h-64 flex-col items-center justify-center text-center text-sm text-gray-500 dark:text-gray-400">
+              <FolderIcon className="mb-2 h-10 w-10 opacity-40" />
+              No projects in this view yet.
             </div>
           )}
         </div>
@@ -914,7 +1122,9 @@ const ProjectsOverview = () => {
                       beginAtZero: true,
                       ticks: {
                         callback: function(value) {
-                          return '$' + (value * 1000) + 'K';
+                          const v = Number(value);
+                          if (!Number.isFinite(v)) return '';
+                          return `$${v.toLocaleString()}k`;
                         },
                         color: 'rgb(107, 114, 128)'
                       },
@@ -1002,7 +1212,7 @@ const ProjectsOverview = () => {
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Completion Trend</h3>
             <RocketLaunchIcon className="w-5 h-5 text-gray-400" />
           </div>
-          {chartData.completionTrend && (
+          {chartData.completionTrend ? (
             <div className="h-64">
               <Line 
                 data={chartData.completionTrend}
@@ -1040,6 +1250,10 @@ const ProjectsOverview = () => {
                 }}
               />
             </div>
+          ) : (
+            <div className="flex h-64 flex-col items-center justify-center text-center text-sm text-gray-500 dark:text-gray-400">
+              No completed projects in the last six months.
+            </div>
           )}
         </div>
 
@@ -1049,7 +1263,7 @@ const ProjectsOverview = () => {
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Project Velocity</h3>
             <BoltIcon className="w-5 h-5 text-gray-400" />
           </div>
-          {chartData.projectVelocity && (
+          {chartData.projectVelocity ? (
             <div className="h-64">
               <Line 
                 data={chartData.projectVelocity}
@@ -1087,6 +1301,10 @@ const ProjectsOverview = () => {
                 }}
               />
             </div>
+          ) : (
+            <div className="flex h-64 flex-col items-center justify-center text-center text-sm text-gray-500 dark:text-gray-400">
+              No average completion trend yet (projects need progress data).
+            </div>
           )}
         </div>
       </div>
@@ -1099,7 +1317,7 @@ const ProjectsOverview = () => {
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Team Allocation by Project</h3>
             <UsersIcon className="w-5 h-5 text-gray-400" />
           </div>
-          {chartData.teamAllocation && (
+          {chartData.teamAllocation ? (
             <div className="h-64">
               <Bar 
                 data={chartData.teamAllocation}
@@ -1143,6 +1361,10 @@ const ProjectsOverview = () => {
                 }}
               />
             </div>
+          ) : (
+            <div className="flex h-64 flex-col items-center justify-center text-center text-sm text-gray-500 dark:text-gray-400">
+              No team roster counts on these projects yet.
+            </div>
           )}
         </div>
 
@@ -1152,7 +1374,7 @@ const ProjectsOverview = () => {
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Milestone Status</h3>
             <ClipboardDocumentListIcon className="w-5 h-5 text-gray-400" />
           </div>
-          {chartData.milestoneStatus && (
+          {chartData.milestoneStatus ? (
             <div className="h-64">
               <Doughnut 
                 data={chartData.milestoneStatus}
@@ -1175,6 +1397,10 @@ const ProjectsOverview = () => {
                   }
                 }}
               />
+            </div>
+          ) : (
+            <div className="flex h-64 flex-col items-center justify-center text-center text-sm text-gray-500 dark:text-gray-400">
+              No milestone samples returned for this view.
             </div>
           )}
         </div>
@@ -1241,9 +1467,12 @@ const ProjectsOverview = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Projects */}
         <div className="glass-card-premium p-6 xl:p-8 hover-glow">
-          <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white mb-4">
-            Active Projects
+          <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white">
+            Recent projects
           </h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4">
+            Last updated first — includes planning, active, and other statuses (not the same as the &quot;Active Projects&quot; KPI above).
+          </p>
           <div className="space-y-4">
             {recentProjects.length > 0 ? (
               recentProjects.slice(0, 6).map((project) => (
@@ -1283,11 +1512,7 @@ const ProjectsOverview = () => {
                       </div>
                       <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div 
-                          className={`h-2 rounded-full ${
-                            (project.status || project.healthStatus) === 'on_track' ? 'bg-green-500' :
-                            (project.status || project.healthStatus) === 'at_risk' ? 'bg-yellow-500' :
-                            'bg-blue-500'
-                          }`}
+                          className={`h-2 rounded-full ${progressBarClassFor(project.status || project.healthStatus)}`}
                           style={{ width: `${project.metrics?.completionRate || project.progress || 0}%` }}
                         ></div>
                       </div>
@@ -1316,7 +1541,7 @@ const ProjectsOverview = () => {
             ) : (
               <div className="text-center py-12">
                 <FolderIcon className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 mb-2">No active projects found</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-2">No projects found</p>
                 <p className="text-sm text-gray-500 dark:text-gray-500">Create your first project to get started</p>
               </div>
             )}
@@ -1403,7 +1628,11 @@ const ProjectsOverview = () => {
                   </div>
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">Rate</p>
-                    <p className="font-bold text-primary-600">{dept.stats?.completionRate?.toFixed(1) || 0}%</p>
+                    <p className="font-bold text-primary-600">
+                      {typeof dept.stats?.completionRate === 'number' && !Number.isNaN(dept.stats.completionRate)
+                        ? `${dept.stats.completionRate.toFixed(1)}%`
+                        : '—'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1462,4 +1691,10 @@ const ProjectsOverview = () => {
   );
 };
 
-export default ProjectsOverview;
+export default function ProjectsOverview() {
+  return (
+    <ErrorBoundary message="The projects overview could not render. Try refreshing the page.">
+      <ProjectsOverviewContent />
+    </ErrorBoundary>
+  );
+}

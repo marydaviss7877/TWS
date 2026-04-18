@@ -33,6 +33,8 @@ import {
   rankLauncherItem,
   LAUNCHER_UI,
 } from '../../../../components/launcher/launcherUtils';
+import Breadcrumbs from '../../../../../../shared/components/navigation/Breadcrumbs';
+import './AppHome.css';
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getGreeting() {
   const h = new Date().getHours();
@@ -61,15 +63,16 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
       role="button"
       tabIndex={0}
       data-launcher-card="true"
+      data-reveal-card="true"
       onClick={() => { setPressed(true); setTimeout(() => setPressed(false), 200); onNavigate(item.path); }}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(item.path); } }}
       className={cn(
-        `group relative flex flex-col items-center ${LAUNCHER_UI.cardGap} ${LAUNCHER_UI.cardRadius} ${LAUNCHER_UI.cardPadding} transition-all duration-200 cursor-pointer select-none overflow-visible`,
+        `apphome-card group relative flex flex-col items-center ${LAUNCHER_UI.cardGap} ${LAUNCHER_UI.cardRadius} ${LAUNCHER_UI.cardPadding} transition-all duration-200 cursor-pointer select-none overflow-visible`,
         'outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
         pressed && 'scale-95',
         isActive
           ? 'bg-indigo-50 dark:bg-indigo-900/30 ring-2 ring-indigo-400/60 shadow-md'
-          : 'bg-white/80 dark:bg-gray-800/60 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:bg-white dark:hover:bg-gray-800',
+          : 'bg-[#f7f9ff] dark:bg-gray-800/60 border border-[#d8def5] dark:border-gray-700/70 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:bg-[#f2f5ff] dark:hover:bg-gray-800',
         'backdrop-blur-sm',
         // bookmarked card gets a vivid top accent line
         isFav && 'border-t-2 border-indigo-500 dark:border-indigo-400'
@@ -96,10 +99,11 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
 
       {/* Gradient icon bubble */}
       <div className={cn(
-        `flex items-center justify-center ${LAUNCHER_UI.iconWrap} bg-gradient-to-br shadow-md`,
+        `apphome-icon-wrap flex items-center justify-center ${LAUNCHER_UI.iconWrap} bg-gradient-to-br shadow-md`,
         'group-hover:shadow-lg group-hover:scale-110 transition-all duration-300',
         meta.gradient
       )}>
+        <span className="apphome-icon-shimmer" />
         {Icon && <Icon className={`${LAUNCHER_UI.iconSize} text-white drop-shadow-sm`} />}
       </div>
 
@@ -165,8 +169,8 @@ const AppGrid = ({ items, activeAppKey, favoriteKeys, onNavigate, onToggleFav })
 const QuickStat = ({ icon: Icon, label, value, gradient }) => (
   <div className={cn(
     'flex items-center gap-3 rounded-xl px-4 py-3',
-    'bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-sm',
-    'border border-gray-100 dark:border-gray-700/50',
+    'bg-[#f4f6ff] dark:bg-gray-800/50 backdrop-blur-sm shadow-sm',
+    'border border-[#d6ddf7] dark:border-gray-700/50',
     'hover:shadow-md transition-shadow duration-200'
   )}>
     <div className={cn('flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br flex-shrink-0', gradient)}>
@@ -194,13 +198,12 @@ const AppHome = () => {
   const [search,    setSearch]    = useState('');
   const [mounted,   setMounted]   = useState(false);
   const [recentKeys, setRecentKeys] = useState([]);
-  const [employeeStats, setEmployeeStats] = useState({
-    attendance: null,
-    leaveBalance: null,
-  });
   const searchRef = useRef(null);
+  const rootRef = useRef(null);
+  const rafRef = useRef(null);
+  const revealScopeRef = useRef(null);
   const isClientUser = ['client', 'customer'].includes(String(user?.role || '').toLowerCase());
-  const isAdminUser = ['owner', 'admin', 'super_admin', 'org_manager'].includes(String(user?.role || '').toLowerCase());
+  const isAdminUser = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner'].includes(String(user?.role || '').toLowerCase());
   const showEmployeeApps = !isClientUser && !isAdminUser;
 
   useEffect(() => { setMounted(true); }, []);
@@ -208,37 +211,6 @@ const AppHome = () => {
   useEffect(() => {
     setRecentKeys(loadRecentApps(tenantSlug));
   }, [tenantSlug]);
-
-  useEffect(() => {
-    let active = true;
-    if (!showEmployeeApps || !tenantSlug || !user?.id) return undefined;
-
-    const loadEmployeeStats = async () => {
-      try {
-        const attendanceRes = await fetch(`/api/tenant/${tenantSlug}/organization/hr/attendance?employeeId=${user.id}&stats=true`, {
-          credentials: 'include',
-        });
-        if (attendanceRes.ok && active) {
-          const data = await attendanceRes.json();
-          setEmployeeStats((prev) => ({ ...prev, attendance: data?.data || null }));
-        }
-      } catch (_) { /* best effort */ }
-
-      try {
-        const employeeRes = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees?userId=${user.id}`, {
-          credentials: 'include',
-        });
-        if (employeeRes.ok && active) {
-          const empData = await employeeRes.json();
-          const employee = empData?.data?.employees?.[0];
-          setEmployeeStats((prev) => ({ ...prev, leaveBalance: employee?.leaveBalance || null }));
-        }
-      } catch (_) { /* best effort */ }
-    };
-
-    loadEmployeeStats();
-    return () => { active = false; };
-  }, [showEmployeeApps, tenantSlug, user?.id]);
 
   // Keyboard shortcut: "/" focuses search
   useEffect(() => {
@@ -279,9 +251,6 @@ const AppHome = () => {
     navigate(path);
   };
 
-  // Quick stats derived from available data
-  const totalApps = filteredMenuItems.length;
-  const totalFavs = favoriteKeys.length;
   const recentItems = filteredMenuItems.filter((m) => recentKeys.includes(m.key));
   recentItems.sort((a, b) => recentKeys.indexOf(a.key) - recentKeys.indexOf(b.key));
   const employeeApps = [
@@ -322,18 +291,101 @@ const AppHome = () => {
     saveRecentApps(tenantSlug, []);
   };
 
+  useEffect(() => {
+    const scope = revealScopeRef.current;
+    if (!scope) return;
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      scope.querySelectorAll('[data-reveal], [data-reveal-card]').forEach((el) => el.classList.add('is-visible'));
+      return;
+    }
+    const nodes = Array.from(scope.querySelectorAll('[data-reveal], [data-reveal-card]'));
+    if (!nodes.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -6% 0px' }
+    );
+    nodes.forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
+  }, [q, visible.length, recentItems.length, showEmployeeApps]);
+
+  const handleMouseMove = (e) => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) return;
+    const el = rootRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const x = ((e.clientX - cx) / rect.width) * 14;
+    const y = ((e.clientY - cy) / rect.height) * 14;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      el.style.setProperty('--parallax-x', `${x.toFixed(2)}px`);
+      el.style.setProperty('--parallax-y', `${y.toFixed(2)}px`);
+    });
+  };
+
+  const handleMouseLeave = () => {
+    const el = rootRef.current;
+    if (!el) return;
+    el.style.setProperty('--parallax-x', '0px');
+    el.style.setProperty('--parallax-y', '0px');
+  };
+
   return (
     <div
+      ref={rootRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       className={cn(
-        'min-h-full transition-opacity duration-500',
+        'apphome-root min-h-full relative overflow-hidden transition-all duration-500',
+        '-mx-2 sm:-mx-3 md:-mx-4 lg:-mx-5',
+        'px-2 sm:px-3 md:px-4 lg:px-5',
+        'bg-gradient-to-br from-[#f2f6ff] via-[#f7f9ff] to-[#f3f7ff]',
+        'dark:bg-none',
         mounted ? 'opacity-100' : 'opacity-0'
       )}
     >
+      {/* Day-mode ambient pattern to avoid flat background glare */}
+      <div className="apphome-bg-layer pointer-events-none absolute inset-0 dark:hidden">
+        <div className="apphome-parallax-veil absolute inset-0" />
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#eaf0ff]/20 via-[#f1f5ff]/12 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(55%_38%_at_14%_8%,rgba(59,130,246,0.06),transparent_74%),radial-gradient(48%_34%_at_88%_18%,rgba(14,165,233,0.05),transparent_76%),radial-gradient(52%_36%_at_72%_86%,rgba(99,102,241,0.05),transparent_78%)]" />
+        <div
+          className="absolute inset-0 opacity-[0.1]"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 1px 1px, rgba(59,130,246,0.09) 1px, transparent 0)',
+            backgroundSize: '24px 24px',
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              'linear-gradient(135deg, rgba(30,64,175,0.08) 0px, rgba(30,64,175,0.08) 1px, transparent 1px, transparent 16px)',
+            backgroundSize: '16px 16px',
+          }}
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(70%_45%_at_50%_0%,rgba(2,132,199,0.05),transparent_72%)]" />
+      </div>
+
       {/* ── Centred content wrapper ─────────────────────────────────────────── */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
+      <div ref={revealScopeRef} className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
+        <div data-reveal className="apphome-fade-up apphome-fade-delay-1 -mt-3 sm:-mt-4">
+          <div className="-mx-4 sm:-mx-6 mb-2 px-4 sm:px-6 py-1.5 border-b border-[#cfdbf6]/45 bg-gradient-to-b from-[#dfe9ff]/45 via-[#ebf2ff]/28 to-transparent backdrop-blur-[1px] dark:border-gray-700/70 dark:bg-gray-900/70">
+            <Breadcrumbs className="text-xs text-slate-600/95 dark:text-gray-400" />
+          </div>
+        </div>
 
         {/* ── Hero / Greeting ──────────────────────────────────────────────── */}
-        <div className="text-center space-y-3">
+        <div data-reveal className="apphome-fade-up apphome-fade-delay-2 apphome-hero-wrap text-center space-y-3">
           {/* Date */}
           <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest">
             {dateStr}
@@ -341,11 +393,11 @@ const AppHome = () => {
 
           {/* Greeting */}
           <h1
-            className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white"
+            className="apphome-hero-title text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white"
             style={{ lineHeight: 1.1 }}
           >
             {greeting},{' '}
-            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+            <span className="apphome-hero-name bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
               {firstName}
             </span>
             {' '}👋
@@ -371,7 +423,7 @@ const AppHome = () => {
         </div>
 
         {/* ── Search ─────────────────────────────────────────────────────────── */}
-        <div className="relative max-w-2xl mx-auto">
+        <div data-reveal className="apphome-fade-up apphome-fade-delay-3 apphome-search-wrap relative max-w-2xl mx-auto">
           <MagnifyingGlassIcon className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
           <input
             ref={searchRef}
@@ -380,10 +432,10 @@ const AppHome = () => {
             value={search}
             onChange={e => setSearch(e.target.value)}
             className={cn(
-              'w-full rounded-2xl border border-gray-200 dark:border-gray-700',
-              'bg-white/90 dark:bg-gray-800/70 backdrop-blur-sm',
-              'py-3.5 pl-13 pr-14 text-sm text-gray-900 dark:text-gray-100',
-              'placeholder-gray-400 dark:placeholder-gray-500',
+              'w-full rounded-2xl border border-[#d2d6ee] dark:border-gray-700',
+              'bg-[#ffffff] dark:bg-gray-800/70 backdrop-blur-sm',
+              'py-3.5 pl-13 pr-14 text-sm text-[#0d0e24] dark:text-gray-100',
+              'placeholder:text-[#94a3b8] dark:placeholder-gray-500',
               'shadow-sm outline-none transition-all duration-200',
               'focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:shadow-lg focus:border-indigo-300 dark:focus:border-indigo-600'
             )}
@@ -406,65 +458,18 @@ const AppHome = () => {
           )}
         </div>
 
-        {/* ── Quick stats strip ──────────────────────────────────────────────── */}
-        {!q && (
-          <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-            <QuickStat
-              icon={Squares2X2Icon}
-              label="Available Apps"
-              value={totalApps}
-              gradient="from-indigo-500 to-purple-600"
-            />
-            <QuickStat
-              icon={BookmarkSolidIcon}
-              label="Pinned Apps"
-              value={totalFavs || '—'}
-              gradient="from-indigo-500 to-violet-600"
-            />
-          </div>
-        )}
-
         {/* ── App grid ───────────────────────────────────────────────────────── */}
-        <div>
+        <div data-reveal className="apphome-fade-up apphome-fade-delay-3">
           {!q && showEmployeeApps && (
             <div className="mb-7 space-y-4">
               <SectionLabel emoji="👤" title="Employee Apps" count={employeeApps.length} />
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <QuickStat
-                  icon={ClockIcon}
-                  label="Present Days"
-                  value={employeeStats.attendance?.present ?? '—'}
-                  gradient="from-blue-500 to-indigo-600"
-                />
-                <QuickStat
-                  icon={CalendarIcon}
-                  label="Leave Balance"
-                  value={employeeStats.leaveBalance?.annual ?? '—'}
-                  gradient="from-emerald-500 to-green-600"
-                />
-                <QuickStat
-                  icon={ChartBarIcon}
-                  label="Late Days"
-                  value={employeeStats.attendance?.late ?? '—'}
-                  gradient="from-orange-500 to-amber-600"
-                />
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                {employeeApps.map((item) => {
-                  const Icon = item.icon || Squares2X2Icon;
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => navigate(item.path)}
-                      className="group rounded-xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/70 px-3 py-4 text-left hover:shadow-md transition-all"
-                    >
-                      <Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mb-2" />
-                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{item.label}</p>
-                    </button>
-                  );
-                })}
-              </div>
+              <AppGrid
+                items={employeeApps}
+                activeAppKey={activeAppKey}
+                favoriteKeys={favoriteKeys}
+                onNavigate={handleNavigate}
+                onToggleFav={toggleFavorite}
+              />
             </div>
           )}
           {q ? (

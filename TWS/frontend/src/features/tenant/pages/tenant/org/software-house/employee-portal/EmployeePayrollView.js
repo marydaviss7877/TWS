@@ -10,6 +10,7 @@ import {
 
 const EmployeePayrollView = ({ tenantSlug }) => {
   const { user } = useAuth();
+  const currentUserId = user?.id || user?._id;
   const [loading, setLoading] = useState(true);
   const [salary, setSalary] = useState(null);
   const [payslips, setPayslips] = useState([]);
@@ -24,7 +25,7 @@ const EmployeePayrollView = ({ tenantSlug }) => {
       setLoading(true);
       
       // Fetch employee data
-      const empResponse = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees?userId=${user.id}`, {
+      const empResponse = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees?userId=${currentUserId}`, {
         credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
       });
 
@@ -44,7 +45,7 @@ const EmployeePayrollView = ({ tenantSlug }) => {
 
       // Fetch payslips
       const payslipsResponse = await fetch(
-        `/api/tenant/${tenantSlug}/organization/hr/payslips?employeeId=${user.id}${selectedPeriod ? `&period=${selectedPeriod}` : ''}`,
+        `/api/tenant/${tenantSlug}/organization/hr/payslips?employeeId=${currentUserId}${selectedPeriod ? `&period=${selectedPeriod}` : ''}`,
         {
           credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
         }

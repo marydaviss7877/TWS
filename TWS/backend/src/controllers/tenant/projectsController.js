@@ -22,6 +22,7 @@ const { getProjectMetricsForRequest } = require('../../services/tenant/project-o
 const { getViewConfigForUserDepartments, applyViewConfigToProject, buildDefaultProjectDepartmentConfigs, normalizeProjectDepartmentConfigs } = require('../../utils/projectDepartmentView');
 const ProjectMember = require('../../models/ProjectMember');
 const fs = require('fs');
+const fsPromises = require('fs').promises;
 const path = require('path');
 
 // #region agent log
@@ -789,6 +790,8 @@ exports.updateProject = async (req, res) => {
     }
 
     const update = { ...req.body };
+    // Logo is only set via POST /projects/:projectId/logo (upload) or DELETE …/logo — never from generic PATCH
+    delete update.logoUrl;
     // UPR Phase 4.3: allow explicit projectDepartmentConfigs from UI; otherwise build from primary + departments
     if (Array.isArray(update.projectDepartmentConfigs) && update.projectDepartmentConfigs.length > 0) {
       update.projectDepartmentConfigs = normalizeProjectDepartmentConfigs(update.projectDepartmentConfigs);
@@ -1082,6 +1085,28 @@ exports.createTask = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid project ID format' });
     }
 
+    // Default sprint: active sprint for this project, else latest planning (so board tasks roll up to sprint metrics)
+    let effectiveSprintId = sprintId;
+    if (!effectiveSprintId) {
+      const Sprint = require('../../models/Sprint');
+      const activeSp = await Sprint.findOne({ orgId, projectId: projectIdObj, status: 'active' })
+        .select('_id')
+        .lean();
+      if (activeSp?._id) {
+        effectiveSprintId = activeSp._id.toString();
+      } else {
+        const planSp = await Sprint.findOne({
+          orgId,
+          projectId: projectIdObj,
+          status: 'planning'
+        })
+          .sort({ sprintNumber: -1 })
+          .select('_id')
+          .lean();
+        if (planSp?._id) effectiveSprintId = planSp._id.toString();
+      }
+    }
+
     // Auto-resolve departmentId from project when not supplied by the client
     if (!departmentId) {
       try {
@@ -1145,7 +1170,7 @@ exports.createTask = async (req, res) => {
     let validation = { valid: true, errors: [] };
     try {
       validation = await projectIntegrationService.validateTaskCreation(orgId, projectIdObj, {
-        sprintId,
+        sprintId: effectiveSprintId || sprintId,
         milestoneId,
         estimatedHours
       });
@@ -1189,11 +1214,17 @@ exports.createTask = async (req, res) => {
     const uniqueTaskId = `task-${projectIdObj}-${Date.now()}-${crypto.randomBytes(12).toString('hex')}`;
 
     // Ownership fields: createdBy and orgId (orgId already set, createdBy from req.user)
+    const sprintIdObj = effectiveSprintId ? toObjectId(effectiveSprintId, 'sprintId') : null;
+    const storyPointsNum =
+      storyPoints != null && storyPoints !== ''
+        ? Math.max(0, Number(storyPoints))
+        : null;
+
     const task = new Task({
       orgId,
       projectId: projectIdObj,
       departmentId: departmentIdObj,
-      sprintId: sprintId ? toObjectId(sprintId, 'sprintId') : null,
+      sprintId: sprintIdObj,
       milestoneId: milestoneId ? toObjectId(milestoneId, 'milestoneId') : null,
       tenantId: tenantIdForTask || undefined,
       taskId: uniqueTaskId,
@@ -1202,6 +1233,7 @@ exports.createTask = async (req, res) => {
       status,
       priority,
       type,
+      storyPoints: Number.isFinite(storyPointsNum) ? storyPointsNum : undefined,
       assignee: assigneeId ? toObjectId(assigneeId, 'assigneeId') : null,
       reporter: reporterIdObj,
       dueDate: dueDate ? new Date(dueDate) : null,
@@ -1218,8 +1250,8 @@ exports.createTask = async (req, res) => {
     if (milestoneId) {
       projectIntegrationService.syncMilestoneProgress(orgId, milestoneId).catch(err => console.warn('syncMilestoneProgress:', err?.message));
     }
-    if (sprintId) {
-      projectIntegrationService.syncSprintMetrics(orgId, sprintId).catch(err => console.warn('syncSprintMetrics:', err?.message));
+    if (sprintIdObj) {
+      projectIntegrationService.syncSprintMetrics(orgId, sprintIdObj).catch(err => console.warn('syncSprintMetrics:', err?.message));
     }
 
     try {
@@ -1313,11 +1345,21 @@ exports.updateTask = async (req, res) => {
     if (raw.title !== undefined) updates.title = raw.title;
     if (raw.description !== undefined) updates.description = raw.description;
     if (raw.status !== undefined) updates.status = raw.status;
-    if (raw.priority !== undefined) updates.priority = raw.priority;
+    if (raw.priority !== undefined) {
+      updates.priority = raw.priority === 'urgent' ? 'critical' : raw.priority;
+    }
     if (raw.dueDate !== undefined) updates.dueDate = raw.dueDate ? new Date(raw.dueDate) : null;
     if (raw.startDate !== undefined) updates.startDate = raw.startDate ? new Date(raw.startDate) : null;
     if (raw.estimatedHours !== undefined) updates.estimatedHours = raw.estimatedHours;
-    if (raw.storyPoints !== undefined) updates.storyPoints = raw.storyPoints;
+    if (raw.storyPoints !== undefined) {
+      if (raw.storyPoints === '' || raw.storyPoints == null) {
+        updates.storyPoints = null;
+      } else {
+        const n = Number(raw.storyPoints);
+        updates.storyPoints = Number.isFinite(n) ? Math.max(0, n) : null;
+      }
+    }
+    if (raw.type !== undefined) updates.type = raw.type;
     if (raw.labels !== undefined) updates.labels = Array.isArray(raw.labels) ? raw.labels : (raw.labels ? [].concat(raw.labels) : []);
     if (raw.category !== undefined) updates.category = raw.category;
     if (raw.assigneeId !== undefined) {
@@ -1328,6 +1370,20 @@ exports.updateTask = async (req, res) => {
     if (raw.departmentId !== undefined) updates.departmentId = toObjectId(raw.departmentId) || existingTask.departmentId;
     if (raw.sprintId !== undefined) updates.sprintId = raw.sprintId ? toObjectId(raw.sprintId) : null;
     if (raw.milestoneId !== undefined) updates.milestoneId = raw.milestoneId ? toObjectId(raw.milestoneId) : null;
+
+    // Legacy board tasks: attach default sprint so metrics roll up (only when client did not send sprintId)
+    if (raw.sprintId === undefined && !existingTask.sprintId) {
+      const Sprint = require('../../models/Sprint');
+      const pid = updates.projectId || existingTask.projectId;
+      let attach = await Sprint.findOne({ orgId, projectId: pid, status: 'active' }).select('_id').lean();
+      if (!attach) {
+        attach = await Sprint.findOne({ orgId, projectId: pid, status: 'planning' })
+          .sort({ sprintNumber: -1 })
+          .select('_id')
+          .lean();
+      }
+      if (attach?._id) updates.sprintId = attach._id;
+    }
 
     // Update task with sync
     const task = await projectIntegrationService.updateTaskWithSync(orgId, id, updates);
@@ -2311,6 +2367,8 @@ exports.getSprints = async (req, res) => {
  */
 exports.createSprint = async (req, res) => {
   try {
+    const mongoose = require('mongoose');
+
     // Get orgId directly from request context
     const orgId = await getOrgId(req);
     if (!orgId) {
@@ -2320,7 +2378,18 @@ exports.createSprint = async (req, res) => {
       });
     }
     
-    const { name, projectId, startDate, endDate, goal, status = 'planning' } = req.body;
+    const {
+      name,
+      projectId,
+      startDate,
+      endDate,
+      goal,
+      status = 'planning',
+      description,
+      duration,
+      objectives,
+      team
+    } = req.body;
 
     if (!name || !startDate || !endDate) {
       return res.status(400).json({
@@ -2329,16 +2398,64 @@ exports.createSprint = async (req, res) => {
       });
     }
 
-    // Ownership fields: createdBy and orgId (Issue #4.4)
+    if (!projectId || !mongoose.Types.ObjectId.isValid(String(projectId)) || String(projectId).length !== 24) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid projectId is required'
+      });
+    }
+
+    const project = await Project.findOne({ _id: projectId, orgId }).select('_id').lean();
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found or access denied'
+      });
+    }
+
+    const lastSprint = await Sprint.findOne({ projectId, orgId })
+      .sort({ sprintNumber: -1 })
+      .select('sprintNumber')
+      .lean();
+    const sprintNumber =
+      lastSprint && typeof lastSprint.sprintNumber === 'number'
+        ? lastSprint.sprintNumber + 1
+        : 1;
+
+    const createdBy = req.body.createdBy || req.user?._id;
+    if (!createdBy) {
+      return res.status(400).json({
+        success: false,
+        message: 'Creator context missing'
+      });
+    }
+
+    let teamPayload = [];
+    if (Array.isArray(team) && team.length > 0) {
+      teamPayload = team
+        .filter((m) => m && m.userId && mongoose.Types.ObjectId.isValid(String(m.userId)))
+        .map((m) => ({
+          userId: m.userId,
+          role: m.role || undefined,
+          capacity: m.capacity != null ? Number(m.capacity) : 40,
+          allocation: m.allocation != null ? Number(m.allocation) : 100
+        }));
+    }
+
     const sprint = new Sprint({
       orgId,
       name,
-      projectId: projectId || null,
+      projectId,
+      sprintNumber,
+      description: description != null ? String(description) : undefined,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
+      duration: duration != null && !Number.isNaN(Number(duration)) ? Number(duration) : undefined,
       goal: goal || '',
+      objectives: Array.isArray(objectives) ? objectives.filter((o) => typeof o === 'string' && o.trim()) : [],
       status,
-      createdBy: req.user?._id || req.body.createdBy || null // Issue #4.4: Always set createdBy
+      team: teamPayload,
+      createdBy
     });
 
     await sprint.save();
@@ -3359,6 +3476,72 @@ exports.saveProjectTimeline = async (req, res) => {
 // ─── Project Members ───────────────────────────────────────────────────────
 
 /**
+ * POST /api/tenant/:tenantSlug/organization/projects/:projectId/logo
+ * Multipart field name: logo (set by multer in routes)
+ */
+exports.uploadProjectLogo = async (req, res) => {
+  try {
+    const orgId = await getOrgId(req);
+    if (!orgId) {
+      if (req.file) try { await fsPromises.unlink(req.file.path); } catch (_) {}
+      return res.status(500).json({ success: false, message: 'Organization context not available' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+    const { projectId } = req.params;
+    const project = await Project.findOne({ _id: projectId, orgId });
+    if (!project) {
+      try { await fsPromises.unlink(req.file.path); } catch (_) {}
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
+    if (project.logoUrl && typeof project.logoUrl === 'string') {
+      try {
+        const oldPath = path.join(process.cwd(), project.logoUrl.replace(/^\//, ''));
+        await fsPromises.access(oldPath).then(() => fsPromises.unlink(oldPath)).catch(() => {});
+      } catch (_) {}
+    }
+    const logoUrl = `/uploads/project-logos/${req.file.filename}`;
+    project.logoUrl = logoUrl;
+    await project.save();
+    res.json({ success: true, message: 'Project logo uploaded', data: { logoUrl } });
+  } catch (error) {
+    console.error('uploadProjectLogo:', error);
+    if (req.file) try { await fsPromises.unlink(req.file.path); } catch (_) {}
+    res.status(500).json({ success: false, message: 'Failed to upload logo', error: error.message });
+  }
+};
+
+/**
+ * DELETE /api/tenant/:tenantSlug/organization/projects/:projectId/logo
+ */
+exports.deleteProjectLogo = async (req, res) => {
+  try {
+    const orgId = await getOrgId(req);
+    if (!orgId) {
+      return res.status(500).json({ success: false, message: 'Organization context not available' });
+    }
+    const { projectId } = req.params;
+    const project = await Project.findOne({ _id: projectId, orgId });
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
+    if (project.logoUrl && typeof project.logoUrl === 'string') {
+      try {
+        const oldPath = path.join(process.cwd(), project.logoUrl.replace(/^\//, ''));
+        await fsPromises.access(oldPath).then(() => fsPromises.unlink(oldPath)).catch(() => {});
+      } catch (_) {}
+    }
+    project.logoUrl = undefined;
+    await project.save();
+    res.json({ success: true, message: 'Project logo removed' });
+  } catch (error) {
+    console.error('deleteProjectLogo:', error);
+    res.status(500).json({ success: false, message: 'Failed to remove logo', error: error.message });
+  }
+};
+
+/**
  * Get all members of a specific project
  * GET /api/tenant/:tenantSlug/organization/projects/:projectId/members
  */
@@ -3373,7 +3556,7 @@ exports.getProjectMembers = async (req, res) => {
     if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
 
     const members = await ProjectMember.find({ projectId, status: { $ne: 'removed' } })
-      .populate('userId', 'fullName name email avatar')
+      .populate('userId', 'fullName name email profilePicUrl')
       .populate('invitedBy', 'fullName name email')
       .lean();
 
@@ -3431,7 +3614,7 @@ exports.addProjectMember = async (req, res) => {
       { projectId, userId },
       { $set: updateData, $setOnInsert: { joinedAt: new Date() } },
       { new: true, upsert: true }
-    ).populate('userId', 'fullName name email avatar');
+    ).populate('userId', 'fullName name email profilePicUrl');
 
     res.status(201).json({ success: true, data: member, message: 'Member added to project' });
   } catch (error) {
@@ -3468,7 +3651,7 @@ exports.updateProjectMember = async (req, res) => {
     if (status !== undefined) member.status = status;
 
     await member.save();
-    await member.populate('userId', 'fullName name email avatar');
+    await member.populate('userId', 'fullName name email profilePicUrl');
 
     res.json({ success: true, data: member, message: 'Member updated successfully' });
   } catch (error) {

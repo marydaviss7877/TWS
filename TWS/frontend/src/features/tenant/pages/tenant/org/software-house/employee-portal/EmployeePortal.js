@@ -120,9 +120,14 @@ const EmployeePortal = () => {
       if (attendanceRes.ok) {
         const attendanceData = await attendanceRes.json();
         if (attendanceData.data) {
+          const attendanceSummary = attendanceData.data.summary || {};
           setDashboardStats(prev => ({
             ...prev,
-            attendance: attendanceData.data
+            attendance: {
+              present: attendanceSummary.present || 0,
+              absent: attendanceSummary.absent || 0,
+              late: attendanceSummary.late || 0
+            }
           }));
         }
       }

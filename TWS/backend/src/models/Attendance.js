@@ -415,12 +415,16 @@ attendanceSchema.methods.performSecurityChecks = function() {
     riskLevel = 'medium';
   }
 
-  // Check for multiple devices
-  if (this.checkIn.device.deviceId && this.checkOut.device.deviceId) {
-    if (this.checkIn.device.deviceId !== this.checkOut.device.deviceId) {
-      flags.push('multiple_devices');
-      riskLevel = 'high';
-    }
+  // Check for multiple devices (guard for legacy/string device values)
+  const checkInDeviceId = (this.checkIn && this.checkIn.device && typeof this.checkIn.device === 'object')
+    ? this.checkIn.device.deviceId
+    : null;
+  const checkOutDeviceId = (this.checkOut && this.checkOut.device && typeof this.checkOut.device === 'object')
+    ? this.checkOut.device.deviceId
+    : null;
+  if (checkInDeviceId && checkOutDeviceId && checkInDeviceId !== checkOutDeviceId) {
+    flags.push('multiple_devices');
+    riskLevel = 'high';
   }
 
   this.securityFlags = flags;

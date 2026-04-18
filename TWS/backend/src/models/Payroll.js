@@ -1,6 +1,17 @@
 const mongoose = require('mongoose');
 
 const payrollRecordSchema = new mongoose.Schema({
+  orgId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true
+  },
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    index: true
+  },
   employeeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',
@@ -90,6 +101,17 @@ const payrollRecordSchema = new mongoose.Schema({
 });
 
 const payrollRuleSchema = new mongoose.Schema({
+  orgId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true
+  },
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    index: true
+  },
   name: {
     type: String,
     required: true
@@ -132,6 +154,17 @@ const payrollRuleSchema = new mongoose.Schema({
 });
 
 const payrollCycleSchema = new mongoose.Schema({
+  orgId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true
+  },
+  tenantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tenant',
+    index: true
+  },
   name: {
     type: String,
     required: true
@@ -181,15 +214,15 @@ const payrollCycleSchema = new mongoose.Schema({
 });
 
 // Index for performance
-payrollRecordSchema.index({ employeeId: 1, periodStart: 1, periodEnd: 1 });
+payrollRecordSchema.index({ orgId: 1, employeeId: 1, periodStart: 1, periodEnd: 1 }, { unique: true });
 payrollRecordSchema.index({ status: 1 });
-payrollRecordSchema.index({ periodStart: 1, periodEnd: 1 });
+payrollRecordSchema.index({ orgId: 1, periodStart: 1, periodEnd: 1 });
 
-payrollRuleSchema.index({ type: 1, active: 1 });
+payrollRuleSchema.index({ orgId: 1, type: 1, active: 1 });
 payrollRuleSchema.index({ effectiveFrom: 1, effectiveTo: 1 });
 
-payrollCycleSchema.index({ startDate: 1, endDate: 1 });
-payrollCycleSchema.index({ status: 1 });
+payrollCycleSchema.index({ orgId: 1, startDate: 1, endDate: 1 });
+payrollCycleSchema.index({ orgId: 1, status: 1 });
 
 module.exports = {
   PayrollRecord: mongoose.model('PayrollRecord', payrollRecordSchema),

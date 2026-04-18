@@ -9,7 +9,12 @@ const Tenant = require('../../../models/Tenant');
 const Organization = require('../../../models/Organization');
 const DepartmentAccess = require('../../../models/DepartmentAccess');
 const User = require('../../../models/User');
+const Employee = require('../../../models/Employee');
+const LeaveRequest = require('../../../models/LeaveRequest');
+const { PayrollRecord, PayrollCycle } = require('../../../models/Payroll');
+const OrgLeavePolicy = require('../../../models/OrgLeavePolicy');
 const TenantSettings = require('../../../models/TenantSettings');
+const TenantAuditLog = require('../../../models/TenantAuditLog');
 const bcrypt = require('bcryptjs');
 const { authenticateToken } = require('../../../middleware/auth/auth');
 const tenantOrgService = require('../../../services/tenant/tenant-org.service');
@@ -21,6 +26,7 @@ const attendanceRead = requireErpAccess({ module: 'attendance', action: 'read', 
 const attendanceWrite = requireErpAccess({ module: 'attendance', action: 'write', checkRevocation: false });
 const employeesRead = requireErpAccess({ module: 'employees', action: 'read', checkRevocation: false });
 const employeesWrite = requireErpAccess({ module: 'employees', action: 'write', checkRevocation: false });
+const ADMIN_LIKE_ROLES = new Set(['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner', 'hr']);
 
 const TenantMiddleware = require('../../../middleware/tenant/tenantMiddleware');
 const { checkUsageLimitSoftwareHouseOnly, checkReadOnlySoftwareHouseOnly } = require('../../../middleware/common/featureGate');
@@ -49,6 +55,23 @@ const getExistingUploadPathOrNull = async (relativePath) => {
   } catch {
     return null;
   }
+};
+
+const setTimeOnDate = (baseDate, hhmm) => {
+  if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return null;
+  const [hh, mm] = hhmm.split(':').map(Number);
+  const d = new Date(baseDate);
+  d.setHours(hh, mm, 0, 0);
+  return d;
+};
+
+const resolvePayrollPeriodRange = (period) => {
+  if (!period) return null;
+  const periodDate = new Date(`${period}-01T00:00:00.000Z`);
+  if (Number.isNaN(periodDate.getTime())) return null;
+  const start = new Date(Date.UTC(periodDate.getUTCFullYear(), periodDate.getUTCMonth(), 1));
+  const end = new Date(Date.UTC(periodDate.getUTCFullYear(), periodDate.getUTCMonth() + 1, 1));
+  return { start, end };
 };
 
 // @deprecated - Use verifyERPToken middleware instead
@@ -848,6 +871,18 @@ router.get('/analytics/reports', verifyERPToken, async (req, res) => {
 
 // ==================== HR ATTENDANCE ROUTES ====================
 
+// Get HR overview
+router.get('/hr', verifyERPToken, employeesRead, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const overview = await tenantOrgService.getHROverview(tenantContext);
+    res.json({ success: true, data: overview });
+  } catch (error) {
+    console.error('Get HR overview error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch HR overview', error: error.message });
+  }
+});
+
 // Get attendance data (list + summary for a date or month, optional employeeId for employee portal)
 router.get('/hr/attendance', verifyERPToken, attendanceRead, async (req, res) => {
   try {
@@ -903,6 +938,382 @@ router.post('/hr/attendance/check-out', verifyERPToken, attendanceWrite, async (
     console.error('Check-out error:', error);
     const status = error.message && (error.message.includes('No check-in') || error.message.includes('Already checked out') || error.message.includes('not found')) ? 400 : 500;
     res.status(status).json({ success: false, message: error.message || 'Check-out failed', error: error.message });
+  }
+});
+
+// HR-only manual punch adjustment (check-in/check-out times)
+router.patch('/hr/attendance/:id/punch', verifyERPToken, attendanceWrite, async (req, res) => {
+  try {
+    const role = String(req.user?.role || '').toLowerCase();
+    if (!ADMIN_LIKE_ROLES.has(role)) {
+      return res.status(403).json({ success: false, message: 'Only HR/Admin can adjust attendance punch times' });
+    }
+
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { id } = req.params;
+    const { checkInTime, checkOutTime, reason } = req.body || {};
+
+    if (!checkInTime && !checkOutTime) {
+      return res.status(400).json({ success: false, message: 'At least one of checkInTime or checkOutTime is required (HH:mm)' });
+    }
+    if (!reason || !String(reason).trim()) {
+      return res.status(400).json({ success: false, message: 'Reason is required for punch adjustments' });
+    }
+
+    const models = tenantOrgService.getTenantModels(tenantContext);
+    const Attendance = models.Attendance;
+    const record = await Attendance.findById(id);
+    if (!record) {
+      return res.status(404).json({ success: false, message: 'Attendance record not found' });
+    }
+
+    const oldCheckIn = record.checkIn?.timestamp ? new Date(record.checkIn.timestamp) : null;
+    const oldCheckOut = record.checkOut?.timestamp ? new Date(record.checkOut.timestamp) : null;
+    const baseDate = record.date || new Date();
+    const nextCheckIn = checkInTime ? setTimeOnDate(baseDate, checkInTime) : oldCheckIn;
+    const nextCheckOut = checkOutTime ? setTimeOnDate(baseDate, checkOutTime) : oldCheckOut;
+
+    if (checkInTime && !nextCheckIn) {
+      return res.status(400).json({ success: false, message: 'Invalid checkInTime format; expected HH:mm' });
+    }
+    if (checkOutTime && !nextCheckOut) {
+      return res.status(400).json({ success: false, message: 'Invalid checkOutTime format; expected HH:mm' });
+    }
+    if (nextCheckIn && nextCheckOut && nextCheckOut < nextCheckIn) {
+      return res.status(400).json({ success: false, message: 'checkOutTime cannot be earlier than checkInTime' });
+    }
+
+    if (nextCheckIn) {
+      record.checkIn = record.checkIn || {};
+      record.checkIn.timestamp = nextCheckIn;
+    }
+    if (nextCheckOut) {
+      record.checkOut = record.checkOut || {};
+      record.checkOut.timestamp = nextCheckOut;
+    }
+    if (nextCheckIn && nextCheckOut) {
+      const durationMs = nextCheckOut - nextCheckIn;
+      record.durationMinutes = Math.max(0, Math.floor(durationMs / (1000 * 60)));
+      record.overtimeMinutes = Math.max(0, record.durationMinutes - 8 * 60);
+    }
+    record.lastActivity = new Date();
+    record.correctionRequests = record.correctionRequests || [];
+    record.correctionRequests.push({
+      requestedBy: req.user?._id,
+      reason: String(reason).trim(),
+      requestedAt: new Date(),
+      approvedBy: req.user?._id,
+      approvedAt: new Date(),
+      status: 'approved',
+      comments: 'HR manual punch adjustment',
+      changes: {
+        checkIn: { from: oldCheckIn, to: nextCheckIn },
+        checkOut: { from: oldCheckOut, to: nextCheckOut }
+      }
+    });
+
+    await record.save();
+    await record.populate('userId', 'fullName email');
+
+    try {
+      await TenantAuditLog.logEvent({
+        tenantId: tenantContext.tenantId,
+        orgId: tenantContext.orgId,
+        userId: req.user?._id,
+        action: 'attendance_punch_adjusted',
+        resourceType: 'attendance',
+        resourceId: record._id,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+        metadata: {
+          reason: String(reason).trim(),
+          oldCheckIn,
+          oldCheckOut,
+          newCheckIn: nextCheckIn,
+          newCheckOut: nextCheckOut
+        }
+      });
+    } catch (auditErr) {
+      console.warn('Attendance punch audit log failed:', auditErr.message);
+    }
+
+    res.json({ success: true, data: record });
+  } catch (error) {
+    console.error('Adjust attendance punch error:', error);
+    res.status(500).json({ success: false, message: 'Failed to adjust attendance punch', error: error.message });
+  }
+});
+
+router.get('/hr/attendance/pending-corrections', verifyERPToken, attendanceRead, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const models = tenantOrgService.getTenantModels(tenantContext);
+    const Attendance = models.Attendance;
+    const records = await Attendance.find({
+      organizationId: tenantContext.orgId,
+      'correctionRequests.status': 'pending'
+    })
+      .populate('userId', 'fullName email')
+      .sort({ updatedAt: -1 })
+      .limit(100)
+      .lean();
+
+    const pending = records.flatMap((record) =>
+      (record.correctionRequests || [])
+        .filter((cr) => cr.status === 'pending')
+        .map((cr) => ({
+          correctionId: cr._id,
+          attendanceId: record._id,
+          employeeName: record.userId?.fullName || record.userId?.email || record.employeeId,
+          employeeId: record.employeeId,
+          date: record.date,
+          reason: cr.reason,
+          requestedAt: cr.requestedAt
+        }))
+    );
+    res.json({ success: true, data: { pending, count: pending.length } });
+  } catch (error) {
+    console.error('Get pending corrections error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch pending corrections', error: error.message });
+  }
+});
+
+router.post('/hr/attendance/:id/mark-absent', verifyERPToken, attendanceWrite, async (req, res) => {
+  try {
+    const role = String(req.user?.role || '').toLowerCase();
+    if (!ADMIN_LIKE_ROLES.has(role)) {
+      return res.status(403).json({ success: false, message: 'Only HR/Admin can mark absent' });
+    }
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const models = tenantOrgService.getTenantModels(tenantContext);
+    const Attendance = models.Attendance;
+    const record = await Attendance.findOne({ _id: req.params.id, organizationId: tenantContext.orgId });
+    if (!record) return res.status(404).json({ success: false, message: 'Attendance record not found' });
+    const reason = String(req.body?.reason || 'Marked absent by HR').trim();
+
+    record.status = 'absent';
+    record.checkIn = record.checkIn || {};
+    record.checkOut = record.checkOut || {};
+    record.checkIn.notes = reason;
+    record.checkOut.notes = reason;
+    record.durationMinutes = 0;
+    record.overtimeMinutes = 0;
+    record.isActive = false;
+    record.lastActivity = new Date();
+    await record.save();
+
+    await TenantAuditLog.logEvent({
+      tenantId: tenantContext.tenantId,
+      orgId: tenantContext.orgId,
+      userId: req.user?._id,
+      action: 'attendance_marked_absent',
+      resourceType: 'attendance',
+      resourceId: record._id,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      metadata: { reason }
+    });
+
+    res.json({ success: true, data: record });
+  } catch (error) {
+    console.error('Mark absent error:', error);
+    res.status(500).json({ success: false, message: 'Failed to mark absent', error: error.message });
+  }
+});
+
+router.post('/hr/attendance/:id/request-correction', verifyERPToken, attendanceWrite, async (req, res) => {
+  try {
+    const role = String(req.user?.role || '').toLowerCase();
+    if (!ADMIN_LIKE_ROLES.has(role)) {
+      return res.status(403).json({ success: false, message: 'Only HR/Admin can request correction on behalf' });
+    }
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const models = tenantOrgService.getTenantModels(tenantContext);
+    const Attendance = models.Attendance;
+    const record = await Attendance.findOne({ _id: req.params.id, organizationId: tenantContext.orgId });
+    if (!record) return res.status(404).json({ success: false, message: 'Attendance record not found' });
+    const reason = String(req.body?.reason || '').trim();
+    if (!reason) return res.status(400).json({ success: false, message: 'Reason is required' });
+
+    record.correctionRequests = record.correctionRequests || [];
+    record.correctionRequests.push({
+      requestedBy: req.user?._id,
+      reason,
+      requestedAt: new Date(),
+      status: 'pending',
+      comments: 'Created by HR on behalf of employee'
+    });
+    await record.save();
+
+    await TenantAuditLog.logEvent({
+      tenantId: tenantContext.tenantId,
+      orgId: tenantContext.orgId,
+      userId: req.user?._id,
+      action: 'attendance_correction_requested_on_behalf',
+      resourceType: 'attendance',
+      resourceId: record._id,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      metadata: { reason }
+    });
+
+    res.json({ success: true, data: record });
+  } catch (error) {
+    console.error('Request correction on behalf error:', error);
+    res.status(500).json({ success: false, message: 'Failed to request correction', error: error.message });
+  }
+});
+
+router.post('/hr/attendance/:attendanceId/corrections/:correctionId/decision', verifyERPToken, attendanceWrite, async (req, res) => {
+  try {
+    const role = String(req.user?.role || '').toLowerCase();
+    if (!ADMIN_LIKE_ROLES.has(role)) {
+      return res.status(403).json({ success: false, message: 'Only HR/Admin can decide correction requests' });
+    }
+    const { status, comments } = req.body || {};
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'status must be approved or rejected' });
+    }
+
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const models = tenantOrgService.getTenantModels(tenantContext);
+    const Attendance = models.Attendance;
+    const record = await Attendance.findOne({ _id: req.params.attendanceId, organizationId: tenantContext.orgId });
+    if (!record) return res.status(404).json({ success: false, message: 'Attendance record not found' });
+
+    const correction = (record.correctionRequests || []).find((c) => String(c._id) === String(req.params.correctionId));
+    if (!correction) {
+      return res.status(404).json({ success: false, message: 'Correction request not found' });
+    }
+    correction.status = status;
+    correction.approvedBy = req.user?._id;
+    correction.approvedAt = new Date();
+    if (comments) correction.comments = String(comments).trim();
+    await record.save();
+
+    await TenantAuditLog.logEvent({
+      tenantId: tenantContext.tenantId,
+      orgId: tenantContext.orgId,
+      userId: req.user?._id,
+      action: status === 'approved' ? 'attendance_correction_approved' : 'attendance_correction_rejected',
+      resourceType: 'attendance',
+      resourceId: record._id,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      metadata: { correctionId: req.params.correctionId, comments: correction.comments || '' }
+    });
+
+    res.json({ success: true, data: record });
+  } catch (error) {
+    console.error('Correction decision error:', error);
+    res.status(500).json({ success: false, message: 'Failed to decide correction request', error: error.message });
+  }
+});
+
+router.get('/hr/attendance/:id/audit', verifyERPToken, attendanceRead, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const models = tenantOrgService.getTenantModels(tenantContext);
+    const Attendance = models.Attendance;
+    const record = await Attendance.findOne({ _id: req.params.id, organizationId: tenantContext.orgId })
+      .populate('userId', 'fullName email')
+      .lean();
+    if (!record) return res.status(404).json({ success: false, message: 'Attendance record not found' });
+
+    const logs = await TenantAuditLog.find({
+      tenantId: tenantContext.tenantId,
+      orgId: tenantContext.orgId,
+      resourceType: 'attendance',
+      resourceId: String(req.params.id)
+    })
+      .populate('userId', 'fullName email')
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    const correctionTrail = (record.correctionRequests || []).map((cr) => ({
+      id: cr._id,
+      status: cr.status,
+      reason: cr.reason,
+      requestedAt: cr.requestedAt,
+      approvedAt: cr.approvedAt,
+      comments: cr.comments
+    }));
+    res.json({ success: true, data: { correctionTrail, auditLogs: logs } });
+  } catch (error) {
+    console.error('Get attendance audit error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch attendance audit trail', error: error.message });
+  }
+});
+
+router.post('/hr/attendance/bulk-action', verifyERPToken, attendanceWrite, async (req, res) => {
+  try {
+    const role = String(req.user?.role || '').toLowerCase();
+    if (!ADMIN_LIKE_ROLES.has(role)) {
+      return res.status(403).json({ success: false, message: 'Only HR/Admin can run bulk actions' });
+    }
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const models = tenantOrgService.getTenantModels(tenantContext);
+    const Attendance = models.Attendance;
+    const { action, attendanceIds = [], reason } = req.body || {};
+    if (!Array.isArray(attendanceIds) || attendanceIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'attendanceIds array is required' });
+    }
+
+    let modifiedCount = 0;
+    if (action === 'mark_absent') {
+      const result = await Attendance.updateMany(
+        { _id: { $in: attendanceIds }, organizationId: tenantContext.orgId },
+        {
+          $set: {
+            status: 'absent',
+            durationMinutes: 0,
+            overtimeMinutes: 0,
+            isActive: false,
+            lastActivity: new Date()
+          }
+        }
+      );
+      modifiedCount = result.modifiedCount || 0;
+    } else if (action === 'mark_present') {
+      const result = await Attendance.updateMany(
+        { _id: { $in: attendanceIds }, organizationId: tenantContext.orgId },
+        { $set: { status: 'present', lastActivity: new Date() } }
+      );
+      modifiedCount = result.modifiedCount || 0;
+    } else if (action === 'approve_corrections') {
+      const result = await Attendance.updateMany(
+        { _id: { $in: attendanceIds }, organizationId: tenantContext.orgId },
+        {
+          $set: {
+            'correctionRequests.$[elem].status': 'approved',
+            'correctionRequests.$[elem].approvedBy': req.user?._id,
+            'correctionRequests.$[elem].approvedAt': new Date()
+          }
+        },
+        { arrayFilters: [{ 'elem.status': 'pending' }] }
+      );
+      modifiedCount = result.modifiedCount || 0;
+    } else {
+      return res.status(400).json({ success: false, message: 'Unsupported bulk action' });
+    }
+
+    await TenantAuditLog.logEvent({
+      tenantId: tenantContext.tenantId,
+      orgId: tenantContext.orgId,
+      userId: req.user?._id,
+      action: 'attendance_bulk_action',
+      resourceType: 'attendance',
+      resourceId: action,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      metadata: { action, attendanceIdsCount: attendanceIds.length, reason: reason || '' }
+    });
+
+    res.json({ success: true, data: { modifiedCount } });
+  } catch (error) {
+    console.error('Bulk attendance action error:', error);
+    res.status(500).json({ success: false, message: 'Failed bulk attendance action', error: error.message });
   }
 });
 
@@ -975,6 +1386,713 @@ router.post('/hr/employees', verifyERPToken, employeesWrite, async (req, res) =>
   }
 });
 
+// ==================== HR PAYROLL ROUTES ====================
+
+router.get('/hr/payroll', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'read', checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const filter = { orgId: tenantContext.orgId };
+    const employeesFilter = { orgId: tenantContext.orgId };
+    const requestingUserId = String(req.user?._id || req.user?.id || '');
+    const canReadAll = String(req.user?.role || '').toLowerCase() !== 'employee';
+
+    if (canReadAll) {
+      if (req.query.employeeId) {
+        const employee = await Employee.findOne({ orgId: tenantContext.orgId, userId: req.query.employeeId }).select('_id').lean();
+        if (employee) filter.employeeId = employee._id;
+      } else {
+        const employees = await Employee.find(employeesFilter).select('_id').lean();
+        filter.employeeId = { $in: employees.map((item) => item._id) };
+      }
+    } else {
+      const employee = await Employee.findOne({ orgId: tenantContext.orgId, userId: requestingUserId }).select('_id').lean();
+      if (!employee) {
+        return res.json({ success: true, data: { totalAmount: 0, employeeCount: 0, pendingCount: 0, cycleCount: 0, payrollRecords: [] } });
+      }
+      filter.employeeId = employee._id;
+      filter.userId = requestingUserId;
+    }
+
+    const [aggregate, employeeCount, pendingCount, cycleCount, payrollRecords] = await Promise.all([
+      PayrollRecord.aggregate([
+        { $match: filter },
+        { $group: { _id: null, totalAmount: { $sum: '$netPay' } } }
+      ]),
+      PayrollRecord.distinct('employeeId', filter).then((ids) => ids.length),
+      PayrollRecord.countDocuments({ ...filter, status: { $in: ['draft', 'pending'] } }),
+      PayrollCycle.countDocuments({ orgId: tenantContext.orgId }),
+      PayrollRecord.find(filter).sort({ createdAt: -1 }).limit(50).populate('userId', 'fullName email').populate('employeeId', 'employeeId department')
+    ]);
+
+    return res.json({
+      success: true,
+      data: {
+        totalAmount: aggregate[0]?.totalAmount || 0,
+        employeeCount,
+        pendingCount,
+        cycleCount,
+        payrollRecords
+      }
+    });
+  } catch (error) {
+    console.error('Get HR payroll error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch payroll data', error: error.message });
+  }
+});
+
+router.get('/hr/payroll/analytics', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'read', checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const requestingUserId = String(req.user?._id || req.user?.id || '');
+    const canReadAll = String(req.user?.role || '').toLowerCase() !== 'employee';
+    const baseFilter = { orgId: tenantContext.orgId };
+
+    if (!canReadAll) {
+      const employee = await Employee.findOne({ orgId: tenantContext.orgId, userId: requestingUserId }).select('_id').lean();
+      if (!employee) {
+        return res.json({
+          success: true,
+          data: { monthlyTrend: [], statusBreakdown: [], averageNetPay: 0, payrollVelocityDays: 0 }
+        });
+      }
+      baseFilter.employeeId = employee._id;
+      baseFilter.userId = requestingUserId;
+    }
+
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const [monthlyTrend, statusBreakdown, averageNetPay, velocityAgg] = await Promise.all([
+      PayrollRecord.aggregate([
+        { $match: { ...baseFilter, periodStart: { $gte: sixMonthsAgo } } },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$periodStart' },
+              month: { $month: '$periodStart' }
+            },
+            totalNetPay: { $sum: '$netPay' },
+            records: { $sum: 1 }
+          }
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1 } }
+      ]),
+      PayrollRecord.aggregate([
+        { $match: baseFilter },
+        { $group: { _id: '$status', count: { $sum: 1 }, totalNetPay: { $sum: '$netPay' } } },
+        { $sort: { count: -1 } }
+      ]),
+      PayrollRecord.aggregate([
+        { $match: baseFilter },
+        { $group: { _id: null, avg: { $avg: '$netPay' } } }
+      ]),
+      PayrollRecord.aggregate([
+        {
+          $match: {
+            ...baseFilter,
+            approvedAt: { $exists: true, $ne: null },
+            createdAt: { $exists: true, $ne: null }
+          }
+        },
+        {
+          $project: {
+            processingDays: {
+              $divide: [{ $subtract: ['$approvedAt', '$createdAt'] }, 1000 * 60 * 60 * 24]
+            }
+          }
+        },
+        { $group: { _id: null, avgDays: { $avg: '$processingDays' } } }
+      ])
+    ]);
+
+    return res.json({
+      success: true,
+      data: {
+        monthlyTrend,
+        statusBreakdown,
+        averageNetPay: averageNetPay[0]?.avg || 0,
+        payrollVelocityDays: velocityAgg[0]?.avgDays || 0
+      }
+    });
+  } catch (error) {
+    console.error('Get payroll analytics error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch payroll analytics', error: error.message });
+  }
+});
+
+router.post('/hr/payroll/process', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'write', checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { periodStart, periodEnd, employeeIds = [] } = req.body || {};
+    if (!periodStart || !periodEnd) {
+      return res.status(400).json({ success: false, message: 'periodStart and periodEnd are required' });
+    }
+
+    const employeeFilter = { orgId: tenantContext.orgId, status: { $in: ['active', 'probation', 'on-leave'] } };
+    if (Array.isArray(employeeIds) && employeeIds.length > 0) employeeFilter._id = { $in: employeeIds };
+    const employees = await Employee.find(employeeFilter).populate('userId', 'fullName email');
+    const records = [];
+    let createdCount = 0;
+    let reusedCount = 0;
+
+    for (const employee of employees) {
+      const idempotencyFilter = {
+        orgId: tenantContext.orgId,
+        employeeId: employee._id,
+        periodStart: new Date(periodStart),
+        periodEnd: new Date(periodEnd)
+      };
+      const existing = await PayrollRecord.findOne(idempotencyFilter);
+      if (existing) {
+        records.push(existing);
+        reusedCount += 1;
+        continue;
+      }
+
+      const grossPay = Number(employee.salary?.base || 0);
+      const deductionsTotal = 0;
+      const payrollRecord = await PayrollRecord.findOneAndUpdate(
+        idempotencyFilter,
+        {
+          $setOnInsert: {
+            tenantId: tenantContext.tenantId || null,
+            orgId: tenantContext.orgId,
+            employeeId: employee._id,
+            userId: employee.userId?._id || employee.userId,
+            periodStart: new Date(periodStart),
+            periodEnd: new Date(periodEnd),
+            components: [{ name: 'Base Salary', amount: grossPay, type: 'earnings' }],
+            grossPay,
+            deductions: { total: deductionsTotal },
+            netPay: grossPay - deductionsTotal,
+            status: 'pending'
+          }
+        },
+        { upsert: true, new: true }
+      );
+      records.push(payrollRecord);
+      createdCount += 1;
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Payroll processed successfully',
+      data: { payrollRecords: records, telemetry: { employeesEvaluated: employees.length, createdCount, reusedCount } }
+    });
+  } catch (error) {
+    console.error('Process HR payroll error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to process payroll', error: error.message });
+  }
+});
+
+router.get('/hr/payroll/cycles', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'read', checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const cycles = await PayrollCycle.find({ orgId: tenantContext.orgId }).sort({ startDate: -1 }).limit(24).lean();
+    return res.json({ success: true, data: { cycles } });
+  } catch (error) {
+    console.error('Get payroll cycles error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch payroll cycles', error: error.message });
+  }
+});
+
+router.post('/hr/payroll/cycles', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'write', checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { name, frequency = 'monthly', startDate, endDate, payDate } = req.body || {};
+    if (!name || !startDate || !endDate || !payDate) {
+      return res.status(400).json({ success: false, message: 'name, startDate, endDate, and payDate are required' });
+    }
+
+    const cycle = await PayrollCycle.create({
+      orgId: tenantContext.orgId,
+      tenantId: tenantContext.tenantId || null,
+      name,
+      frequency,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      payDate: new Date(payDate),
+      status: 'draft',
+      processedBy: req.user?._id || req.user?.id
+    });
+
+    return res.status(201).json({ success: true, message: 'Payroll cycle created', data: { cycle } });
+  } catch (error) {
+    console.error('Create payroll cycle error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to create payroll cycle', error: error.message });
+  }
+});
+
+router.post('/hr/payroll/cycles/:id/close', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'admin', checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const cycle = await PayrollCycle.findOne({ _id: req.params.id, orgId: tenantContext.orgId });
+    if (!cycle) return res.status(404).json({ success: false, message: 'Payroll cycle not found' });
+    if (cycle.status === 'completed') {
+      return res.status(400).json({ success: false, message: 'Payroll cycle already completed' });
+    }
+    cycle.status = 'completed';
+    cycle.processedAt = new Date();
+    cycle.processedBy = req.user?._id || req.user?.id;
+    await cycle.save();
+    return res.json({ success: true, message: 'Payroll cycle closed successfully', data: { cycle } });
+  } catch (error) {
+    console.error('Close payroll cycle error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to close payroll cycle', error: error.message });
+  }
+});
+
+router.get('/hr/payroll/:id', verifyERPToken, requireErpAccess({ module: 'payroll', action: ['read', 'read_own'], checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const payrollRecord = await PayrollRecord.findById(req.params.id).populate('employeeId').populate('userId', 'fullName email');
+    if (!payrollRecord) return res.status(404).json({ success: false, message: 'Payroll record not found' });
+
+    const employee = await Employee.findOne({ _id: payrollRecord.employeeId?._id || payrollRecord.employeeId, orgId: tenantContext.orgId }).select('userId').lean();
+    if (!employee) return res.status(404).json({ success: false, message: 'Payroll record not found' });
+
+    const userIdStr = String(req.user?._id || req.user?.id || '');
+    const recordUserId = String(employee.userId || '');
+    const canReadAll = String(req.user?.role || '').toLowerCase() !== 'employee';
+    if (!canReadAll && recordUserId !== userIdStr) {
+      return res.status(403).json({ success: false, message: 'Not authorized to view this payroll record' });
+    }
+
+    return res.json({ success: true, data: { payrollRecord } });
+  } catch (error) {
+    console.error('Get HR payroll record error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch payroll record', error: error.message });
+  }
+});
+
+router.post('/hr/payroll/:id/approve', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'write', checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const payrollRecord = await PayrollRecord.findOne({ _id: req.params.id, orgId: tenantContext.orgId });
+    if (!payrollRecord) return res.status(404).json({ success: false, message: 'Payroll record not found' });
+
+    const employee = await Employee.findOne({ _id: payrollRecord.employeeId, orgId: tenantContext.orgId }).select('_id').lean();
+    if (!employee) return res.status(404).json({ success: false, message: 'Payroll record not found' });
+
+    payrollRecord.status = 'approved';
+    payrollRecord.approvedBy = req.user?._id || req.user?.id;
+    payrollRecord.approvedAt = new Date();
+    if (req.body?.notes) payrollRecord.notes = req.body.notes;
+    await payrollRecord.save();
+    return res.json({ success: true, message: 'Payroll approved successfully', data: { payrollRecord } });
+  } catch (error) {
+    console.error('Approve HR payroll error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to approve payroll', error: error.message });
+  }
+});
+
+router.post('/hr/payroll/:id/mark-paid', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'write', checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const payrollRecord = await PayrollRecord.findOne({ _id: req.params.id, orgId: tenantContext.orgId });
+    if (!payrollRecord) return res.status(404).json({ success: false, message: 'Payroll record not found' });
+    const employee = await Employee.findOne({ _id: payrollRecord.employeeId, orgId: tenantContext.orgId }).select('_id').lean();
+    if (!employee) return res.status(404).json({ success: false, message: 'Payroll record not found' });
+
+    payrollRecord.status = 'paid';
+    payrollRecord.paidAt = new Date();
+    payrollRecord.paymentMethod = req.body?.paymentMethod || payrollRecord.paymentMethod || 'bank-transfer';
+    await payrollRecord.save();
+    return res.json({ success: true, message: 'Payroll marked as paid', data: { payrollRecord } });
+  } catch (error) {
+    console.error('Mark payroll paid error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to mark payroll paid', error: error.message });
+  }
+});
+
+router.get('/hr/payslips', verifyERPToken, requireErpAccess({ module: 'payroll', action: ['read', 'read_own'], checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { employeeId, period } = req.query;
+    const filter = {};
+    const periodRange = resolvePayrollPeriodRange(period);
+    if (periodRange) filter.periodStart = { $gte: periodRange.start, $lt: periodRange.end };
+
+    const canReadAll = String(req.user?.role || '').toLowerCase() !== 'employee';
+    let employee;
+    if (employeeId) {
+      employee = await Employee.findOne({ orgId: tenantContext.orgId, userId: employeeId }).select('_id userId').lean();
+    } else {
+      employee = await Employee.findOne({ orgId: tenantContext.orgId, userId: req.user?._id || req.user?.id }).select('_id userId').lean();
+    }
+    if (!employee) return res.json({ success: true, data: { payslips: [] } });
+
+    if (!canReadAll && String(employee.userId) !== String(req.user?._id || req.user?.id)) {
+      return res.status(403).json({ success: false, message: 'Not authorized to view requested payslips' });
+    }
+
+    filter.employeeId = employee._id;
+    const payslips = await PayrollRecord.find(filter).sort({ periodStart: -1 }).lean();
+    const payload = payslips.map((record) => ({
+      _id: record._id,
+      period: `${new Date(record.periodStart).toISOString().slice(0, 10)} to ${new Date(record.periodEnd).toISOString().slice(0, 10)}`,
+      grossPay: record.grossPay || 0,
+      totalDeductions: record.deductions?.total || 0,
+      netPay: record.netPay || 0,
+      status: record.status || 'draft',
+      currency: 'USD'
+    }));
+    return res.json({ success: true, data: { payslips: payload } });
+  } catch (error) {
+    console.error('Get HR payslips error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch payslips', error: error.message });
+  }
+});
+
+router.get('/hr/payslips/:id/download', verifyERPToken, requireErpAccess({ module: 'payroll', action: ['read', 'read_own'], checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const payrollRecord = await PayrollRecord.findOne({ _id: req.params.id, orgId: tenantContext.orgId }).populate('employeeId').populate('userId', 'fullName email');
+    if (!payrollRecord) return res.status(404).json({ success: false, message: 'Payslip not found' });
+
+    const employee = await Employee.findOne({ _id: payrollRecord.employeeId?._id || payrollRecord.employeeId, orgId: tenantContext.orgId }).select('userId employeeId').lean();
+    if (!employee) return res.status(404).json({ success: false, message: 'Payslip not found' });
+
+    const canReadAll = String(req.user?.role || '').toLowerCase() !== 'employee';
+    if (!canReadAll && String(employee.userId) !== String(req.user?._id || req.user?.id)) {
+      return res.status(403).json({ success: false, message: 'Not authorized to download this payslip' });
+    }
+
+    const periodStart = new Date(payrollRecord.periodStart).toISOString().slice(0, 10);
+    const periodEnd = new Date(payrollRecord.periodEnd).toISOString().slice(0, 10);
+    const pseudoPdf = [
+      'Payroll Payslip',
+      `Employee: ${payrollRecord.userId?.fullName || employee.employeeId || 'N/A'}`,
+      `Period: ${periodStart} to ${periodEnd}`,
+      `Gross Pay: ${payrollRecord.grossPay || 0}`,
+      `Deductions: ${payrollRecord.deductions?.total || 0}`,
+      `Net Pay: ${payrollRecord.netPay || 0}`,
+      `Status: ${payrollRecord.status || 'draft'}`
+    ].join('\n');
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="payslip-${req.params.id}.pdf"`);
+    return res.send(Buffer.from(pseudoPdf, 'utf-8'));
+  } catch (error) {
+    console.error('Download HR payslip error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to download payslip', error: error.message });
+  }
+});
+
+// ==================== HR LEAVE REQUESTS ROUTES ====================
+
+const normalizeDate = (value) => {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+};
+
+const calculateLeaveDays = (startDate, endDate) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  const diffMs = end.getTime() - start.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+};
+
+// List leave requests.
+// Employees see their own requests only.
+// HR/admin roles can view all or filter by employee userId via ?employeeId=<userId>.
+router.get('/hr/leave-requests', verifyERPToken, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const role = String(req.user?.role || '').toLowerCase();
+    const isAdminLike = ADMIN_LIKE_ROLES.has(role);
+
+    const filter = { orgId: tenantContext.orgId };
+    const requestedEmployeeUserId = req.query.employeeId;
+
+    if (requestedEmployeeUserId) {
+      const employee = await Employee.findOne({
+        orgId: tenantContext.orgId,
+        userId: requestedEmployeeUserId
+      }).select('_id userId');
+      if (!employee) {
+        return res.json({ success: true, data: { leaveRequests: [] } });
+      }
+      if (!isAdminLike && String(employee.userId) !== String(req.user?._id || req.user?.id)) {
+        return res.status(403).json({ success: false, message: 'Access denied for this employee leave data' });
+      }
+      filter.employeeId = employee._id;
+    } else if (!isAdminLike) {
+      const selfEmployee = await Employee.findOne({
+        orgId: tenantContext.orgId,
+        userId: req.user?._id || req.user?.id
+      }).select('_id');
+      if (!selfEmployee) {
+        return res.json({ success: true, data: { leaveRequests: [] } });
+      }
+      filter.employeeId = selfEmployee._id;
+    }
+
+    const leaveRequests = await LeaveRequest.find(filter)
+      .populate('employeeId', 'employeeId department jobTitle')
+      .populate('userId', 'fullName email profilePicUrl')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ success: true, data: { leaveRequests } });
+  } catch (error) {
+    console.error('Get leave requests error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch leave requests', error: error.message });
+  }
+});
+
+// Create self leave request
+router.post('/hr/leave-requests', verifyERPToken, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { type, startDate, endDate, reason } = req.body || {};
+
+    if (!type || !startDate || !endDate || !reason) {
+      return res.status(400).json({ success: false, message: 'type, startDate, endDate, and reason are required' });
+    }
+    if (!['annual', 'sick', 'personal'].includes(type)) {
+      return res.status(400).json({ success: false, message: 'Invalid leave type' });
+    }
+
+    const start = normalizeDate(startDate);
+    const end = normalizeDate(endDate);
+    if (!start || !end) {
+      return res.status(400).json({ success: false, message: 'Invalid date format' });
+    }
+    if (end < start) {
+      return res.status(400).json({ success: false, message: 'endDate must be on or after startDate' });
+    }
+
+    const employee = await Employee.findOne({
+      orgId: tenantContext.orgId,
+      userId: req.user?._id || req.user?.id
+    });
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Employee profile not found' });
+    }
+
+    const days = calculateLeaveDays(start, end);
+    const availableBalance = Number(employee.leaveBalance?.[type] ?? 0);
+    if (days > availableBalance) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient ${type} leave balance. Available: ${availableBalance} days`
+      });
+    }
+
+    const leaveRequest = await LeaveRequest.create({
+      tenantId: tenantContext.tenantId || null,
+      orgId: tenantContext.orgId,
+      employeeId: employee._id,
+      userId: req.user?._id || req.user?.id,
+      type,
+      startDate: start,
+      endDate: end,
+      days,
+      reason,
+      status: 'pending'
+    });
+
+    res.status(201).json({ success: true, message: 'Leave request submitted successfully', data: { leaveRequest } });
+  } catch (error) {
+    console.error('Create leave request error:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit leave request', error: error.message });
+  }
+});
+
+// Approve leave request (HR/admin)
+router.post('/hr/leave-requests/:id/approve', verifyERPToken, employeesWrite, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const leaveRequest = await LeaveRequest.findOne({ _id: req.params.id, orgId: tenantContext.orgId });
+    if (!leaveRequest) {
+      return res.status(404).json({ success: false, message: 'Leave request not found' });
+    }
+    if (leaveRequest.status !== 'pending') {
+      return res.status(400).json({ success: false, message: `Cannot approve a ${leaveRequest.status} request` });
+    }
+
+    const employee = await Employee.findOne({ _id: leaveRequest.employeeId, orgId: tenantContext.orgId });
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Employee not found for this leave request' });
+    }
+
+    const type = leaveRequest.type;
+    const availableBalance = Number(employee.leaveBalance?.[type] ?? 0);
+    if (leaveRequest.days > availableBalance) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot approve: insufficient ${type} leave balance (${availableBalance} remaining)`
+      });
+    }
+
+    employee.leaveBalance[type] = availableBalance - leaveRequest.days;
+    await employee.save();
+
+    leaveRequest.status = 'approved';
+    leaveRequest.approvedBy = req.user?._id || req.user?.id;
+    leaveRequest.approvedAt = new Date();
+    leaveRequest.reviewNote = req.body?.note || '';
+    await leaveRequest.save();
+
+    res.json({
+      success: true,
+      message: 'Leave request approved',
+      data: { leaveRequest, leaveBalance: employee.leaveBalance }
+    });
+  } catch (error) {
+    console.error('Approve leave request error:', error);
+    res.status(500).json({ success: false, message: 'Failed to approve leave request', error: error.message });
+  }
+});
+
+// Reject leave request (HR/admin)
+router.post('/hr/leave-requests/:id/reject', verifyERPToken, employeesWrite, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const leaveRequest = await LeaveRequest.findOne({ _id: req.params.id, orgId: tenantContext.orgId });
+    if (!leaveRequest) {
+      return res.status(404).json({ success: false, message: 'Leave request not found' });
+    }
+    if (leaveRequest.status !== 'pending') {
+      return res.status(400).json({ success: false, message: `Cannot reject a ${leaveRequest.status} request` });
+    }
+
+    leaveRequest.status = 'rejected';
+    leaveRequest.rejectedBy = req.user?._id || req.user?.id;
+    leaveRequest.rejectedAt = new Date();
+    leaveRequest.reviewNote = req.body?.note || '';
+    await leaveRequest.save();
+
+    res.json({ success: true, message: 'Leave request rejected', data: { leaveRequest } });
+  } catch (error) {
+    console.error('Reject leave request error:', error);
+    res.status(500).json({ success: false, message: 'Failed to reject leave request', error: error.message });
+  }
+});
+
+// ==================== HR LEAVE POLICY ROUTES ====================
+
+const toNumberSafe = (value, fallback) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.max(0, n) : fallback;
+};
+
+// Get current org leave policy
+router.get('/hr/leave-policy', verifyERPToken, employeesRead, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    let policy = await OrgLeavePolicy.findOne({ orgId: tenantContext.orgId }).lean();
+
+    if (!policy) {
+      policy = await OrgLeavePolicy.create({
+        orgId: tenantContext.orgId,
+        tenantId: tenantContext.tenantId || null,
+        createdBy: req.user?._id || req.user?.id,
+        updatedBy: req.user?._id || req.user?.id
+      });
+      policy = policy.toObject();
+    }
+
+    res.json({ success: true, data: { policy } });
+  } catch (error) {
+    console.error('Get leave policy error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch leave policy', error: error.message });
+  }
+});
+
+// Upsert org leave policy
+router.put('/hr/leave-policy', verifyERPToken, employeesWrite, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const payload = req.body || {};
+
+    const update = {
+      name: payload.name || 'Default Leave Policy',
+      effectiveFrom: payload.effectiveFrom ? new Date(payload.effectiveFrom) : new Date(),
+      isActive: payload.isActive !== false,
+      annual: {
+        daysPerYear: toNumberSafe(payload?.annual?.daysPerYear, 20),
+        carryForwardAllowed: Boolean(payload?.annual?.carryForwardAllowed),
+        maxCarryForward: toNumberSafe(payload?.annual?.maxCarryForward, 0)
+      },
+      sick: {
+        daysPerYear: toNumberSafe(payload?.sick?.daysPerYear, 10),
+        carryForwardAllowed: Boolean(payload?.sick?.carryForwardAllowed),
+        maxCarryForward: toNumberSafe(payload?.sick?.maxCarryForward, 0)
+      },
+      personal: {
+        daysPerYear: toNumberSafe(payload?.personal?.daysPerYear, 5),
+        carryForwardAllowed: Boolean(payload?.personal?.carryForwardAllowed),
+        maxCarryForward: toNumberSafe(payload?.personal?.maxCarryForward, 0)
+      },
+      updatedBy: req.user?._id || req.user?.id
+    };
+
+    const policy = await OrgLeavePolicy.findOneAndUpdate(
+      { orgId: tenantContext.orgId },
+      {
+        $set: update,
+        $setOnInsert: {
+          tenantId: tenantContext.tenantId || null,
+          createdBy: req.user?._id || req.user?.id
+        }
+      },
+      { new: true, upsert: true, runValidators: true }
+    );
+
+    res.json({ success: true, message: 'Leave policy saved', data: { policy } });
+  } catch (error) {
+    console.error('Save leave policy error:', error);
+    res.status(500).json({ success: false, message: 'Failed to save leave policy', error: error.message });
+  }
+});
+
+// Apply current policy balances to all active employees in org
+router.post('/hr/leave-policy/apply', verifyERPToken, employeesWrite, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const policy = await OrgLeavePolicy.findOne({ orgId: tenantContext.orgId });
+    if (!policy) {
+      return res.status(404).json({ success: false, message: 'Leave policy not found for this organization' });
+    }
+
+    const balanceSet = {
+      'leaveBalance.annual': toNumberSafe(policy.annual?.daysPerYear, 20),
+      'leaveBalance.sick': toNumberSafe(policy.sick?.daysPerYear, 10),
+      'leaveBalance.personal': toNumberSafe(policy.personal?.daysPerYear, 5)
+    };
+
+    const result = await Employee.updateMany(
+      { orgId: tenantContext.orgId, status: { $in: ['active', 'probation', 'on-leave'] } },
+      { $set: balanceSet }
+    );
+
+    res.json({
+      success: true,
+      message: 'Leave policy applied to employees',
+      data: {
+        matchedCount: result?.matchedCount ?? result?.n ?? 0,
+        modifiedCount: result?.modifiedCount ?? result?.nModified ?? 0,
+        appliedBalances: {
+          annual: balanceSet['leaveBalance.annual'],
+          sick: balanceSet['leaveBalance.sick'],
+          personal: balanceSet['leaveBalance.personal']
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Apply leave policy error:', error);
+    res.status(500).json({ success: false, message: 'Failed to apply leave policy', error: error.message });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // INVITE FLOW
 // POST /hr/employees/invite — admin sends a portal invite by email
@@ -1022,10 +2140,12 @@ router.post('/hr/employees/invite', verifyERPToken, employeesWrite, async (req, 
 
     let tenantUser;
     if (existingTU) {
-      const crypto = require('crypto');
-      existingTU.invitation.invitationToken = crypto.randomBytes(32).toString('hex');
-      existingTU.invitation.invitationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      existingTU.status = 'pending';
+      if (existingTU.status !== 'active') {
+        const crypto = require('crypto');
+        existingTU.invitation.invitationToken = crypto.randomBytes(32).toString('hex');
+        existingTU.invitation.invitationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        existingTU.status = 'pending';
+      }
       if (hrSubRole && erpRole === 'hr') existingTU.hrSubRole = hrSubRole;
       if (financeSubRole && erpRole === 'finance') existingTU.financeSubRole = financeSubRole;
       await existingTU.save();
@@ -1133,6 +2253,26 @@ router.get('/hr/performance-reviews', verifyERPToken, async (req, res) => {
 
 // ==================== USER MANAGEMENT ROUTES ====================
 
+const TENANT_ROLE_ENUM = ['owner', 'admin', 'manager', 'project_manager', 'hr', 'finance', 'employee', 'contractor', 'client'];
+
+const normalizeCustomPermissionCodes = (codes = []) => {
+  if (!Array.isArray(codes)) return [];
+  const normalized = [];
+  const seen = new Set();
+  for (const raw of codes) {
+    const code = String(raw || '').trim().toLowerCase();
+    if (!code) continue;
+    const [resource, action] = code.split(':');
+    if (!resource || !action) continue;
+    if (!/^[a-z0-9_*.-]+$/.test(resource) || !/^[a-z0-9_*.-]+$/.test(action)) continue;
+    const key = `${resource}:${action}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    normalized.push({ resource, actions: [action] });
+  }
+  return normalized;
+};
+
 // Get users
 router.get('/users', verifyERPToken, async (req, res) => {
   try {
@@ -1179,12 +2319,27 @@ router.get('/users/:id', verifyERPToken, async (req, res) => {
     const user = await tenantOrgService.getUserById(tenantContext, id);
     const userObj = user?.toObject ? user.toObject() : { ...user };
     const TenantUser = require('../../../models/TenantUser');
-    const tenantUser = await TenantUser.findOne({ userId: id, tenantId }).select('roles hrSubRole financeSubRole status').lean();
+    const tenantUser = await TenantUser.findOne({ userId: id, tenantId })
+      .select('roles hrSubRole financeSubRole status metadata.customFields.permissionOverrides')
+      .lean();
     if (tenantUser) {
       userObj.role = tenantUser.roles?.[0]?.role || userObj.role;
       userObj.hrSubRole = tenantUser.hrSubRole ?? null;
       userObj.financeSubRole = tenantUser.financeSubRole ?? null;
       userObj.portalTenantStatus = tenantUser.status;
+      const roleEntry = tenantUser.roles?.[0];
+      userObj.customPermissionCodes = Array.isArray(roleEntry?.permissions)
+        ? roleEntry.permissions
+            .flatMap((perm) =>
+              (perm?.actions || []).map((action) =>
+                `${String(perm?.resource || '').trim()}:${String(action || '').trim()}`
+              )
+            )
+            .filter((code) => code !== ':')
+        : [];
+      userObj.deniedPermissionCodes = Array.isArray(tenantUser?.metadata?.customFields?.permissionOverrides?.deny)
+        ? tenantUser.metadata.customFields.permissionOverrides.deny
+        : [];
     }
     res.json({ success: true, data: userObj });
   } catch (error) {
@@ -1216,20 +2371,70 @@ router.put('/users/:id', verifyERPToken, async (req, res) => {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const tenantId = req.tenant?._id || tenantContext?.tenantId;
     const { id } = req.params;
-    const { hrSubRole, financeSubRole, ...userData } = req.body;
+    const { hrSubRole, financeSubRole, role, erpRole, customPermissionCodes, deniedPermissionCodes, ...userData } = req.body;
+    console.log('[UPRDBG][PUT incoming]', {
+      userId: id,
+      actorId: String(req.user?._id || ''),
+      role: role || erpRole || null,
+      customPermissionCodes: Array.isArray(customPermissionCodes) ? customPermissionCodes : customPermissionCodes ?? null,
+      deniedPermissionCodes: Array.isArray(deniedPermissionCodes) ? deniedPermissionCodes : deniedPermissionCodes ?? null
+    });
+    const requestedRole = String(role || erpRole || '').trim().toLowerCase();
+    const roleToApply = requestedRole && TENANT_ROLE_ENUM.includes(requestedRole) ? requestedRole : null;
+    const hasCustomOverridePayload = customPermissionCodes !== undefined;
+    const hasDeniedOverridePayload = deniedPermissionCodes !== undefined;
+
+    if (requestedRole && !roleToApply) {
+      return res.status(400).json({
+        success: false,
+        message: `role must be one of: ${TENANT_ROLE_ENUM.join(', ')}`
+      });
+    }
+
+    const TenantUser = require('../../../models/TenantUser');
+    const { invalidateResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
+    const tenantUser = await TenantUser.findOne({ userId: id, tenantId });
+
+    if (roleToApply && tenantUser) {
+      if (!Array.isArray(tenantUser.roles) || tenantUser.roles.length === 0) {
+        tenantUser.roles = [{ role: roleToApply, permissions: [], assignedAt: new Date() }];
+      } else {
+        tenantUser.roles[0].role = roleToApply;
+        tenantUser.roles[0].assignedAt = new Date();
+      }
+      userData.role = roleToApply; // keep main User.role in sync for existing filters/UI
+    }
+
+    if (hasCustomOverridePayload) {
+      if (!tenantUser) {
+        return res.status(404).json({ success: false, message: 'Tenant user not found for permission override update' });
+      }
+      const parsedOverrides = normalizeCustomPermissionCodes(customPermissionCodes);
+      if (!Array.isArray(tenantUser.roles) || tenantUser.roles.length === 0) {
+        tenantUser.roles = [{ role: roleToApply || 'employee', permissions: parsedOverrides, assignedAt: new Date() }];
+      } else {
+        tenantUser.roles[0].permissions = parsedOverrides;
+      }
+    }
+
+    if (hasDeniedOverridePayload) {
+      if (!tenantUser) {
+        return res.status(404).json({ success: false, message: 'Tenant user not found for denied permission update' });
+      }
+      const parsedDenied = normalizeCustomPermissionCodes(deniedPermissionCodes).map((p) => `${p.resource}:${p.actions[0]}`);
+      tenantUser.metadata = tenantUser.metadata || {};
+      tenantUser.metadata.customFields = tenantUser.metadata.customFields || {};
+      tenantUser.metadata.customFields.permissionOverrides = tenantUser.metadata.customFields.permissionOverrides || {};
+      tenantUser.metadata.customFields.permissionOverrides.deny = parsedDenied;
+    }
 
     if (hrSubRole !== undefined) {
       const valid = ['manager', 'executive', 'payroll_officer'].includes(hrSubRole);
       if (hrSubRole !== null && hrSubRole !== '' && !valid) {
         return res.status(400).json({ success: false, message: 'hrSubRole must be one of: manager, executive, payroll_officer' });
       }
-      const TenantUser = require('../../../models/TenantUser');
-      const { invalidateResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
-      const tenantUser = await TenantUser.findOne({ userId: id, tenantId });
       if (tenantUser) {
         tenantUser.hrSubRole = (hrSubRole === null || hrSubRole === '') ? undefined : hrSubRole;
-        await tenantUser.save();
-        await invalidateResolvedPermissions(tenantId, id);
       }
     }
 
@@ -1241,14 +2446,24 @@ router.put('/users/:id', verifyERPToken, async (req, res) => {
           message: 'financeSubRole must be one of: manager, accountant, analyst, ap_officer, ar_officer'
         });
       }
-      const TenantUser = require('../../../models/TenantUser');
-      const { invalidateResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
-      const tenantUser = await TenantUser.findOne({ userId: id, tenantId });
       if (tenantUser) {
         tenantUser.financeSubRole = (financeSubRole === null || financeSubRole === '') ? undefined : financeSubRole;
-        await tenantUser.save();
-        await invalidateResolvedPermissions(tenantId, id);
       }
+    }
+
+    if (tenantUser && (roleToApply || hasCustomOverridePayload || hasDeniedOverridePayload || hrSubRole !== undefined || financeSubRole !== undefined)) {
+      if (tenantUser.roles?.[0]?.role !== 'hr') {
+        tenantUser.hrSubRole = undefined;
+      }
+      if (tenantUser.roles?.[0]?.role !== 'finance') {
+        tenantUser.financeSubRole = undefined;
+      }
+      await tenantUser.save();
+      console.log('[UPRDBG][PUT persisted]', {
+        userId: id,
+        deniedPermissionCodes: tenantUser?.metadata?.customFields?.permissionOverrides?.deny || []
+      });
+      await invalidateResolvedPermissions(tenantId, id);
     }
 
     const user = await tenantOrgService.updateUser(tenantContext, id, userData);
@@ -1657,6 +2872,28 @@ router.get('/uploads/profile-pictures/:filename', verifyERPToken, async (req, re
   }
 });
 
+// Serve project logos (same auth pattern as profile pictures)
+router.get('/uploads/project-logos/:filename', verifyERPToken, async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(process.cwd(), 'uploads', 'project-logos', filename);
+    const resolvedPath = path.resolve(filePath);
+    const uploadDir = path.resolve(path.join(process.cwd(), 'uploads', 'project-logos'));
+    if (!resolvedPath.startsWith(uploadDir)) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    try {
+      await fs.access(filePath);
+    } catch {
+      return res.status(404).json({ success: false, message: 'File not found' });
+    }
+    res.sendFile(resolvedPath);
+  } catch (error) {
+    console.error('Serve project logo error:', error);
+    res.status(500).json({ success: false, message: 'Failed to serve project logo' });
+  }
+});
+
 // Delete user
 router.delete('/users/:id', verifyERPToken, async (req, res) => {
   try {
@@ -1928,20 +3165,8 @@ router.get('/me/permissions', verifyTenantOrgAccess, async (req, res) => {
       hrSubRole: req.user?.hrSubRole,
       financeSubRole: req.user?.financeSubRole
     });
-    const MODULES = [
-      'projects', 'hr', 'finance', 'payroll', 'documents', 'analytics', 'nucleus',
-      'audit', 'clients', 'settings', 'attendance', 'leave', 'reports', 'tasks'
-    ];
-    const modules = {};
-    const perms = resolved.permissions || [];
-    const hasWildcard = perms.includes('*:*');
-    MODULES.forEach(m => {
-      modules[m] = {
-        read: hasWildcard || perms.includes(m + ':read') || perms.includes(m + ':*'),
-        write: hasWildcard || perms.includes(m + ':write') || perms.includes(m + ':*'),
-        delete: hasWildcard || perms.includes(m + ':delete') || perms.includes(m + ':*')
-      };
-    });
+    const { buildModuleAccessFromResolved } = require('../../../services/tenant/permissionProjection.service');
+    const modules = buildModuleAccessFromResolved(resolved);
     const ProjectMember = require('../../../models/ProjectMember');
     const memberships = await ProjectMember.find({ userId, status: 'active' }).select('projectId').lean();
     const projectIds = memberships.map(m => m.projectId?.toString?.()).filter(Boolean);

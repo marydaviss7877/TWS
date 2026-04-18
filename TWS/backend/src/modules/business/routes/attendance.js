@@ -2,7 +2,7 @@ const express = require('express');
 const { body, query, param } = require('express-validator');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const attendanceRead = requireErpAccess({ module: 'attendance', action: 'read', checkRevocation: false });
-const attendanceWrite = requireErpAccess({ module: 'attendance', action: 'write', checkRevocation: false });
+const attendanceWrite = requireErpAccess({ module: 'attendance', action: ['write', 'write_own'], checkRevocation: false });
 const attendanceAdminAccess = requireErpAccess({ allowedRoles: ['owner', 'admin', 'super_admin'] });
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
@@ -12,8 +12,46 @@ const AttendanceShift = require('../../../models/AttendanceShift');
 const AttendanceAudit = require('../../../models/AttendanceAudit');
 const Employee = require('../../../models/Employee');
 const AttendanceService = require('../../../services/hr/attendance.service');
+const { getResolvedPermissions, hasPermission } = require('../../../services/tenant/permissionResolver.service');
+const metricsService = require('../../../services/analytics/metrics.service');
 
 const router = express.Router();
+
+function getOrgIdFromRequest(req) {
+  return req.orgId || req.user?.orgId || req.user?.organizationId || null;
+}
+
+function setLegacyPunchDeprecationHeaders(res) {
+  res.set('Deprecation', 'true');
+  res.set('Sunset', 'Wed, 31 Dec 2026 23:59:59 GMT');
+  res.set(
+    'Link',
+    '</api/tenant/{tenantSlug}/organization/hr/attendance/check-in>; rel="successor-version", </api/tenant/{tenantSlug}/organization/hr/attendance/check-out>; rel="successor-version"'
+  );
+}
+
+function recordDeprecatedPunchMetric(endpoint, method = 'POST') {
+  try {
+    metricsService.incrementDeprecatedAttendanceRequests(endpoint, method);
+  } catch (_) {
+    // Metrics must never block request handling.
+  }
+}
+
+async function resolveTargetEmployeeId(req, employeeId) {
+  if (employeeId) {
+    const tenantId = req.tenant?._id || req.user?.tenantId;
+    const resolved = await getResolvedPermissions(req.user._id, tenantId, {
+      hrSubRole: req.user.hrSubRole,
+      financeSubRole: req.user.financeSubRole
+    });
+    if (!hasPermission(resolved.permissions, 'hr', 'write')) {
+      throw Object.assign(new Error('Not authorized to perform attendance actions on behalf of another employee'), { statusCode: 403 });
+    }
+    return employeeId;
+  }
+  return req.user?.employeeId || req.user?._id;
+}
 
 // Enhanced Check in with comprehensive validation
 router.post('/checkin', [
@@ -34,14 +72,9 @@ router.post('/checkin', [
   body('timestamp').optional().isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
+    setLegacyPunchDeprecationHeaders(res);
+    recordDeprecatedPunchMetric('/api/attendance/checkin', 'POST');
     const { employeeId, location, photoUrl, biometricData, workMode, currentProject, teamStatus, notes, timestamp } = req.body;
-    
-    const deviceInfo = {
-      type: req.headers['user-agent'] || 'Unknown',
-      userAgent: req.headers['user-agent'],
-      ipAddress: req.ip || req.connection.remoteAddress,
-      screenResolution: req.headers['screen-resolution'] || 'Unknown'
-    };
 
     const checkInData = {
       timestamp: timestamp || new Date(),
@@ -53,36 +86,20 @@ router.post('/checkin', [
       teamStatus,
       notes
     };
-
-    // Determine target user: self by default, or another employee only if requester has hr:write
-    let targetUserId = req.user._id;
-    if (employeeId) {
-      const { getResolvedPermissions, hasPermission } = require('../../../services/tenant/permissionResolver.service');
-      const tenantId = req.tenant?._id || req.user?.tenantId;
-      const resolved = await getResolvedPermissions(req.user._id, tenantId, {
-        hrSubRole: req.user.hrSubRole,
-        financeSubRole: req.user.financeSubRole
-      });
-      if (!hasPermission(resolved.permissions, 'hr', 'write')) {
-        return res.status(403).json({ success: false, message: 'Not authorized to check in on behalf of another employee' });
-      }
-      const orgId = req.orgId || req.user?.orgId;
-      const empRecord = await Employee.findOne({ employeeId, orgId }).select('_id');
-      if (!empRecord) {
-        return res.status(400).json({ success: false, message: 'Invalid Employee ID' });
-      }
-      targetUserId = empRecord._id;
+    const orgId = getOrgIdFromRequest(req);
+    if (!orgId) {
+      return res.status(400).json({ success: false, message: 'Organization context missing' });
     }
-
-    const result = await AttendanceService.checkIn(targetUserId, checkInData, deviceInfo);
+    const targetEmployeeId = await resolveTargetEmployeeId(req, employeeId);
+    const attendance = await AttendanceService.checkIn(orgId, targetEmployeeId, checkInData);
 
     res.json({
       success: true,
       message: 'Checked in successfully',
-      data: result.data
+      data: attendance
     });
   } catch (error) {
-    res.status(400).json({
+    res.status(error.statusCode || 400).json({
       success: false,
       message: error.message
     });
@@ -105,14 +122,9 @@ router.post('/checkout', [
   body('timestamp').optional().isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
+    setLegacyPunchDeprecationHeaders(res);
+    recordDeprecatedPunchMetric('/api/attendance/checkout', 'POST');
     const { employeeId, location, photoUrl, biometricData, notes, timestamp } = req.body;
-
-    const deviceInfo = {
-      type: req.headers['user-agent'] || 'Unknown',
-      userAgent: req.headers['user-agent'],
-      ipAddress: req.ip || req.connection.remoteAddress,
-      screenResolution: req.headers['screen-resolution'] || 'Unknown'
-    };
 
     const checkOutData = {
       timestamp: timestamp || new Date(),
@@ -121,36 +133,20 @@ router.post('/checkout', [
       biometricData,
       notes
     };
-
-    // Determine target user: self by default, or another employee only if requester has hr:write
-    let targetUserId = req.user._id;
-    if (employeeId) {
-      const { getResolvedPermissions, hasPermission } = require('../../../services/tenant/permissionResolver.service');
-      const tenantId = req.tenant?._id || req.user?.tenantId;
-      const resolved = await getResolvedPermissions(req.user._id, tenantId, {
-        hrSubRole: req.user.hrSubRole,
-        financeSubRole: req.user.financeSubRole
-      });
-      if (!hasPermission(resolved.permissions, 'hr', 'write')) {
-        return res.status(403).json({ success: false, message: 'Not authorized to check out on behalf of another employee' });
-      }
-      const orgId = req.orgId || req.user?.orgId;
-      const empRecord = await Employee.findOne({ employeeId, orgId }).select('_id');
-      if (!empRecord) {
-        return res.status(400).json({ success: false, message: 'Invalid Employee ID' });
-      }
-      targetUserId = empRecord._id;
+    const orgId = getOrgIdFromRequest(req);
+    if (!orgId) {
+      return res.status(400).json({ success: false, message: 'Organization context missing' });
     }
-
-    const result = await AttendanceService.checkOut(targetUserId, checkOutData, deviceInfo);
+    const targetEmployeeId = await resolveTargetEmployeeId(req, employeeId);
+    const attendance = await AttendanceService.checkOut(orgId, targetEmployeeId, checkOutData);
 
     res.json({
       success: true,
       message: 'Checked out successfully',
-      data: result.data
+      data: attendance
     });
   } catch (error) {
-    res.status(400).json({
+    res.status(error.statusCode || 400).json({
       success: false,
       message: error.message
     });
@@ -1821,42 +1817,34 @@ router.get('/employee/today', attendanceRead, ErrorHandler.asyncHandler(async (r
 
 // Alternative check-in (hyphenated path, used by some frontend components)
 router.post('/check-in', attendanceWrite, ErrorHandler.asyncHandler(async (req, res) => {
-  const { location, notes, timestamp, verificationMethod, photoUrl, photoHash, biometricData, device } = req.body;
-  const today    = new Date(); today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const existing = await Attendance.findOne({ userId: req.user._id, date: { $gte: today, $lt: tomorrow } });
-  if (existing?.checkIn) return res.status(400).json({ success: false, message: 'Already checked in today' });
-
-  const checkInTime = timestamp ? new Date(timestamp) : new Date();
-  const checkInData = { timestamp: checkInTime, location: { address: location || 'Office', verified: false }, notes: notes || '', verified: false, verificationMethod: verificationMethod || 'manual' };
-  if (verificationMethod === 'photo' && photoUrl)             { checkInData.photoUrl = photoUrl; checkInData.photoHash = photoHash; checkInData.verified = true; }
-  else if (verificationMethod === 'fingerprint' && biometricData) { checkInData.biometricData = { fingerprint: biometricData.fingerprint, quality: biometricData.quality }; checkInData.verified = true; }
-  else if (verificationMethod === 'location' && req.body.location) { checkInData.location = { ...req.body.location, verified: true }; checkInData.verified = true; }
-  if (device) checkInData.device = { type: device.type || 'web', userAgent: device.userAgent || req.headers['user-agent'], ipAddress: req.ip, deviceId: `web_${req.user._id}_${Date.now()}`, browser: device.browser, os: device.os, screenResolution: device.screenResolution };
-
-  if (existing) { existing.checkIn = checkInData; existing.status = 'present'; await existing.save(); }
-  else { await new Attendance({ userId: req.user._id, employeeId: req.user.employeeId || req.user._id.toString(), organizationId: req.user.orgId, date: today, checkIn: checkInData, status: 'present' }).save(); }
-
-  res.json({ success: true, message: 'Checked in successfully', data: { verificationMethod, verified: checkInData.verified, timestamp: checkInTime } });
+  try {
+    setLegacyPunchDeprecationHeaders(res);
+    recordDeprecatedPunchMetric('/api/attendance/check-in', 'POST');
+    const { location, notes, timestamp, verificationMethod, photoUrl, photoHash, biometricData, device } = req.body;
+    const orgId = getOrgIdFromRequest(req);
+    if (!orgId) return res.status(400).json({ success: false, message: 'Organization context missing' });
+    const targetEmployeeId = await resolveTargetEmployeeId(req, null);
+    const checkInData = { location, notes, timestamp, verificationMethod, photoUrl, photoHash, biometricData, device };
+    const attendance = await AttendanceService.checkIn(orgId, targetEmployeeId, checkInData);
+    res.json({ success: true, message: 'Checked in successfully', data: attendance });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ success: false, message: error.message });
+  }
 }));
 
 // Alternative check-out (hyphenated path)
 router.post('/check-out', attendanceWrite, ErrorHandler.asyncHandler(async (req, res) => {
-  const today    = new Date(); today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-  const record   = await Attendance.findOne({ userId: req.user._id, date: { $gte: today, $lt: tomorrow } });
-
-  if (!record?.checkIn) return res.status(400).json({ success: false, message: 'No check-in record found for today' });
-  if (record?.checkOut) return res.status(400).json({ success: false, message: 'Already checked out today' });
-
-  const checkOutTime     = req.body.timestamp ? new Date(req.body.timestamp) : new Date();
-  record.checkOut        = { timestamp: checkOutTime };
-  record.status          = 'present';
-  record.durationMinutes = Math.round((checkOutTime - record.checkIn.timestamp) / 60000);
-  await record.save();
-
-  res.json({ success: true, message: 'Checked out successfully' });
+  try {
+    setLegacyPunchDeprecationHeaders(res);
+    recordDeprecatedPunchMetric('/api/attendance/check-out', 'POST');
+    const orgId = getOrgIdFromRequest(req);
+    if (!orgId) return res.status(400).json({ success: false, message: 'Organization context missing' });
+    const targetEmployeeId = await resolveTargetEmployeeId(req, null);
+    const attendance = await AttendanceService.checkOut(orgId, targetEmployeeId, req.body || {});
+    res.json({ success: true, message: 'Checked out successfully', data: attendance });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ success: false, message: error.message });
+  }
 }));
 
 // Employee weekly stats

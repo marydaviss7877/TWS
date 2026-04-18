@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { 
   ClockIcon, 
   CheckCircleIcon,
@@ -18,27 +19,87 @@ const HRLeaveRequests = () => {
     rejected: 0,
     totalDays: 0
   });
+  const [policySaving, setPolicySaving] = useState(false);
+  const [policyApplying, setPolicyApplying] = useState(false);
+  const [policy, setPolicy] = useState({
+    name: 'Default Leave Policy',
+    annual: { daysPerYear: 20 },
+    sick: { daysPerYear: 10 },
+    personal: { daysPerYear: 5 }
+  });
+
+  const getProfilePicApiUrl = (url) => {
+    if (!url || !tenantSlug) return null;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('/uploads/profile-pictures/')) {
+      return `/api/tenant/${tenantSlug}/organization${url}`;
+    }
+    return url;
+  };
 
   useEffect(() => {
     fetchLeaveRequests();
+    fetchLeavePolicy();
   }, [tenantSlug]);
+
+  const fetchLeavePolicy = async () => {
+    try {
+      const data = await tenantApiService.getLeavePolicy(tenantSlug);
+      if (data?.policy) {
+        setPolicy({
+          name: data.policy.name || 'Default Leave Policy',
+          annual: { daysPerYear: Number(data.policy?.annual?.daysPerYear ?? 20) },
+          sick: { daysPerYear: Number(data.policy?.sick?.daysPerYear ?? 10) },
+          personal: { daysPerYear: Number(data.policy?.personal?.daysPerYear ?? 5) }
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching leave policy:', err);
+    }
+  };
+
+  const savePolicy = async () => {
+    try {
+      setPolicySaving(true);
+      await tenantApiService.saveLeavePolicy(tenantSlug, {
+        name: policy.name,
+        annual: { daysPerYear: Number(policy.annual.daysPerYear || 0) },
+        sick: { daysPerYear: Number(policy.sick.daysPerYear || 0) },
+        personal: { daysPerYear: Number(policy.personal.daysPerYear || 0) }
+      });
+      toast.success('Leave policy saved');
+    } catch (err) {
+      console.error('Error saving leave policy:', err);
+      toast.error('Failed to save leave policy');
+    } finally {
+      setPolicySaving(false);
+    }
+  };
+
+  const applyPolicy = async () => {
+    try {
+      setPolicyApplying(true);
+      await tenantApiService.applyLeavePolicy(tenantSlug);
+      toast.success('Policy applied to all active employees');
+    } catch (err) {
+      console.error('Error applying leave policy:', err);
+      toast.error('Failed to apply leave policy');
+    } finally {
+      setPolicyApplying(false);
+    }
+  };
 
   const fetchLeaveRequests = async () => {
     try {
       setLoading(true);
-      // TODO: Add leave requests API to tenantApiService
-      // const data = await tenantApiService.getLeaveRequests(tenantSlug);
-      // Mock data for now
-      const mockData = {
-        requests: [
-          { id: 1, employee: 'Sarah Johnson', type: 'Vacation', startDate: '2024-01-15', endDate: '2024-01-20', days: 5, status: 'Pending', reason: 'Family vacation' },
-          { id: 2, employee: 'Michael Chen', type: 'Sick Leave', startDate: '2024-01-10', endDate: '2024-01-12', days: 2, status: 'Pending', reason: 'Medical appointment' },
-          { id: 3, employee: 'Emily Davis', type: 'Personal', startDate: '2024-01-18', endDate: '2024-01-19', days: 1, status: 'Pending', reason: 'Personal matters' }
-        ],
-        stats: { pending: 12, approved: 28, rejected: 3, totalDays: 145 }
-      };
-      setLeaveRequests(mockData.requests);
-      setStats(mockData.stats);
+      const data = await tenantApiService.getLeaveRequests(tenantSlug);
+      const requests = data?.leaveRequests || [];
+      setLeaveRequests(requests);
+      const pending = requests.filter((r) => r.status === 'pending').length;
+      const approved = requests.filter((r) => r.status === 'approved').length;
+      const rejected = requests.filter((r) => r.status === 'rejected').length;
+      const totalDays = requests.reduce((sum, r) => sum + (Number(r.days) || 0), 0);
+      setStats({ pending, approved, rejected, totalDays });
     } catch (err) {
       console.error('Error fetching leave requests:', err);
     } finally {
@@ -48,10 +109,8 @@ const HRLeaveRequests = () => {
 
   const handleApprove = async (requestId) => {
     try {
-      // TODO: Add approve API call
-      // await tenantApiService.approveLeaveRequest(tenantSlug, requestId);
-      setLeaveRequests(prev => prev.filter(req => req.id !== requestId));
-      setStats(prev => ({ ...prev, pending: prev.pending - 1, approved: prev.approved + 1 }));
+      await tenantApiService.approveLeaveRequest(tenantSlug, requestId);
+      await fetchLeaveRequests();
     } catch (err) {
       console.error('Error approving leave request:', err);
     }
@@ -59,10 +118,8 @@ const HRLeaveRequests = () => {
 
   const handleReject = async (requestId) => {
     try {
-      // TODO: Add reject API call
-      // await tenantApiService.rejectLeaveRequest(tenantSlug, requestId);
-      setLeaveRequests(prev => prev.filter(req => req.id !== requestId));
-      setStats(prev => ({ ...prev, pending: prev.pending - 1, rejected: prev.rejected + 1 }));
+      await tenantApiService.rejectLeaveRequest(tenantSlug, requestId);
+      await fetchLeaveRequests();
     } catch (err) {
       console.error('Error rejecting leave request:', err);
     }
@@ -100,6 +157,68 @@ const HRLeaveRequests = () => {
         </div>
       </div>
 
+      {/* Org Leave Policy */}
+      <div className="glass-card-premium p-4 xl:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div>
+            <h3 className="text-base xl:text-lg font-bold font-heading text-gray-900 dark:text-white">
+              Org Leave Policy
+            </h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              HR sets this policy for all employees. Apply after saving to sync balances.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={savePolicy}
+              disabled={policySaving}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60"
+            >
+              {policySaving ? 'Saving...' : 'Save Policy'}
+            </button>
+            <button
+              onClick={applyPolicy}
+              disabled={policyApplying}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
+            >
+              {policyApplying ? 'Applying...' : 'Apply to Employees'}
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className="block text-[11px] text-gray-600 dark:text-gray-400 mb-1">Annual Leave (days/year)</label>
+            <input
+              type="number"
+              min="0"
+              value={policy.annual.daysPerYear}
+              onChange={(e) => setPolicy((prev) => ({ ...prev, annual: { ...prev.annual, daysPerYear: e.target.value } }))}
+              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] text-gray-600 dark:text-gray-400 mb-1">Sick Leave (days/year)</label>
+            <input
+              type="number"
+              min="0"
+              value={policy.sick.daysPerYear}
+              onChange={(e) => setPolicy((prev) => ({ ...prev, sick: { ...prev.sick, daysPerYear: e.target.value } }))}
+              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] text-gray-600 dark:text-gray-400 mb-1">Personal Leave (days/year)</label>
+            <input
+              type="number"
+              min="0"
+              value={policy.personal.daysPerYear}
+              onChange={(e) => setPolicy((prev) => ({ ...prev, personal: { ...prev.personal, daysPerYear: e.target.value } }))}
+              className="w-full px-2.5 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
         {statsData.map((stat, index) => (
@@ -122,66 +241,101 @@ const HRLeaveRequests = () => {
       </div>
 
       {/* Leave Requests Table */}
-      <div className="glass-card-premium p-6 xl:p-8 hover-glow">
-        <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white mb-6">
+      <div className="glass-card-premium p-4 xl:p-5 hover-glow">
+        <h3 className="text-base xl:text-lg font-bold font-heading text-gray-900 dark:text-white mb-3">
           Pending Leave Requests
         </h3>
-        <div className="space-y-4">
+        <div className="space-y-2">
           {leaveRequests.length === 0 ? (
-            <div className="text-center py-12">
-              <CalendarIcon className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">No pending leave requests</p>
+            <div className="text-center py-8">
+              <CalendarIcon className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+              <p className="text-sm text-gray-600 dark:text-gray-400">No pending leave requests</p>
             </div>
           ) : (
             leaveRequests.map((request) => (
-              <div key={request.id} className="glass-card p-4 hover-lift">
-                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow">
-                        <span className="text-white font-bold text-sm">{(request.employee?.fullName || request.employee?.name || request.employee?.email || request.employee || '?').toString().charAt(0)}</span>
+              <div key={request._id || request.id} className="glass-card p-3 hover-lift">
+                {(() => {
+                  const requesterName =
+                    request.userId?.fullName ||
+                    request.userId?.email ||
+                    request.employee?.fullName ||
+                    request.employee?.name ||
+                    request.employee?.email ||
+                    request.employee ||
+                    'Unknown';
+                  const requesterPic = getProfilePicApiUrl(request.userId?.profilePicUrl);
+                  return (
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-3 items-center">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow shrink-0 overflow-hidden">
+                        {requesterPic ? (
+                          <img
+                            src={requesterPic}
+                            alt={requesterName}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-white font-bold text-xs">{requesterName.toString().charAt(0)}</span>
+                        )}
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">{request.employee?.fullName || request.employee?.name || request.employee?.email || request.employee || 'Unknown'}</p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">{request.type}</p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{requesterName}</p>
+                        <p className="text-[11px] text-gray-600 dark:text-gray-400 capitalize">{request.type}</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
                       <div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Start Date</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{request.startDate}</p>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Start</p>
+                        <p className="text-xs font-medium text-gray-900 dark:text-white">{request.startDate ? new Date(request.startDate).toLocaleDateString() : '-'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">End Date</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{request.endDate}</p>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">End</p>
+                        <p className="text-xs font-medium text-gray-900 dark:text-white">{request.endDate ? new Date(request.endDate).toLocaleDateString() : '-'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Duration</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{request.days} days</p>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Days</p>
+                        <p className="text-xs font-medium text-gray-900 dark:text-white">{request.days}d</p>
                       </div>
-                    </div>
-                    <div className="mt-3">
-                      <p className="text-xs text-gray-600 dark:text-gray-400">Reason</p>
-                      <p className="text-sm text-gray-900 dark:text-white">{request.reason}</p>
+                      <div className="col-span-2 md:col-span-1">
+                        <p className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Reason</p>
+                        <p className="text-xs text-gray-800 dark:text-gray-200 truncate">{request.reason || '-'}</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex lg:flex-col gap-2">
+                  <div className="flex items-center justify-end gap-2">
                     <button
-                      onClick={() => handleApprove(request.id)}
-                      className="flex-1 lg:flex-none glass-button px-4 py-2 rounded-xl hover-scale bg-gradient-to-r from-green-500 to-emerald-600 text-white flex items-center justify-center gap-2"
+                      onClick={() => handleApprove(request._id || request.id)}
+                      disabled={request.status !== 'pending'}
+                      className={`glass-button px-3 py-1.5 rounded-lg text-xs flex items-center justify-center gap-1.5 ${
+                        request.status === 'approved'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 cursor-default'
+                          : request.status !== 'pending'
+                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-default'
+                            : 'hover-scale bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+                      }`}
                     >
-                      <CheckCircleIcon className="w-5 h-5" />
-                      <span className="font-medium">Approve</span>
+                      <CheckCircleIcon className="w-4 h-4" />
+                      <span className="font-medium">{request.status === 'approved' ? 'Approved' : 'Approve'}</span>
                     </button>
                     <button
-                      onClick={() => handleReject(request.id)}
-                      className="flex-1 lg:flex-none glass-button px-4 py-2 rounded-xl hover-scale bg-gradient-to-r from-red-500 to-pink-600 text-white flex items-center justify-center gap-2"
+                      onClick={() => handleReject(request._id || request.id)}
+                      disabled={request.status !== 'pending'}
+                      className={`glass-button px-3 py-1.5 rounded-lg text-xs flex items-center justify-center gap-1.5 ${
+                        request.status === 'rejected'
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 cursor-default'
+                          : request.status !== 'pending'
+                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-default'
+                            : 'hover-scale bg-gradient-to-r from-red-500 to-pink-600 text-white'
+                      }`}
                     >
-                      <XCircleIcon className="w-5 h-5" />
-                      <span className="font-medium">Reject</span>
+                      <XCircleIcon className="w-4 h-4" />
+                      <span className="font-medium">{request.status === 'rejected' ? 'Rejected' : 'Reject'}</span>
                     </button>
                   </div>
                 </div>
+                  );
+                })()}
               </div>
             ))
           )}
@@ -189,13 +343,13 @@ const HRLeaveRequests = () => {
       </div>
 
       {/* Calendar View */}
-      <div className="glass-card-premium p-6 xl:p-8 hover-glow">
-        <h3 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white mb-6">
+      <div className="glass-card-premium p-4 xl:p-5 hover-glow">
+        <h3 className="text-base xl:text-lg font-bold font-heading text-gray-900 dark:text-white mb-3">
           Leave Calendar
         </h3>
-        <div className="text-center py-12">
-          <CalendarIcon className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Calendar view coming soon</p>
+        <div className="text-center py-8">
+          <CalendarIcon className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+          <p className="text-sm text-gray-600 dark:text-gray-400">Calendar view coming soon</p>
         </div>
       </div>
     </div>
