@@ -1,0 +1,6 @@
+Railway (frontend + backend): deploy branch is MASTER.
+
+After landing commits on main, sync Railway with:
+  git checkout master && git pull origin master && git merge main && git push origin master
+
+Pushes to origin/main alone do not update Railway while services watch master.
