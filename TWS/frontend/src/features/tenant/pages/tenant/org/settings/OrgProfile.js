@@ -18,6 +18,7 @@ import {
   ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
+import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
 import toast from 'react-hot-toast';
 
 /* ─── tokens ─────────────────────────────────────────────────────────────────── */
@@ -86,6 +87,7 @@ function Sel({ label, value, onChange, options, readOnly, span }) {
 const OrgProfile = () => {
   const { tenantSlug } = useParams();
   const { user, tenant: ctxTenant, updateTenant } = useTenantAuth();
+  const { hasModulePermission } = useTenantPermissions();
 
   const [tab,           setTab]           = useState('overview');
   const [loading,       setLoading]       = useState(true);
@@ -193,7 +195,7 @@ const OrgProfile = () => {
   };
 
   const set = (k) => (v) => { setForm(f => ({ ...f, [k]: v })); setDirty(true); };
-  const isAdmin = ['owner','admin','org_admin','tenant_owner','super_admin','org_manager'].includes(user?.role);
+  const isAdmin = hasModulePermission?.('settings', 'admin') || hasModulePermission?.('users', 'admin');
 
   if (loading) return (
     <div className="flex items-center justify-center py-16">

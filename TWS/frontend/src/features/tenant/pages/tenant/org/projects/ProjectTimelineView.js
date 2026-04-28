@@ -13,6 +13,8 @@ import {
   FlagIcon,
 } from '@heroicons/react/24/outline';
 import tenantProjectApiService from './services/tenantProjectApiService';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 /* ─── constants ─────────────────────────────────────────────────────────────── */
 const STATUS_FILL = {
@@ -170,14 +172,7 @@ const ProjectTimelineView = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto" />
-          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading timeline…</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading timeline..." className="min-h-[40vh] bg-transparent" />;
   }
 
   return (
@@ -243,11 +238,11 @@ const ProjectTimelineView = () => {
 
       {/* ── Empty state ── */}
       {filtered.length === 0 && milestones.length === 0 ? (
-        <div className="text-center py-16 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-          <ClockIcon className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-          <p className="font-medium text-gray-500 dark:text-gray-400">No tasks with dates found</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Add start or due dates to tasks to see them here</p>
-        </div>
+        <EmptyState
+          title="No tasks with dates found"
+          message="Add start or due dates to tasks to see them here."
+          className="max-w-xl mx-auto"
+        />
       ) : (
         <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900">
 

@@ -7,10 +7,72 @@ const Project = require('../../../models/Project');
 const ProjectMember = require('../../../models/ProjectMember');
 const Activity = require('../../../models/Activity');
 const Notification = require('../../../models/Notification');
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const { TimeEntry } = require('../../../models/Finance');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+router.use(verifyERPToken);
+
+function resolveWorkspaceId(list, reqUser, fallbackProject = null) {
+  return (
+    list?.workspaceId ||
+    fallbackProject?.workspaceId ||
+    reqUser?.workspaceId ||
+    reqUser?.currentWorkspaceId ||
+    null
+  );
+}
+
+// Get cards (supports grouped status for legacy UI)
+router.get('/', async (req, res) => {
+  try {
+    const { groupBy, projectId } = req.query;
+    const orgId = req.user.orgId;
+
+    if (groupBy !== 'status') {
+      return res.status(400).json({
+        success: false,
+        message: 'Unsupported query. Use groupBy=status'
+      });
+    }
+
+    const query = { archived: false };
+    if (projectId) {
+      const project = await Project.findOne({ _id: projectId, orgId }).select('_id');
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          message: 'Project not found'
+        });
+      }
+      query.projectId = projectId;
+    }
+
+    const cards = await Card.find(query)
+      .populate('assignees', 'fullName email')
+      .sort({ position: 1, createdAt: -1 })
+      .lean();
+
+    const grouped = {
+      todo: cards.filter((c) => c.status === 'todo' || c.status === 'to-do'),
+      in_progress: cards.filter((c) => c.status === 'in_progress' || c.status === 'in-progress'),
+      under_review: cards.filter((c) => c.status === 'under_review' || c.status === 'under-review' || c.status === 'review'),
+      completed: cards.filter((c) => c.status === 'completed' || c.status === 'done')
+    };
+
+    return res.json({
+      success: true,
+      data: grouped
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching grouped cards',
+      error: error.message
+    });
+  }
+});
 
 // Get cards for a list
-router.get('/list/:listId', authenticateToken, async (req, res) => {
+router.get('/list/:listId', async (req, res) => {
   try {
     const { listId } = req.params;
     
@@ -57,7 +119,7 @@ router.get('/list/:listId', authenticateToken, async (req, res) => {
 });
 
 // Get single card
-router.get('/:cardId', authenticateToken, async (req, res) => {
+router.get('/:cardId', async (req, res) => {
   try {
     const { cardId } = req.params;
     
@@ -65,7 +127,6 @@ router.get('/:cardId', authenticateToken, async (req, res) => {
       .populate('assignees', 'fullName email')
       .populate('comments.userId', 'fullName email')
       .populate('attachments.uploadedBy', 'fullName email')
-      .populate('timeTracking.entries.userId', 'fullName email')
       .populate('approvals.userId', 'fullName email');
     
     if (!card) {
@@ -89,9 +150,31 @@ router.get('/:cardId', authenticateToken, async (req, res) => {
       });
     }
     
+    const centralizedEntries = await TimeEntry.find({
+      orgId: card.orgId,
+      tags: `card:${card._id}`
+    })
+      .populate('employeeId', 'fullName email')
+      .select('employeeId date hours billable description task status timer')
+      .sort({ date: -1, createdAt: -1 })
+      .lean();
+
+    const centralizedSummary = centralizedEntries.reduce((acc, entry) => {
+      const hours = Number(entry.hours || 0);
+      acc.totalHours += hours;
+      if (entry.billable) acc.billableHours += hours;
+      return acc;
+    }, { totalHours: 0, billableHours: 0 });
+
     res.json({
       success: true,
-      data: { card }
+      data: {
+        card,
+        centralizedTimeTracking: {
+          summary: centralizedSummary,
+          entries: centralizedEntries
+        }
+      }
     });
   } catch (error) {
     res.status(500).json({
@@ -103,7 +186,7 @@ router.get('/:cardId', authenticateToken, async (req, res) => {
 });
 
 // Create new card
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { listId, title, description, assignees, dueDate, priority, labels } = req.body;
     
@@ -138,9 +221,19 @@ router.post('/', authenticateToken, async (req, res) => {
       .sort({ position: -1 });
     const position = lastCard ? lastCard.position + 1 : 0;
     
+    const project = await Project.findById(list.projectId._id).select('workspaceId');
+    const workspaceId = resolveWorkspaceId(list, req.user, project);
+    if (!workspaceId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Workspace context is required to create a card'
+      });
+    }
+
     const card = new Card({
       listId,
       boardId: list.boardId,
+      workspaceId,
       projectId: list.projectId._id,
       orgId: list.projectId.orgId,
       title,
@@ -199,7 +292,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update card
-router.patch('/:cardId', authenticateToken, async (req, res) => {
+router.patch('/:cardId', async (req, res) => {
   try {
     const { cardId } = req.params;
     const updates = req.body;
@@ -298,7 +391,7 @@ router.patch('/:cardId', authenticateToken, async (req, res) => {
 });
 
 // Add comment to card
-router.post('/:cardId/comments', authenticateToken, async (req, res) => {
+router.post('/:cardId/comments', async (req, res) => {
   try {
     const { cardId } = req.params;
     const { text, mentions } = req.body;
@@ -382,7 +475,7 @@ router.post('/:cardId/comments', authenticateToken, async (req, res) => {
 });
 
 // Complete card
-router.patch('/:cardId/complete', authenticateToken, async (req, res) => {
+router.patch('/:cardId/complete', async (req, res) => {
   try {
     const { cardId } = req.params;
     
@@ -460,7 +553,7 @@ router.patch('/:cardId/complete', authenticateToken, async (req, res) => {
 });
 
 // Delete card
-router.delete('/:cardId', authenticateToken, async (req, res) => {
+router.delete('/:cardId', async (req, res) => {
   try {
     const { cardId } = req.params;
     

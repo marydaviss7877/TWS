@@ -13,13 +13,21 @@ async function createSampleClientsAndVendors(tenant, organization, session) {
     const clients = [
       {
         name: 'TechCorp Solutions',
-        email: 'contact@techcorp.com',
-        phone: '+1-555-0123',
+        slug: 'techcorp-solutions',
         orgId: organization._id,
-        tenantId: tenant.tenantId,
-        type: 'corporate',
+        type: 'company',
         status: 'active',
-        billingAddress: {
+        company: {
+          name: 'TechCorp Solutions',
+          industry: 'Technology'
+        },
+        contact: {
+          primary: {
+            email: 'contact@techcorp.com',
+            phone: '+1-555-0123'
+          }
+        },
+        address: {
           street: '123 Business Ave',
           city: 'New York',
           state: 'NY',
@@ -30,13 +38,21 @@ async function createSampleClientsAndVendors(tenant, organization, session) {
       },
       {
         name: 'StartupXYZ',
-        email: 'hello@startupxyz.com',
-        phone: '+1-555-0456',
+        slug: 'startupxyz',
         orgId: organization._id,
-        tenantId: tenant.tenantId,
-        type: 'startup',
+        type: 'company',
         status: 'active',
-        billingAddress: {
+        company: {
+          name: 'StartupXYZ',
+          industry: 'Technology'
+        },
+        contact: {
+          primary: {
+            email: 'hello@startupxyz.com',
+            phone: '+1-555-0456'
+          }
+        },
+        address: {
           street: '456 Innovation St',
           city: 'San Francisco',
           state: 'CA',

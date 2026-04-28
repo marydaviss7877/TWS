@@ -17,11 +17,53 @@ const { generateSignedUrl } = require('../../config/s3');
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
+const PRIVILEGED_DOCUMENT_ROLES = new Set([
+  'owner',
+  'admin',
+  'super_admin',
+  'org_admin',
+  'org_manager',
+  'tenant_owner',
+  'manager',
+  'project_manager'
+]);
+
+function normalizeRole(role) {
+  return String(role || '').trim().toLowerCase();
+}
+
+function isPrivilegedDocumentRole(role) {
+  return PRIVILEGED_DOCUMENT_ROLES.has(normalizeRole(role));
+}
+
+async function getAccessScopeClause(orgId, userId, role, requireEdit = false) {
+  if (!userId) return null;
+  if (isPrivilegedDocumentRole(role)) return null;
+
+  const shareFilter = { orgId, userId };
+  if (requireEdit) shareFilter.permission = 'edit';
+  const shares = await DocumentShare.find(shareFilter).select('documentId').lean();
+  const sharedIds = shares.map((s) => s.documentId).filter(Boolean);
+
+  return {
+    $or: [
+      { createdBy: userId },
+      { ownerId: userId },
+      { assigneeId: userId },
+      { _id: { $in: sharedIds } }
+    ]
+  };
+}
+
+function mergeScopedFilter(baseFilter, scopeClause) {
+  if (!scopeClause) return baseFilter;
+  return { $and: [baseFilter, scopeClause] };
+}
 
 /**
  * List documents with filters and pagination
  */
-async function listDocuments({ orgId, tenantId, userId, folderId, tags, status, type, templateId, ownerId, search, sort = 'updatedAt', order = 'desc', page = DEFAULT_PAGE, limit = DEFAULT_LIMIT }) {
+async function listDocuments({ orgId, tenantId, userId, role, folderId, tags, status, type, templateId, ownerId, search, sort = 'updatedAt', order = 'desc', page = DEFAULT_PAGE, limit = DEFAULT_LIMIT }) {
   const filter = { orgId, deletedAt: null };
   if (folderId !== undefined && folderId !== null && folderId !== '') filter.folderId = folderId;
   if (status) filter.status = status;
@@ -36,13 +78,15 @@ async function listDocuments({ orgId, tenantId, userId, folderId, tags, status, 
       { fileName: { $regex: search.trim(), $options: 'i' } }
     ];
   }
+  const scopeClause = await getAccessScopeClause(orgId, userId, role, false);
+  const scopedFilter = mergeScopedFilter(filter, scopeClause);
 
   const safeLimit = Math.min(limit, MAX_LIMIT);
   const skip = (Math.max(1, page) - 1) * safeLimit;
   const sortObj = { [sort]: order === 'asc' ? 1 : -1 };
 
   const [documents, total] = await Promise.all([
-    OrgDocument.find(filter)
+    OrgDocument.find(scopedFilter)
       .populate('folderId', 'name parentId')
       .populate('tags', 'name color')
       .populate('createdBy', 'fullName email')
@@ -52,7 +96,7 @@ async function listDocuments({ orgId, tenantId, userId, folderId, tags, status, 
       .skip(skip)
       .limit(safeLimit)
       .lean(),
-    OrgDocument.countDocuments(filter)
+    OrgDocument.countDocuments(scopedFilter)
   ]);
 
   return {
@@ -70,7 +114,9 @@ async function listDocuments({ orgId, tenantId, userId, folderId, tags, status, 
  * Get one document by id; optionally append signed download URL for uploads
  */
 async function getDocument(documentId, orgId, options = {}) {
-  const doc = await OrgDocument.findOne({ _id: documentId, orgId, deletedAt: null })
+  const baseFilter = { _id: documentId, orgId, deletedAt: null };
+  const scopeClause = await getAccessScopeClause(orgId, options.userId, options.role, false);
+  const doc = await OrgDocument.findOne(mergeScopedFilter(baseFilter, scopeClause))
     .populate('folderId', 'name parentId')
     .populate('tags', 'name color')
     .populate('createdBy', 'fullName email')
@@ -121,8 +167,10 @@ async function createDocument({ orgId, tenantId, userId, title, templateId, cont
 /**
  * Update document (metadata and/or content); create version snapshot when content changes
  */
-async function updateDocument(documentId, orgId, userId, payload) {
-  const doc = await OrgDocument.findOne({ _id: documentId, orgId, deletedAt: null });
+async function updateDocument(documentId, orgId, userId, payload, options = {}) {
+  const baseFilter = { _id: documentId, orgId, deletedAt: null };
+  const scopeClause = await getAccessScopeClause(orgId, userId, options.role, true);
+  const doc = await OrgDocument.findOne(mergeScopedFilter(baseFilter, scopeClause));
   if (!doc) return null;
 
   const contentChanged = payload.content !== undefined && JSON.stringify(payload.content) !== JSON.stringify(doc.content);
@@ -161,8 +209,10 @@ async function updateDocument(documentId, orgId, userId, payload) {
 /**
  * Soft delete
  */
-async function deleteDocument(documentId, orgId, userId) {
-  const doc = await OrgDocument.findOne({ _id: documentId, orgId, deletedAt: null });
+async function deleteDocument(documentId, orgId, userId, options = {}) {
+  const baseFilter = { _id: documentId, orgId, deletedAt: null };
+  const scopeClause = await getAccessScopeClause(orgId, userId, options.role, true);
+  const doc = await OrgDocument.findOne(mergeScopedFilter(baseFilter, scopeClause));
   if (!doc) return null;
   doc.deletedAt = new Date();
   doc.updatedAt = new Date();
@@ -216,8 +266,10 @@ async function resolveReviewerUserIds(orgId, tenantId, departmentId) {
 /**
  * Submit for review
  */
-async function submitForReview(documentId, orgId, userId) {
-  const doc = await OrgDocument.findOne({ _id: documentId, orgId, deletedAt: null });
+async function submitForReview(documentId, orgId, userId, options = {}) {
+  const baseFilter = { _id: documentId, orgId, deletedAt: null };
+  const scopeClause = await getAccessScopeClause(orgId, userId, options.role, true);
+  const doc = await OrgDocument.findOne(mergeScopedFilter(baseFilter, scopeClause));
   if (!doc) return null;
   if (doc.status !== 'draft') return { error: 'Only draft documents can be submitted for review' };
   doc.status = 'in_review';
@@ -258,10 +310,17 @@ async function submitForReview(documentId, orgId, userId) {
 /**
  * Approve or reject
  */
-async function setReviewOutcome(documentId, orgId, userId, outcome, comment) {
+async function setReviewOutcome(documentId, orgId, userId, outcome, comment, options = {}) {
   const doc = await OrgDocument.findOne({ _id: documentId, orgId, deletedAt: null });
   if (!doc) return null;
   if (doc.status !== 'in_review') return { error: 'Document is not in review' };
+  if (!isPrivilegedDocumentRole(options.role)) {
+    const reviewerIds = await resolveReviewerUserIds(orgId, doc.tenantId, doc.departmentId || null);
+    const isReviewer = reviewerIds.some((id) => String(id) === String(userId));
+    if (!isReviewer) {
+      return { error: 'Only assigned reviewers can approve or reject this document', code: 'FORBIDDEN' };
+    }
+  }
 
   doc.status = outcome === 'approved' ? 'approved' : 'draft';
   if (outcome !== 'approved') doc.submittedForReviewAt = null;
@@ -302,8 +361,10 @@ async function setReviewOutcome(documentId, orgId, userId, outcome, comment) {
 /**
  * List versions for a document
  */
-async function listVersions(documentId, orgId) {
-  const doc = await OrgDocument.findOne({ _id: documentId, orgId, deletedAt: null }).select('_id').lean();
+async function listVersions(documentId, orgId, options = {}) {
+  const baseFilter = { _id: documentId, orgId, deletedAt: null };
+  const scopeClause = await getAccessScopeClause(orgId, options.userId, options.role, false);
+  const doc = await OrgDocument.findOne(mergeScopedFilter(baseFilter, scopeClause)).select('_id').lean();
   if (!doc) return null;
 
   const versions = await OrgDocumentVersion.find({ documentId })
@@ -328,8 +389,10 @@ async function getVersion(versionId, documentId, orgId) {
 /**
  * Restore a version (creates new version with restored content, updates document)
  */
-async function restoreVersion(documentId, versionId, orgId, userId) {
-  const doc = await OrgDocument.findOne({ _id: documentId, orgId, deletedAt: null });
+async function restoreVersion(documentId, versionId, orgId, userId, options = {}) {
+  const baseFilter = { _id: documentId, orgId, deletedAt: null };
+  const scopeClause = await getAccessScopeClause(orgId, userId, options.role, true);
+  const doc = await OrgDocument.findOne(mergeScopedFilter(baseFilter, scopeClause));
   if (!doc) return null;
   const version = await OrgDocumentVersion.findOne({ _id: versionId, documentId, orgId }).lean();
   if (!version) return null;
@@ -364,10 +427,30 @@ async function restoreVersion(documentId, versionId, orgId, userId) {
 /**
  * List audit events (optionally by documentId or userId)
  */
-async function listAudit({ orgId, documentId, userId, action, dateFrom, dateTo, page = DEFAULT_PAGE, limit = DEFAULT_LIMIT }) {
+async function listAudit({ orgId, documentId, userId, documentSearch, userSearch, action, dateFrom, dateTo, page = DEFAULT_PAGE, limit = DEFAULT_LIMIT }) {
   const filter = { orgId };
   if (documentId) filter.documentId = documentId;
   if (userId) filter.userId = userId;
+  if (documentSearch && String(documentSearch).trim()) {
+    const matchedDocs = await OrgDocument.find({
+      orgId,
+      deletedAt: null,
+      title: { $regex: String(documentSearch).trim(), $options: 'i' }
+    }).select('_id').limit(200).lean();
+    const ids = matchedDocs.map((d) => d._id);
+    filter.documentId = ids.length > 0 ? { $in: ids } : { $in: [] };
+  }
+  if (userSearch && String(userSearch).trim()) {
+    const matchedUsers = await User.find({
+      orgId,
+      $or: [
+        { fullName: { $regex: String(userSearch).trim(), $options: 'i' } },
+        { email: { $regex: String(userSearch).trim(), $options: 'i' } }
+      ]
+    }).select('_id').limit(200).lean();
+    const ids = matchedUsers.map((u) => u._id);
+    filter.userId = ids.length > 0 ? { $in: ids } : { $in: [] };
+  }
   if (action) filter.action = action;
   
   // Date range filter
@@ -445,6 +528,10 @@ async function updateFolder(folderId, orgId, payload) {
 async function deleteFolder(folderId, orgId) {
   const folder = await DocumentFolder.findOne({ _id: folderId, orgId });
   if (!folder) return null;
+  await OrgDocument.updateMany(
+    { orgId, folderId, deletedAt: null },
+    { $set: { folderId: null, updatedAt: new Date() } }
+  );
   await folder.deleteOne();
   return { deleted: true };
 }
@@ -479,13 +566,85 @@ async function updateTag(tagId, orgId, payload) {
 async function deleteTag(tagId, orgId) {
   const tag = await DocumentTag.findOne({ _id: tagId, orgId });
   if (!tag) return null;
+  await OrgDocument.updateMany(
+    { orgId, tags: tagId, deletedAt: null },
+    { $pull: { tags: tagId }, $set: { updatedAt: new Date() } }
+  );
   await tag.deleteOne();
   return { deleted: true };
 }
 
+async function listInReviewForReviewer({ orgId, tenantId, userId, role, page = DEFAULT_PAGE, limit = 50 }) {
+  const safeLimit = Math.min(limit, MAX_LIMIT);
+  const skip = (Math.max(1, page) - 1) * safeLimit;
+  const baseFilter = { orgId, deletedAt: null, status: 'in_review' };
+
+  // Privileged roles can review all documents in review.
+  if (isPrivilegedDocumentRole(role)) {
+    const [documents, total] = await Promise.all([
+      OrgDocument.find(baseFilter)
+        .populate('folderId', 'name parentId')
+        .populate('tags', 'name color')
+        .populate('createdBy', 'fullName email')
+        .populate('ownerId', 'fullName email')
+        .populate('assigneeId', 'fullName email')
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
+      OrgDocument.countDocuments(baseFilter)
+    ]);
+    return {
+      documents,
+      pagination: {
+        page: Math.max(1, page),
+        limit: safeLimit,
+        total,
+        pages: Math.ceil(total / safeLimit) || 1
+      }
+    };
+  }
+
+  const allInReview = await OrgDocument.find(baseFilter)
+    .select('_id departmentId tenantId')
+    .sort({ updatedAt: -1 })
+    .lean();
+  const visibleIds = [];
+  for (const doc of allInReview) {
+    const reviewerIds = await resolveReviewerUserIds(
+      orgId,
+      doc.tenantId || tenantId || null,
+      doc.departmentId || null
+    );
+    if (reviewerIds.some((id) => String(id) === String(userId))) {
+      visibleIds.push(doc._id);
+    }
+  }
+  const pagedIds = visibleIds.slice(skip, skip + safeLimit);
+  const documents = await OrgDocument.find({ _id: { $in: pagedIds }, orgId, deletedAt: null, status: 'in_review' })
+    .populate('folderId', 'name parentId')
+    .populate('tags', 'name color')
+    .populate('createdBy', 'fullName email')
+    .populate('ownerId', 'fullName email')
+    .populate('assigneeId', 'fullName email')
+    .sort({ updatedAt: -1 })
+    .lean();
+  return {
+    documents,
+    pagination: {
+      page: Math.max(1, page),
+      limit: safeLimit,
+      total: visibleIds.length,
+      pages: Math.ceil(visibleIds.length / safeLimit) || 1
+    }
+  };
+}
+
 // --- Comments ---
-async function listComments(documentId, orgId) {
-  const doc = await OrgDocument.findOne({ _id: documentId, orgId, deletedAt: null }).select('_id').lean();
+async function listComments(documentId, orgId, options = {}) {
+  const baseFilter = { _id: documentId, orgId, deletedAt: null };
+  const scopeClause = await getAccessScopeClause(orgId, options.userId, options.role, false);
+  const doc = await OrgDocument.findOne(mergeScopedFilter(baseFilter, scopeClause)).select('_id').lean();
   if (!doc) return null;
   const comments = await OrgDocumentComment.find({ documentId, orgId })
     .populate('userId', 'fullName email')
@@ -494,8 +653,10 @@ async function listComments(documentId, orgId) {
   return comments;
 }
 
-async function createComment(documentId, orgId, userId, content) {
-  const doc = await OrgDocument.findOne({ _id: documentId, orgId, deletedAt: null }).select('_id').lean();
+async function createComment(documentId, orgId, userId, content, options = {}) {
+  const baseFilter = { _id: documentId, orgId, deletedAt: null };
+  const scopeClause = await getAccessScopeClause(orgId, userId, options.role, false);
+  const doc = await OrgDocument.findOne(mergeScopedFilter(baseFilter, scopeClause)).select('_id').lean();
   if (!doc) return null;
   const trimmed = (content || '').trim();
   if (!trimmed) return { error: 'Comment content is required' };
@@ -513,8 +674,10 @@ async function createComment(documentId, orgId, userId, content) {
 }
 
 // --- Share ---
-async function listShares(documentId, orgId) {
-  const doc = await OrgDocument.findOne({ _id: documentId, orgId, deletedAt: null }).select('_id').lean();
+async function listShares(documentId, orgId, options = {}) {
+  const baseFilter = { _id: documentId, orgId, deletedAt: null };
+  const scopeClause = await getAccessScopeClause(orgId, options.userId, options.role, false);
+  const doc = await OrgDocument.findOne(mergeScopedFilter(baseFilter, scopeClause)).select('_id').lean();
   if (!doc) return null;
   const shares = await DocumentShare.find({ documentId, orgId })
     .populate('userId', 'fullName email')
@@ -524,9 +687,30 @@ async function listShares(documentId, orgId) {
   return shares;
 }
 
-async function addShare(documentId, orgId, sharedByUserId, userId, permission = 'view') {
-  const doc = await OrgDocument.findOne({ _id: documentId, orgId, deletedAt: null }).select('_id').lean();
+async function addShare(documentId, orgId, sharedByUserId, userId, permission = 'view', options = {}) {
+  const baseFilter = { _id: documentId, orgId, deletedAt: null };
+  const scopeClause = await getAccessScopeClause(orgId, sharedByUserId, options.role, true);
+  const doc = await OrgDocument.findOne(mergeScopedFilter(baseFilter, scopeClause))
+    .select('_id createdBy ownerId')
+    .lean();
   if (!doc) return null;
+  const targetUserId = String(userId);
+  const actorUserId = String(sharedByUserId);
+  const ownerUserId = doc.ownerId ? String(doc.ownerId) : null;
+  const creatorUserId = doc.createdBy ? String(doc.createdBy) : null;
+  if (targetUserId === actorUserId) {
+    return { error: 'You cannot share a document with yourself', code: 'INVALID_SHARE_TARGET' };
+  }
+  if (ownerUserId && targetUserId === ownerUserId) {
+    return { error: 'Owner already has full access to this document', code: 'INVALID_SHARE_TARGET' };
+  }
+  if (creatorUserId && targetUserId === creatorUserId) {
+    return { error: 'Creator already has access to this document', code: 'INVALID_SHARE_TARGET' };
+  }
+  const targetUser = await User.findOne({ _id: userId, orgId, status: 'active' }).select('_id').lean();
+  if (!targetUser) {
+    return { error: 'Selected user not found in this organization', code: 'INVALID_SHARE_TARGET' };
+  }
   const perm = permission === 'edit' ? 'edit' : 'view';
   let share = await DocumentShare.findOne({ documentId, userId });
   if (share) {
@@ -550,8 +734,10 @@ async function addShare(documentId, orgId, sharedByUserId, userId, permission = 
   return populated;
 }
 
-async function removeShare(documentId, orgId, userId) {
-  const doc = await OrgDocument.findOne({ _id: documentId, orgId, deletedAt: null }).select('_id').lean();
+async function removeShare(documentId, orgId, userId, options = {}) {
+  const baseFilter = { _id: documentId, orgId, deletedAt: null };
+  const scopeClause = await getAccessScopeClause(orgId, options.actorUserId, options.role, true);
+  const doc = await OrgDocument.findOne(mergeScopedFilter(baseFilter, scopeClause)).select('_id').lean();
   if (!doc) return null;
   const result = await DocumentShare.deleteOne({ documentId, userId });
   return { deleted: result.deletedCount > 0 };
@@ -679,6 +865,7 @@ module.exports = {
   createFolder,
   updateFolder,
   deleteFolder,
+  listInReviewForReviewer,
   listTags,
   createTag,
   updateTag,

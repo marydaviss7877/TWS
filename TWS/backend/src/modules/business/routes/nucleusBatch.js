@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { verifyWorkspaceAccess, requireWorkspaceRole } = require('../../../middleware/auth/workspaceIsolation');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const Deliverable = require('../../../models/Deliverable');
@@ -9,6 +9,7 @@ const autoCalculationService = require('../../../services/nucleusAutoCalculation
 const { paramValidators, handleValidationErrors } = require('../../../validators/nucleusValidators');
 
 const router = express.Router();
+router.use(verifyERPToken);
 
 /**
  * Nucleus Batch Operations Routes
@@ -26,7 +27,6 @@ const router = express.Router();
  */
 router.post(
   '/workspaces/:workspaceId/deliverables/batch-update-progress',
-  authenticateToken,
   verifyWorkspaceAccess,
   requireWorkspaceRole(['owner', 'admin']),
   paramValidators.workspaceId,
@@ -51,7 +51,6 @@ router.post(
  */
 router.post(
   '/workspaces/:workspaceId/projects/:projectId/deliverables/batch-update-progress',
-  authenticateToken,
   verifyWorkspaceAccess,
   paramValidators.workspaceId,
   paramValidators.projectId,
@@ -76,7 +75,6 @@ router.post(
  */
 router.post(
   '/workspaces/:workspaceId/deliverables/:deliverableId/tasks/batch-link',
-  authenticateToken,
   verifyWorkspaceAccess,
   paramValidators.workspaceId,
   paramValidators.deliverableId,
@@ -160,7 +158,6 @@ router.post(
  */
 router.post(
   '/workspaces/:workspaceId/deliverables/batch-create-approval-chains',
-  authenticateToken,
   verifyWorkspaceAccess,
   requireWorkspaceRole(['owner', 'admin']),
   paramValidators.workspaceId,
@@ -262,7 +259,6 @@ router.post(
  */
 router.post(
   '/workspaces/:workspaceId/deliverables/batch-update-status',
-  authenticateToken,
   verifyWorkspaceAccess,
   requireWorkspaceRole(['owner', 'admin']),
   paramValidators.workspaceId,

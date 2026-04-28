@@ -7,6 +7,9 @@ import {
   FunnelIcon,
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 const REPORT_TYPES = [
   { value: 'summary', label: 'Summary' },
@@ -151,19 +154,10 @@ const AnalyticsReports = () => {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-amber-800 dark:text-amber-200 text-sm">
-          {error}
-        </div>
-      )}
+      {error && <ErrorState title="Report unavailable" message={error} className="max-w-xl" />}
 
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 dark:border-gray-600 border-t-transparent mx-auto" style={{ borderTopColor: 'var(--color-primary-500)' }} />
-            <p className="mt-3 text-gray-600 dark:text-gray-400 text-sm">Loading report...</p>
-          </div>
-        </div>
+        <LoadingSpinner message="Loading report..." className="min-h-[40vh] bg-transparent" />
       ) : report && (
         <div className="bg-white dark:bg-gray-800/80 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
@@ -402,6 +396,9 @@ const AnalyticsReports = () => {
             )}
           </div>
         </div>
+      )}
+      {!loading && !report && !error && (
+        <EmptyState title="No report available" message="No report data is available for the selected filters." className="max-w-xl" />
       )}
     </div>
   );

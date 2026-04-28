@@ -1,5 +1,7 @@
+export { default } from '../../../tenant/pages/tenant/org/software-house/hr/PayrollManagement';
 import React from 'react';
 import AdminPageTemplate from '../../../../features/admin/components/admin/AdminPageTemplate';
+import FeatureUnavailable from '../../../../shared/components/feedback/FeatureUnavailable';
 import { 
   CurrencyDollarIcon, 
   BanknotesIcon,
@@ -25,10 +27,10 @@ const HRPayroll = () => {
         <h3 className="text-lg font-bold font-heading text-gray-900 dark:text-white mb-4">
           Current Payroll Cycle
         </h3>
-        <div className="text-center py-12">
-          <BanknotesIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Payroll processing interface coming soon</p>
-        </div>
+        <FeatureUnavailable
+          title="Payroll processing unavailable"
+          description="Payroll processing UI is not available in this release yet."
+        />
       </div>
     </AdminPageTemplate>
   );

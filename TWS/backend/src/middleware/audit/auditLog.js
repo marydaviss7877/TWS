@@ -23,21 +23,58 @@ try {
  */
 const createAuditLog = async (req, res, action, resource, status, details = {}) => {
   try {
+    const user = req.user || req.parent;
+    if (!user?._id || !user?.email || !user?.role) return;
+
+    const normalizedAction = String(action || 'CUSTOM').toUpperCase();
+    const allowedActions = new Set([
+      'CREATE', 'READ', 'UPDATE', 'DELETE',
+      'LOGIN', 'LOGOUT', 'LOGIN_FAILED',
+      'AUTH_SUCCESS', 'AUTH_FAILED', 'AUTH_REFRESH', 'AUTH_REVOKE',
+      'PASSWORD_CHANGE', 'PASSWORD_RESET',
+      'PERMISSION_CHANGE', 'ROLE_CHANGE',
+      'DATA_EXPORT', 'DATA_IMPORT',
+      'API_ACCESS', 'FILE_UPLOAD', 'FILE_DOWNLOAD',
+      'PAYMENT_PROCESSED', 'SUBSCRIPTION_CHANGE',
+      'TENANT_CREATED', 'TENANT_UPDATED', 'TENANT_DELETED', 'TENANT_LOOKUP_FAILED',
+      'USER_CREATED', 'USER_UPDATED', 'USER_DELETED',
+      'PROJECT_CREATED', 'PROJECT_UPDATED', 'PROJECT_DELETED',
+      'ATTENDANCE_CREATED', 'ATTENDANCE_UPDATED', 'ATTENDANCE_DELETED',
+      'INVOICE_CREATED', 'INVOICE_UPDATED', 'INVOICE_DELETED',
+      'RESOURCE_CREATED', 'RESOURCE_UPDATED', 'RESOURCE_DELETED',
+      'CUSTOM'
+    ]);
+    const safeAction = allowedActions.has(normalizedAction) ? normalizedAction : 'CUSTOM';
+
+    const normalizedResource = String(resource || 'SYSTEM').toUpperCase();
+    const allowedResources = new Set([
+      'USER', 'ORGANIZATION', 'TENANT', 'PROJECT', 'CLIENT',
+      'EMPLOYEE', 'ATTENDANCE', 'INVOICE', 'SUBSCRIPTION',
+      'PAYMENT', 'FILE', 'API', 'SYSTEM', 'AUDIT_LOG',
+      'AUTH', 'SESSION', 'RESOURCE', 'TASK', 'SPRINT', 'MILESTONE',
+      'PATIENT', 'MEDICAL_RECORD', 'PRESCRIPTION', 'APPOINTMENT',
+      'DOCTOR', 'LAB_RESULT', 'BILLING_CLAIM'
+    ]);
+    const safeResource = allowedResources.has(normalizedResource) ? normalizedResource : 'SYSTEM';
+
     const auditData = {
-      userId: req.user?._id || req.parent?._id || null,
-      userType: req.user ? (req.user.role?.includes('admin') ? 'Admin' : req.user.role || 'User') : (req.parent ? 'Parent' : 'System'),
+      tenantId: String(req.tenantContext?.tenantId || req.tenantId || req.user?.tenantId || 'unknown'),
       orgId: req.tenantContext?.orgId || null,
-      tenantId: req.tenantContext?.tenantId || req.tenantId || null,
-      action,
-      resource,
-      status,
+      userId: user._id,
+      userEmail: user.email,
+      userRole: user.role,
+      action: safeAction,
+      resource: safeResource,
       ipAddress: req.ip || req.connection?.remoteAddress || 'unknown',
       userAgent: req.get('user-agent') || 'unknown',
       method: req.method,
-      path: req.path,
-      details: {
+      endpoint: req.path,
+      metadata: {
         ...details,
         timestamp: new Date()
+      },
+      result: {
+        status: status === 'success' ? 'success' : (status === 'partial' ? 'partial' : 'failure')
       }
     };
 

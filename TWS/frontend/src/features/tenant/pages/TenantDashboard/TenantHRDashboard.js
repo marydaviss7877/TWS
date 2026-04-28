@@ -11,6 +11,10 @@ import {
   ArrowDownIcon
 } from '@heroicons/react/24/outline';
 import { useTenantAuth } from '../../../../app/providers/TenantAuthContext';
+import FeatureUnavailable from '../../../../shared/components/feedback/FeatureUnavailable';
+import LoadingSpinner from '../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../shared/components/feedback/EmptyState';
 
 const TenantHRDashboard = () => {
   const [hrData, setHrData] = useState(null);
@@ -30,12 +34,9 @@ const TenantHRDashboard = () => {
       setError(null);
 
       // SECURITY FIX: Removed localStorage token check - use cookies instead
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tenant-dashboard/hr', {
-        credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await fetch('/api/system-monitoring/health', {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
       });
 
       if (!response.ok) {
@@ -69,32 +70,15 @@ const TenantHRDashboard = () => {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading HR dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading HR dashboard..." />;
   }
 
   if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <ExclamationTriangleIcon className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={fetchHRData}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
+    return <ErrorState title="HR dashboard error" message={error} onRetry={fetchHRData} />;
+  }
+
+  if (!hrData) {
+    return <EmptyState title="No HR dashboard data" message="No HR metrics are available for this tenant yet." className="max-w-3xl mx-auto mt-10" />;
   }
 
   const stats = [
@@ -134,6 +118,10 @@ const TenantHRDashboard = () => {
 
   return (
     <div className="space-y-6">
+      <FeatureUnavailable
+        title="Tenant HR dashboard unavailable"
+        description="This dashboard is not available in this release yet. Use Organization > HR modules for live data."
+      />
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="flex items-center justify-between">

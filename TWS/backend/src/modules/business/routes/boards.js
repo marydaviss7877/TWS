@@ -6,10 +6,20 @@ const Card = require('../../../models/Card');
 const Project = require('../../../models/Project');
 const ProjectMember = require('../../../models/ProjectMember');
 const Activity = require('../../../models/Activity');
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+router.use(verifyERPToken);
+
+function resolveWorkspaceId(project, reqUser) {
+  return (
+    project?.workspaceId ||
+    reqUser?.workspaceId ||
+    reqUser?.currentWorkspaceId ||
+    null
+  );
+}
 
 // Get boards for a project
-router.get('/project/:projectId', authenticateToken, async (req, res) => {
+router.get('/project/:projectId', async (req, res) => {
   try {
     const { projectId } = req.params;
     const orgId = req.user.orgId;
@@ -81,7 +91,7 @@ router.get('/project/:projectId', authenticateToken, async (req, res) => {
 });
 
 // Get single board
-router.get('/:boardId', authenticateToken, async (req, res) => {
+router.get('/:boardId', async (req, res) => {
   try {
     const { boardId } = req.params;
     
@@ -144,7 +154,7 @@ router.get('/:boardId', authenticateToken, async (req, res) => {
 });
 
 // Create new board
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { projectId, name, description, type, settings } = req.body;
     const orgId = req.user.orgId;
@@ -179,11 +189,20 @@ router.post('/', authenticateToken, async (req, res) => {
       .sort({ order: -1 });
     const order = lastProjectBoard ? lastProjectBoard.order + 1 : 0;
     
+    const workspaceId = resolveWorkspaceId(project, req.user);
+    if (!workspaceId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Workspace context is required to create a board'
+      });
+    }
+
     const board = new ProjectBoard({
+      workspaceId,
       projectId,
       name,
       description,
-      type: type || 'main',
+      type: type || 'kanban',
       order,
       settings: {
         allowMemberInvites: true,
@@ -238,7 +257,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update board
-router.patch('/:boardId', authenticateToken, async (req, res) => {
+router.patch('/:boardId', async (req, res) => {
   try {
     const { boardId } = req.params;
     const updates = req.body;
@@ -299,7 +318,7 @@ router.patch('/:boardId', authenticateToken, async (req, res) => {
 });
 
 // Delete board
-router.delete('/:boardId', authenticateToken, async (req, res) => {
+router.delete('/:boardId', async (req, res) => {
   try {
     const { boardId } = req.params;
     

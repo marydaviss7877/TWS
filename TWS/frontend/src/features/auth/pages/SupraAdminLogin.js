@@ -18,8 +18,8 @@ import {
 } from '@heroicons/react/24/outline';
 
 const SupraAdminLogin = () => {
-  const [email, setEmail] = useState('admin@tws.com');
-  const [password, setPassword] = useState('admin123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');

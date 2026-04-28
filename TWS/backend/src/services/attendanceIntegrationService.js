@@ -1,5 +1,5 @@
 const Attendance = require('../models/Attendance');
-const Payroll = require('../models/Payroll');
+const { PayrollRecord } = require('../models/Payroll');
 const Employee = require('../models/Employee');
 const Organization = require('../models/Organization');
 
@@ -47,7 +47,7 @@ class AttendanceIntegrationService {
       // Create or update payroll records
       const payrollResults = [];
       for (const payrollEntry of payrollData) {
-        const existingPayroll = await Payroll.findOne({
+        const existingPayroll = await PayrollRecord.findOne({
           employeeId: payrollEntry.employeeId,
           periodStart: payrollEntry.periodStart,
           periodEnd: payrollEntry.periodEnd
@@ -60,7 +60,7 @@ class AttendanceIntegrationService {
           payrollResults.push(existingPayroll);
         } else {
           // Create new payroll record
-          const newPayroll = new Payroll(payrollEntry);
+          const newPayroll = new PayrollRecord(payrollEntry);
           await newPayroll.save();
           payrollResults.push(newPayroll);
         }

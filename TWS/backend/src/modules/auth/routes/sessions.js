@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { body, validationResult } = require('express-validator');
 
 // Import models
@@ -12,11 +12,11 @@ const User = require('../../../models/User');
 const SupraAdmin = require('../../../models/SupraAdmin');
 
 // Import RBAC middleware for consistent authorization
-const { requireSupraAdminAccess } = require('../../../middleware/auth/rbac');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 
 // Apply consistent authentication and authorization middleware
-router.use(authenticateToken);
-router.use(requireSupraAdminAccess());
+router.use(verifyERPToken);
+router.use(requireErpAccess({ allowedRoles: ['supra_admin', 'super_admin'], checkRevocation: true }));
 
 // ==================== SESSION MANAGEMENT ====================
 
@@ -108,7 +108,7 @@ router.post('/sessions/:id/terminate', [
       return res.status(404).json({ message: 'Session not found' });
     }
     
-    await session.terminate(req.supraAdmin._id, req.body.reason);
+    await session.terminate(req.user._id, req.body.reason);
     
     res.json({ message: 'Session terminated successfully' });
   } catch (error) {
@@ -136,7 +136,7 @@ router.post('/sessions/:id/department-access', [
     
     const { department, permissions, expiresAt } = req.body;
     
-    await session.grantDepartmentAccess(department, permissions, req.supraAdmin._id, expiresAt);
+    await session.grantDepartmentAccess(department, permissions, req.user._id, expiresAt);
     
     res.json({ message: 'Department access granted successfully' });
   } catch (error) {
@@ -253,7 +253,7 @@ router.post('/department-access', [
       accessLevel,
       expiresAt,
       conditions,
-      grantedBy: req.supraAdmin._id
+      grantedBy: req.user._id
     });
     
     await accessRecord.save();
@@ -261,7 +261,7 @@ router.post('/department-access', [
     // Log the action
     accessRecord.auditLog.push({
       action: 'granted',
-      performedBy: req.supraAdmin._id,
+      performedBy: req.user._id,
       details: { permissions, accessLevel, expiresAt }
     });
     await accessRecord.save();
@@ -301,7 +301,7 @@ router.put('/department-access/:id', [
     // Log the modification
     accessRecord.auditLog.push({
       action: 'modified',
-      performedBy: req.supraAdmin._id,
+      performedBy: req.user._id,
       details: updateData
     });
     
@@ -324,7 +324,7 @@ router.post('/department-access/:id/suspend', [
       return res.status(404).json({ message: 'Department access record not found' });
     }
     
-    await accessRecord.suspend(req.supraAdmin._id, req.body.reason);
+    await accessRecord.suspend(req.user._id, req.body.reason);
     
     res.json({ message: 'Department access suspended successfully' });
   } catch (error) {
@@ -343,7 +343,7 @@ router.post('/department-access/:id/revoke', [
       return res.status(404).json({ message: 'Department access record not found' });
     }
     
-    await accessRecord.revoke(req.supraAdmin._id, req.body.reason);
+    await accessRecord.revoke(req.user._id, req.body.reason);
     
     res.json({ message: 'Department access revoked successfully' });
   } catch (error) {
@@ -414,7 +414,7 @@ router.post('/departments', [
       description,
       settings,
       defaultPermissions,
-      createdBy: req.supraAdmin._id
+      createdBy: req.user._id
     });
     
     await department.save();

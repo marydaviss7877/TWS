@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const Tenant = require('../../../models/Tenant');
+router.use(verifyERPToken);
 
 // Get ERP statistics
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats',  async (req, res) => {
   try {
     const tenants = await Tenant.find({});
     
@@ -41,7 +42,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
 });
 
 // Get tenant ERP module details
-router.get('/tenant-modules/:tenantId', authenticateToken, async (req, res) => {
+router.get('/tenant-modules/:tenantId',  async (req, res) => {
   try {
     const { tenantId } = req.params;
     

@@ -11,6 +11,9 @@ import {
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import tenantProjectApiService from '../projects/services/tenantProjectApiService';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 const DepartmentsList = () => {
   const { tenantSlug } = useParams();
@@ -207,36 +210,15 @@ const DepartmentsList = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading departments...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading departments..." className="min-h-[40vh] bg-transparent" />;
+  }
+
+  if (error) {
+    return <ErrorState title="Departments unavailable" message={error} onRetry={fetchDepartments} className="max-w-xl mx-auto" />;
   }
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Error Message */}
-      {error && (
-        <div className="glass-card-premium p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-          <div className="flex items-start gap-3">
-            <XMarkIcon className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-bold text-red-900 dark:text-red-100 mb-1">Error Loading Departments</p>
-              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-              <button
-                onClick={fetchDepartments}
-                className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -306,7 +288,7 @@ const DepartmentsList = () => {
             {filteredDepartments.length === 0 ? (
               <tr>
                 <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                  No departments found
+                  <EmptyState title="No departments found" message="Create a department to get started." className="max-w-lg mx-auto" />
                 </td>
               </tr>
             ) : (

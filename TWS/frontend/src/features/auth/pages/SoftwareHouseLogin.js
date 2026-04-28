@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../app/providers/AuthContext';
 import { useTheme } from '../../../app/providers/ThemeContext';
-import ThemeToggle from '../../../shared/components/ui/ThemeToggle';
+import SoftwareHouseNavbar from '../components/SoftwareHouseNavbar';
 import './SoftwareHouseLogin.css';
 import {
     UserIcon,
@@ -19,12 +19,18 @@ const SoftwareHouseLogin = () => {
     const { login, logout } = useAuth();
     const { isDarkMode } = useTheme();
     const navigate = useNavigate();
+    const location = useLocation();
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [infoMessage, setInfoMessage] = useState(location.state?.signupSuccess ? 'Account created successfully. Please sign in.' : '');
     const [selectedPortal, setSelectedPortal] = useState('admin');
     const validationBlockedRef = useRef(false);
+    const emailInputRef = useRef(null);
+    const passwordInputRef = useRef(null);
+    const errorBoxRef = useRef(null);
 
     useEffect(() => {
         if (validationBlockedRef.current && window.location.pathname !== '/software-house-login') {
@@ -32,18 +38,52 @@ const SoftwareHouseLogin = () => {
         }
     }, []);
 
+    useEffect(() => {
+        if (location.state?.email) {
+            setFormData((prev) => ({ ...prev, email: location.state.email }));
+        }
+    }, [location.state]);
+
+    useEffect(() => {
+        if (error && errorBoxRef.current) {
+            errorBoxRef.current.focus();
+        }
+    }, [error]);
+
     const portals = [
-        { id: 'admin',    icon: ShieldCheckIcon,    title: 'Admin',    demoEmail: 'admin@softwarehouse.com' },
-        { id: 'employee', icon: UserGroupIcon,       title: 'Employee', demoEmail: 'employee@softwarehouse.com' },
-        { id: 'client',   icon: BuildingOffice2Icon, title: 'Client',   demoEmail: 'client@softwarehouse.com' },
+        { id: 'admin',    icon: ShieldCheckIcon,    title: 'Admin' },
+        { id: 'employee', icon: UserGroupIcon,       title: 'Employee' },
+        { id: 'client',   icon: BuildingOffice2Icon, title: 'Client' },
     ];
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const trimmedEmail = String(formData.email || '').trim();
+        const trimmedPassword = String(formData.password || '').trim();
+        const nextFieldErrors = {};
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!trimmedEmail) nextFieldErrors.email = 'Email is required.';
+        else if (!emailPattern.test(trimmedEmail)) nextFieldErrors.email = 'Enter a valid email address.';
+        if (!trimmedPassword) nextFieldErrors.password = 'Password is required.';
+
+        if (Object.keys(nextFieldErrors).length > 0) {
+            setFieldErrors(nextFieldErrors);
+            setError('Please fix the highlighted fields and try again.');
+            if (nextFieldErrors.email && emailInputRef.current) {
+                emailInputRef.current.focus();
+            } else if (nextFieldErrors.password && passwordInputRef.current) {
+                passwordInputRef.current.focus();
+            }
+            return;
+        }
+
         setLoading(true);
         setError('');
+        setInfoMessage('');
+        setFieldErrors({});
         try {
-            const result = await login(formData.email, formData.password);
+            const result = await login(trimmedEmail, trimmedPassword);
             if (result.success) {
                 const userRole = result.user?.role;
                 const adminRoles    = ['admin', 'owner', 'super_admin', 'org_manager'];
@@ -101,34 +141,41 @@ const SoftwareHouseLogin = () => {
                     navigate(`/${tenantSlug}/org/home`);
                 }
             } else {
-                setError(result.error || 'Invalid credentials.');
+                const rawError = String(result.error || '').trim();
+                const safeError = /invalid email or password|invalid credentials/i.test(rawError)
+                    ? 'Invalid email or password.'
+                    : /too many login attempts|too many requests|rate limit/i.test(rawError)
+                        ? 'Too many attempts. Please wait a few minutes before trying again.'
+                        : /network|failed to fetch|connection|timeout/i.test(rawError)
+                            ? 'Network issue detected. Please check your connection and retry.'
+                    : (rawError || 'Unable to sign in. Please try again.');
+                setError(safeError);
             }
         } catch (err) {
             console.error(err);
-            setError('Connection error. Try again.');
+            setError('Unable to reach the server. Check your connection and try again.');
         } finally {
             setLoading(false);
         }
     };
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        if (fieldErrors[name]) {
+            setFieldErrors((prev) => ({ ...prev, [name]: '' }));
+        }
         if (error) setError('');
+        if (infoMessage) setInfoMessage('');
     };
 
-    const fillDemoCredentials = (portalId) => {
-        const portal = portals.find(p => p.id === portalId);
-        if (portal) {
-            setFormData({ email: portal.demoEmail, password: 'demo123' });
-            setSelectedPortal(portalId);
-        }
+    const selectPortal = (portalId) => {
+        setSelectedPortal(portalId);
     };
 
     return (
         <div className={`sh-login-container${!isDarkMode ? ' day-mode' : ''}`}>
-            <div className="sh-theme-toggle">
-                <ThemeToggle size="md" shortcut={true} />
-            </div>
+            <SoftwareHouseNavbar isDarkMode={isDarkMode} />
 
             {/* Left: Form */}
             <div className="sh-login-left">
@@ -152,7 +199,7 @@ const SoftwareHouseLogin = () => {
                             <button
                                 key={portal.id}
                                 type="button"
-                                onClick={() => fillDemoCredentials(portal.id)}
+                                onClick={() => selectPortal(portal.id)}
                                 className={`sh-portal-btn${selectedPortal === portal.id ? ' active' : ''}`}
                             >
                                 <portal.icon style={{ width: 18, height: 18 }} />
@@ -161,8 +208,20 @@ const SoftwareHouseLogin = () => {
                         ))}
                     </div>
 
+                    {infoMessage && (
+                        <div className="sh-info-box" role="status" aria-live="polite">{infoMessage}</div>
+                    )}
                     {error && (
-                        <div className="sh-error-box">{error}</div>
+                        <div
+                            id="sh-login-form-error"
+                            className="sh-error-box"
+                            role="alert"
+                            aria-live="assertive"
+                            tabIndex="-1"
+                            ref={errorBoxRef}
+                        >
+                            {error}
+                        </div>
                     )}
 
                     <form onSubmit={handleSubmit}>
@@ -171,6 +230,7 @@ const SoftwareHouseLogin = () => {
                             <div className="sh-input-wrapper">
                                 <UserIcon className="sh-input-icon" />
                                 <input
+                                    ref={emailInputRef}
                                     name="email"
                                     type="email"
                                     required
@@ -178,8 +238,11 @@ const SoftwareHouseLogin = () => {
                                     onChange={handleChange}
                                     placeholder="your@email.com"
                                     className="sh-input"
+                                    aria-invalid={Boolean(fieldErrors.email)}
+                                    aria-describedby={[fieldErrors.email ? 'sh-login-email-error' : '', error ? 'sh-login-form-error' : ''].filter(Boolean).join(' ') || undefined}
                                 />
                             </div>
+                            {fieldErrors.email && <div id="sh-login-email-error" className="sh-field-error">{fieldErrors.email}</div>}
                         </div>
 
                         <div className="sh-input-group">
@@ -187,6 +250,7 @@ const SoftwareHouseLogin = () => {
                             <div className="sh-input-wrapper">
                                 <LockClosedIcon className="sh-input-icon" />
                                 <input
+                                    ref={passwordInputRef}
                                     name="password"
                                     type={showPassword ? 'text' : 'password'}
                                     autoComplete="current-password"
@@ -196,17 +260,22 @@ const SoftwareHouseLogin = () => {
                                     placeholder="••••••••"
                                     className="sh-input"
                                     style={{ paddingRight: '2.75rem' }}
+                                    aria-invalid={Boolean(fieldErrors.password)}
+                                    aria-describedby={[fieldErrors.password ? 'sh-login-password-error' : '', error ? 'sh-login-form-error' : ''].filter(Boolean).join(' ') || undefined}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
                                     style={{ position: 'absolute', right: '0.875rem', background: 'none', border: 'none', color: 'var(--sh-login-secondary)', cursor: 'pointer', opacity: 0.6 }}
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    aria-pressed={showPassword}
                                 >
                                     {showPassword
                                         ? <EyeSlashIcon style={{ width: 16, height: 16 }} />
                                         : <EyeIcon     style={{ width: 16, height: 16 }} />}
                                 </button>
                             </div>
+                            {fieldErrors.password && <div id="sh-login-password-error" className="sh-field-error">{fieldErrors.password}</div>}
                         </div>
 
                         <button type="submit" className="sh-submit-btn" disabled={loading}>
@@ -215,7 +284,7 @@ const SoftwareHouseLogin = () => {
                     </form>
 
                     <div className="sh-footer-row">
-                        <Link to="/forgot-password" className="sh-footer-link">Forgot password?</Link>
+                        <Link to="/software-house-forgot-password" className="sh-footer-link">Forgot password?</Link>
                         <Link to="/software-house-signup" className="sh-footer-link">Create account</Link>
                     </div>
                 </div>

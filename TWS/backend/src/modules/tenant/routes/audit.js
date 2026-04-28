@@ -26,6 +26,27 @@ function toObjectId(id) {
   return mongoose.Types.ObjectId.isValid(s) ? new mongoose.Types.ObjectId(s) : null;
 }
 
+function buildActionFilter(rawAction) {
+  const action = String(rawAction || '').trim();
+  if (!action) return null;
+
+  const normalized = action.toUpperCase();
+  const aliases = {
+    READ: ['READ', 'read', 'GET', 'get', 'access', 'ACCESS'],
+    CREATE: ['CREATE', 'create', 'POST', 'post'],
+    UPDATE: ['UPDATE', 'update', 'PUT', 'put', 'PATCH', 'patch'],
+    DELETE: ['DELETE', 'delete'],
+    EXPORT: ['EXPORT', 'export', 'DATA_EXPORT', 'data_export'],
+    IMPORT: ['IMPORT', 'import', 'DATA_IMPORT', 'data_import'],
+    APPROVE: ['APPROVE', 'approve']
+  };
+
+  if (aliases[normalized]) {
+    return { $in: aliases[normalized] };
+  }
+  return action;
+}
+
 function buildAuditQuery({ tenantId, orgId, userId, resourceType, action, dateFrom, dateTo, search }) {
   const tid = toObjectId(tenantId);
   const oid = toObjectId(orgId);
@@ -40,8 +61,9 @@ function buildAuditQuery({ tenantId, orgId, userId, resourceType, action, dateFr
   if (resourceType && String(resourceType).trim()) {
     and.push({ resourceType: String(resourceType).trim() });
   }
-  if (action && String(action).trim()) {
-    and.push({ action: String(action).trim() });
+  const actionFilter = buildActionFilter(action);
+  if (actionFilter) {
+    and.push({ action: actionFilter });
   }
   if (dateFrom || dateTo) {
     const range = {};

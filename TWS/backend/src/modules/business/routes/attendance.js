@@ -375,7 +375,7 @@ router.post('/break/start', [
 
 router.post('/break/end/:breakIndex', [
   attendanceWrite,
-  body('breakIndex').isInt({ min: 0 })
+  param('breakIndex').isInt({ min: 0 })
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   try {
     const breakIndex = parseInt(req.params.breakIndex);
@@ -1192,9 +1192,11 @@ router.post('/admin/manual-entry', [
       isManualEntry: true
     };
 
+    let checkInDateTime = null;
+
     // Add check-in data if provided
     if (checkInTime && status !== 'absent') {
-      const checkInDateTime = new Date(`${date}T${checkInTime}`);
+      checkInDateTime = new Date(`${date}T${checkInTime}`);
       attendanceData.checkIn = {
         timestamp: checkInDateTime,
         location: location ? { address: location } : null,
@@ -1222,7 +1224,7 @@ router.post('/admin/manual-entry', [
       };
 
       // Calculate duration
-      if (attendanceData.checkIn) {
+      if (checkInDateTime) {
         const durationMs = checkOutDateTime - checkInDateTime;
         attendanceData.durationMinutes = Math.floor(durationMs / (1000 * 60));
         

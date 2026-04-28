@@ -253,14 +253,13 @@ const EmployeeAttendanceView = ({ tenantSlug }) => {
     }
     try {
       setCorrectionLoading(true);
-      const res = await fetch(`/api/attendance/${dayRecord.id}/correction`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ reason: correctionReason.trim() })
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || json.success === false) {
+      const json = await tenantApiService.requestAttendanceCorrectionOnBehalf(
+        tenantSlug,
+        dayRecord.id,
+        correctionReason.trim()
+      );
+      const ok = json?.success !== false;
+      if (!ok) {
         throw new Error(json.message || 'Correction request failed');
       }
       toast.success('Correction request submitted');

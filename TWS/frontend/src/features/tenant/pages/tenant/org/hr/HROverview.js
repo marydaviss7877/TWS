@@ -1,3 +1,4 @@
+export { default } from '../software-house/hr/HROverview';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -11,6 +12,9 @@ import {
   EyeIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 const HROverview = () => {
   const { tenantSlug } = useParams();
@@ -38,46 +42,15 @@ const HROverview = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading HR overview...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading HR overview..." className="min-h-[40vh] bg-transparent" />;
   }
 
   if (error) {
-    return (
-      <div className="glass-card-premium p-6 border border-red-200 dark:border-red-800">
-        <div className="flex">
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800 dark:text-red-400">Error</h3>
-            <p className="mt-1 text-sm text-red-700 dark:text-red-300">{error}</p>
-            <button
-              onClick={fetchHROverview}
-              className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <ErrorState title="HR overview unavailable" message={error} onRetry={fetchHROverview} className="max-w-xl mx-auto" />;
   }
 
   if (!hrData) {
-    return (
-      <div className="glass-card-premium p-6 border border-blue-200 dark:border-blue-800">
-        <div className="flex">
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-400">No Data</h3>
-            <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">No HR data available</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <EmptyState title="No HR data available" message="No HR overview metrics are available for this tenant yet." className="max-w-xl mx-auto" />;
   }
 
   const { totalEmployees, totalDepartments, attendanceStats, payrollStats } = hrData;

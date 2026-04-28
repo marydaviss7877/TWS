@@ -20,14 +20,15 @@ class EncryptionService {
    * Get encryption key from environment or config
    */
   getEncryptionKey() {
-    const key = process.env.ENCRYPTION_KEY || securityConfig.encryption.masterKey;
-    
+    const key = process.env.ENCRYPTION_KEY;
+
     if (!key) {
       if (process.env.NODE_ENV === 'production') {
-        throw new Error('ENCRYPTION_KEY must be set in production');
+        throw new Error('ENCRYPTION_KEY must be set');
       }
-      // Development fallback (32 bytes)
-      return Buffer.from('dev-master-key-change-in-production-32-chars');
+      // Allow development to boot without a configured encryption key.
+      console.warn('⚠️ ENCRYPTION_KEY missing; using non-persistent development fallback key');
+      return crypto.scryptSync('dev-encryption-fallback-key', 'enc-salt', 32);
     }
     
     // Convert hex string to buffer if needed

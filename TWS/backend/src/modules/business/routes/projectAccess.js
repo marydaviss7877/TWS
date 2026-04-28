@@ -1,14 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ProjectAccess = require('../../../models/ProjectAccess');
 const Project = require('../../../models/Project');
 const User = require('../../../models/User');
 const Team = require('../../../models/Team');
+const projectAccessRead = requireErpAccess({ module: 'projects', action: ['read', 'read_own'], checkRevocation: false });
+const projectAccessWrite = requireErpAccess({ module: 'projects', action: 'write', checkRevocation: false });
+
+router.use(verifyERPToken);
 
 // Get project access for a specific project
-router.get('/project/:projectId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/project/:projectId', projectAccessRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const { accessType, status } = req.query;
   const orgId = req.user.orgId;
@@ -37,7 +42,7 @@ router.get('/project/:projectId', authenticateToken, ErrorHandler.asyncHandler(a
 }));
 
 // Get user's project access
-router.get('/user/:userId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/user/:userId', projectAccessRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const { status, projectId } = req.query;
   const orgId = req.user.orgId;
@@ -65,7 +70,7 @@ router.get('/user/:userId', authenticateToken, ErrorHandler.asyncHandler(async (
 }));
 
 // Grant project access
-router.post('/grant', authenticateToken, requireRole(['owner', 'admin', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/grant', projectAccessWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const {
     projectId,
     userId,
@@ -151,7 +156,7 @@ router.post('/grant', authenticateToken, requireRole(['owner', 'admin', 'project
 }));
 
 // Update project access
-router.put('/:accessId', authenticateToken, requireRole(['owner', 'admin', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.put('/:accessId', projectAccessWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { accessId } = req.params;
   const updates = req.body;
   const orgId = req.user.orgId;
@@ -181,7 +186,7 @@ router.put('/:accessId', authenticateToken, requireRole(['owner', 'admin', 'proj
 }));
 
 // Revoke project access
-router.delete('/:accessId', authenticateToken, requireRole(['owner', 'admin', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.delete('/:accessId', projectAccessWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { accessId } = req.params;
   const orgId = req.user.orgId;
   
@@ -201,7 +206,7 @@ router.delete('/:accessId', authenticateToken, requireRole(['owner', 'admin', 'p
 }));
 
 // Check user permission for project
-router.get('/check/:projectId/:userId/:permission', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/check/:projectId/:userId/:permission', projectAccessRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId, userId, permission } = req.params;
   const orgId = req.user.orgId;
   
@@ -239,7 +244,7 @@ router.get('/check/:projectId/:userId/:permission', authenticateToken, ErrorHand
 }));
 
 // Get project team members
-router.get('/project/:projectId/team', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/project/:projectId/team', projectAccessRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const { status, projectRole } = req.query;
   const orgId = req.user.orgId;
@@ -266,7 +271,7 @@ router.get('/project/:projectId/team', authenticateToken, ErrorHandler.asyncHand
 }));
 
 // Bulk grant access
-router.post('/bulk-grant', authenticateToken, requireRole(['owner', 'admin', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/bulk-grant', projectAccessWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId, users, teams, roles, defaultPermissions } = req.body;
   const orgId = req.user.orgId;
   const tenantId = req.user.tenantId;
@@ -337,7 +342,7 @@ router.post('/bulk-grant', authenticateToken, requireRole(['owner', 'admin', 'pr
 }));
 
 // Update last accessed
-router.patch('/:accessId/accessed', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.patch('/:accessId/accessed', projectAccessWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { accessId } = req.params;
   const orgId = req.user.orgId;
   
@@ -359,7 +364,7 @@ router.patch('/:accessId/accessed', authenticateToken, ErrorHandler.asyncHandler
 }));
 
 // Get access statistics
-router.get('/stats/:projectId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/stats/:projectId', projectAccessRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const orgId = req.user.orgId;
   

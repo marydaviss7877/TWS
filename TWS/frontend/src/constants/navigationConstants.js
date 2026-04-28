@@ -20,9 +20,11 @@ import {
  * Returns all command-palette / search actions for the tenant portal.
  * Centralised here to prevent SoftwareHouseTopNavbar & CommandPalette drifting.
  */
-export const getNavigationActions = (tenantSlug) => {
+export const getNavigationActions = (tenantSlug, userRole = '') => {
   if (!tenantSlug) return [];
-  return [
+  const normalizedRole = String(userRole || '').toLowerCase();
+  const isAdminUser = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner'].includes(normalizedRole);
+  const actions = [
     // --- Navigate ---
     { id: 'dashboard',    label: 'Dashboard',      icon: HomeIcon,                  category: 'Navigate', path: `/${tenantSlug}/org/dashboard` },
     { id: 'my-work',      label: 'My Work',         icon: BriefcaseIcon,             category: 'Navigate', path: `/${tenantSlug}/org/my-work` },
@@ -46,6 +48,23 @@ export const getNavigationActions = (tenantSlug) => {
     { id: 'log-time',       label: 'Log Time',         icon: ClockIcon,                 category: 'Quick Create', path: `/${tenantSlug}/org/software-house/time-tracking` },
     { id: 'new-document',   label: 'New Document',     icon: PencilSquareIcon,          category: 'Quick Create', path: `/${tenantSlug}/org/documents/new` },
   ];
+  if (isAdminUser) {
+    const nonEmployeeActions = actions.filter((action) => !action.id.startsWith('employee-'));
+    const settingsIndex = nonEmployeeActions.findIndex((action) => action.id === 'settings');
+    const adminProfileAction = {
+      id: 'profile',
+      label: 'My Profile',
+      icon: UserIcon,
+      category: 'Navigate',
+      path: `/${tenantSlug}/org/profile`,
+    };
+    if (settingsIndex >= 0) {
+      nonEmployeeActions.splice(settingsIndex, 0, adminProfileAction);
+      return nonEmployeeActions;
+    }
+    return [adminProfileAction, ...nonEmployeeActions];
+  }
+  return actions;
 };
 
 // ---------------------------------------------------------------------------

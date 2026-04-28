@@ -22,11 +22,15 @@ class FERPAComplianceService {
    */
   getEncryptionKey() {
     const key = process.env.FERPA_ENCRYPTION_KEY || process.env.ENCRYPTION_KEY;
-    
+
     if (!key) {
-      console.warn('⚠️ FERPA_ENCRYPTION_KEY not set. Using default key (NOT SECURE FOR PRODUCTION)');
-      // Generate a default key for development (32 bytes)
-      return crypto.scryptSync('default-ferpa-key-change-in-production', 'salt', 32);
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('FERPA_ENCRYPTION_KEY or ENCRYPTION_KEY must be set');
+      }
+      // Keep local/dev servers bootable even when FERPA key is not configured.
+      // This avoids crashing unrelated routes (e.g., signup) during development.
+      console.warn('⚠️ FERPA_ENCRYPTION_KEY missing; using non-persistent development fallback key');
+      return crypto.scryptSync('dev-ferpa-fallback-key', 'ferpa-salt', 32);
     }
     
     // If key is hex string, convert to buffer

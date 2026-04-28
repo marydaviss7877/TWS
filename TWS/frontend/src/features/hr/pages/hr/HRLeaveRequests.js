@@ -1,5 +1,7 @@
+export { default } from '../../../tenant/pages/tenant/org/software-house/hr/HRLeaveRequests';
 import React from 'react';
 import AdminPageTemplate from '../../../../features/admin/components/admin/AdminPageTemplate';
+import FeatureUnavailable from '../../../../shared/components/feedback/FeatureUnavailable';
 import { 
   ClockIcon, 
   CheckCircleIcon,
@@ -86,10 +88,10 @@ const HRLeaveRequests = () => {
         <h3 className="text-lg font-bold font-heading text-gray-900 dark:text-white mb-4">
           Leave Calendar
         </h3>
-        <div className="text-center py-12">
-          <CalendarIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Calendar view coming soon</p>
-        </div>
+        <FeatureUnavailable
+          title="Leave calendar unavailable"
+          description="Calendar view is not available in this release yet."
+        />
       </div>
     </AdminPageTemplate>
   );

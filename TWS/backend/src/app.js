@@ -5,7 +5,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
-// const rateLimit = require('express-rate-limit'); // Unused while rate limiting is disabled
+const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
@@ -74,30 +74,24 @@ app.use(cors({
   credentials: true
 }));
 
-// RATE LIMITING - DISABLED FOR NOW (re-enable for production security)
-// const limiter = rateLimit({
-//   windowMs: config.get('RATE_LIMIT_WINDOW_MS') || 15 * 60 * 1000,
-//   max: config.get('RATE_LIMIT_MAX_REQUESTS') || 100,
-//   standardHeaders: true,
-//   legacyHeaders: false,
-//   handler: (req, res) => {
-//     res.status(429).json({
-//       success: false,
-//       message: 'Too many requests from this IP, please try again later.',
-//       code: 'RATE_LIMIT_EXCEEDED',
-//       retryAfter: Math.ceil((config.get('RATE_LIMIT_WINDOW_MS') || 15 * 60 * 1000) / 1000)
-//     });
-//   },
-//   skip: (req) => req.path === '/health' || req.path === '/api/health'
-// });
-// const authLimiter = rateLimit({ ... });
-// const signupLimiter = rateLimit({ ... });
-// app.use('/api/', limiter);
-// app.use('/api/auth/login', authLimiter);
-// app.use('/api/auth/register', signupLimiter);
-// app.use('/api/tenant-auth/login', authLimiter);
+const limiter = rateLimit({
+  windowMs: config.get('RATE_LIMIT_WINDOW_MS') || 15 * 60 * 1000,
+  max: config.get('RATE_LIMIT_MAX_REQUESTS') || 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many requests from this IP, please try again later.',
+      code: 'RATE_LIMIT_EXCEEDED',
+      retryAfter: Math.ceil((config.get('RATE_LIMIT_WINDOW_MS') || 15 * 60 * 1000) / 1000)
+    });
+  },
+  skip: (req) => req.path === '/health' || req.path === '/api/health'
+});
+app.use('/api/', limiter);
 
-console.log('⚠️ Rate limiting DISABLED (development/convenience)');
+console.log('✅ Global rate limiting ENABLED');
 
 // ✅ DATA LEAKAGE PREVENTION - Query Filter Middleware (Issue #9.2 Fix)
 // Automatically injects orgId/tenantId filters into all queries to prevent data leakage

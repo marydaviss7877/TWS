@@ -7,12 +7,8 @@ const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
 const {
   IntegrationConfig,
-  IntegrationLog,
-  TimeTrackingIntegration,
-  ProjectManagementIntegration,
-  PaymentGatewayIntegration
+  IntegrationLog
 } = require('../../../models/Integration');
-const TimeTrackingService = require('../../../services/integrations/time-tracking-integration.service');
 // const PaymentGatewayService = require('../../../services/integrations/PaymentGatewayService'); // Service not yet implemented
 
 const router = express.Router();
@@ -22,7 +18,7 @@ const router = express.Router();
 // Get all integrations
 router.get('/', [
   financeRead,
-  query('type').optional().isIn(['time_tracking', 'project_management', 'payment_gateway', 'accounting', 'hr']),
+  query('type').optional().isIn(['project_management', 'payment_gateway', 'accounting', 'hr']),
   query('status').optional().isIn(['active', 'inactive', 'error', 'pending'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const filter = { orgId: req.user.orgId };
@@ -71,7 +67,7 @@ router.get('/:id', [
 router.post('/', [
   financeWrite,
   body('name').notEmpty().trim(),
-  body('type').isIn(['time_tracking', 'project_management', 'payment_gateway', 'accounting', 'hr']),
+  body('type').isIn(['project_management', 'payment_gateway', 'accounting', 'hr']),
   body('provider').notEmpty().trim(),
   body('credentials').isObject(),
   body('settings').optional().isObject()
@@ -162,60 +158,10 @@ router.post('/:id/test', [
     });
   }
 
-  let service;
-  switch (integration.type) {
-    case 'time_tracking':
-      service = new TimeTrackingService(integration);
-      break;
-    case 'payment_gateway':
-      // service = new PaymentGatewayService(integration); // PaymentGatewayService not yet implemented
-      throw new Error('PaymentGatewayService is not yet implemented');
-      break;
-    default:
-      return res.status(400).json({
-        success: false,
-        message: 'Connection test not supported for this integration type'
-      });
-  }
-
-  const result = await service.testConnection();
-
-  res.json({
-    success: result.success,
-    message: result.message,
-    data: { result }
-  });
-}));
-
-// ==================== TIME TRACKING INTEGRATION ROUTES ====================
-
-// Sync time entries
-router.post('/:id/sync/time-entries', [
-  financeWrite,
-  param('id').isMongoId(),
-  body('startDate').isISO8601(),
-  body('endDate').isISO8601()
-], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
-  const integration = await IntegrationConfig.findOne({
-    _id: req.params.id,
-    orgId: req.user.orgId,
-    type: 'time_tracking'
-  });
-
-  if (!integration) {
-    return res.status(404).json({
-      success: false,
-      message: 'Time tracking integration not found'
-    });
-  }
-
-  const service = new TimeTrackingService(integration);
-  const result = await service.syncTimeEntries(req.body.startDate, req.body.endDate);
-
-  res.json({
-    success: true,
-    message: 'Time entries synced successfully',
-    data: { result }
+  // No external integration services are currently enabled for connection tests.
+  return res.status(400).json({
+    success: false,
+    message: 'Connection test is not supported for this integration type'
   });
 }));
 

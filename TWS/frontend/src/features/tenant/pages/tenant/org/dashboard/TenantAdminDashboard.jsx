@@ -22,12 +22,11 @@ import {
   UserIcon,
 } from '@heroicons/react/24/outline';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
+import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { softwareHouseApi } from '../../../../../../shared/services/industry/softwareHouseApi';
 import Breadcrumbs from '../../../../../../shared/components/navigation/Breadcrumbs';
 import './TenantAdminDashboard.css';
-
-const ADMIN_ROLES = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner'];
 
 const STATUS_CLASS = {
   completed: 'tad-status tad-status--completed',
@@ -286,7 +285,7 @@ export default function TenantAdminDashboard() {
   const { tenantSlug } = useParams();
   const navigate = useNavigate();
   const { user, tenant } = useTenantAuth();
-  const normalizedRole = String(user?.role || '').toLowerCase();
+  const { hasModulePermission } = useTenantPermissions();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -434,7 +433,12 @@ export default function TenantAdminDashboard() {
 
   const showSparkline = sparkBundle.values.length >= 2 && sparkBundle.values.some((v) => v > 0);
 
-  if (!ADMIN_ROLES.includes(normalizedRole)) {
+  const canViewAdminDashboard =
+    hasModulePermission?.('users', 'admin') ||
+    hasModulePermission?.('projects', 'admin') ||
+    hasModulePermission?.('finance', 'admin') ||
+    hasModulePermission?.('payroll', 'admin');
+  if (!canViewAdminDashboard) {
     return <Navigate to="../home" replace />;
   }
 

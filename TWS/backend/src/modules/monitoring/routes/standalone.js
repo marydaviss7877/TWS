@@ -8,48 +8,40 @@ const monitoringService = new StandaloneMonitoringService();
 // Start the monitoring service
 monitoringService.start();
 
-// Get real-time metrics
+// Standalone monitoring simulation endpoints are intentionally unavailable in QA mode.
 router.get('/metrics', (req, res) => {
-  try {
-    const metrics = monitoringService.getMetrics();
-    res.json(metrics);
-  } catch (error) {
-    console.error('Error getting metrics:', error);
-    res.status(500).json({ error: 'Failed to get metrics' });
-  }
+  return res.status(501).json({
+    success: false,
+    code: 'FEATURE_UNAVAILABLE',
+    message: 'Standalone monitoring metrics are unavailable in this environment.'
+  });
 });
 
 // Get system health
 router.get('/health', (req, res) => {
-  try {
-    const health = monitoringService.getSystemHealth();
-    res.json(health);
-  } catch (error) {
-    console.error('Error getting health:', error);
-    res.status(500).json({ error: 'Failed to get health status' });
-  }
+  return res.status(501).json({
+    success: false,
+    code: 'FEATURE_UNAVAILABLE',
+    message: 'Standalone monitoring health is unavailable in this environment.'
+  });
 });
 
 // Get alerts
 router.get('/alerts', (req, res) => {
-  try {
-    const alerts = monitoringService.getAlerts();
-    res.json(alerts);
-  } catch (error) {
-    console.error('Error getting alerts:', error);
-    res.status(500).json({ error: 'Failed to get alerts' });
-  }
+  return res.status(501).json({
+    success: false,
+    code: 'FEATURE_UNAVAILABLE',
+    message: 'Standalone monitoring alerts are unavailable in this environment.'
+  });
 });
 
 // Get logs
 router.get('/logs', (req, res) => {
-  try {
-    const logs = monitoringService.getLogs();
-    res.json(logs);
-  } catch (error) {
-    console.error('Error getting logs:', error);
-    res.status(500).json({ error: 'Failed to get logs' });
-  }
+  return res.status(501).json({
+    success: false,
+    code: 'FEATURE_UNAVAILABLE',
+    message: 'Standalone monitoring logs are unavailable in this environment.'
+  });
 });
 
 // WebSocket endpoint for real-time updates

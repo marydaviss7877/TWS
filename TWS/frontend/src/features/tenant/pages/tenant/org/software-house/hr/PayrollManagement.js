@@ -10,6 +10,9 @@ import {
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthContext';
 import { useTenantPermissions } from '../../../../../contexts/TenantPermissionsContext';
+import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../../../../shared/components/feedback/EmptyState';
 
 const PayrollManagement = () => {
   const { tenantSlug } = useParams();
@@ -19,6 +22,8 @@ const PayrollManagement = () => {
   const [loading, setLoading] = useState(true);
   const [payrollData, setPayrollData] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [cycles, setCycles] = useState([]);
   const [analytics, setAnalytics] = useState({ monthlyTrend: [], statusBreakdown: [], averageNetPay: 0, payrollVelocityDays: 0 });
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -36,9 +41,11 @@ const PayrollManagement = () => {
     
     try {
       setLoading(true);
-      const [data, analyticsData] = await Promise.all([
+      setError('');
+      const [data, analyticsData, cycleData] = await Promise.all([
         tenantApiService.getPayrollData(tenantSlug),
-        tenantApiService.getPayrollAnalytics(tenantSlug)
+        tenantApiService.getPayrollAnalytics(tenantSlug),
+        tenantApiService.getPayrollCycles(tenantSlug)
       ]);
       if (data) {
         setPayrollData(data);
@@ -46,10 +53,13 @@ const PayrollManagement = () => {
         setPayrollData({ totalAmount: 0, employeeCount: 0, pendingCount: 0 });
       }
       setAnalytics(analyticsData || { monthlyTrend: [], statusBreakdown: [], averageNetPay: 0, payrollVelocityDays: 0 });
+      setCycles(cycleData?.cycles || []);
     } catch (err) {
       console.error('Error fetching payroll data:', err);
+      setError(err?.message || 'Failed to load payroll data');
       setPayrollData({ totalAmount: 0, employeeCount: 0, pendingCount: 0 });
       setAnalytics({ monthlyTrend: [], statusBreakdown: [], averageNetPay: 0, payrollVelocityDays: 0 });
+      setCycles([]);
     } finally {
       setLoading(false);
     }
@@ -91,6 +101,56 @@ const PayrollManagement = () => {
     }
   };
 
+  const handleMarkPaid = async (payrollId) => {
+    if (!window.confirm('Mark this payroll as paid?')) return;
+    try {
+      setBusy(true);
+      await tenantApiService.markPayrollAsPaid(tenantSlug, payrollId);
+      fetchPayrollData();
+    } catch (err) {
+      alert(err?.message || 'Failed to mark payroll as paid.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCancelPayroll = async (payrollId) => {
+    if (!window.confirm('Cancel this payroll record?')) return;
+    try {
+      setBusy(true);
+      await tenantApiService.cancelPayroll(tenantSlug, payrollId, 'Cancelled by payroll manager');
+      fetchPayrollData();
+    } catch (err) {
+      alert(err?.message || 'Failed to cancel payroll.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleStartCycle = async (cycleId) => {
+    try {
+      setBusy(true);
+      await tenantApiService.startPayrollCycle(tenantSlug, cycleId);
+      fetchPayrollData();
+    } catch (err) {
+      alert(err?.message || 'Failed to start cycle');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCancelCycle = async (cycleId) => {
+    try {
+      setBusy(true);
+      await tenantApiService.cancelPayrollCycle(tenantSlug, cycleId);
+      fetchPayrollData();
+    } catch (err) {
+      alert(err?.message || 'Failed to cancel cycle');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const stats = [
     { 
       label: 'Total Payroll', 
@@ -119,14 +179,11 @@ const PayrollManagement = () => {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading payroll data...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading payroll data..." className="min-h-[40vh] bg-transparent" />;
+  }
+
+  if (error) {
+    return <ErrorState title="Payroll unavailable" message={error} onRetry={fetchPayrollData} className="max-w-xl mx-auto" />;
   }
 
   return (
@@ -208,6 +265,19 @@ const PayrollManagement = () => {
           )}
         </div>
         <div className="overflow-x-auto">
+          {cycles.length > 0 ? (
+            <div className="mb-4 flex items-center gap-3 text-sm">
+              <span className="text-gray-600 dark:text-gray-300">
+                Active cycle: <strong>{cycles[0]?.name || 'Unnamed'}</strong> ({cycles[0]?.status || 'draft'})
+              </span>
+              {cycles[0]?.status === 'draft' ? (
+                <button disabled={busy} onClick={() => handleStartCycle(cycles[0]._id)} className="text-blue-600 hover:text-blue-800 font-medium">Start Cycle</button>
+              ) : null}
+              {['draft', 'processing'].includes(cycles[0]?.status) ? (
+                <button disabled={busy} onClick={() => handleCancelCycle(cycles[0]._id)} className="text-red-600 hover:text-red-800 font-medium">Cancel Cycle</button>
+              ) : null}
+            </div>
+          ) : null}
           <div className="mb-4">
             <select
               value={statusFilter}
@@ -235,7 +305,13 @@ const PayrollManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredRecords.map((record) => (
+              {filteredRecords.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="py-4 px-4">
+                    <EmptyState title="No payroll records" message="No payroll records match the selected filter." />
+                  </td>
+                </tr>
+              ) : filteredRecords.map((record) => (
                 <tr key={record._id} className="border-b border-gray-100 dark:border-gray-800">
                   <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{record?.userId?.fullName || 'N/A'}</td>
                   <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">{record?.employeeId?.department || 'N/A'}</td>
@@ -246,6 +322,10 @@ const PayrollManagement = () => {
                   <td className="py-3 px-4 text-sm">
                     {(record?.status === 'pending' || record?.status === 'draft') ? (
                       <button onClick={() => handleApprovePayroll(record._id)} className="text-primary-600 hover:text-primary-700 font-medium">Approve</button>
+                    ) : record?.status === 'approved' ? (
+                      <button onClick={() => handleMarkPaid(record._id)} className="text-green-600 hover:text-green-700 font-medium">Mark Paid</button>
+                    ) : ['draft', 'pending', 'approved'].includes(record?.status) ? (
+                      <button onClick={() => handleCancelPayroll(record._id)} className="text-red-600 hover:text-red-700 font-medium">Cancel</button>
                     ) : (
                       <span className="text-gray-500">-</span>
                     )}

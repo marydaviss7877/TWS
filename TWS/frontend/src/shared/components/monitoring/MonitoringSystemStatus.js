@@ -2,10 +2,17 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const MonitoringSystemStatus = () => {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || '';
+  const appBaseUrl = window.location.origin;
+  const monitoringWsBase = apiBaseUrl
+    ? apiBaseUrl.replace(/^http/, 'ws')
+    : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`;
+  const monitoringWsUrl = `${monitoringWsBase}/ws/monitoring`;
   const [backendStatus, setBackendStatus] = useState('checking');
   const [monitoringStatus, setMonitoringStatus] = useState('checking');
   const [websocketStatus, setWebsocketStatus] = useState('checking');
   const [redisStatus, setRedisStatus] = useState('checking');
+  const [monitoringMessage, setMonitoringMessage] = useState('');
 
   useEffect(() => {
     checkSystemStatus();
@@ -14,7 +21,7 @@ const MonitoringSystemStatus = () => {
   const checkSystemStatus = async () => {
     // Check backend health
     try {
-      const response = await axios.get('http://localhost:5000/health');
+      const response = await axios.get(`${apiBaseUrl}/health`);
       if (response.status === 200) {
         setBackendStatus('online');
         console.log('✅ Backend Health:', response.data);
@@ -26,15 +33,17 @@ const MonitoringSystemStatus = () => {
 
     // Check monitoring API
     try {
-      const response = await axios.get('http://localhost:5000/api/standalone-monitoring/health');
-      setMonitoringStatus('online');
+      const response = await axios.get(`${apiBaseUrl}/api/monitoring/health`);
+      setMonitoringStatus(response.status === 200 ? 'online' : 'offline');
+      setMonitoringMessage(response?.data?.message || '');
     } catch (error) {
       setMonitoringStatus('offline');
+      setMonitoringMessage(error?.response?.data?.message || 'Monitoring telemetry unavailable');
     }
 
     // Check WebSocket
     try {
-      const ws = new WebSocket('ws://localhost:5000/ws/monitoring');
+      const ws = new WebSocket(monitoringWsUrl);
       ws.onopen = () => {
         setWebsocketStatus('online');
         ws.close();
@@ -46,8 +55,8 @@ const MonitoringSystemStatus = () => {
       setWebsocketStatus('offline');
     }
 
-    // Check Redis (simplified check)
-    setRedisStatus('online'); // We know it's working from backend logs
+    // Redis status should never be assumed; expose as unknown unless telemetry includes it.
+    setRedisStatus('checking');
   };
 
   const getStatusColor = (status) => {
@@ -83,7 +92,7 @@ const MonitoringSystemStatus = () => {
             <p className="text-sm">
               Status: <span className="font-medium">{backendStatus.toUpperCase()}</span>
             </p>
-            <p className="text-sm mt-1">Port: 5000</p>
+            <p className="text-sm mt-1">Endpoint: /health</p>
           </div>
 
           <div className={`p-6 rounded-lg border-2 ${getStatusColor(monitoringStatus)}`}>
@@ -93,7 +102,8 @@ const MonitoringSystemStatus = () => {
             <p className="text-sm">
               Status: <span className="font-medium">{monitoringStatus.toUpperCase()}</span>
             </p>
-            <p className="text-sm mt-1">Endpoints: /api/monitoring/*</p>
+            <p className="text-sm mt-1">Endpoint: /api/monitoring/health</p>
+            {monitoringMessage ? <p className="text-xs mt-2 opacity-80">{monitoringMessage}</p> : null}
           </div>
 
           <div className={`p-6 rounded-lg border-2 ${getStatusColor(websocketStatus)}`}>
@@ -103,17 +113,17 @@ const MonitoringSystemStatus = () => {
             <p className="text-sm">
               Status: <span className="font-medium">{websocketStatus.toUpperCase()}</span>
             </p>
-            <p className="text-sm mt-1">URL: ws://localhost:5000/ws/monitoring</p>
+            <p className="text-sm mt-1">URL: {monitoringWsUrl}</p>
           </div>
 
           <div className={`p-6 rounded-lg border-2 ${getStatusColor(redisStatus)}`}>
             <h3 className="text-lg font-semibold mb-2 flex items-center">
-              {getStatusIcon(redisStatus)} Redis 5.0+
+              {getStatusIcon(redisStatus)} Redis
             </h3>
             <p className="text-sm">
               Status: <span className="font-medium">{redisStatus.toUpperCase()}</span>
             </p>
-            <p className="text-sm mt-1">Port: 6380</p>
+            <p className="text-sm mt-1">Status reflects runtime telemetry only</p>
           </div>
         </div>
 
@@ -126,23 +136,23 @@ const MonitoringSystemStatus = () => {
             <div className="p-4 bg-blue-50 rounded-lg">
               <h3 className="font-semibold text-blue-900 mb-2">Option 1: Login as Supra-Admin</h3>
               <p className="text-blue-800 text-sm mb-2">
-                1. Go to: <code className="bg-blue-100 px-2 py-1 rounded">http://localhost:3001/supra-admin-login</code>
+                1. Go to: <code className="bg-blue-100 px-2 py-1 rounded">{`${appBaseUrl}/supra-admin-login`}</code>
               </p>
               <p className="text-blue-800 text-sm mb-2">
                 2. Login with your super_admin credentials
               </p>
               <p className="text-blue-800 text-sm">
-                3. Navigate to: <code className="bg-blue-100 px-2 py-1 rounded">http://localhost:3001/supra-admin/real-time-monitoring</code>
+                3. Navigate to: <code className="bg-blue-100 px-2 py-1 rounded">{`${appBaseUrl}/supra-admin/real-time-monitoring`}</code>
               </p>
             </div>
 
             <div className="p-4 bg-green-50 rounded-lg">
               <h3 className="font-semibold text-green-900 mb-2">Option 2: Test Route (No Auth Required)</h3>
               <p className="text-green-800 text-sm mb-2">
-                Direct access: <code className="bg-green-100 px-2 py-1 rounded">http://localhost:3001/test-monitoring</code>
+                Direct access: <code className="bg-green-100 px-2 py-1 rounded">{`${appBaseUrl}/test-monitoring`}</code>
               </p>
               <p className="text-green-800 text-sm">
-                Then navigate to: <code className="bg-green-100 px-2 py-1 rounded">http://localhost:3001/test-monitoring/real-time-monitoring</code>
+                Then navigate to: <code className="bg-green-100 px-2 py-1 rounded">{`${appBaseUrl}/test-monitoring/real-time-monitoring`}</code>
               </p>
             </div>
           </div>
@@ -157,40 +167,32 @@ const MonitoringSystemStatus = () => {
             <div className="space-y-2">
               <h3 className="font-semibold text-gray-800">🔴 Real-Time Metrics</h3>
               <ul className="text-sm text-gray-600 space-y-1">
-                <li>• CPU, Memory, Disk Usage</li>
-                <li>• Network I/O and Latency</li>
-                <li>• System Load and Uptime</li>
-                <li>• Live Performance Charts</li>
+                <li>• Shows only metrics returned by backend endpoints</li>
+                <li>• Unavailable telemetry is surfaced as unavailable</li>
               </ul>
             </div>
             
             <div className="space-y-2">
               <h3 className="font-semibold text-gray-800">🛡️ Security Monitoring</h3>
               <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Threat Detection</li>
-                <li>• Failed Login Attempts</li>
-                <li>• Intrusion Attempts</li>
-                <li>• Security Risk Assessment</li>
+                <li>• Endpoint-driven, no simulated threat payloads</li>
+                <li>• Explicit unavailable responses are shown as-is</li>
               </ul>
             </div>
             
             <div className="space-y-2">
               <h3 className="font-semibold text-gray-800">⚡ Performance Analytics</h3>
               <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Response Time Monitoring</li>
-                <li>• Error Rate Tracking</li>
-                <li>• Throughput Analysis</li>
-                <li>• Cache Performance</li>
+                <li>• Data shown only when backend confirms availability</li>
+                <li>• No hardcoded performance assumptions</li>
               </ul>
             </div>
             
             <div className="space-y-2">
               <h3 className="font-semibold text-gray-800">🚨 Alert System</h3>
               <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Real-Time Notifications</li>
-                <li>• Threat Alerts</li>
-                <li>• Performance Warnings</li>
-                <li>• System Health Alerts</li>
+                <li>• Alerts/logs/threats use explicit backend availability state</li>
+                <li>• No mock alert stream in UI</li>
               </ul>
             </div>
           </div>

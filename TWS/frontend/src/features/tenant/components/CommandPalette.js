@@ -6,6 +6,7 @@ import {
 } from '../../../components/ui/command';
 import { DialogDescription } from '@radix-ui/react-dialog';
 import { getNavigationActions } from '../../../constants/navigationConstants';
+import { useTenantAuth } from '../../../app/providers/TenantAuthContext';
 
 const getFuzzyScore = (action, term) => {
   const label = action.label.toLowerCase();
@@ -45,7 +46,8 @@ const getFuzzyScore = (action, term) => {
  */
 const CommandPalette = ({ isOpen, onClose, tenantSlug, initialSearchTerm = '' }) => {
   const navigate = useNavigate();
-  const actions = useMemo(() => getNavigationActions(tenantSlug), [tenantSlug]);
+  const { user } = useTenantAuth();
+  const actions = useMemo(() => getNavigationActions(tenantSlug, user?.role), [tenantSlug, user?.role]);
   const [search, setSearch] = useState('');
   const [recentIds, setRecentIds] = useState([]);
   const RECENT_STORAGE_KEY = 'tenant.commandPalette.recent';

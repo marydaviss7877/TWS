@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import TenantOrgLayout from '../../../components/TenantOrgLayout';
 import { TenantAuthProvider } from '../../../../../app/providers/TenantAuthContext';
@@ -46,6 +46,7 @@ import EmployeeAttendanceView from './software-house/employee-portal/EmployeeAtt
 import EmployeeLeaveRequests from './software-house/employee-portal/EmployeeLeaveRequests';
 import EmployeePerformanceView from './software-house/employee-portal/EmployeePerformanceView';
 import EmployeePayrollView from './software-house/employee-portal/EmployeePayrollView';
+import ContractorDashboard from './software-house/employee-portal/ContractorDashboard';
 
 // Finance Components
 import FinanceOverview from './finance/FinanceOverview';
@@ -131,40 +132,15 @@ import DepartmentAccessManagement from './departments/DepartmentAccessManagement
 import AuditLogPage from './audit/AuditLogPage';
 import TenantOrgRulebook from './TenantOrgRulebook';
 import { useTenantAuth } from '../../../../../app/providers/TenantAuthContext';
+import { useTenantPermissions } from '../../../contexts/TenantPermissionsContext';
+import PageNotFound from '../../../../../shared/pages/PageNotFound';
+
+const ELEVATED_ADMIN_ROLES = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner'];
 
 // Smart catch-all component to prevent redirect loops
 const CatchAllRoute = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  
-  React.useEffect(() => {
-    const pathname = location.pathname;
-    
-    // Don't redirect if path contains /create (form pages)
-    if (pathname.includes('/create')) {
-      return;
-    }
-    
-    // Don't redirect valid routes (departments, users, roles, permissions, etc.)
-    const validRoutes = ['/departments', '/users', '/roles', '/permissions', '/projects', '/hr', '/finance', '/analytics', '/settings', '/clients', '/operations', '/documents', '/software-house', '/employee', '/audit', '/rulebook'];
-    if (validRoutes.some(route => pathname.includes(route))) {
-      return;
-    }
-    
-    // If path already ends with /home or /dashboard, don't redirect (prevent loop)
-    if (pathname.endsWith('/home') || pathname.endsWith('/dashboard')) {
-      return;
-    }
-
-    // Otherwise, redirect to home
-    navigate('home', { replace: true });
-  }, [location.pathname, navigate]);
-  
-  return null; // This component only handles redirects
+  return <PageNotFound />;
 };
-
-const CLIENT_ROLES = ['client', 'customer'];
-const ADMIN_ROLES = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner'];
 
 const ClientAccessGate = ({ children }) => {
   const { user } = useTenantAuth();
@@ -172,7 +148,7 @@ const ClientAccessGate = ({ children }) => {
   const location = useLocation();
   const normalizedRole = String(user?.role || '').toLowerCase();
 
-  if (!CLIENT_ROLES.includes(normalizedRole)) {
+  if (!['client', 'customer'].includes(normalizedRole)) {
     return children;
   }
 
@@ -198,30 +174,42 @@ const ClientAccessGate = ({ children }) => {
 const HomeRoute = () => {
   const { user } = useTenantAuth();
   const normalizedRole = String(user?.role || '').toLowerCase();
-  if (CLIENT_ROLES.includes(normalizedRole)) {
+  if (['client', 'customer'].includes(normalizedRole)) {
     return <Navigate to="../client-portal" replace />;
+  }
+  if (normalizedRole === 'contractor') {
+    return <Navigate to="../contractor/dashboard" replace />;
   }
   return <AppHome />;
 };
 
 const EmployeeOnlyRoute = ({ children }) => {
   const { user } = useTenantAuth();
+  const { hasModulePermission } = useTenantPermissions();
   const normalizedRole = String(user?.role || '').toLowerCase();
-  if (CLIENT_ROLES.includes(normalizedRole)) {
+  if (['client', 'customer'].includes(normalizedRole)) {
     return <Navigate to="../client-portal" replace />;
   }
-  if (ADMIN_ROLES.includes(normalizedRole)) {
+  const isPrivilegedByPermission =
+    hasModulePermission?.('users', 'admin') ||
+    hasModulePermission?.('projects', 'admin') ||
+    hasModulePermission?.('finance', 'admin') ||
+    hasModulePermission?.('payroll', 'admin');
+  if (isPrivilegedByPermission) {
     return <Navigate to="../home" replace />;
   }
   return children;
 };
 
 const HROnlyRoute = ({ children }) => {
-  const { user } = useTenantAuth();
+  const { hasModulePermission } = useTenantPermissions();
   const { tenantSlug } = useParams();
-  const normalizedRole = String(user?.role || '').toLowerCase();
-  const hrRoles = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner', 'hr', 'project_manager', 'manager'];
-  if (!hrRoles.includes(normalizedRole)) {
+  const canReadHr =
+    hasModulePermission?.('employees', 'read') ||
+    hasModulePermission?.('employees', 'read_own') ||
+    hasModulePermission?.('payroll', 'read') ||
+    hasModulePermission?.('payroll', 'read_own');
+  if (!canReadHr) {
     return <Navigate to={`/${tenantSlug}/org/home`} replace />;
   }
   return children;
@@ -236,16 +224,32 @@ const ClientPortalRoute = () => {
 const OrganizationProfileRoute = () => {
   const { user } = useTenantAuth();
   const normalizedRole = String(user?.role || '').toLowerCase();
-  if (CLIENT_ROLES.includes(normalizedRole)) {
+  if (['client', 'customer'].includes(normalizedRole)) {
     return <ClientOrganizationProfile />;
   }
   return <OrgProfile />;
 };
 
+const OrganizationProfileAccessRoute = ({ children }) => {
+  const { user } = useTenantAuth();
+  const { hasModulePermission } = useTenantPermissions();
+  const { tenantSlug } = useParams();
+  const normalizedRole = String(user?.role || '').toLowerCase();
+  if (['client', 'customer'].includes(normalizedRole)) {
+    return children;
+  }
+  const canAdminSettings = hasModulePermission?.('settings', 'admin') || hasModulePermission?.('users', 'admin');
+  const hasElevatedRole = ELEVATED_ADMIN_ROLES.includes(normalizedRole);
+  if (!canAdminSettings && !hasElevatedRole) {
+    return <Navigate to={`/${tenantSlug}/org/home`} replace />;
+  }
+  return children;
+};
+
 const SettingsRoute = () => {
   const { user } = useTenantAuth();
   const normalizedRole = String(user?.role || '').toLowerCase();
-  if (CLIENT_ROLES.includes(normalizedRole)) {
+  if (['client', 'customer'].includes(normalizedRole)) {
     return <Navigate to="../client-portal" replace />;
   }
   return <SettingsOverview />;
@@ -253,9 +257,25 @@ const SettingsRoute = () => {
 
 const AdminOnlySettingsRoute = ({ children }) => {
   const { user } = useTenantAuth();
+  const { hasModulePermission } = useTenantPermissions();
   const { tenantSlug } = useParams();
   const normalizedRole = String(user?.role || '').toLowerCase();
-  if (!ADMIN_ROLES.includes(normalizedRole)) {
+  const canAdminSettings = hasModulePermission?.('settings', 'admin') || hasModulePermission?.('users', 'admin');
+  const hasElevatedRole = ELEVATED_ADMIN_ROLES.includes(normalizedRole);
+  if (!canAdminSettings && !hasElevatedRole) {
+    return <Navigate to={`/${tenantSlug}/org/home`} replace />;
+  }
+  return children;
+};
+
+const AuditAccessRoute = ({ children }) => {
+  const { user } = useTenantAuth();
+  const { hasModulePermission } = useTenantPermissions();
+  const { tenantSlug } = useParams();
+  const normalizedRole = String(user?.role || '').toLowerCase();
+  const canAdminSettings = hasModulePermission?.('settings', 'admin') || hasModulePermission?.('users', 'admin');
+  const hasAuditRole = ['owner', 'admin', 'super_admin', 'ceo', 'department_lead', 'org_manager', 'org_admin', 'tenant_owner'].includes(normalizedRole);
+  if (!canAdminSettings && !hasAuditRole) {
     return <Navigate to={`/${tenantSlug}/org/home`} replace />;
   }
   return children;
@@ -283,6 +303,7 @@ const TenantOrg = () => {
           {/* Analytics Routes */}
           <Route path="analytics" element={<AnalyticsOverview />} />
           <Route path="analytics/reports" element={<AnalyticsReports />} />
+          <Route path="reports" element={<AnalyticsReports />} />
 
           {/* User Management Routes */}
           <Route path="users" element={<UserList />} />
@@ -304,7 +325,7 @@ const TenantOrg = () => {
           <Route path="departments/:departmentId/dashboard" element={<DepartmentDashboard />} />
 
           {/* Audit log (Phase 2) — CEO / owner / admin */}
-          <Route path="audit" element={<AuditLogPage />} />
+          <Route path="audit" element={<AuditAccessRoute><AuditLogPage /></AuditAccessRoute>} />
 
           {/* HR Routes - Support both /hr and /software-house/hr paths */}
           <Route path="hr" element={<Navigate to="software-house/hr" replace />} />
@@ -337,6 +358,7 @@ const TenantOrg = () => {
           <Route path="employee/leave" element={<EmployeeOnlyRoute><EmployeeLeaveRequests tenantSlug={tenantSlug} /></EmployeeOnlyRoute>} />
           <Route path="employee/performance" element={<EmployeeOnlyRoute><EmployeePerformanceView tenantSlug={tenantSlug} /></EmployeeOnlyRoute>} />
           <Route path="employee/payroll" element={<EmployeeOnlyRoute><EmployeePayrollView tenantSlug={tenantSlug} /></EmployeeOnlyRoute>} />
+          <Route path="contractor/dashboard" element={<EmployeeOnlyRoute><ContractorDashboard /></EmployeeOnlyRoute>} />
           <Route path="client-portal/settings" element={<ClientSettings />} />
           <Route path="client-portal/*" element={<ClientPortalRoute />} />
 
@@ -397,7 +419,7 @@ const TenantOrg = () => {
 
           {/* Settings Routes */}
           <Route path="settings" element={<AdminOnlySettingsRoute><SettingsRoute /></AdminOnlySettingsRoute>} />
-          <Route path="settings/organization" element={<AdminOnlySettingsRoute><OrganizationProfileRoute /></AdminOnlySettingsRoute>} />
+          <Route path="settings/organization" element={<OrganizationProfileAccessRoute><OrganizationProfileRoute /></OrganizationProfileAccessRoute>} />
           <Route path="settings/workspace" element={<AdminOnlySettingsRoute><WorkspaceSettingsPage /></AdminOnlySettingsRoute>} />
 
           {/* Documents (built-in word processor) */}
@@ -418,6 +440,7 @@ const TenantOrg = () => {
           {/* Client Routes */}
           <Route path="clients" element={<Clients />} />
           <Route path="clients/new" element={<Clients />} />
+          <Route path="clients/:clientId" element={<Clients />} />
           <Route path="clients/:clientId/edit" element={<Clients />} />
           <Route path="clients/contracts" element={<ClientContracts />} />
           <Route path="clients/communications" element={<ClientCommunications />} />

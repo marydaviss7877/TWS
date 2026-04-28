@@ -4,7 +4,8 @@ const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs').promises;
 const { body, validationResult } = require('express-validator');
-const { generateTokens, authenticateToken, setAuthCookies, clearAuthCookies } = require('../../../middleware/auth/auth');
+const { generateTokens, setAuthCookies, clearAuthCookies } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const { authLimiter, registrationLimiter, passwordResetLimiter, tokenRefreshLimiter, strictLimiter } = require('../../../middleware/rateLimiting/rateLimiter');
 const { setSecureCookie, setRefreshTokenCookie, clearSecureCookie } = require('../../../middleware/security/cookieSecurity');
@@ -302,7 +303,7 @@ router.post('/refresh',
   }
 
   try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || 'your-super-secret-refresh-key-change-this-in-production');
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(decoded.userId);
 
     if (!user) {
@@ -357,7 +358,7 @@ router.post('/logout', ErrorHandler.asyncHandler(async (req, res) => {
     
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-super-secret-key-change-this-in-production');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.userId);
         
         if (user && refreshToken) {
@@ -414,7 +415,7 @@ router.get('/token-info', ErrorHandler.asyncHandler(async (req, res) => {
   
   // Verify token is valid
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-super-secret-key-change-this-in-production');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     return res.json({
       success: true,
       data: {
@@ -433,7 +434,7 @@ router.get('/token-info', ErrorHandler.asyncHandler(async (req, res) => {
 }));
 
 // Get current user
-router.get('/me', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/me', verifyERPToken, ErrorHandler.asyncHandler(async (req, res) => {
   // Check if user is TWSAdmin or regular User
   const isTWSAdmin = req.authContext?.type === 'tws_admin' || 
                      (req.user && !req.user.orgId && req.user.role?.startsWith('platform_'));
@@ -441,7 +442,7 @@ router.get('/me', authenticateToken, ErrorHandler.asyncHandler(async (req, res) 
   let userData;
   
   if (isTWSAdmin) {
-    // TWSAdmin user - already fetched by authenticateToken middleware
+    // TWSAdmin user - already fetched by verifyERPToken middleware
     userData = req.user.toJSON ? req.user.toJSON() : req.user;
     // Ensure id field is set from _id for frontend compatibility
     if (userData._id && !userData.id) {
@@ -453,7 +454,7 @@ router.get('/me', authenticateToken, ErrorHandler.asyncHandler(async (req, res) 
     userData.orgId = null;
     userData.tenantId = null;
   } else {
-    // Reuse user loaded by authenticateToken (avoids a second User.findById + populate — saves ~hundreds of ms per call)
+    // Reuse user loaded by verifyERPToken (avoids a second User.findById + populate — saves ~hundreds of ms per call)
     const u = req.user && typeof req.user.toObject === 'function' ? req.user.toObject() : { ...req.user };
     if (!u || !u._id) {
       return res.status(404).json({
@@ -514,7 +515,7 @@ router.get('/me', authenticateToken, ErrorHandler.asyncHandler(async (req, res) 
 
 // Change password
 router.post('/change-password',
-  authenticateToken,
+  verifyERPToken,
   strictLimiter, // SECURITY: Rate limiting (10 requests per 15 minutes per user)
   body('currentPassword').notEmpty(),
   body('newPassword').isLength({ min: 6 }),
@@ -617,7 +618,7 @@ router.get('/invite/accept', checkDatabaseConnection, ErrorHandler.asyncHandler(
   const { token } = req.query;
   if (!token) return res.status(400).json({ success: false, message: 'token required' });
 
-  const TenantUser = require('../../models/TenantUser');
+  const TenantUser = require('../../../models/TenantUser');
   const tenantUser = await TenantUser.findOne({
     'invitation.invitationToken': token,
     'invitation.invitationExpires': { $gt: new Date() },
@@ -646,7 +647,7 @@ router.post('/invite/accept',
   ErrorHandler.asyncHandler(async (req, res) => {
     const { token, password } = req.body;
 
-    const TenantUser = require('../../models/TenantUser');
+    const TenantUser = require('../../../models/TenantUser');
     const tenantUser = await TenantUser.findOne({
       'invitation.invitationToken': token,
       'invitation.invitationExpires': { $gt: new Date() },
@@ -671,7 +672,7 @@ router.post('/invite/accept',
     await tenantUser.save();
 
     try {
-      const { invalidateResolvedPermissions } = require('../../services/tenant/permissionResolver.service');
+      const { invalidateResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
       await invalidateResolvedPermissions(tenantUser.tenantId, user._id);
     } catch (_) {}
 

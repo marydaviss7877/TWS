@@ -20,7 +20,10 @@ const requireAuth = async (req, res, next) => {
   }
 };
 
+const getAuthUserId = (req) => req.user?.id || req.user?._id;
+
 // Apply auth middleware to all routes
+router.use(auth.authenticateToken);
 router.use(requireAuth);
 
 // ==================== TENANT SWITCHING ====================
@@ -28,7 +31,7 @@ router.use(requireAuth);
 // Get all tenants user has access to
 router.get('/tenants', async (req, res) => {
   try {
-    const tenants = await tenantSwitchingService.getUserTenants(req.user.id);
+    const tenants = await tenantSwitchingService.getUserTenants(getAuthUserId(req));
     res.json(tenants);
   } catch (error) {
     console.error('Get user tenants error:', error);
@@ -40,7 +43,7 @@ router.get('/tenants', async (req, res) => {
 router.post('/switch/:tenantId', async (req, res) => {
   try {
     const { tenantId } = req.params;
-    const result = await tenantSwitchingService.switchToTenant(req.user.id, tenantId);
+    const result = await tenantSwitchingService.switchToTenant(getAuthUserId(req), tenantId);
     res.json(result);
   } catch (error) {
     console.error('Switch tenant error:', error);
@@ -52,7 +55,7 @@ router.post('/switch/:tenantId', async (req, res) => {
 router.get('/context/:tenantId', async (req, res) => {
   try {
     const { tenantId } = req.params;
-    const context = await tenantSwitchingService.getTenantContext(req.user.id, tenantId);
+    const context = await tenantSwitchingService.getTenantContext(getAuthUserId(req), tenantId);
     res.json(context);
   } catch (error) {
     console.error('Get tenant context error:', error);
@@ -69,7 +72,7 @@ router.get('/tenants/:tenantId/users', async (req, res) => {
     
     // Check if user has admin access to this tenant
     const userAccess = await TenantUser.findOne({
-      userId: req.user.id,
+      userId: getAuthUserId(req),
       tenantId,
       status: 'active',
       roles: { $elemMatch: { role: { $in: ['owner', 'admin'] } } }
@@ -109,7 +112,7 @@ router.post('/tenants/:tenantId/invite', [
     
     // Check if user has admin access to this tenant
     const userAccess = await TenantUser.findOne({
-      userId: req.user.id,
+      userId: getAuthUserId(req),
       tenantId,
       status: 'active',
       roles: { $elemMatch: { role: { $in: ['owner', 'admin'] } } }
@@ -122,7 +125,7 @@ router.post('/tenants/:tenantId/invite', [
     const invitation = await tenantSwitchingService.inviteUserToTenant(
       tenantId, 
       email, 
-      req.user.id, 
+      getAuthUserId(req), 
       role
     );
     
@@ -160,7 +163,7 @@ router.put('/tenants/:tenantId/users/:userId/role', [
     
     // Check if user has admin access to this tenant
     const userAccess = await TenantUser.findOne({
-      userId: req.user.id,
+      userId: getAuthUserId(req),
       tenantId,
       status: 'active',
       roles: { $elemMatch: { role: { $in: ['owner', 'admin'] } } }
@@ -174,7 +177,7 @@ router.put('/tenants/:tenantId/users/:userId/role', [
       tenantId, 
       userId, 
       role, 
-      req.user.id
+      getAuthUserId(req)
     );
     
     res.json(updatedUser);
@@ -191,7 +194,7 @@ router.delete('/tenants/:tenantId/users/:userId', async (req, res) => {
     
     // Check if user has admin access to this tenant
     const userAccess = await TenantUser.findOne({
-      userId: req.user.id,
+      userId: getAuthUserId(req),
       tenantId,
       status: 'active',
       roles: { $elemMatch: { role: { $in: ['owner', 'admin'] } } }
@@ -204,7 +207,7 @@ router.delete('/tenants/:tenantId/users/:userId', async (req, res) => {
     const result = await tenantSwitchingService.removeUserFromTenant(
       tenantId, 
       userId, 
-      req.user.id
+      getAuthUserId(req)
     );
     
     res.json(result);
@@ -221,7 +224,7 @@ router.get('/tenants/:tenantId/stats', async (req, res) => {
     
     // Check if user has access to this tenant
     const userAccess = await TenantUser.findOne({
-      userId: req.user.id,
+      userId: getAuthUserId(req),
       tenantId,
       status: 'active'
     });
@@ -247,7 +250,7 @@ router.put('/tenants/:tenantId/settings', async (req, res) => {
     const { settings } = req.body;
     
     const tenantUser = await TenantUser.findOne({
-      userId: req.user.id,
+      userId: getAuthUserId(req),
       tenantId,
       status: 'active'
     });
@@ -273,7 +276,7 @@ router.get('/tenants/:tenantId/settings', async (req, res) => {
     const { tenantId } = req.params;
     
     const tenantUser = await TenantUser.findOne({
-      userId: req.user.id,
+      userId: getAuthUserId(req),
       tenantId,
       status: 'active'
     });
@@ -333,7 +336,7 @@ router.post('/tenants/:tenantId/request-access', [
     
     // Check if user is already a member
     const existingMembership = await TenantUser.findOne({
-      userId: req.user.id,
+      userId: getAuthUserId(req),
       tenantId
     });
     

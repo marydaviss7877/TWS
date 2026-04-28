@@ -12,6 +12,7 @@ const {
   Client
 } = require('../models/Finance');
 const Project = require('../models/Project');
+const User = require('../models/User');
 
 /**
  * Finance Dashboard Service

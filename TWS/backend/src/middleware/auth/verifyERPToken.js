@@ -168,17 +168,11 @@ const verifyERPToken = async (req, res, next) => {
     // STEP 4: SECURITY FIX - Input validation for tenantSlug
     // ============================================
     tenantSlug = req.params.tenantSlug;
-    if (!tenantSlug) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Tenant slug is required',
-        code: 'MISSING_TENANT_SLUG'
-      });
-    }
+    const isTenantScopedRequest = Boolean(tenantSlug);
 
     // SECURITY FIX: Validate tenantSlug format (prevent NoSQL injection)
-    const isValidSlug = /^[a-zA-Z0-9_-]+$/.test(tenantSlug) || /^[0-9a-f]{24}$/i.test(tenantSlug);
-    if (!isValidSlug) {
+    const isValidSlug = !tenantSlug || /^[a-zA-Z0-9_-]+$/.test(tenantSlug) || /^[0-9a-f]{24}$/i.test(tenantSlug);
+    if (tenantSlug && !isValidSlug) {
       await logSecurityEvent('AUTH_FAILED', userId, {
         reason: 'Invalid tenant slug format (possible injection attempt)',
         tenantSlug: tenantSlug.substring(0, 50), // Don't log full payload
@@ -194,51 +188,54 @@ const verifyERPToken = async (req, res, next) => {
     // ============================================
     // STEP 5: Load tenant from database
     // ============================================
-    const isObjectId = /^[0-9a-f]{24}$/i.test(tenantSlug);
-    let tenant = isObjectId 
-      ? await Tenant.findById(tenantSlug).lean()
-      : await Tenant.findOne({ slug: tenantSlug }).lean();
+    let tenant = null;
+    if (isTenantScopedRequest) {
+      const isObjectId = /^[0-9a-f]{24}$/i.test(tenantSlug);
+      tenant = isObjectId
+        ? await Tenant.findById(tenantSlug).lean()
+        : await Tenant.findOne({ slug: tenantSlug }).lean();
 
-    if (!tenant) {
-      await logSecurityEvent('AUTH_FAILED', userId, {
-        reason: 'Tenant not found',
-        tenantSlug,
-        ip: req.ip
-      });
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Tenant not found',
-        code: 'TENANT_NOT_FOUND'
-      });
-    }
+      if (!tenant) {
+        await logSecurityEvent('AUTH_FAILED', userId, {
+          reason: 'Tenant not found',
+          tenantSlug,
+          ip: req.ip
+        });
+        return res.status(404).json({
+          success: false,
+          message: 'Tenant not found',
+          code: 'TENANT_NOT_FOUND'
+        });
+      }
 
-    // SECURITY FIX: Check tenant deletedAt (soft delete)
-    if (tenant.deletedAt || tenant.isDeleted) {
-      await logSecurityEvent('AUTH_FAILED', userId, {
-        reason: 'Attempted access to deleted tenant',
-        tenantId: tenant._id.toString(),
-        ip: req.ip
-      });
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Tenant has been deleted',
-        code: 'TENANT_DELETED'
-      });
-    }
+      // SECURITY FIX: Check tenant deletedAt (soft delete)
+      if (tenant.deletedAt || tenant.isDeleted) {
+        await logSecurityEvent('AUTH_FAILED', userId, {
+          reason: 'Attempted access to deleted tenant',
+          tenantId: tenant._id.toString(),
+          ip: req.ip
+        });
+        return res.status(403).json({
+          success: false,
+          message: 'Tenant has been deleted',
+          code: 'TENANT_DELETED'
+        });
+      }
 
-    // Check tenant status
-    if (tenant.status === 'disabled' || tenant.status === 'suspended') {
-      await logSecurityEvent('AUTH_FAILED', userId, {
-        reason: 'Attempted access to disabled tenant',
-        tenantId: tenant._id.toString(),
-        status: tenant.status,
-        ip: req.ip
-      });
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Tenant access is disabled',
-        code: 'TENANT_DISABLED'
-      });
+      // Check tenant status
+      if (tenant.status === 'disabled' || tenant.status === 'suspended') {
+        await logSecurityEvent('AUTH_FAILED', userId, {
+          reason: 'Attempted access to disabled tenant',
+          tenantId: tenant._id.toString(),
+          status: tenant.status,
+          ip: req.ip
+        });
+        return res.status(403).json({
+          success: false,
+          message: 'Tenant access is disabled',
+          code: 'TENANT_DISABLED'
+        });
+      }
     }
 
     // ============================================
@@ -271,6 +268,52 @@ const verifyERPToken = async (req, res, next) => {
         message: 'User is not active',
         code: 'USER_INACTIVE'
       });
+    }
+
+    // Non-tenant endpoints (e.g. /api/auth/me, /api/workspaces) should not fail
+    // solely because URL does not include :tenantSlug.
+    if (!isTenantScopedRequest) {
+      if (user.tenantId) {
+        const tenantHint = String(user.tenantId);
+        if (/^[0-9a-f]{24}$/i.test(tenantHint)) {
+          tenant = await Tenant.findById(tenantHint).lean();
+        } else if (/^[a-zA-Z0-9_-]+$/.test(tenantHint)) {
+          tenant = await Tenant.findOne({ slug: tenantHint }).lean();
+        }
+      }
+      if (!tenant && user.orgId) {
+        tenant = await Tenant.findOne({
+          $or: [{ organizationId: user.orgId }, { orgId: user.orgId }]
+        }).lean();
+      }
+
+      req.user = {
+        _id: user._id,
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        orgId: user.orgId,
+        tenantId: tenant?._id?.toString?.() || user.tenantId?.toString?.() || user.tenantId || null,
+        workspaceRole: null
+      };
+
+      if (tenant) {
+        req.tenant = tenant;
+        req.tenantId = tenant._id.toString();
+        req.tenantSlug = tenant.slug;
+      }
+      if (user.orgId) {
+        req.orgId = user.orgId.toString ? user.orgId.toString() : user.orgId;
+      }
+      req.tenantContext = {
+        tenantId: req.tenantId || null,
+        tenantSlug: req.tenantSlug || null,
+        orgId: req.orgId || null,
+        hasSeparateDatabase: false,
+        connectionReady: true
+      };
+
+      return next();
     }
 
     // ============================================

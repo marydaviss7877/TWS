@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthContext';
 import toast from 'react-hot-toast';
+import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../../../../shared/components/feedback/EmptyState';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -24,6 +27,7 @@ const EmployeeProfileView = ({ tenantSlug }) => {
   const { user, updateUser } = useTenantAuth();
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [editing, setEditing] = useState(false);
   const [uploadingPic, setUploadingPic] = useState(false);
   const [removingPic, setRemovingPic] = useState(false);
@@ -61,6 +65,7 @@ const EmployeeProfileView = ({ tenantSlug }) => {
 
   const fetchEmployeeProfile = async () => {
     try {
+      setLoadError('');
       const response = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees?userId=${user.id}`, {
         credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
       });
@@ -91,6 +96,7 @@ const EmployeeProfileView = ({ tenantSlug }) => {
       }
     } catch (error) {
       console.error('Failed to fetch employee profile:', error);
+      setLoadError(error?.message || 'Failed to load profile');
       toast.error('Failed to load profile');
     } finally {
       setLoading(false);
@@ -181,20 +187,17 @@ const EmployeeProfileView = ({ tenantSlug }) => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-14">
-        <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-          <div className="animate-spin rounded-full h-6 w-6 border-2 border-indigo-300 dark:border-indigo-700 border-t-indigo-600 dark:border-t-indigo-400" />
-          Loading employee profile...
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading employee profile..." className="min-h-[40vh] bg-transparent" />;
+  }
+
+  if (loadError) {
+    return <ErrorState title="Profile unavailable" message={loadError} onRetry={fetchEmployeeProfile} className="max-w-xl mx-auto" />;
   }
 
   if (!employee) {
     return (
       <div className={`${sectionCardClass} p-8 text-center`}>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Employee profile not found</p>
+        <EmptyState title="Employee profile not found" message="No employee profile data is available for this account yet." />
       </div>
     );
   }

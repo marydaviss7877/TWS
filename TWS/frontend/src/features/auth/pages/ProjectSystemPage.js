@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
+import { motion, MotionConfig, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import {
     ArrowRightIcon,
     ViewColumnsIcon,
@@ -10,22 +10,16 @@ import {
     DocumentTextIcon,
     UserGroupIcon,
     QueueListIcon,
-    CheckCircleIcon,
-    SunIcon,
-    MoonIcon
+    CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
 import './SoftwareHouseProjects.css';
+import SoftwareHouseNavbar from '../components/SoftwareHouseNavbar';
 
 const ProjectSystemPage = () => {
-    const [isDayMode, setIsDayMode] = useState(false);
-    const [isScrolled, setIsScrolled] = useState(false);
-    const { scrollYProgress, scrollY } = useScroll();
-
-    // Performance: Use motion value event for nav background instead of full-page re-renders on scroll
-    useMotionValueEvent(scrollY, "change", (latest) => {
-        setIsScrolled(latest > 50);
-    });
+    const isDayMode = false;
+    const prefersReducedMotion = useReducedMotion();
+    const { scrollYProgress } = useScroll();
 
     // Flagship background transforms (Increased intensity)
     const y1 = useTransform(scrollYProgress, [0, 1], [0, -400]);
@@ -59,39 +53,12 @@ const ProjectSystemPage = () => {
     ];
 
     return (
+        <MotionConfig reducedMotion="user">
         <div className={`sh-project-page sh-dot-grid min-h-screen ${isDayMode ? 'day-mode' : ''}`}>
             <div className="sh-noise-overlay" />
-            <motion.div style={{ y: y1 }} className="sh-glow-orb sh-glow-1" />
-            <motion.div style={{ y: y2 }} className="sh-glow-orb sh-glow-2" />
-
-            {/* Flagship Navigation */}
-            <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'sh-project-glass h-16 mt-4 mx-auto max-w-6xl inset-x-0' : 'h-20 bg-transparent'}`}>
-                <div className="container mx-auto px-6 h-full flex items-center justify-between">
-                    <Link to="/software-house" className="flex items-center gap-2 font-sora font-extrabold text-2xl tracking-tighter">
-                        <span className="text-white">TWS</span>
-                        <span className="text-cyan-500">PRJ</span>
-                    </Link>
-                    <div className="hidden md:flex items-center gap-8">
-                        <Link to="/software-house" className="text-xs font-bold uppercase tracking-widest text-[#8B8BA8] hover:text-white transition-colors">Platform</Link>
-                        <Link to="/software-house/finance" className="text-xs font-bold uppercase tracking-widest text-[#8B8BA8] hover:text-white transition-colors">Finance</Link>
-                        <Link to="/software-house/hrm" className="text-xs font-bold uppercase tracking-widest text-[#8B8BA8] hover:text-white transition-colors">HRM</Link>
-                        <a href="#features" className="text-xs font-bold uppercase tracking-widest text-[#8B8BA8] hover:text-white transition-colors">Features</a>
-                    </div>
-                    <div className="flex items-center gap-6">
-                        <button
-                            onClick={() => setIsDayMode(!isDayMode)}
-                            className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all text-white"
-                            title={isDayMode ? "Switch to Dark Mode" : "Switch to Day Mode"}
-                        >
-                            {isDayMode ? <MoonIcon className="h-4 w-4" /> : <SunIcon className="h-4 w-4" />}
-                        </button>
-                        <Link to="/software-house-login" className="text-sm font-bold text-white">Login</Link>
-                        <Link to="/software-house-signup" className="bg-cyan-600 text-white px-5 py-2.5 rounded-none font-sora text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-                            Start Trial
-                        </Link>
-                    </div>
-                </div>
-            </nav>
+            <motion.div style={prefersReducedMotion ? undefined : { y: y1 }} className="sh-glow-orb sh-glow-1" />
+            <motion.div style={prefersReducedMotion ? undefined : { y: y2 }} className="sh-glow-orb sh-glow-2" />
+            <SoftwareHouseNavbar isDarkMode={!isDayMode} />
 
             <main className="relative z-10">
                 {/* Flagship Hero Section */}
@@ -145,7 +112,7 @@ const ProjectSystemPage = () => {
                 </section>
 
                 {/* Flagship Features Section */}
-                <section id="features" className="py-32 px-6">
+                <section id="features" className="py-32 px-6 scroll-mt-24">
                     <div className="container mx-auto max-w-7xl">
                         <motion.div
                             className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12"
@@ -351,6 +318,7 @@ const ProjectSystemPage = () => {
                 </div>
             </footer>
         </div>
+        </MotionConfig>
     );
 };
 

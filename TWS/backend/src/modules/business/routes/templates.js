@@ -1,5 +1,6 @@
 const express = require('express');
-const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ProjectTemplate = require('../../../models/ProjectTemplate');
 const Project = require('../../../models/Project');
@@ -8,9 +9,13 @@ const ProjectList = require('../../../models/List');
 const Card = require('../../../models/Card');
 
 const router = express.Router();
+const templatesRead = requireErpAccess({ module: 'projects', action: ['read', 'read_own'], checkRevocation: false });
+const templatesWrite = requireErpAccess({ module: 'projects', action: 'write', checkRevocation: false });
+const templatesAdmin = requireErpAccess({ module: 'projects', action: 'admin', checkRevocation: false });
+router.use(verifyERPToken);
 
 // Get all templates
-router.get('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/', templatesRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { orgId } = req.user;
   
   const templates = await ProjectTemplate.find({ orgId })
@@ -24,7 +29,7 @@ router.get('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) =>
 }));
 
 // Get template by ID
-router.get('/:id', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/:id', templatesRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { orgId } = req.user;
 
@@ -45,7 +50,7 @@ router.get('/:id', authenticateToken, ErrorHandler.asyncHandler(async (req, res)
 }));
 
 // Create new template
-router.post('/', authenticateToken, requireRole(['super_admin', 'org_manager', 'pmo', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/', templatesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { orgId, _id: userId } = req.user;
   const { name, description, category, boards, settings } = req.body;
 
@@ -76,7 +81,7 @@ router.post('/', authenticateToken, requireRole(['super_admin', 'org_manager', '
 }));
 
 // Update template
-router.put('/:id', authenticateToken, requireRole(['super_admin', 'org_manager', 'pmo', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.put('/:id', templatesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { orgId } = req.user;
   const { name, description, category, boards, settings } = req.body;
@@ -107,7 +112,7 @@ router.put('/:id', authenticateToken, requireRole(['super_admin', 'org_manager',
 }));
 
 // Delete template
-router.delete('/:id', authenticateToken, requireRole(['super_admin', 'org_manager', 'pmo']), ErrorHandler.asyncHandler(async (req, res) => {
+router.delete('/:id', templatesAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { orgId } = req.user;
 
@@ -129,7 +134,7 @@ router.delete('/:id', authenticateToken, requireRole(['super_admin', 'org_manage
 }));
 
 // Create project from template
-router.post('/:id/create-project', authenticateToken, requireRole(['super_admin', 'org_manager', 'pmo', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:id/create-project', templatesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { orgId, _id: userId } = req.user;
   const { name, description, clientId, startDate, endDate, budget } = req.body;
@@ -212,7 +217,7 @@ router.post('/:id/create-project', authenticateToken, requireRole(['super_admin'
 }));
 
 // Get template categories
-router.get('/categories/list', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/categories/list', templatesRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { orgId } = req.user;
 
   const categories = await ProjectTemplate.distinct('category', { orgId });
@@ -224,7 +229,7 @@ router.get('/categories/list', authenticateToken, ErrorHandler.asyncHandler(asyn
 }));
 
 // Duplicate template
-router.post('/:id/duplicate', authenticateToken, requireRole(['super_admin', 'org_manager', 'pmo', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:id/duplicate', templatesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { orgId, _id: userId } = req.user;
   const { name } = req.body;

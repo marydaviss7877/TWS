@@ -1,8 +1,8 @@
 const ClientHealth = require('../models/ClientHealth');
 const ClientTouchpoint = require('../models/ClientTouchpoint');
 const Client = require('../models/Client');
+const { Invoice: ProjectInvoice } = require('../models/Finance');
 const projectApi = require('./module-api/project-api.service');
-// const ProjectInvoice = require('../models/ProjectInvoice'); // Model not yet implemented
 
 class ClientHealthService {
   /**

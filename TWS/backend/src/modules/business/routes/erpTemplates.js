@@ -1,13 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ERPTemplate = require('../../../models/ERPTemplate');
 const Tenant = require('../../../models/Tenant');
 const SoftwareHouseRole = require('../../../models/SoftwareHouseRole');
+const erpTemplateAdmin = requireErpAccess({ allowedRoles: ['supra_admin'], checkRevocation: false });
+router.use(verifyERPToken);
 
 // Get all ERP templates
-router.get('/', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/', erpTemplateAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { category, isActive } = req.query;
   
   let query = {};
@@ -32,7 +35,7 @@ router.get('/', authenticateToken, requireRole(['supra_admin']), ErrorHandler.as
 }));
 
 // Get ERP template by ID
-router.get('/:templateId', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/:templateId', erpTemplateAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { templateId } = req.params;
   
   const template = await ERPTemplate.findById(templateId)
@@ -52,7 +55,7 @@ router.get('/:templateId', authenticateToken, requireRole(['supra_admin']), Erro
 }));
 
 // Create new ERP template
-router.post('/', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/', erpTemplateAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const {
     name,
     category,
@@ -78,7 +81,7 @@ router.post('/', authenticateToken, requireRole(['supra_admin']), ErrorHandler.a
 }));
 
 // Update ERP template
-router.put('/:templateId', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.put('/:templateId', erpTemplateAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { templateId } = req.params;
   const updates = req.body;
   
@@ -103,7 +106,7 @@ router.put('/:templateId', authenticateToken, requireRole(['supra_admin']), Erro
 }));
 
 // Delete ERP template
-router.delete('/:templateId', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.delete('/:templateId', erpTemplateAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { templateId } = req.params;
   
   const template = await ERPTemplate.findById(templateId);
@@ -131,7 +134,7 @@ router.delete('/:templateId', authenticateToken, requireRole(['supra_admin']), E
 }));
 
 // Apply template to tenant
-router.post('/:templateId/apply/:tenantId', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:templateId/apply/:tenantId', erpTemplateAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { templateId, tenantId } = req.params;
   const { createDefaultRoles = true } = req.body;
   
@@ -191,7 +194,7 @@ router.post('/:templateId/apply/:tenantId', authenticateToken, requireRole(['sup
 }));
 
 // Clone template
-router.post('/:templateId/clone', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:templateId/clone', erpTemplateAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { templateId } = req.params;
   const { name, description } = req.body;
   
@@ -226,7 +229,7 @@ router.post('/:templateId/clone', authenticateToken, requireRole(['supra_admin']
 }));
 
 // Get template usage statistics
-router.get('/:templateId/usage', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/:templateId/usage', erpTemplateAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { templateId } = req.params;
   
   const template = await ERPTemplate.findById(templateId);
@@ -263,7 +266,7 @@ router.get('/:templateId/usage', authenticateToken, requireRole(['supra_admin'])
 }));
 
 // Initialize default templates
-router.post('/initialize-defaults', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/initialize-defaults', erpTemplateAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const defaultTemplates = [
     {
       name: 'Standard Business ERP',

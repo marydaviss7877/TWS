@@ -13,8 +13,10 @@ export function useTenantPermissions() {
     if (!userPermissions?.modules?.[module]) return false;
     const mod = userPermissions.modules[module];
     if (action === 'read') return !!mod.read;
+    if (action === 'read_own') return !!mod.read_own || !!mod.read;
     if (action === 'write') return !!mod.write;
     if (action === 'delete') return !!mod.delete;
+    if (action === 'admin') return !!mod.admin;
     return !!mod.read;
   };
   return { userPermissions, hasModulePermission };

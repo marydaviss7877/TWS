@@ -1496,6 +1496,89 @@ class TenantOrgService {
   }
 
   /**
+   * Update an employee by Mongo _id or employeeId
+   * @param {Object} tenantContext - Tenant context
+   * @param {string} employeeId - Employee _id or employeeId string
+   * @param {Object} employeeData - Partial employee payload
+   * @returns {Object|null} Updated employee or null
+   */
+  async updateEmployee(tenantContext, employeeId, employeeData = {}) {
+    if (!employeeId) return null;
+    try {
+      const models = this.getTenantModels(tenantContext);
+      const baseFilter = this.getTenantFilter(tenantContext);
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(employeeId);
+      const filter = isObjectId
+        ? { ...baseFilter, _id: employeeId }
+        : { ...baseFilter, employeeId };
+
+      const updatePayload = { ...(employeeData || {}) };
+      delete updatePayload._id;
+      delete updatePayload.id;
+      delete updatePayload.employeeId;
+      delete updatePayload.userId;
+      delete updatePayload.orgId;
+      delete updatePayload.organizationId;
+      delete updatePayload.tenantId;
+      delete updatePayload.createdAt;
+      delete updatePayload.updatedAt;
+
+      if (updatePayload.employmentStatus && !updatePayload.status) {
+        updatePayload.status = updatePayload.employmentStatus;
+      }
+      delete updatePayload.employmentStatus;
+
+      if (updatePayload.reportingManager && typeof updatePayload.reportingManager === 'string' && !/^[0-9a-fA-F]{24}$/.test(updatePayload.reportingManager)) {
+        delete updatePayload.reportingManager;
+      }
+
+      if (Object.keys(updatePayload).length === 0) return null;
+
+      const updated = await models.Employee.findOneAndUpdate(
+        filter,
+        { $set: updatePayload },
+        { new: true, runValidators: true }
+      )
+        .populate('userId', 'fullName email phone')
+        .lean();
+
+      if (!updated) return null;
+      return {
+        ...updated,
+        name: updated.userId?.fullName || 'N/A',
+        email: updated.userId?.email || 'N/A'
+      };
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete an employee by Mongo _id or employeeId
+   * @param {Object} tenantContext - Tenant context
+   * @param {string} employeeId - Employee _id or employeeId string
+   * @returns {boolean} true if deleted, false if not found
+   */
+  async deleteEmployee(tenantContext, employeeId) {
+    if (!employeeId) return false;
+    try {
+      const models = this.getTenantModels(tenantContext);
+      const baseFilter = this.getTenantFilter(tenantContext);
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(employeeId);
+      const filter = isObjectId
+        ? { ...baseFilter, _id: employeeId }
+        : { ...baseFilter, employeeId };
+
+      const deleted = await models.Employee.findOneAndDelete(filter).lean();
+      return !!deleted;
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get payroll data
    * @param {Object} tenantContext - Tenant context
    * @param {Object} options - Query options
@@ -2482,9 +2565,9 @@ class TenantOrgService {
    * Load chart of accounts template
    */
   async loadChartOfAccountsTemplate(tenantContext, templateName) {
+    const filter = this.getTenantFilter(tenantContext);
     try {
       const { ChartOfAccounts } = require('../../models/Finance');
-      const filter = this.getTenantFilter(tenantContext);
 
       // Define templates
       const templates = {
@@ -2943,57 +3026,6 @@ class TenantOrgService {
       // Update client fields
       Object.keys(clientData).forEach(key => {
         if (key !== '_id' && key !== '__v' && clientData[key] !== undefined) {
-          client[key] = clientData[key];
-        }
-      });
-
-      await client.save();
-      return client;
-    } catch (error) {
-      console.error('Error updating client:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Delete client (soft delete)
-   */
-  async deleteClient(tenantContext, clientId) {
-    try {
-      const { Client } = require('../../models/Finance');
-      const filter = this.getTenantFilter(tenantContext);
-
-      const client = await Client.findOne({ _id: clientId, ...filter });
-      if (!client) {
-        throw new Error('Client not found');
-      }
-
-      // Soft delete - set status to inactive
-      client.status = 'inactive';
-      await client.save();
-
-      return client;
-    } catch (error) {
-      console.error('Error deleting client:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update client
-   */
-  async updateClient(tenantContext, clientId, clientData) {
-    try {
-      const { Client } = require('../../models/Finance');
-      const filter = this.getTenantFilter(tenantContext);
-
-      const client = await Client.findOne({ _id: clientId, ...filter });
-      if (!client) {
-        throw new Error('Client not found');
-      }
-
-      Object.keys(clientData).forEach(key => {
-        if (clientData[key] !== undefined) {
           client[key] = clientData[key];
         }
       });
@@ -3501,8 +3533,7 @@ class TenantOrgService {
    */
   async generateFinanceReport(tenantContext, reportId, startDate, endDate) {
     try {
-      const { Invoice, Bill, Transaction, TimeEntry, ProjectCosting } = require('../../models/Finance');
-      const Expense = require('../../models/Expense');
+      const { Invoice, Transaction } = require('../../models/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const dateFilter = {
         date: { $gte: new Date(startDate), $lte: new Date(endDate) }
@@ -3511,7 +3542,7 @@ class TenantOrgService {
       let reportData = {};
 
       switch (reportId) {
-        case 'profit-loss':
+        case 'profit-loss': {
           const [revenue, expenses] = await Promise.all([
             Transaction.aggregate([
               { $match: { ...filter, ...dateFilter, type: 'revenue' } },
@@ -3551,8 +3582,9 @@ class TenantOrgService {
             grossMargin: totalRevenue > 0 ? ((totalRevenue - totalExpenses) / totalRevenue) * 100 : 0
           };
           break;
+        }
 
-        case 'project-profitability':
+        case 'project-profitability': {
           const projects = await this.getProjectProfitability(tenantContext);
           reportData = {
             title: 'Project Profitability Report',
@@ -3567,8 +3599,9 @@ class TenantOrgService {
             }))
           };
           break;
+        }
 
-        case 'client-analysis':
+        case 'client-analysis': {
           const invoices = await Invoice.find({ ...filter, ...dateFilter })
             .populate('clientId', 'name email')
             .lean();
@@ -3602,6 +3635,7 @@ class TenantOrgService {
             }))
           };
           break;
+        }
 
         default:
           reportData = {
@@ -3660,11 +3694,12 @@ class TenantOrgService {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         break;
-      case 'quarter':
+      case 'quarter': {
         const quarter = Math.floor(now.getMonth() / 3);
         startDate = new Date(now.getFullYear(), quarter * 3, 1);
         endDate = new Date(now.getFullYear(), quarter * 3 + 3, 0);
         break;
+      }
       case 'year':
         startDate = new Date(now.getFullYear(), 0, 1);
         endDate = new Date(now.getFullYear(), 11, 31);

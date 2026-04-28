@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import tenantProjectApiService from './services/tenantProjectApiService';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 
 /* ─── constants ─────────────────────────────────────────────────────────────── */
 const DAYS   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -128,14 +129,7 @@ const ProjectCalendarView = () => {
   const selectedItems = selectedDay ? (itemsByDay[selectedDay] || { tasks: [], milestones: [] }) : null;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto" />
-          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading calendar…</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading calendar..." className="min-h-[40vh] bg-transparent" />;
   }
 
   return (

@@ -505,7 +505,13 @@ const Clients = () => {
     name: formData.name,
     email: formData.contact.primary.email || '',
     phone: formData.contact.primary.phone || '',
-    company: formData.company.name || '',
+    company: {
+      name: formData.company.name || '',
+      website: formData.company.website || '',
+      industry: formData.company.industry || '',
+      size: formData.company.size || '',
+      description: formData.company.description || ''
+    },
     address: formData.address,
     contactPerson: formData.contact.primary.name || '',
     paymentTerms: formData.billing.paymentTerms || 'net_30',
@@ -561,9 +567,6 @@ const Clients = () => {
     
     try {
       const apiPayload = buildClientApiPayload();
-      // #region agent log
-      fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H1',location:'Clients.js:handleSubmit:beforeApi',message:'submit client form',data:{tenantSlug,editingClientId:editingClient?._id||null,name:apiPayload.name||null,companyType:typeof apiPayload.company,paymentTerms:apiPayload.paymentTerms||null},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       let response;
       if (editingClient) {
         response = await tenantApiService.updateClient(tenantSlug, editingClient._id, apiPayload);
@@ -586,14 +589,8 @@ const Clients = () => {
           toast.error(response?.message || 'Failed to create client');
         }
       }
-      // #region agent log
-      fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H4',location:'Clients.js:handleSubmit:afterApi',message:'client API response received',data:{success:!!response?.success,message:response?.message||null,hasData:!!response?.data},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
     } catch (error) {
       console.error('Error saving client:', error);
-      // #region agent log
-      fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H5',location:'Clients.js:handleSubmit:catch',message:'client API request failed',data:{errorMessage:error?.message||null,status:error?.response?.status||null,serverMessage:error?.response?.data?.message||null,serverError:error?.response?.data?.error||null},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       toast.error(error.message || 'Failed to save client');
     }
   };

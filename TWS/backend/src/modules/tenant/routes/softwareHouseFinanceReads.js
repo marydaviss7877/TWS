@@ -107,16 +107,28 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
       let paid = 0;
       let pending = 0;
       let overdue = 0;
-      for (const b of bills) {
-        if (b.status === 'paid') paid += 1;
-        else if (b.dueDate && new Date(b.dueDate) < now && b.status !== 'cancelled') overdue += 1;
-        else if (b.status !== 'cancelled') pending += 1;
-      }
+      const normalized = bills.map((b) => {
+        const paidAmount = Number(b.paidAmount || 0);
+        const total = Number(b.total || 0);
+        const remainingAmount = Math.max(total - paidAmount, 0);
+        const isOverdue = b.dueDate && new Date(b.dueDate) < now && b.status !== 'cancelled' && b.status !== 'paid';
+        if (b.status === 'paid') paid += paidAmount || total;
+        else if (isOverdue) overdue += remainingAmount;
+        else if (b.status !== 'cancelled') pending += remainingAmount;
+        return {
+          ...b,
+          issueDate: b.issueDate || b.billDate,
+          remainingAmount,
+          vendorName: b.vendorName || 'N/A',
+          projectName: b.projectName || ''
+        };
+      });
+      const total = normalized.reduce((s, b) => s + Number(b.remainingAmount || 0), 0);
       res.json({
         success: true,
         data: {
-          bills,
-          total: bills.length,
+          bills: normalized,
+          total,
           paid,
           pending,
           overdue
@@ -137,16 +149,27 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
       let paid = 0;
       let pending = 0;
       let overdue = 0;
-      for (const inv of invoices) {
-        if (inv.status === 'paid') paid += 1;
-        else if (inv.dueDate && new Date(inv.dueDate) < now && inv.status !== 'cancelled') overdue += 1;
-        else if (inv.status !== 'cancelled') pending += 1;
-      }
+      const normalized = invoices.map((inv) => {
+        const total = Number(inv.total || 0);
+        const paidAmount = Number(inv.paidAmount || 0);
+        const remainingAmount = Number(inv.remainingAmount ?? Math.max(total - paidAmount, 0));
+        const isOverdue = inv.dueDate && new Date(inv.dueDate) < now && inv.status !== 'cancelled' && inv.status !== 'paid';
+        if (inv.status === 'paid') paid += paidAmount || total;
+        else if (isOverdue) overdue += remainingAmount;
+        else if (inv.status !== 'cancelled') pending += remainingAmount;
+        return {
+          ...inv,
+          remainingAmount,
+          clientName: inv.clientName || 'N/A',
+          projectName: inv.projectName || ''
+        };
+      });
+      const total = normalized.reduce((s, i) => s + Number(i.remainingAmount || 0), 0);
       res.json({
         success: true,
         data: {
-          invoices,
-          total: invoices.length,
+          invoices: normalized,
+          total,
           paid,
           pending,
           overdue

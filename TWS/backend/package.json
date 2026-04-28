@@ -26,7 +26,9 @@
     "setup:indexes": "node src/scripts/createEducationIndexes.js",
     "setup:test": "node src/scripts/testEducationImplementation.js",
     "setup:all": "npm run setup:verify && npm run setup:indexes && npm run setup:test",
-    "nucleus:migrate": "node src/scripts/nucleusMigration.js"
+    "nucleus:migrate": "node src/scripts/nucleusMigration.js",
+    "test:signup-flow": "node scripts/test-software-house-signup-flow.js",
+    "test:hr": "jest --runTestsByPath src/modules/tenant/routes/__tests__/organization.hr-routes.integration.test.js src/services/hr/__tests__/recruitment.service.test.js src/services/__tests__/attendanceIntegrationService.test.js src/middleware/auth/__tests__/erpAccessControl.hr-permissions.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.943.0",

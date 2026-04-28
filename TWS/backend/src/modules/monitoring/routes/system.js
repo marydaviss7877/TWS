@@ -101,37 +101,13 @@ router.get('/metrics/:category', ensureMonitoringService, async (req, res) => {
   }
 });
 
-// Get alerts (mock data)
+// Get alerts
 router.get('/alerts', ensureMonitoringService, (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 50;
-    
-    const mockAlerts = [
-      {
-        id: 1,
-        type: 'warning',
-        message: 'High CPU usage detected',
-        timestamp: new Date(),
-        severity: 'medium',
-        resolved: false
-      },
-      {
-        id: 2,
-        type: 'info',
-        message: 'System running normally',
-        timestamp: new Date(Date.now() - 3600000),
-        severity: 'low',
-        resolved: true
-      }
-    ];
-    
-    res.json({
-      success: true,
-      data: {
-        alerts: mockAlerts.slice(0, limit),
-        count: mockAlerts.length,
-        timestamp: new Date()
-      }
+    res.status(501).json({
+      success: false,
+      message: 'Monitoring alerts telemetry is not available yet.',
+      code: 'FEATURE_UNAVAILABLE'
     });
   } catch (error) {
     console.error('Error fetching alerts:', error);
@@ -143,35 +119,13 @@ router.get('/alerts', ensureMonitoringService, (req, res) => {
   }
 });
 
-// Get logs (mock data)
+// Get logs
 router.get('/logs', ensureMonitoringService, (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 100;
-    
-    const mockLogs = [
-      {
-        id: 1,
-        level: 'info',
-        message: 'System started successfully',
-        timestamp: new Date(),
-        source: 'system'
-      },
-      {
-        id: 2,
-        level: 'warning',
-        message: 'Memory usage above 80%',
-        timestamp: new Date(Date.now() - 1800000),
-        source: 'monitor'
-      }
-    ];
-    
-    res.json({
-      success: true,
-      data: {
-        logs: mockLogs.slice(0, limit),
-        count: mockLogs.length,
-        timestamp: new Date()
-      }
+    res.status(501).json({
+      success: false,
+      message: 'Monitoring logs telemetry is not available yet.',
+      code: 'FEATURE_UNAVAILABLE'
     });
   } catch (error) {
     console.error('Error fetching logs:', error);
@@ -183,29 +137,13 @@ router.get('/logs', ensureMonitoringService, (req, res) => {
   }
 });
 
-// Get threats (mock data)
+// Get threats
 router.get('/threats', ensureMonitoringService, (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 50;
-    
-    const mockThreats = [
-      {
-        id: 1,
-        type: 'security',
-        severity: 'low',
-        description: 'Potential brute force attempt detected',
-        timestamp: new Date(),
-        resolved: false
-      }
-    ];
-    
-    res.json({
-      success: true,
-      data: {
-        threats: mockThreats.slice(0, limit),
-        count: mockThreats.length,
-        timestamp: new Date()
-      }
+    res.status(501).json({
+      success: false,
+      message: 'Monitoring threat telemetry is not available yet.',
+      code: 'FEATURE_UNAVAILABLE'
     });
   } catch (error) {
     console.error('Error fetching threats:', error);

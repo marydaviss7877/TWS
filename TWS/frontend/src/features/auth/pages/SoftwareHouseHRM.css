@@ -33,7 +33,7 @@
     height: 100%;
     opacity: 0.03;
     pointer-events: none;
-    z-index: 100;
+    z-index: 20;
 }
 
 .sh-glow-orb {
@@ -407,4 +407,15 @@
 .sh-hrm-page.day-mode nav a:hover,
 .sh-hrm-page.day-mode footer a:hover {
     color: var(--sh-hrm-text) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sh-glow-orb,
+    .sh-hrm-button,
+    .sh-talent-card,
+    .sh-compliance-card {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+    }
 }

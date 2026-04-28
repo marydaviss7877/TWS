@@ -18,6 +18,8 @@ import {
 } from '@heroicons/react/24/outline';
 import tenantProjectApiService from './services/tenantProjectApiService';
 import { showSuccess, showError } from './utils/toastNotifications';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 /* ─── constants ─────────────────────────────────────────────────────────────── */
 const STATUS_OPTIONS = [
@@ -225,14 +227,7 @@ const ProjectTableView = () => {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto" />
-          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading table…</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading table..." className="min-h-[40vh] bg-transparent" />;
   }
 
   return (
@@ -311,8 +306,7 @@ const ProjectTableView = () => {
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={11} className="text-center py-16 text-gray-400 dark:text-gray-500">
-                    <TableCellsIcon className="w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-                    No tasks match your filters
+                    <EmptyState title="No tasks match your filters" message="Adjust search and filters to view tasks." className="max-w-lg mx-auto" />
                   </td>
                 </tr>
               ) : (

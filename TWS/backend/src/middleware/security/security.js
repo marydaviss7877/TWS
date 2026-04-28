@@ -1,6 +1,14 @@
 const crypto = require('crypto');
 const { AuditLog, SecurityEvent, RolePermission } = require('../../models/Security');
 
+const getRequiredEncryptionKey = () => {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error('ENCRYPTION_KEY is required');
+  }
+  return key;
+};
+
 // Audit logging middleware
 const auditLog = (entityType, action, options = {}) => {
   return async (req, res, next) => {
@@ -235,7 +243,7 @@ const encryptSensitiveData = (fields) => {
   return async (req, res, next) => {
     try {
       if (req.body && fields.length > 0) {
-        const encryptionKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
+        const encryptionKey = getRequiredEncryptionKey();
 
         for (const field of fields) {
           if (req.body[field]) {
@@ -259,7 +267,7 @@ const decryptSensitiveData = (fields) => {
   return async (req, res, next) => {
     try {
       if (res.locals.data && fields.length > 0) {
-        const encryptionKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
+        const encryptionKey = getRequiredEncryptionKey();
 
         const decrypt = (obj) => {
           if (Array.isArray(obj)) {

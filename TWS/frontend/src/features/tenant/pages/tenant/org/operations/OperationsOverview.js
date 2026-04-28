@@ -1,4 +1,5 @@
 import React from 'react';
+import FeatureUnavailable from '../../../../../../shared/components/feedback/FeatureUnavailable';
 
 const OperationsOverview = () => {
   return (
@@ -10,12 +11,10 @@ const OperationsOverview = () => {
         </p>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Operations Management Coming Soon</h2>
-        <p className="text-gray-600">
-          Operations management features will be implemented here.
-        </p>
-      </div>
+      <FeatureUnavailable
+        title="Operations management unavailable"
+        description="Operations management is not available in this release yet."
+      />
     </div>
   );
 };

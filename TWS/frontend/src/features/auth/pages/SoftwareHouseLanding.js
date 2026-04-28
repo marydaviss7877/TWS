@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   ComputerDesktopIcon,
@@ -13,9 +13,9 @@ import {
   PlayIcon,
   CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, MotionConfig, useScroll } from 'framer-motion';
 import { useTheme } from '../../../app/providers/ThemeContext';
-import ThemeToggle from '../../../shared/components/ui/ThemeToggle';
+import SoftwareHouseNavbar from '../components/SoftwareHouseNavbar';
 import './tws-finance-design.css';
 import './SoftwareHousePremium.css';
 
@@ -26,19 +26,7 @@ const MANY_TABS = [
 
 const SoftwareHouseLanding = () => {
   const { isDarkMode } = useTheme();
-  const [scrollY, setScrollY] = useState(0);
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-      const total = document.documentElement.scrollHeight - window.innerHeight;
-      setScrollProgress(total > 0 ? (window.scrollY / total) * 100 : 0);
-    };
-    window.addEventListener('scroll', handleScroll);
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const { scrollYProgress } = useScroll();
 
   const features = [
     { icon: CodeBracketIcon, title: 'Project Management', description: 'Agile/Scrum, sprints, backlog', color: 'from-purple-500 to-purple-700' },
@@ -83,41 +71,17 @@ const SoftwareHouseLanding = () => {
   );
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className={`tws-landing-page tws-dot-grid min-h-screen relative${!isDarkMode ? ' day-mode' : ''}`} style={{ background: 'var(--tws-bg-primary)', color: 'var(--tws-text-primary)' }}>
       {/* Scroll progress — accent */}
       <div className="fixed top-0 left-0 right-0 h-0.5 z-[60]" style={{ background: 'var(--tws-border)' }} aria-hidden>
-        <div
-          className="h-full transition-[width] duration-200 ease-out"
-          style={{ width: `${scrollProgress}%`, background: 'var(--tws-accent)' }}
+        <motion.div
+          className="h-full origin-left"
+          style={{ scaleX: scrollYProgress, background: 'var(--tws-accent)' }}
         />
       </div>
 
-      {/* Nav — same as Finance: dark, accent pill */}
-      <nav
-        className={`fixed top-0 w-full z-50 h-[72px] flex items-center transition-all duration-300 ${scrollY > 50 ? 'backdrop-blur-xl border-b' : ''
-          }`}
-        style={scrollY > 50 ? { background: isDarkMode ? 'rgba(10,10,15,0.88)' : 'rgba(244,246,255,0.92)', borderColor: 'var(--tws-border)' } : {}}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl w-full">
-          <div className="flex items-center justify-between h-full">
-            <Link to="/" className="flex items-center gap-2 font-sora font-semibold" style={{ color: 'var(--tws-text-primary)' }}>
-              <span className="text-2xl">TWS</span>
-              <span className="px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded border" style={{ color: 'var(--tws-accent)', borderColor: 'var(--tws-accent)' }}>Software House</span>
-            </Link>
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="tws-nav-link font-dm-sans text-sm font-medium transition-colors" style={{ color: 'var(--tws-text-secondary)' }}>Features</a>
-              <Link to="/software-house/finance" className="tws-nav-link tws-nav-link-finance font-dm-sans text-sm font-medium transition-colors" style={{ color: 'var(--tws-text-secondary)' }}>Finance</Link>
-              <a href="#modules" className="tws-nav-link font-dm-sans text-sm font-medium transition-colors" style={{ color: 'var(--tws-text-secondary)' }}>Modules</a>
-              <a href="#pricing" className="tws-nav-link font-dm-sans text-sm font-medium transition-colors" style={{ color: 'var(--tws-text-secondary)' }}>Pricing</a>
-            </div>
-            <div className="flex items-center gap-3">
-              <ThemeToggle size="sm" shortcut={true} />
-              <Link to="/software-house-login" className="tws-nav-link font-dm-sans text-sm font-medium px-3 py-2 transition-colors" style={{ color: 'var(--tws-text-secondary)' }}>Login</Link>
-              <Link to="/software-house-signup" className="tws-nav-cta font-dm-sans text-sm font-medium px-4 py-2 rounded-[10px] transition-colors" style={{ background: 'var(--tws-accent)', color: '#fff' }}>Start free trial</Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <SoftwareHouseNavbar isDarkMode={isDarkMode} fixed />
 
       {/* Story timeline: vertical line connecting chapters 1–5 */}
       <div className="relative">
@@ -342,7 +306,7 @@ const SoftwareHouseLanding = () => {
         </section>
 
         {/* Chapter 3 — The Singular Vision */}
-        <section id="solution" className="sh-premium-solution px-4 sm:px-6 lg:px-8">
+        <section id="solution" className="sh-premium-solution px-4 sm:px-6 lg:px-8 scroll-mt-24">
           <div className="container mx-auto max-w-6xl text-center relative z-10">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -508,7 +472,7 @@ const SoftwareHouseLanding = () => {
         </section>
 
         {/* Chapter 4 — The Atomic Engine */}
-        <section id="features" className="sh-premium-atomic px-4 sm:px-6 lg:px-8">
+        <section id="features" className="sh-premium-atomic px-4 sm:px-6 lg:px-8 scroll-mt-24">
           <div className="container mx-auto max-w-6xl">
             <motion.div
               className="text-center mb-20"
@@ -826,6 +790,7 @@ const SoftwareHouseLanding = () => {
         </footer>
       </div>
     </div>
+    </MotionConfig>
   );
 };
 

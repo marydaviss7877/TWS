@@ -35,6 +35,7 @@ import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext
 import tenantProjectApiService from '../projects/services/tenantProjectApiService';
 import CreateTaskModal from '../projects/components/CreateTaskModal';
 import { CARD_STATUS, API_ENDPOINTS } from '../projects/constants/projectConstants';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const PRIORITY_STYLES = {
@@ -431,9 +432,7 @@ const MyWork = () => {
 
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (loading) return (
-    <div className="flex items-center justify-center py-24">
-      <div className="animate-spin h-10 w-10 rounded-full border-2 border-primary-500 border-t-transparent" />
-    </div>
+    <LoadingSpinner message="Loading your work..." className="min-h-[40vh] bg-transparent" />
   );
 
   // ── Render ───────────────────────────────────────────────────────────────────

@@ -26,6 +26,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 const AccountsReceivable = () => {
   const { tenantSlug } = useParams();
@@ -435,14 +437,7 @@ const AccountsReceivable = () => {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading accounts receivable...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading accounts receivable..." className="min-h-[40vh] bg-transparent" />;
   }
 
   const totals = calculateTotals();
@@ -983,9 +978,7 @@ const AccountsReceivable = () => {
             </table>
           ) : (
             <div className="text-center py-12">
-              <ArrowTrendingUpIcon className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 mb-2">No invoices found</p>
-              <p className="text-sm text-gray-500 dark:text-gray-500">Create your first invoice to get started</p>
+              <EmptyState title="No invoices found" message="Create your first invoice to get started." className="max-w-lg mx-auto" />
               <button
                 type="button"
                 onClick={() => setShowForm(true)}

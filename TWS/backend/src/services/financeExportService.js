@@ -21,6 +21,14 @@ try {
  * Handles export of financial data to PDF, Excel, and CSV formats
  */
 class FinanceExportService {
+  static supportsExcel() {
+    return Boolean(ExcelJS);
+  }
+
+  static supportsPdf() {
+    return Boolean(PDFDocument);
+  }
+
   /**
    * Export KPIs to Excel
    */

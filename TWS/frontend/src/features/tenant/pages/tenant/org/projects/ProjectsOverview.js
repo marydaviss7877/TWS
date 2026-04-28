@@ -49,6 +49,9 @@ import { tenantApiService } from '../../../../../../shared/services/tenant/tenan
 import { PROJECT_STATUS, PROJECT_TYPE } from './constants/projectConstants';
 import CreateProjectModal from './components/CreateProjectModal';
 import ErrorBoundary from './components/ErrorBoundary';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 // Register Chart.js components
 ChartJS.register(
@@ -841,34 +844,11 @@ const ProjectsOverviewContent = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading projects overview...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading projects overview..." className="min-h-[40vh] bg-transparent" />;
   }
 
   if (error) {
-    return (
-      <div className="glass-card-premium p-6 border border-red-200 dark:border-red-800">
-        <div className="flex">
-          <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800 dark:text-red-400">Error</h3>
-            <p className="mt-1 text-sm text-red-700 dark:text-red-300">{error}</p>
-            <button
-              onClick={fetchOverviewData}
-              className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <ErrorState title="Projects overview unavailable" message={error} onRetry={fetchOverviewData} className="max-w-xl mx-auto" />;
   }
 
   return (
@@ -1540,9 +1520,7 @@ const ProjectsOverviewContent = () => {
               ))
             ) : (
               <div className="text-center py-12">
-                <FolderIcon className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 mb-2">No projects found</p>
-                <p className="text-sm text-gray-500 dark:text-gray-500">Create your first project to get started</p>
+                <EmptyState title="No projects found" message="Create your first project to get started." className="max-w-lg mx-auto" />
               </div>
             )}
           </div>

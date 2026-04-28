@@ -1,21 +1,23 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const { body, query, param } = require('express-validator');
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
 const Workspace = require('../../../models/Workspace');
 const User = require('../../../models/User');
-// Messaging feature removed - Chat model disabled
-// const Chat = require('../../../models/Chat');
 
 const router = express.Router();
 
-// Apply authentication middleware to all routes
-router.use(authenticateToken);
+const workspacesRead = requireErpAccess({ module: 'projects', action: ['read', 'read_own'], checkRevocation: false });
+const workspacesWrite = requireErpAccess({ module: 'projects', action: 'write', checkRevocation: false });
+const workspacesAdmin = requireErpAccess({ module: 'projects', action: 'admin', checkRevocation: false });
+
+router.use(verifyERPToken);
 
 // Get all workspaces for the authenticated user
-router.get('/', [
+router.get('/', workspacesRead, [
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 })
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -50,7 +52,6 @@ router.get('/', [
         }],
         settings: {
           allowGuestAccess: false,
-          defaultChannel: 'general',
           timezone: 'UTC'
         },
         usage: {
@@ -121,7 +122,7 @@ router.get('/', [
 }));
 
 // Get workspace by ID
-router.get('/:id', [
+router.get('/:id', workspacesRead, [
   param('id').isMongoId()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const workspace = await Workspace.findById(req.params.id)
@@ -151,7 +152,7 @@ router.get('/:id', [
 }));
 
 // Create new workspace
-router.post('/', [
+router.post('/', workspacesWrite, [
   body('name').notEmpty().trim().isLength({ min: 1, max: 100 }),
   body('description').optional().trim().isLength({ max: 500 }),
   body('type').optional().isIn(['internal', 'client', 'partner', 'agency'])
@@ -176,7 +177,6 @@ router.post('/', [
       }],
       settings: {
         allowGuestAccess: false,
-        defaultChannel: 'general',
         timezone: 'UTC'
       },
       usage: {
@@ -227,30 +227,6 @@ router.post('/', [
 
   await workspace.save();
 
-  // Create default channels - DISABLED: Messaging feature removed
-  // const defaultChannels = [
-  //   { name: 'general', description: 'General discussion for the workspace', isPrivate: false },
-  //   { name: 'announcements', description: 'Important announcements and updates', isPrivate: false }
-  // ];
-
-  // for (const channelData of defaultChannels) {
-  //   const channel = new Chat({
-  //     name: channelData.name,
-  //     type: 'channel',
-  //     description: channelData.description,
-  //     workspaceId: workspace._id,
-  //     organization: req.user.orgId,
-  //     createdBy: req.user.id,
-  //     isPrivate: channelData.isPrivate,
-  //     members: [{
-  //       user: req.user.id,
-  //       role: 'owner',
-  //       joinedAt: new Date()
-  //     }]
-  //   });
-  //   await channel.save();
-  // }
-
   await workspace.populate('ownerId', 'fullName email profilePicUrl');
   await workspace.populate('members.userId', 'fullName email profilePicUrl');
 
@@ -262,7 +238,7 @@ router.post('/', [
 }));
 
 // Update workspace
-router.patch('/:id', [
+router.patch('/:id', workspacesWrite, [
   param('id').isMongoId(),
   body('name').optional().notEmpty().trim().isLength({ min: 1, max: 100 }),
   body('description').optional().trim().isLength({ max: 500 }),
@@ -319,7 +295,7 @@ router.patch('/:id', [
 }));
 
 // Delete workspace
-router.delete('/:id', [
+router.delete('/:id', workspacesAdmin, [
   param('id').isMongoId()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const workspace = await Workspace.findById(req.params.id);
@@ -339,16 +315,6 @@ router.delete('/:id', [
     });
   }
 
-  // Archive all channels in the workspace - DISABLED: Messaging feature removed
-  // await Chat.updateMany(
-  //   { workspaceId: workspace._id },
-  //   { 
-  //     isArchived: true, 
-  //     archivedAt: new Date(), 
-  //     archivedBy: req.user.id 
-  //   }
-  // );
-
   // Archive the workspace
   workspace.status = 'archived';
   workspace.archived = true;
@@ -362,7 +328,7 @@ router.delete('/:id', [
 }));
 
 // Invite member to workspace
-router.post('/:id/invite', [
+router.post('/:id/invite', workspacesWrite, [
   param('id').isMongoId(),
   body('email').isEmail().normalizeEmail(),
   body('role').optional().isIn(['admin', 'member'])
@@ -413,17 +379,6 @@ router.post('/:id/invite', [
   // Add member to workspace
   await workspace.addMember(user._id, role, req.user.id);
 
-  // Add user to default channels - DISABLED: Messaging feature removed
-  // const defaultChannels = await Chat.find({
-  //   workspaceId: workspace._id,
-  //   type: 'channel',
-  //   isPrivate: false
-  // });
-
-  // for (const channel of defaultChannels) {
-  //   await channel.addMember(user._id, 'member');
-  // }
-
   await workspace.populate('members.userId', 'fullName email profilePicUrl');
   await workspace.populate('members.invitedBy', 'fullName');
 
@@ -435,7 +390,7 @@ router.post('/:id/invite', [
 }));
 
 // Remove member from workspace
-router.delete('/:id/members/:userId', [
+router.delete('/:id/members/:userId', workspacesAdmin, [
   param('id').isMongoId(),
   param('userId').isMongoId()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -469,11 +424,7 @@ router.delete('/:id/members/:userId', [
   // Remove member from workspace
   await workspace.removeMember(targetUserId);
 
-  // Remove user from all channels in the workspace
-  await Chat.updateMany(
-    { workspaceId: workspace._id },
-    { $pull: { members: { user: targetUserId } } }
-  );
+  // Messaging feature removed; keep member removal scoped to workspace model only.
 
   await workspace.populate('members.userId', 'fullName email profilePicUrl');
   await workspace.populate('members.invitedBy', 'fullName');
@@ -486,7 +437,7 @@ router.delete('/:id/members/:userId', [
 }));
 
 // Update member role
-router.patch('/:id/members/:userId', [
+router.patch('/:id/members/:userId', workspacesAdmin, [
   param('id').isMongoId(),
   param('userId').isMongoId(),
   body('role').isIn(['admin', 'member'])
@@ -533,7 +484,7 @@ router.patch('/:id/members/:userId', [
 }));
 
 // Get workspace channels
-router.get('/:id/channels', [
+router.get('/:id/channels', workspacesRead, [
   param('id').isMongoId()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const workspace = await Workspace.findById(req.params.id);
@@ -552,9 +503,6 @@ router.get('/:id/channels', [
       message: 'Access denied to this workspace'
     });
   }
-
-  // DISABLED: Messaging feature removed
-  // const channels = await Chat.findChannelsInWorkspace(workspace._id, req.user.id);
 
   res.json({
     success: true,

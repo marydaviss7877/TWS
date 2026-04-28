@@ -24,6 +24,9 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
 
@@ -76,14 +79,7 @@ const AnalyticsOverview = () => {
   const hasAnyData = totalUsers > 0 || totalProjects > 0 || totalTasks > 0 || (financialTotal !== 0 && !Number.isNaN(financialTotal));
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-300 dark:border-gray-600 border-t-transparent mx-auto" style={{ borderTopColor: 'var(--color-primary-500, #6366f1)' }} />
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading analytics...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading analytics..." className="min-h-[40vh] bg-transparent" />;
   }
 
   return (
@@ -107,11 +103,7 @@ const AnalyticsOverview = () => {
         </button>
       </div>
 
-      {error && (
-        <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-amber-800 dark:text-amber-200 text-sm">
-          {error}
-        </div>
-      )}
+      {error && <ErrorState title="Analytics unavailable" message={error} className="max-w-xl" />}
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -311,9 +303,11 @@ const AnalyticsOverview = () => {
       </div>
 
       {!hasAnyData && !error && (
-        <div className="bg-white dark:bg-gray-800/80 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
-          <p className="text-gray-500 dark:text-gray-400">No analytics data yet. Data will appear as you add users, projects, tasks, and financial records.</p>
-        </div>
+        <EmptyState
+          title="No analytics data yet"
+          message="Data will appear as you add users, projects, tasks, and financial records."
+          className="max-w-2xl mx-auto"
+        />
       )}
     </div>
   );

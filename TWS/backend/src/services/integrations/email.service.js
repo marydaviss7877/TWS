@@ -19,7 +19,9 @@ class EmailService {
     const emailPass = envConfig.get('EMAIL_PASS');
     
     if (!emailUser || !emailPass) {
-      console.warn('⚠️  Email service not configured. Emails will be logged to console.');
+      if (process.env.NODE_ENV !== 'test') {
+        console.warn('⚠️  Email service not configured. Emails will be logged to console.');
+      }
       return;
     }
 

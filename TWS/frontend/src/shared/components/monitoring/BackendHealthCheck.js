@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
 const BackendHealthCheck = () => {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || '';
   const [backendStatus, setBackendStatus] = useState('checking');
   const [authStatus, setAuthStatus] = useState('checking');
 
   useEffect(() => {
     // Check backend health
-    fetch('http://localhost:5000/api/health')
+    fetch(`${apiBaseUrl}/api/health`)
       .then(response => response.json())
       .then(data => {
         setBackendStatus('online');
@@ -17,8 +18,9 @@ const BackendHealthCheck = () => {
       });
 
     // Check auth endpoint
-    fetch('http://localhost:5000/api/auth/me', {
+    fetch(`${apiBaseUrl}/api/auth/me`, {
       method: 'GET',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       }

@@ -108,8 +108,8 @@ export const softwareHouseApi = {
   },
 
   stopTimeTracking: (tenantSlug, entryId, data) => {
-    const url = `/api/tenant/${tenantSlug}/software-house/time-tracking/${entryId}/stop`;
-    return axiosInstance.put(url, data, { headers: getTenantAuthHeaders() });
+    const url = `/api/tenant/${tenantSlug}/software-house/time-tracking/stop/${entryId}`;
+    return axiosInstance.post(url, data, { headers: getTenantAuthHeaders() });
   },
 
   createTimeEntry: (tenantSlug, data) => {

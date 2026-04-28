@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
-const { requireRole, authenticateToken } = require('../../../middleware/auth/auth');
-const { requirePermission } = require('../../../middleware/auth/rbac');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const User = require('../../../models/User');
 const Employee = require('../../../models/Employee');
@@ -20,10 +20,21 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 const router = express.Router();
+router.use(verifyERPToken);
+const usersRead = requireErpAccess({ module: 'users', action: ['read', 'read_own'], checkRevocation: true });
+const usersWrite = requireErpAccess({ module: 'users', action: ['write', 'admin'], checkRevocation: true });
+const resolveOrgId = (req) => {
+  return (
+    req.user?.orgId?._id ||
+    req.user?.orgId ||
+    req.authContext?.orgId ||
+    null
+  );
+};
 
 // Get all users
 router.get('/', [
-  requirePermission('users:read'),
+  usersRead,
   query('page').optional().isInt({ min: 1 }),
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('role').optional().isIn(['owner', 'admin', 'hr', 'finance', 'manager', 'employee', 'contractor', 'auditor']),
@@ -34,7 +45,11 @@ router.get('/', [
   const limit = parseInt(req.query.limit) || 20;
   const skip = (page - 1) * limit;
 
-  const filter = {};
+  const orgId = resolveOrgId(req);
+  if (!orgId) {
+    return res.status(403).json({ success: false, message: 'Organization context not found' });
+  }
+  const filter = { orgId };
   if (req.query.role) filter.role = req.query.role;
   if (req.query.status) filter.status = req.query.status;
 
@@ -64,7 +79,7 @@ router.get('/', [
 ]);
 
 // Get current user's own profile (must be before /:id)
-router.get('/profile', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/profile', ErrorHandler.asyncHandler(async (req, res) => {
   const userId = req.user._id || req.user.id;
   const user = await User.findById(userId)
     .select('-password -refreshTokens')
@@ -94,7 +109,6 @@ router.get('/profile', authenticateToken, ErrorHandler.asyncHandler(async (req, 
 
 // Update current user's own profile (must be before /:id)
 router.patch('/profile', [
-  authenticateToken,
   body('fullName').optional().trim().notEmpty(),
   body('phone').optional().trim(),
   body('department').optional().trim(),
@@ -134,8 +148,12 @@ router.patch('/profile', [
 ]);
 
 // Get user by ID
-router.get('/:id', requirePermission('users:read'), ErrorHandler.asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id)
+router.get('/:id', usersRead, ErrorHandler.asyncHandler(async (req, res) => {
+  const orgId = resolveOrgId(req);
+  if (!orgId) {
+    return res.status(403).json({ success: false, message: 'Organization context not found' });
+  }
+  const user = await User.findOne({ _id: req.params.id, orgId })
     .select('-password -refreshTokens')
     .populate('managerId', 'fullName email')
     .populate('teamIds', 'name');
@@ -155,7 +173,7 @@ router.get('/:id', requirePermission('users:read'), ErrorHandler.asyncHandler(as
 
 // Create user (invite)
 router.post('/', [
-  requirePermission('users:write'),
+  usersWrite,
   body('email').isEmail().normalizeEmail(),
   body('fullName').notEmpty().trim(),
   body('role').isIn(['owner', 'admin', 'hr', 'finance', 'manager', 'employee', 'contractor', 'auditor']),
@@ -165,9 +183,13 @@ router.post('/', [
   handleValidationErrors,
   ErrorHandler.asyncHandler(async (req, res) => {
   const { email, fullName, role, department, jobTitle, managerId } = req.body;
+  const orgId = resolveOrgId(req);
+  if (!orgId) {
+    return res.status(403).json({ success: false, message: 'Organization context not found' });
+  }
 
   // Check if user already exists
-  const existingUser = await User.findOne({ email });
+  const existingUser = await User.findOne({ email, orgId });
   if (existingUser) {
     return res.status(400).json({
       success: false,
@@ -183,6 +205,7 @@ router.post('/', [
     password: tempPassword,
     fullName,
     role,
+    orgId,
     department,
     jobTitle,
     managerId
@@ -205,7 +228,7 @@ router.post('/', [
 
 // Update user
 router.patch('/:id', [
-  requirePermission('users:write'),
+  usersWrite,
   body('fullName').optional().notEmpty().trim(),
   body('role').optional().isIn(['owner', 'admin', 'hr', 'finance', 'manager', 'employee', 'contractor', 'auditor']),
   body('status').optional().isIn(['active', 'suspended', 'inactive']),
@@ -215,12 +238,16 @@ router.patch('/:id', [
   body('teamIds').optional().isArray(),
   handleValidationErrors,
   ErrorHandler.asyncHandler(async (req, res) => {
+  const orgId = resolveOrgId(req);
+  if (!orgId) {
+    return res.status(403).json({ success: false, message: 'Organization context not found' });
+  }
   const updates = req.body;
   delete updates.password; // Prevent password updates through this route
   delete updates.email; // Prevent email updates
 
-  const user = await User.findByIdAndUpdate(
-    req.params.id,
+  const user = await User.findOneAndUpdate(
+    { _id: req.params.id, orgId },
     updates,
     { new: true, runValidators: true }
   ).select('-password -refreshTokens');
@@ -241,8 +268,12 @@ router.patch('/:id', [
 ]);
 
 // Delete user
-router.delete('/:id', requirePermission('users:write'), ErrorHandler.asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id);
+router.delete('/:id', usersWrite, ErrorHandler.asyncHandler(async (req, res) => {
+  const orgId = resolveOrgId(req);
+  if (!orgId) {
+    return res.status(403).json({ success: false, message: 'Organization context not found' });
+  }
+  const user = await User.findOne({ _id: req.params.id, orgId });
   
   if (!user) {
     return res.status(404).json({
@@ -260,7 +291,7 @@ router.delete('/:id', requirePermission('users:write'), ErrorHandler.asyncHandle
     });
   }
 
-  await User.findByIdAndDelete(req.params.id);
+  await User.findOneAndDelete({ _id: req.params.id, orgId });
 
   res.json({
     success: true,
@@ -269,8 +300,12 @@ router.delete('/:id', requirePermission('users:write'), ErrorHandler.asyncHandle
 }));
 
 // Get user's teams
-router.get('/:id/teams', requirePermission('users:read'), ErrorHandler.asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id)
+router.get('/:id/teams', usersRead, ErrorHandler.asyncHandler(async (req, res) => {
+  const orgId = resolveOrgId(req);
+  if (!orgId) {
+    return res.status(403).json({ success: false, message: 'Organization context not found' });
+  }
+  const user = await User.findOne({ _id: req.params.id, orgId })
     .populate('teamIds', 'name description members')
     .select('teamIds');
 
@@ -289,14 +324,18 @@ router.get('/:id/teams', requirePermission('users:read'), ErrorHandler.asyncHand
 
 // Update user's teams
 router.patch('/:id/teams', [
-  requirePermission('users:write'),
+  usersWrite,
   body('teamIds').isArray(),
   handleValidationErrors,
   ErrorHandler.asyncHandler(async (req, res) => {
+  const orgId = resolveOrgId(req);
+  if (!orgId) {
+    return res.status(403).json({ success: false, message: 'Organization context not found' });
+  }
   const { teamIds } = req.body;
 
-  const user = await User.findByIdAndUpdate(
-    req.params.id,
+  const user = await User.findOneAndUpdate(
+    { _id: req.params.id, orgId },
     { teamIds },
     { new: true }
   ).select('-password -refreshTokens');

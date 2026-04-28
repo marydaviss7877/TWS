@@ -1,9 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const masterERPService = require('../../../services/masterERPService');
 const { body, validationResult } = require('express-validator');
+const masterErpAdmin = requireErpAccess({ allowedRoles: ['supra_admin'], checkRevocation: false });
+router.use(verifyERPToken);
 
 // Validation middleware
 const validateMasterERPCreation = [
@@ -22,7 +25,7 @@ const validateTenantCreation = [
 ];
 
 // Get all Master ERP templates - DISABLED: Master ERP management page removed
-// router.get('/', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+// router.get('/', masterErpAdmin, ErrorHandler.asyncHandler(async (req, res) => {
 //   try {
 //     const result = await masterERPService.getAllMasterERPs();
 //     
@@ -42,7 +45,7 @@ const validateTenantCreation = [
 // }));
 
 // Get industries metadata - DISABLED: Master ERP management page removed
-// router.get('/meta/industries', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+// router.get('/meta/industries', masterErpAdmin, ErrorHandler.asyncHandler(async (req, res) => {
 //   const industries = [
 //     {
 //       value: 'software_house',
@@ -82,7 +85,7 @@ const validateTenantCreation = [
 // }));
 
 // Get statistics overview - DISABLED: Master ERP management page removed
-// router.get('/stats/overview', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+// router.get('/stats/overview', masterErpAdmin, ErrorHandler.asyncHandler(async (req, res) => {
 //   try {
 //     const result = await masterERPService.getMasterERPStatistics();
 //     
@@ -110,7 +113,7 @@ const validateTenantCreation = [
 // Get Master ERP by industry - KEPT: Used internally by signup service (via service method, not API route)
 // This route is kept for potential future use but requires SupraAdmin auth
 // Signup service uses masterERPService.getMasterERPByIndustry() directly
-router.get('/industry/:industry', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/industry/:industry', masterErpAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { industry } = req.params;
   
   try {
@@ -134,7 +137,7 @@ router.get('/industry/:industry', authenticateToken, requireRole(['supra_admin']
 // Tenant creation from Master ERP removed: tenants must be created through signup pages only (see SRS).
 
 // Clone Master ERP template - DISABLED: Master ERP management page removed
-// router.post('/:id/clone', authenticateToken, requireRole(['supra_admin']), validateMasterERPCreation, ErrorHandler.asyncHandler(async (req, res) => {
+// router.post('/:id/clone', masterErpAdmin, validateMasterERPCreation, ErrorHandler.asyncHandler(async (req, res) => {
 //   const { id } = req.params;
 //   const templateData = req.body;
 //   
@@ -157,7 +160,7 @@ router.get('/industry/:industry', authenticateToken, requireRole(['supra_admin']
 // }));
 
 // Get available modules for industry - DISABLED: Master ERP management page removed
-// router.get('/meta/modules/:industry', authenticateToken, requireRole(['supra_admin']), ErrorHandler.asyncHandler(async (req, res) => {
+// router.get('/meta/modules/:industry', masterErpAdmin, ErrorHandler.asyncHandler(async (req, res) => {
 //   const { industry } = req.params;
 //   
 //   const coreModules = [

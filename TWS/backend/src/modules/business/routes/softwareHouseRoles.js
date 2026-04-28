@@ -1,17 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const { checkFeatureAccessSoftwareHouseOnly } = require('../../../middleware/common/featureGate');
 const SoftwareHouseRole = require('../../../models/SoftwareHouseRole');
 const ProjectAccess = require('../../../models/ProjectAccess');
 const User = require('../../../models/User');
+const softwareHouseRoleAdmin = requireErpAccess({ allowedRoles: ['owner','admin'], checkRevocation: false });
+router.use(verifyERPToken);
 
 // Plan feature gate: custom roles only for Software House plans that include it
-router.use(authenticateToken, checkFeatureAccessSoftwareHouseOnly('customRoles'));
+router.use(checkFeatureAccessSoftwareHouseOnly('customRoles'));
 
 // Get all software house roles for organization
-router.get('/', authenticateToken, requireRole(['owner', 'admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/', softwareHouseRoleAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { roleType, level, isActive } = req.query;
   const orgId = req.user.orgId;
   
@@ -42,7 +45,7 @@ router.get('/', authenticateToken, requireRole(['owner', 'admin']), ErrorHandler
 }));
 
 // Get role by ID
-router.get('/:roleId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/:roleId',  ErrorHandler.asyncHandler(async (req, res) => {
   const { roleId } = req.params;
   const orgId = req.user.orgId;
   
@@ -65,7 +68,7 @@ router.get('/:roleId', authenticateToken, ErrorHandler.asyncHandler(async (req, 
 }));
 
 // Create new software house role
-router.post('/', authenticateToken, requireRole(['owner', 'admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/', softwareHouseRoleAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const {
     name,
     description,
@@ -126,7 +129,7 @@ router.post('/', authenticateToken, requireRole(['owner', 'admin']), ErrorHandle
 }));
 
 // Update software house role
-router.put('/:roleId', authenticateToken, requireRole(['owner', 'admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.put('/:roleId', softwareHouseRoleAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { roleId } = req.params;
   const updates = req.body;
   const orgId = req.user.orgId;
@@ -152,7 +155,7 @@ router.put('/:roleId', authenticateToken, requireRole(['owner', 'admin']), Error
 }));
 
 // Delete software house role
-router.delete('/:roleId', authenticateToken, requireRole(['owner', 'admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.delete('/:roleId', softwareHouseRoleAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { roleId } = req.params;
   const orgId = req.user.orgId;
   
@@ -185,7 +188,7 @@ router.delete('/:roleId', authenticateToken, requireRole(['owner', 'admin']), Er
 }));
 
 // Get role hierarchy
-router.get('/hierarchy/tree', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/hierarchy/tree',  ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = req.user.orgId;
   
   const roles = await SoftwareHouseRole.find({ orgId, isActive: true })
@@ -218,7 +221,7 @@ router.get('/hierarchy/tree', authenticateToken, ErrorHandler.asyncHandler(async
 }));
 
 // Get role permissions summary
-router.get('/:roleId/permissions', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/:roleId/permissions',  ErrorHandler.asyncHandler(async (req, res) => {
   const { roleId } = req.params;
   const orgId = req.user.orgId;
   
@@ -253,7 +256,7 @@ router.get('/:roleId/permissions', authenticateToken, ErrorHandler.asyncHandler(
 }));
 
 // Assign role to user
-router.post('/:roleId/assign', authenticateToken, requireRole(['owner', 'admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:roleId/assign', softwareHouseRoleAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { roleId } = req.params;
   const { userId } = req.body;
   const orgId = req.user.orgId;
@@ -284,7 +287,7 @@ router.post('/:roleId/assign', authenticateToken, requireRole(['owner', 'admin']
 }));
 
 // Remove role from user
-router.delete('/:roleId/assign/:userId', authenticateToken, requireRole(['owner', 'admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.delete('/:roleId/assign/:userId', softwareHouseRoleAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { roleId, userId } = req.params;
   const orgId = req.user.orgId;
   
@@ -308,7 +311,7 @@ router.delete('/:roleId/assign/:userId', authenticateToken, requireRole(['owner'
 }));
 
 // Get users with specific role
-router.get('/:roleId/users', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/:roleId/users',  ErrorHandler.asyncHandler(async (req, res) => {
   const { roleId } = req.params;
   const orgId = req.user.orgId;
   
@@ -326,7 +329,7 @@ router.get('/:roleId/users', authenticateToken, ErrorHandler.asyncHandler(async 
 }));
 
 // Clone role
-router.post('/:roleId/clone', authenticateToken, requireRole(['owner', 'admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:roleId/clone', softwareHouseRoleAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { roleId } = req.params;
   const { name, description } = req.body;
   const orgId = req.user.orgId;

@@ -31,13 +31,7 @@ const EmployeeDocumentsView = ({ tenantSlug }) => {
         const empData = await empResponse.json();
         if (empData.data?.employees?.length > 0) {
           const employee = empData.data.employees[0];
-          const docsResponse = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees/${employee._id}/documents`, {
-            credentials: 'include'
-          });
-          if (docsResponse.ok) {
-            const docsData = await docsResponse.json();
-            setDocuments(docsData.data?.documents || []);
-          }
+          setDocuments(Array.isArray(employee.documents) ? employee.documents : []);
         }
       }
     } catch (error) {

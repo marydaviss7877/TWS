@@ -56,6 +56,19 @@ const TimeExpenses = () => {
     fetchData();
   }, [tenantSlug]);
 
+  const asId = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object' && value._id) return String(value._id);
+    return String(value);
+  };
+
+  const asName = (obj, fallback = 'N/A') => {
+    if (!obj) return fallback;
+    if (typeof obj === 'string') return obj;
+    return obj.name || obj.fullName || obj.displayName || fallback;
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -64,15 +77,24 @@ const TimeExpenses = () => {
       try {
         const timeEntriesData = await tenantApiService.getTimeEntries(tenantSlug);
         // Ensure we always have an array
-        if (Array.isArray(timeEntriesData)) {
-          setTimeEntries(timeEntriesData);
-        } else if (timeEntriesData && Array.isArray(timeEntriesData.data)) {
-          setTimeEntries(timeEntriesData.data);
-        } else if (timeEntriesData && Array.isArray(timeEntriesData.timeEntries)) {
-          setTimeEntries(timeEntriesData.timeEntries);
-        } else {
-          setTimeEntries([]);
-        }
+        const rawEntries = Array.isArray(timeEntriesData)
+          ? timeEntriesData
+          : Array.isArray(timeEntriesData?.data)
+          ? timeEntriesData.data
+          : Array.isArray(timeEntriesData?.timeEntries)
+          ? timeEntriesData.timeEntries
+          : [];
+        const normalized = rawEntries.map((entry) => ({
+          ...entry,
+          projectId: asId(entry.projectId),
+          employeeId: asId(entry.employeeId),
+          projectName: entry.projectName || asName(entry.projectId),
+          employeeName: entry.employeeName || asName(entry.employeeId),
+          hourlyRate: Number(entry.hourlyRate || 0),
+          hours: Number(entry.hours || 0),
+          billable: entry.billable !== false
+        }));
+        setTimeEntries(normalized);
       } catch (err) {
         console.error('Error fetching time entries:', err);
         setTimeEntries([]);
@@ -82,15 +104,23 @@ const TimeExpenses = () => {
       try {
         const expensesData = await tenantApiService.getExpenses(tenantSlug);
         // Ensure we always have an array
-        if (Array.isArray(expensesData)) {
-          setExpenses(expensesData);
-        } else if (expensesData && Array.isArray(expensesData.data)) {
-          setExpenses(expensesData.data);
-        } else if (expensesData && Array.isArray(expensesData.expenses)) {
-          setExpenses(expensesData.expenses);
-        } else {
-          setExpenses([]);
-        }
+        const rawExpenses = Array.isArray(expensesData)
+          ? expensesData
+          : Array.isArray(expensesData?.data)
+          ? expensesData.data
+          : Array.isArray(expensesData?.expenses)
+          ? expensesData.expenses
+          : [];
+        const normalized = rawExpenses.map((expense) => ({
+          ...expense,
+          projectId: asId(expense.projectId),
+          employeeId: asId(expense.employeeId),
+          projectName: expense.projectName || asName(expense.projectId),
+          employeeName: expense.employeeName || asName(expense.employeeId),
+          amount: Number(expense.amount || 0),
+          billable: expense.billable !== false
+        }));
+        setExpenses(normalized);
       } catch (err) {
         console.error('Error fetching expenses:', err);
         setExpenses([]);
@@ -118,15 +148,20 @@ const TimeExpenses = () => {
       // Fetch employees (team members)
       try {
         const employeesData = await tenantApiService.getTeamMembers(tenantSlug);
-        if (Array.isArray(employeesData)) {
-          setEmployees(employeesData);
-        } else if (employeesData && Array.isArray(employeesData.members)) {
-          setEmployees(employeesData.members);
-        } else if (employeesData && Array.isArray(employeesData.data)) {
-          setEmployees(employeesData.data);
-        } else {
-          setEmployees([]);
-        }
+        const rawEmployees = Array.isArray(employeesData)
+          ? employeesData
+          : Array.isArray(employeesData?.members)
+          ? employeesData.members
+          : Array.isArray(employeesData?.data)
+          ? employeesData.data
+          : [];
+        const normalized = rawEmployees.map((employee) => ({
+          ...employee,
+          _id: asId(employee._id || employee.id || employee.userId),
+          name: asName(employee),
+          hourlyRate: Number(employee.hourlyRate || employee.rate || 0)
+        }));
+        setEmployees(normalized);
       } catch (err) {
         console.error('Error fetching employees:', err);
         setEmployees([]);
@@ -240,7 +275,7 @@ const TimeExpenses = () => {
     }
     
     if (filterProject !== 'all') {
-      filtered = filtered.filter(entry => entry.projectId === filterProject);
+      filtered = filtered.filter(entry => asId(entry.projectId) === filterProject);
     }
     
     if (filterBillable !== 'all') {
@@ -266,7 +301,7 @@ const TimeExpenses = () => {
     }
     
     if (filterProject !== 'all') {
-      filtered = filtered.filter(expense => expense.projectId === filterProject);
+      filtered = filtered.filter(expense => asId(expense.projectId) === filterProject);
     }
     
     if (filterBillable !== 'all') {
@@ -837,8 +872,6 @@ const TimeExpenses = () => {
         </div>
       </div>
 
-      {/* Time Entry Form Modal */}
-      )}
     </div>
   );
 };

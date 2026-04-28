@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, MotionConfig, useReducedMotion } from 'framer-motion';
 import {
-  CurrencyDollarIcon,
   ArrowRightIcon,
-  CheckCircleIcon,
   DocumentTextIcon,
   BuildingOfficeIcon,
   ChartBarIcon,
@@ -12,30 +10,26 @@ import {
   ClockIcon,
   ArrowTrendingUpIcon,
   ArrowPathIcon,
-  DocumentChartBarIcon,
-  ShieldCheckIcon,
-  RocketLaunchIcon,
-  ChevronRightIcon,
-  PencilIcon,
-  TrashIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon
+  DocumentChartBarIcon
 } from '@heroicons/react/24/outline';
 
 import './SoftwareHouseFinance.css';
 import { useTheme } from '../../../app/providers/ThemeContext';
+import SoftwareHouseNavbar from '../components/SoftwareHouseNavbar';
 
 const FinanceSystemPage = () => {
   const { isDarkMode } = useTheme();
-  const [scrollY, setScrollY] = useState(0);
-  const { scrollYProgress } = useScroll();
-  const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0.8]);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const prefersReducedMotion = useReducedMotion();
+  const spectrumBars = useMemo(
+    () => Array.from({ length: 60 }, (_, i) => ({
+      id: i,
+      base: 20 + ((i * 17) % 60),
+      peak: 35 + ((i * 13) % 55),
+      low: 12 + ((i * 7) % 28),
+      duration: 2 + ((i * 5) % 3)
+    })),
+    []
+  );
 
   const modules = [
     { title: 'Chart of Accounts', path: 'Org → Finance → CoA', metric: '100% Audit', icon: DocumentTextIcon, desc: 'Hierarchical structure pre-configured for software houses.' },
@@ -49,30 +43,10 @@ const FinanceSystemPage = () => {
   ];
 
   return (
-    <div className={`sh-finance-page${!isDarkMode ? ' day-mode' : ''}`}>
-      {/* Premium Navigation */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrollY > 50 ? 'sh-finance-glass h-16 mt-4 mx-auto max-w-6xl inset-x-0' : 'h-20 bg-transparent'}`}>
-        <div className="container mx-auto px-6 h-full flex items-center justify-between">
-          <Link to="/software-house" className="flex items-center gap-2 font-sora font-extrabold text-2xl tracking-tighter">
-            <span className="text-white">TWS</span>
-            <span className="text-emerald-500">FN</span>
-          </Link>
-          <div className="hidden md:flex items-center gap-8">
-            <Link to="/software-house" className="text-xs font-bold uppercase tracking-widest text-[#8B8BA8] hover:text-white transition-colors">Platform</Link>
-            <Link to="/software-house/hrm" className="text-xs font-bold uppercase tracking-widest text-[#8B8BA8] hover:text-white transition-colors">HRM</Link>
-            <Link to="/software-house/projects" className="text-xs font-bold uppercase tracking-widest text-[#8B8BA8] hover:text-white transition-colors">Projects</Link>
-            <a href="#ledger" className="text-xs font-bold uppercase tracking-widest text-[#8B8BA8] hover:text-white transition-colors">Ledger</a>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link to="/software-house-login" className="text-sm font-bold text-white">Login</Link>
-            <Link to="/software-house-signup" className="bg-emerald-500 text-black px-4 py-2 rounded-lg text-sm font-black hover:bg-white transition-colors">
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </nav>
-
-      <main>
+    <MotionConfig reducedMotion="user">
+      <div className={`sh-finance-page${!isDarkMode ? ' day-mode' : ''}`}>
+        <SoftwareHouseNavbar isDarkMode={isDarkMode} />
+        <main>
         {/* Hero Section: The Cash Horizon */}
         <section className="sh-finance-hero px-6">
           <div className="container mx-auto max-w-6xl relative z-10 text-center">
@@ -104,23 +78,17 @@ const FinanceSystemPage = () => {
           </div>
 
           {/* Spectral Visualization Mock */}
-          <div className="sh-spectral-viz">
+          <div className="sh-spectral-viz" aria-hidden>
             <div className="container mx-auto max-w-6xl h-full relative flex items-end gap-1 px-4">
-              {Array.from({ length: 60 }).map((_, i) => (
+              {spectrumBars.map((bar) => (
                 <motion.div
-                  key={i}
+                  key={bar.id}
                   className="sh-viz-bar flex-1"
                   style={{
-                    height: `${20 + Math.random() * 60}%`
+                    height: `${bar.base}%`
                   }}
-                  animate={{
-                    height: [`${20 + Math.random() * 60}%`, `${40 + Math.random() * 40}%`, `${10 + Math.random() * 20}%`]
-                  }}
-                  transition={{
-                    duration: 2 + Math.random() * 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
+                  animate={prefersReducedMotion ? undefined : { height: [`${bar.base}%`, `${bar.peak}%`, `${bar.low}%`] }}
+                  transition={prefersReducedMotion ? undefined : { duration: bar.duration, repeat: Infinity, ease: 'easeInOut' }}
                 />
               ))}
             </div>
@@ -128,7 +96,7 @@ const FinanceSystemPage = () => {
         </section>
 
         {/* Feature Grid: The Atomic Ledger */}
-        <section id="ledger" className="py-24 px-6">
+        <section id="ledger" className="py-24 px-6 scroll-mt-24">
           <div className="container mx-auto max-w-7xl">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
               <div className="max-w-xl">
@@ -173,7 +141,7 @@ const FinanceSystemPage = () => {
         </section>
 
         {/* Console View: Account Structure */}
-        <section id="console" className="sh-console-container px-6">
+        <section id="console" className="sh-console-container px-6 scroll-mt-24">
           <div className="container mx-auto max-w-6xl">
             <div className="text-center mb-16">
               <h2 className="font-sora text-4xl font-bold mb-4 text-white">Interactive Financial Core</h2>
@@ -253,9 +221,9 @@ const FinanceSystemPage = () => {
             </motion.div>
           </div>
         </section>
-      </main>
+        </main>
 
-      <footer className="py-12 px-6 border-t border-white/5">
+        <footer className="py-12 px-6 border-t border-white/5">
         <div className="container mx-auto max-w-6xl flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-4">
             <span className="font-sora font-black text-white">TWS FINANCE</span>
@@ -269,8 +237,9 @@ const FinanceSystemPage = () => {
             <a href="#" className="text-xs font-bold text-[#52526A] hover:text-white transition-colors">SOC2 Report</a>
           </div>
         </div>
-      </footer>
-    </div>
+        </footer>
+      </div>
+    </MotionConfig>
   );
 };
 

@@ -37,6 +37,9 @@ import {
   FilterList,
   MoreVert
 } from '@mui/icons-material';
+import LoadingSpinner from '../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../shared/components/feedback/EmptyState';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -65,6 +68,7 @@ ChartJS.register(
 );
 
 const ExecutiveDashboard = () => {
+  const apiBaseUrl = process.env.REACT_APP_API_URL || '';
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -82,7 +86,7 @@ const ExecutiveDashboard = () => {
       setError(null);
 
       // Fetch comprehensive analytics overview
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/analytics/overview?period=${selectedTimeframe}`, {
+      const response = await fetch(`${apiBaseUrl}/api/analytics/overview?period=${selectedTimeframe}`, {
         headers: {
           'Content-Type': 'application/json'
         },
@@ -110,7 +114,7 @@ const ExecutiveDashboard = () => {
 
   const handleExportData = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/analytics/export?type=overview&format=json', {
+      const response = await fetch(`${apiBaseUrl}/api/analytics/export?type=overview&format=json`, {
         headers: {
           'Content-Type': 'application/json'
         },
@@ -139,31 +143,15 @@ const ExecutiveDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
-    );
+    return <LoadingSpinner message="Loading executive dashboard..." className="min-h-[40vh] bg-transparent" />;
   }
 
   if (error) {
-    return (
-      <Alert severity="error" action={
-        <Button color="inherit" size="small" onClick={fetchDashboardData}>
-          Retry
-        </Button>
-      }>
-        {error}
-      </Alert>
-    );
+    return <ErrorState title="Executive dashboard error" message={error} onRetry={fetchDashboardData} />;
   }
 
   if (!dashboardData) {
-    return (
-      <Alert severity="info">
-        No dashboard data available
-      </Alert>
-    );
+    return <EmptyState title="No dashboard data" message="No executive dashboard data is available yet." className="max-w-3xl mx-auto mt-10" />;
   }
 
   const { summary, profitability, hrPerformance, clientHealth } = dashboardData;

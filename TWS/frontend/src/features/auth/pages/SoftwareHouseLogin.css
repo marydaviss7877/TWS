@@ -30,23 +30,17 @@
    ============================================================ */
 .sh-login-container {
     height: 100vh;
+    width: 100%;
+    max-width: 100vw;
     overflow: hidden;
+    padding-top: 74px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: row;
     background-color: var(--sh-login-bg);
     color: var(--sh-login-text);
     font-family: 'DM Sans', sans-serif;
     transition: background-color 0.35s ease, color 0.35s ease;
-}
-
-/* ============================================================
-   Theme Toggle — fixed corner
-   ============================================================ */
-.sh-theme-toggle {
-    position: fixed;
-    top: 1.25rem;
-    right: 1.5rem;
-    z-index: 300;
 }
 
 /* ============================================================
@@ -170,6 +164,22 @@
     color: #ef4444;
 }
 
+.sh-info-box {
+    padding: 0.6rem 0.875rem;
+    background: rgba(34, 197, 94, 0.12);
+    border-left: 3px solid #22c55e;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    font-size: 0.78rem;
+    color: #22c55e;
+}
+
+.sh-field-error {
+    margin-top: 0.35rem;
+    font-size: 0.72rem;
+    color: #ef4444;
+}
+
 .sh-input-wrapper {
     position: relative;
     display: flex;
@@ -195,6 +205,11 @@
     outline: none;
     border-color: var(--sh-login-accent);
     box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+}
+
+.sh-input[aria-invalid="true"] {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
 }
 
 .sh-input-icon {
@@ -260,6 +275,7 @@
    Right panel — orbital visualizer (Supra-style)
    ============================================================ */
 .sh-login-right {
+    height: 100%;
     flex: 1.1;
     flex-shrink: 0;
     background: #000;
@@ -410,8 +426,9 @@
 
 /* Tablet: hide right panel */
 @media (max-width: 1024px) {
+    .sh-login-container { display: block; }
     .sh-login-right  { display: none; }
-    .sh-login-left   { padding: 2rem 1.75rem; }
+    .sh-login-left   { padding: 2rem 1.75rem; min-height: calc(100vh - 74px); }
 }
 
 /* Large phone */

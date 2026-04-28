@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
+import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
 import toast from 'react-hot-toast';
 import RoleAssignment from '../../../../components/RoleAssignment';
 
@@ -27,6 +28,7 @@ const UserProfile = () => {
   const { tenantSlug } = useParams();
   const navigate = useNavigate();
   const { user, tenant, updateUser } = useTenantAuth();
+  const { hasModulePermission } = useTenantPermissions();
 
   // Profile pictures: build API URL and load via fetch with credentials so auth cookie is sent
   const getProfilePicApiUrl = (url) => {
@@ -164,7 +166,7 @@ const UserProfile = () => {
     
     try {
       // SECURITY FIX: Use credentials: 'include' instead of Authorization header
-      const response = await fetch(`/api/tenant/${tenantSlug}/users/password`, {
+      const response = await fetch(`/api/tenant/${tenantSlug}/organization/users/password`, {
         method: 'PATCH',
         credentials: 'include', // SECURITY FIX: Include cookies
         headers: {
@@ -326,7 +328,7 @@ const UserProfile = () => {
           </div>
 
           {/* Role Management (for admins) */}
-          {(user.role === 'admin' || user.role === 'principal' || user.role === 'owner') && (
+          {(hasModulePermission?.('users', 'admin') || hasModulePermission?.('settings', 'admin')) && (
             <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 mt-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                 <ShieldCheckIcon className="h-5 w-5 mr-2 text-indigo-600" />

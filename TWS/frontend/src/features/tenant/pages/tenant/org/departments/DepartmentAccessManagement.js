@@ -14,6 +14,8 @@ import {
 import toast from 'react-hot-toast';
 import tenantProjectApiService from '../projects/services/tenantProjectApiService';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 const API = (tenantSlug, path = '') => `/api/tenant/${tenantSlug}/department-access${path}`;
 
@@ -193,11 +195,7 @@ export default function DepartmentAccessManagement() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-gray-500">Loading...</div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading department access..." className="min-h-[40vh] bg-transparent" />;
   }
 
   return (
@@ -326,7 +324,11 @@ export default function DepartmentAccessManagement() {
             {list.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                  No department access records. Grant access to assign users to departments.
+                  <EmptyState
+                    title="No department access records"
+                    message="Grant access to assign users to departments."
+                    className="max-w-lg mx-auto"
+                  />
                 </td>
               </tr>
             ) : (

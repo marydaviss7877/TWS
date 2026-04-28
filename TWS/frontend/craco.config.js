@@ -13,15 +13,20 @@ module.exports = {
       return jestConfig;
     }
   },
-  devServer: {
-    proxy: {
+  devServer: (devServerConfig) => {
+    devServerConfig.historyApiFallback = {
+      index: '/index.html',
+      disableDotRule: true
+    };
+    devServerConfig.proxy = {
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
         logLevel: 'debug'
       }
-    }
+    };
+    return devServerConfig;
   },
   webpack: {
     configure: (webpackConfig) => {

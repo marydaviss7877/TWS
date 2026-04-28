@@ -23,6 +23,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
+import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
 import { useTenantNav } from '../../../../contexts/TenantNavContext';
 import { APP_METADATA } from '../../../../../../constants/navigationConstants';
 import { cn } from '../../../../../../lib/utils';
@@ -33,7 +34,6 @@ import {
   rankLauncherItem,
   LAUNCHER_UI,
 } from '../../../../components/launcher/launcherUtils';
-import Breadcrumbs from '../../../../../../shared/components/navigation/Breadcrumbs';
 import './AppHome.css';
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getGreeting() {
@@ -188,6 +188,7 @@ const AppHome = () => {
   const navigate       = useNavigate();
   const { tenantSlug } = useParams();
   const { user, tenant } = useTenantAuth();
+  const { hasModulePermission } = useTenantPermissions();
   const {
     filteredMenuItems,
     activeAppKey,
@@ -203,7 +204,15 @@ const AppHome = () => {
   const rafRef = useRef(null);
   const revealScopeRef = useRef(null);
   const isClientUser = ['client', 'customer'].includes(String(user?.role || '').toLowerCase());
-  const isAdminUser = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner'].includes(String(user?.role || '').toLowerCase());
+  const normalizedRole = String(user?.role || '').toLowerCase();
+  const hasElevatedRole = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner'].includes(normalizedRole);
+  const isAdminUser =
+    hasModulePermission?.('settings', 'admin') ||
+    hasModulePermission?.('users', 'admin') ||
+    hasModulePermission?.('projects', 'admin') ||
+    hasModulePermission?.('finance', 'admin') ||
+    hasModulePermission?.('payroll', 'admin') ||
+    hasElevatedRole;
   const showEmployeeApps = !isClientUser && !isAdminUser;
 
   useEffect(() => { setMounted(true); }, []);
@@ -378,14 +387,8 @@ const AppHome = () => {
 
       {/* ── Centred content wrapper ─────────────────────────────────────────── */}
       <div ref={revealScopeRef} className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
-        <div data-reveal className="apphome-fade-up apphome-fade-delay-1 -mt-3 sm:-mt-4">
-          <div className="-mx-4 sm:-mx-6 mb-2 px-4 sm:px-6 py-1.5 border-b border-[#cfdbf6]/45 bg-gradient-to-b from-[#dfe9ff]/45 via-[#ebf2ff]/28 to-transparent backdrop-blur-[1px] dark:border-gray-700/70 dark:bg-gray-900/70">
-            <Breadcrumbs className="text-xs text-slate-600/95 dark:text-gray-400" />
-          </div>
-        </div>
-
         {/* ── Hero / Greeting ──────────────────────────────────────────────── */}
-        <div data-reveal className="apphome-fade-up apphome-fade-delay-2 apphome-hero-wrap text-center space-y-3">
+        <div data-reveal className="apphome-fade-up apphome-fade-delay-2 apphome-hero-wrap text-center space-y-3 -mt-3 sm:-mt-4">
           {/* Date */}
           <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest">
             {dateStr}

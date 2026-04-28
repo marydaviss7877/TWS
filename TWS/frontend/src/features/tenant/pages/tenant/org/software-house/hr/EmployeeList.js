@@ -13,6 +13,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthContext';
+import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../../../../shared/components/feedback/EmptyState';
 
 // Lightweight inline invite modal — no extra file needed
 const InviteModal = ({ tenantSlug, onClose }) => {
@@ -128,6 +131,7 @@ const EmployeeList = () => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState([]);
+  const [loadError, setLoadError] = useState('');
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -149,6 +153,7 @@ const EmployeeList = () => {
     
     try {
       setLoading(true);
+      setLoadError('');
       const data = await tenantApiService.getEmployees(tenantSlug);
       if (data) {
         setEmployees(data.employees || []);
@@ -164,6 +169,7 @@ const EmployeeList = () => {
       }
     } catch (err) {
       console.error('Error fetching employees:', err);
+      setLoadError(err?.message || 'Failed to load employees');
       setEmployees([]);
       setStats({ total: 0, active: 0, onLeave: 0, departments: 0 });
     } finally {
@@ -211,14 +217,11 @@ const EmployeeList = () => {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading employees...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading employees..." className="min-h-[40vh] bg-transparent" />;
+  }
+
+  if (loadError) {
+    return <ErrorState title="Employees unavailable" message={loadError} onRetry={fetchEmployees} className="max-w-xl mx-auto" />;
   }
 
   return (
@@ -315,8 +318,7 @@ const EmployeeList = () => {
               {filteredEmployees.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="py-12 text-center">
-                    <UserGroupIcon className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                    <p className="text-gray-600 dark:text-gray-400">No employees found</p>
+                    <EmptyState title="No employees found" message="No employees match the current filter criteria." className="max-w-lg mx-auto" />
                   </td>
                 </tr>
               ) : (

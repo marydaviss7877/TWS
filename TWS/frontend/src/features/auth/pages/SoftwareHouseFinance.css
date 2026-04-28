@@ -325,3 +325,15 @@
 .sh-finance-page.day-mode footer a:hover {
     color: var(--sh-finance-text) !important;
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .sh-console-scanner {
+        animation: none !important;
+    }
+
+    .sh-cta-button,
+    .sh-ledger-card {
+        transition: none !important;
+        transform: none !important;
+    }
+}

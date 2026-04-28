@@ -26,21 +26,20 @@ const HROnboarding = () => {
   const fetchOnboardingData = async () => {
     try {
       setLoading(true);
-      // TODO: Add onboarding API to tenantApiService
-      // const data = await tenantApiService.getOnboardingData(tenantSlug);
-      // Mock data for now
-      const mockData = {
-        employees: [
-          { name: 'Alice Cooper', position: 'Software Engineer', startDate: '2024-01-15', progress: 75, status: 'In Progress' },
-          { name: 'Bob Martinez', position: 'Product Designer', startDate: '2024-01-10', progress: 45, status: 'In Progress' },
-          { name: 'Carol White', position: 'Marketing Manager', startDate: '2024-01-08', progress: 90, status: 'Almost Complete' }
-        ],
-        stats: { newHires: 3, inProgress: 5, completed: 28, trainingSessions: 12 }
-      };
-      setOnboardingList(mockData.employees);
-      setStats(mockData.stats);
+      const data = await tenantApiService.getOnboardingData(tenantSlug);
+      const employees = data?.employees || data?.data?.employees || [];
+      const overview = data?.stats || data?.data?.stats || {};
+      setOnboardingList(employees);
+      setStats({
+        newHires: Number(overview.newHires || 0),
+        inProgress: Number(overview.inProgress || 0),
+        completed: Number(overview.completed || 0),
+        trainingSessions: Number(overview.trainingSessions || 0)
+      });
     } catch (err) {
       console.error('Error fetching onboarding data:', err);
+      setOnboardingList([]);
+      setStats({ newHires: 0, inProgress: 0, completed: 0, trainingSessions: 0 });
     } finally {
       setLoading(false);
     }

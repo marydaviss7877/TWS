@@ -156,7 +156,11 @@ const CashFlow = () => {
     e.preventDefault();
     try {
       if (editingForecast) {
-        await tenantApiService.updateCashFlowForecast(tenantSlug, editingForecast._id, formData);
+        await tenantApiService.updateCashFlowForecast(
+          tenantSlug,
+          editingForecast.forecastId || editingForecast._id,
+          formData
+        );
       } else {
         await tenantApiService.createCashFlowForecast(tenantSlug, formData);
       }
@@ -177,6 +181,18 @@ const CashFlow = () => {
       fetchData();
     } catch (error) {
       console.error('Error saving forecast:', error);
+    }
+  };
+
+  const handleDeleteForecast = async (forecast) => {
+    const forecastId = forecast?.forecastId || forecast?._id;
+    if (!forecastId) return;
+    if (!window.confirm('Delete this forecast entry?')) return;
+    try {
+      await tenantApiService.deleteCashFlowForecast(tenantSlug, forecastId);
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting forecast:', error);
     }
   };
 
@@ -543,7 +559,10 @@ const CashFlow = () => {
                           >
                             <PencilIcon className="h-4 w-4" />
                           </button>
-                          <button className="p-2 text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200">
+                          <button
+                            onClick={() => handleDeleteForecast(forecast)}
+                            className="p-2 text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
+                          >
                             <TrashIcon className="h-4 w-4" />
                           </button>
                         </div>

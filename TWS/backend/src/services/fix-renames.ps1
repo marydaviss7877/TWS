@@ -38,7 +38,6 @@ $integrationsFixes = @{
     "p-ro-je-ct-i-nt-eg-ra-ti-on.s-er-vi-ce.j-s" = "project-integration.service.js"
     "s-la-ck-i-nt-eg-ra-ti-on.s-er-vi-ce.j-s" = "slack-integration.service.js"
     "s-la-ck.s-er-vi-ce.j-s" = "slack.service.js"
-    "t-im-et-ra-ck-in-gs-er-vi-ce.j-s" = "time-tracking-integration.service.js"
     "t-im-ez-on-e.s-er-vi-ce.j-s" = "timezone.service.js"
     "w-eb-rt-c.s-er-vi-ce.j-s" = "webrtc.service.js"
 }

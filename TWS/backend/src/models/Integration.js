@@ -8,7 +8,7 @@ const integrationConfigSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['time_tracking', 'project_management', 'accounting', 'hr'],
+    enum: ['project_management', 'accounting', 'hr'],
     required: true
   },
   provider: {
@@ -125,69 +125,6 @@ const integrationLogSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Time Tracking Integration Schema
-const timeTrackingIntegrationSchema = new mongoose.Schema({
-  integrationId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'IntegrationConfig',
-    required: true
-  },
-  provider: {
-    type: String,
-    enum: ['harvest', 'clockify', 'toggl', 'jira_tempo', 'asana'],
-    required: true
-  },
-  workspaceId: String,
-  userId: String,
-  projectMappings: [{
-    externalProjectId: String,
-    internalProjectId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Project'
-    },
-    taskMappings: [{
-      externalTaskId: String,
-      internalTaskId: String,
-      name: String
-    }]
-  }],
-  userMappings: [{
-    externalUserId: String,
-    internalUserId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    email: String,
-    hourlyRate: Number
-  }],
-  lastSyncTime: Date,
-  syncSettings: {
-    autoImportTimeEntries: {
-      type: Boolean,
-      default: true
-    },
-    autoCreateProjects: {
-      type: Boolean,
-      default: false
-    },
-    autoCreateUsers: {
-      type: Boolean,
-      default: false
-    },
-    billableOnly: {
-      type: Boolean,
-      default: true
-    }
-  },
-  orgId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Organization',
-    required: true
-  }
-}, {
-  timestamps: true
-});
-
 // Project Management Integration Schema
 const projectManagementIntegrationSchema = new mongoose.Schema({
   integrationId: {
@@ -254,10 +191,6 @@ integrationLogSchema.index({ integrationId: 1, createdAt: -1 });
 integrationLogSchema.index({ type: 1, status: 1 });
 integrationLogSchema.index({ orgId: 1 });
 
-timeTrackingIntegrationSchema.index({ integrationId: 1 });
-timeTrackingIntegrationSchema.index({ provider: 1 });
-timeTrackingIntegrationSchema.index({ orgId: 1 });
-
 projectManagementIntegrationSchema.index({ integrationId: 1 });
 projectManagementIntegrationSchema.index({ provider: 1 });
 projectManagementIntegrationSchema.index({ orgId: 1 });
@@ -270,6 +203,5 @@ projectManagementIntegrationSchema.index({ orgId: 1 });
 module.exports = {
   IntegrationConfig: mongoose.model('IntegrationConfig', integrationConfigSchema),
   IntegrationLog: mongoose.model('IntegrationLog', integrationLogSchema),
-  TimeTrackingIntegration: mongoose.model('TimeTrackingIntegration', timeTrackingIntegrationSchema),
   ProjectManagementIntegration: mongoose.model('ProjectManagementIntegration', projectManagementIntegrationSchema)
 };

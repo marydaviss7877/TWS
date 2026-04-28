@@ -27,22 +27,29 @@ export const useMenuFiltering = (menuItems, user, tenant, userDepartments, userP
       .map(dept => dept.module || dept.department?.toLowerCase())
       .filter(Boolean);
     const allAvailableModules = [...new Set([...tenantModules, ...deptModules])];
-    const isOwnerOrAdmin = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner'].includes(normalizedRole);
     const permModules = userPermissions?.modules;
+    const hasAdminModuleAccess = Boolean(
+      permModules?.settings?.admin ||
+      permModules?.users?.admin ||
+      permModules?.projects?.admin ||
+      permModules?.payroll?.admin ||
+      permModules?.finance?.admin
+    );
+    const isOwnerOrAdmin = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner'].includes(normalizedRole);
 
     return menuItems.filter(item => {
       if (!item?.key) return false;
 
       // Clients must never see admin settings module entry.
       if (isClientUser && item.key === 'settings') return false;
-      if (item.key === 'settings') return isOwnerOrAdmin;
+      if (item.key === 'settings') return hasAdminModuleAccess || isOwnerOrAdmin;
 
       // Always-visible items
       if (alwaysVisible.includes(item.key)) return true;
 
       // Owner/Admin: always see every module in their ERP category.
       // Plan/module restrictions only apply to non-admin roles.
-      if (isOwnerOrAdmin) return true;
+      if (hasAdminModuleAccess || isOwnerOrAdmin) return true;
 
       // UPR Phase 2: when resolved permissions exist, use them as authoritative
       if (permModules && typeof permModules === 'object') {

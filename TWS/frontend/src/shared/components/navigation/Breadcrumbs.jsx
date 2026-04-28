@@ -42,7 +42,7 @@ const Breadcrumbs = ({ items, separator = '/', className = '' }) => {
       ? `/${pathSegments.slice(0, orgIdx + 1).join('/')}/dashboard`
       : '/';
     breadcrumbs.push({
-      label: 'Home',
+      label: 'APP Launcher',
       path: homePath,
       icon: HomeIcon
     });
@@ -54,6 +54,11 @@ const Breadcrumbs = ({ items, separator = '/', className = '' }) => {
 
       // Skip tenant slug, 'org', and 'tenant' layout segments
       if (index <= skipBefore || segment === 'tenant') {
+        return;
+      }
+
+      // Avoid duplicate "home" crumb for launcher route (/:tenant/org/home)
+      if (segment === 'home') {
         return;
       }
 

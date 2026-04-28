@@ -27,21 +27,20 @@ const HRTraining = () => {
   const fetchTrainingData = async () => {
     try {
       setLoading(true);
-      // TODO: Add training API to tenantApiService
-      // const data = await tenantApiService.getTrainingData(tenantSlug);
-      // Mock data for now
-      const mockData = {
-        programs: [
-          { title: 'Leadership Development', participants: 24, duration: '8 weeks', status: 'Active', completion: 65 },
-          { title: 'Technical Skills Bootcamp', participants: 35, duration: '6 weeks', status: 'Active', completion: 45 },
-          { title: 'Communication Excellence', participants: 18, duration: '4 weeks', status: 'Active', completion: 80 }
-        ],
-        stats: { activePrograms: 12, totalCourses: 45, enrolledEmployees: 89, completedThisMonth: 156 }
-      };
-      setTrainingPrograms(mockData.programs);
-      setStats(mockData.stats);
+      const data = await tenantApiService.getTrainingData(tenantSlug);
+      const programs = data?.programs || data?.data?.programs || [];
+      const overview = data?.stats || data?.data?.stats || {};
+      setTrainingPrograms(programs);
+      setStats({
+        activePrograms: Number(overview.activePrograms || 0),
+        totalCourses: Number(overview.totalCourses || 0),
+        enrolledEmployees: Number(overview.enrolledEmployees || 0),
+        completedThisMonth: Number(overview.completedThisMonth || 0)
+      });
     } catch (err) {
       console.error('Error fetching training data:', err);
+      setTrainingPrograms([]);
+      setStats({ activePrograms: 0, totalCourses: 0, enrolledEmployees: 0, completedThisMonth: 0 });
     } finally {
       setLoading(false);
     }

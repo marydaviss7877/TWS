@@ -8,11 +8,12 @@ import {
   UserGroupIcon,
   ChartBarIcon,
   ArrowLeftIcon,
-  CalendarDaysIcon,
-  ExclamationTriangleIcon
+  CalendarDaysIcon
 } from '@heroicons/react/24/outline';
 import tenantApiService from '../../../../../../shared/services/tenant/tenant-api.service';
 import toast from 'react-hot-toast';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 const DepartmentDashboard = () => {
   const { tenantSlug, departmentId } = useParams();
@@ -123,21 +124,13 @@ const DepartmentDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading department dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading department dashboard..." className="min-h-[40vh] bg-transparent" />;
   }
 
   if (!department) {
     return (
       <div className="glass-card-premium p-12 text-center">
-        <ExclamationTriangleIcon className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Department not found</h3>
+        <EmptyState title="Department not found" message="The requested department could not be loaded." className="max-w-xl mx-auto" />
         <button
           onClick={() => navigate(`/${tenantSlug}/org/departments`)}
           className="glass-button px-4 py-2 rounded-xl hover-scale mt-4"
@@ -282,8 +275,7 @@ const DepartmentDashboard = () => {
               ))
             ) : (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                <BuildingOfficeIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No projects found</p>
+                <EmptyState title="No projects found" message="No department projects are available yet." className="max-w-lg mx-auto" />
               </div>
             )}
           </div>
@@ -330,8 +322,7 @@ const DepartmentDashboard = () => {
               ))
             ) : (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                <ClipboardDocumentListIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No tasks found</p>
+                <EmptyState title="No tasks found" message="No department tasks are available yet." className="max-w-lg mx-auto" />
               </div>
             )}
           </div>

@@ -13,14 +13,14 @@ const departments = require('./departments');
 const departmentAccess = require('./departmentAccess');
 const audit = require('./audit');
 
-const softwareHouseERP = require('../erp/software-house');
+const softwareHouse = require('./softwareHouse');
 
 module.exports = {
   management,
   dashboard,
   switching,
   organization,
-  softwareHouse: softwareHouseERP.softwareHouse,
+  softwareHouse,
   permissions,
   roles,
   departments,
@@ -32,7 +32,7 @@ module.exports.management = management;
 module.exports.dashboard = dashboard;
 module.exports.switching = switching;
 module.exports.organization = organization;
-module.exports.softwareHouse = softwareHouseERP.softwareHouse;
+module.exports.softwareHouse = softwareHouse;
 module.exports.permissions = permissions;
 module.exports.roles = roles;
 module.exports.departments = departments;

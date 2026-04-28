@@ -13,10 +13,12 @@ import {
   ClipboardDocumentListIcon,
   CheckCircleIcon,
   ClockIcon,
-  ExclamationTriangleIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 // ── Status badge styles (dark-mode safe) ─────────────────────────────────────
 const STATUS_STYLES = {
@@ -92,24 +94,12 @@ const DashboardOverview = () => {
   useEffect(() => { load(); }, [load]);
 
   // ── Loading ────────────────────────────────────────────────────────────────
-  if (loading) return (
-    <div className="flex items-center justify-center py-24">
-      <div className="h-10 w-10 rounded-full border-2 border-primary-500 border-t-transparent animate-spin" />
-    </div>
-  );
+  if (loading) return <LoadingSpinner message="Loading dashboard..." className="min-h-[40vh] bg-transparent" />;
 
   // ── Error ──────────────────────────────────────────────────────────────────
-  if (error) return (
-    <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 flex items-start gap-3">
-      <ExclamationTriangleIcon className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-      <div>
-        <p className="text-sm font-medium text-red-700 dark:text-red-300">{error}</p>
-        <button onClick={load} className="mt-2 text-xs text-red-600 dark:text-red-400 underline">Retry</button>
-      </div>
-    </div>
-  );
+  if (error) return <ErrorState title="Dashboard unavailable" message={error} onRetry={load} className="max-w-xl" />;
 
-  if (!data) return null;
+  if (!data) return <EmptyState title="No dashboard data" message="No overview metrics are available yet." className="max-w-xl" />;
 
   const { overview = {}, recentActivity = [], projectStatus = [], taskStatus = [] } = data;
 

@@ -8,6 +8,7 @@ import {
   CalendarIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
+import FeatureUnavailable from '../../../../../../../shared/components/feedback/FeatureUnavailable';
 
 const HRLeaveRequests = () => {
   const { tenantSlug } = useParams();
@@ -347,10 +348,11 @@ const HRLeaveRequests = () => {
         <h3 className="text-base xl:text-lg font-bold font-heading text-gray-900 dark:text-white mb-3">
           Leave Calendar
         </h3>
-        <div className="text-center py-8">
-          <CalendarIcon className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
-          <p className="text-sm text-gray-600 dark:text-gray-400">Calendar view coming soon</p>
-        </div>
+        <FeatureUnavailable
+          title="Leave calendar unavailable"
+          description="Calendar view is not available in this release yet."
+          className="max-w-xl mx-auto"
+        />
       </div>
     </div>
   );

@@ -57,9 +57,10 @@ const makeRequest = async (endpoint, options = {}, retry = true) => {
       credentials: 'include' // SECURITY FIX: Include cookies (HttpOnly tokens)
     });
   } catch (networkError) {
-    // Network errors - return null gracefully
-    console.error('Network error:', networkError);
-    return null;
+    const error = new Error(networkError?.message || 'Network request failed');
+    error.code = 'NETWORK_ERROR';
+    error.endpoint = endpoint;
+    throw error;
   }
 
   // Handle token expiration
@@ -74,25 +75,30 @@ const makeRequest = async (endpoint, options = {}, retry = true) => {
         // Retry the request - cookies will be sent automatically
         return makeRequest(endpoint, options, false);
       } catch (refreshError) {
-        // Refresh failed - return null gracefully instead of throwing
-        // Don't log - errors are handled gracefully
-        return null;
+        const error = new Error('Authentication expired. Please log in again.');
+        error.code = 'AUTH_EXPIRED';
+        error.status = 401;
+        error.endpoint = endpoint;
+        throw error;
       }
     }
     
-    // Other 401 errors - return null gracefully
-    // Don't log - errors are handled gracefully
-    return null;
+    const unauthorizedError = new Error(errorData.message || 'Unauthorized');
+    unauthorizedError.code = 'UNAUTHORIZED';
+    unauthorizedError.status = 401;
+    unauthorizedError.endpoint = endpoint;
+    unauthorizedError.response = { data: errorData };
+    throw unauthorizedError;
   }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    // For 401 errors, return null silently (handled above)
-    // For other errors, only log non-401 errors in development
-    if (response.status !== 401 && process.env.NODE_ENV === 'development') {
-      console.error(`API request failed: ${response.status} ${response.statusText}`, errorData);
-    }
-    return null;
+    const apiError = new Error(errorData.message || `API request failed: ${response.status} ${response.statusText}`);
+    apiError.status = response.status;
+    apiError.code = errorData.code || 'API_ERROR';
+    apiError.endpoint = endpoint;
+    apiError.response = { data: errorData };
+    throw apiError;
   }
 
   const data = await response.json();
@@ -571,8 +577,13 @@ const tenantApiService = {
 
   // Export finance report (Software House specific)
   exportFinanceReport: async (tenantSlug, reportId, format, startDate, endDate) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/reports/export`, {
+    const url = `${getApiUrl()}/api/tenant/${tenantSlug}/software-house/finance/reports/export`;
+    return fetch(url, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
       body: JSON.stringify({ reportId, format, startDate, endDate })
     });
   },
@@ -870,154 +881,154 @@ const tenantApiService = {
 
   // ==================== FINANCE MODULE - NEW APIs ====================
   
-  // Chart of Accounts (Organization routes)
+  // Chart of Accounts (Software House finance routes)
   getChartOfAccountsOrg: async (tenantSlug, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/chart-of-accounts?${queryParams}`);
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/chart-of-accounts?${queryParams}`);
   },
 
   createAccountOrg: async (tenantSlug, accountData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/chart-of-accounts`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/chart-of-accounts`, {
       method: 'POST',
       body: JSON.stringify(accountData)
     });
   },
 
   updateAccountOrg: async (tenantSlug, accountId, accountData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/chart-of-accounts/${accountId}`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/chart-of-accounts/${accountId}`, {
       method: 'PUT',
       body: JSON.stringify(accountData)
     });
   },
 
   deleteAccountOrg: async (tenantSlug, accountId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/chart-of-accounts/${accountId}`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/chart-of-accounts/${accountId}`, {
       method: 'DELETE'
     });
   },
 
   loadChartOfAccountsTemplateOrg: async (tenantSlug, templateName) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/chart-of-accounts/templates/${templateName}`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/chart-of-accounts/templates/${templateName}`, {
       method: 'POST'
     });
   },
 
   // Billing Engine
   generateInvoiceFromProject: async (tenantSlug, projectId, options = {}) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/billing/generate-invoice`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/billing/generate-invoice`, {
       method: 'POST',
       body: JSON.stringify({ projectId, options })
     });
   },
 
   createRecurringInvoice: async (tenantSlug, invoiceData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/billing/recurring`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/billing/recurring`, {
       method: 'POST',
       body: JSON.stringify(invoiceData)
     });
   },
 
   processRecurringInvoices: async (tenantSlug) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/billing/process-recurring`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/billing/process-recurring`, {
       method: 'POST'
     });
   },
 
   sendInvoice: async (tenantSlug, invoiceId, recipientEmail) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/billing/send-invoice/${invoiceId}`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/billing/send-invoice/${invoiceId}`, {
       method: 'POST',
       body: JSON.stringify({ recipientEmail })
     });
   },
 
   createPaymentLink: async (tenantSlug, invoiceId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/billing/payment-link/${invoiceId}`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/billing/payment-link/${invoiceId}`, {
       method: 'POST'
     });
   },
 
   // Project Costing
   getProjectCosts: async (tenantSlug, projectId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/projects/${projectId}/costs`);
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/projects/${projectId}/costs`);
   },
 
   getProjectProfitability: async (tenantSlug, projectId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/projects/${projectId}/profitability`);
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/projects/${projectId}/profitability`);
   },
 
   getBudgetVsActual: async (tenantSlug, projectId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/projects/${projectId}/budget-vs-actual`);
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/projects/${projectId}/budget-vs-actual`);
   },
 
   getProjectForecast: async (tenantSlug, projectId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/projects/${projectId}/forecast`);
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/projects/${projectId}/forecast`);
   },
 
   getResourceAllocation: async (tenantSlug, projectId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/projects/${projectId}/resource-allocation`);
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/projects/${projectId}/resource-allocation`);
   },
 
   // Accounts Receivable
   getAgingReportAR: async (tenantSlug, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/accounts-receivable/aging?${queryParams}`);
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/accounts-receivable/aging?${queryParams}`);
   },
 
   sendPaymentReminder: async (tenantSlug, invoiceId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/accounts-receivable/${invoiceId}/reminder`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/accounts-receivable/${invoiceId}/reminder`, {
       method: 'POST'
     });
   },
 
   recordInvoicePayment: async (tenantSlug, invoiceId, paymentData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/accounts-receivable/${invoiceId}/payment`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/accounts-receivable/${invoiceId}/payment`, {
       method: 'POST',
       body: JSON.stringify(paymentData)
     });
   },
 
   getClientPaymentHistory: async (tenantSlug, clientId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/accounts-receivable/clients/${clientId}/history`);
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/accounts-receivable/clients/${clientId}/history`);
   },
 
   // Accounts Payable
   getAgingReportAP: async (tenantSlug, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/accounts-payable/aging?${queryParams}`);
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/accounts-payable/aging?${queryParams}`);
   },
 
   recordBillPayment: async (tenantSlug, billId, paymentData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/accounts-payable/${billId}/payment`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/accounts-payable/${billId}/payment`, {
       method: 'POST',
       body: JSON.stringify(paymentData)
     });
   },
 
   scheduleBillPayment: async (tenantSlug, billId, scheduleData) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/accounts-payable/${billId}/schedule`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/accounts-payable/${billId}/schedule`, {
       method: 'POST',
       body: JSON.stringify(scheduleData)
     });
   },
 
   approveBill: async (tenantSlug, billId, approvedBy) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/accounts-payable/${billId}/approve`, {
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/accounts-payable/${billId}/approve`, {
       method: 'POST',
       body: JSON.stringify({ approvedBy })
     });
   },
 
   getVendorPaymentHistory: async (tenantSlug, vendorId) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/accounts-payable/vendors/${vendorId}/history`);
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/accounts-payable/vendors/${vendorId}/history`);
   },
 
   // Cash Flow
   getCashFlowForecast: async (tenantSlug, months = 12) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/cash-flow/forecast?months=${months}`);
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/cash-flow/forecast?months=${months}`);
   },
 
   getCashFlowStatement: async (tenantSlug, startDate, endDate) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/finance/cash-flow/statement?startDate=${startDate}&endDate=${endDate}`);
+    return makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/cash-flow/statement?startDate=${startDate}&endDate=${endDate}`);
   },
 
   // ==================== PROJECTS MODULE - NEW APIs ====================
@@ -1104,6 +1115,13 @@ const tenantApiService = {
     });
   },
 
+  cancelPayroll: async (tenantSlug, payrollId, notes = '') => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/payroll/${payrollId}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ notes })
+    });
+  },
+
   getPayrollCycles: async (tenantSlug) => {
     return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/payroll/cycles`);
   },
@@ -1117,6 +1135,18 @@ const tenantApiService = {
 
   closePayrollCycle: async (tenantSlug, cycleId) => {
     return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/payroll/cycles/${cycleId}/close`, {
+      method: 'POST'
+    });
+  },
+
+  startPayrollCycle: async (tenantSlug, cycleId) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/payroll/cycles/${cycleId}/start`, {
+      method: 'POST'
+    });
+  },
+
+  cancelPayrollCycle: async (tenantSlug, cycleId) => {
+    return makeRequest(`/api/tenant/${tenantSlug}/organization/hr/payroll/cycles/${cycleId}/cancel`, {
       method: 'POST'
     });
   },

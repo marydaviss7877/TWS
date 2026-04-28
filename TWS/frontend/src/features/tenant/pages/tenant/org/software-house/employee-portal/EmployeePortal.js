@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../../../../../../../app/providers/AuthContext';
 import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthContext';
+import { useTenantPermissions } from '../../../../../contexts/TenantPermissionsContext';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import toast from 'react-hot-toast';
 import {
@@ -25,11 +26,13 @@ import EmployeePerformanceView from './EmployeePerformanceView';
 import EmployeePayrollView from './EmployeePayrollView';
 import EmployeeDocumentsView from './EmployeeDocumentsView';
 import EmployeeWorkspacesView from './EmployeeWorkspacesView';
-import { getAccessLevel, filterMenuByAccess, canAccessSection, PORTAL_SECTIONS } from './employeePortalAccessLevels';
+import { getAccessLevel, PORTAL_SECTIONS } from './employeePortalAccessLevels';
+import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../../shared/components/feedback/ErrorState';
 
 // Protects a portal section by role; redirects to portal dashboard if no access
-const ProtectedPortalRoute = ({ section, userRole, tenantSlug, children }) => {
-  if (!canAccessSection(userRole, section)) {
+const ProtectedPortalRoute = ({ section, canAccessSection, tenantSlug, children }) => {
+  if (!canAccessSection(section)) {
     return <Navigate to={`/${tenantSlug}/org/software-house/employee-portal`} replace />;
   }
   return children;
@@ -40,10 +43,12 @@ const EmployeePortal = () => {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
   const { user: tenantUser, loading: tenantAuthLoading } = useTenantAuth();
+  const { hasModulePermission } = useTenantPermissions();
   const user = tenantUser || authUser;
   const toastShown = useRef(false);
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [employeeData, setEmployeeData] = useState(null);
   const [dashboardStats, setDashboardStats] = useState({
     attendance: { present: 0, absent: 0, late: 0 },
@@ -53,9 +58,33 @@ const EmployeePortal = () => {
     recentAnnouncements: []
   });
 
-  const isOwnerOrAdmin = ['owner', 'admin', 'super_admin', 'org_manager'].includes(tenantUser?.role);
+  const isOwnerOrAdmin =
+    hasModulePermission?.('users', 'admin') ||
+    hasModulePermission?.('projects', 'admin') ||
+    hasModulePermission?.('payroll', 'admin');
   const accessLevel = getAccessLevel(user?.role);
   const userRoleLabel = accessLevel.label;
+  const canAccessPortalSection = (section) => {
+    if (!hasModulePermission) return true;
+    switch (section) {
+      case PORTAL_SECTIONS.DASHBOARD:
+      case PORTAL_SECTIONS.WORKSPACES:
+      case PORTAL_SECTIONS.PROFILE:
+        return true;
+      case PORTAL_SECTIONS.ATTENDANCE:
+        return hasModulePermission('attendance', 'read') || hasModulePermission('attendance', 'read_own');
+      case PORTAL_SECTIONS.LEAVE:
+        return hasModulePermission('leave', 'read') || hasModulePermission('leave', 'read_own');
+      case PORTAL_SECTIONS.PERFORMANCE:
+        return hasModulePermission('employees', 'read') || hasModulePermission('employees', 'read_own');
+      case PORTAL_SECTIONS.PAYROLL:
+        return hasModulePermission('payroll', 'read') || hasModulePermission('payroll', 'read_own');
+      case PORTAL_SECTIONS.DOCUMENTS:
+        return hasModulePermission('documents', 'read') || hasModulePermission('projects', 'read');
+      default:
+        return true;
+    }
+  };
 
   useEffect(() => {
     if (tenantAuthLoading) return;
@@ -68,16 +97,11 @@ const EmployeePortal = () => {
   useEffect(() => {
     if (user && tenantSlug && !isOwnerOrAdmin) {
       fetchEmployeeData();
-      fetchDashboardStats();
     }
   }, [user, tenantSlug, isOwnerOrAdmin]);
 
   if (tenantAuthLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent border-purple-600" />
-      </div>
-    );
+    return <LoadingSpinner message="Loading employee portal..." className="min-h-[30vh] bg-transparent" />;
   }
 
   if (isOwnerOrAdmin) {
@@ -86,13 +110,17 @@ const EmployeePortal = () => {
 
   const fetchEmployeeData = async () => {
     try {
+      setLoadError('');
       // Find employee by user ID
       const response = await tenantApiService.getEmployees(tenantSlug, {
         userId: user.id
       });
-      
-      if (response.data?.employees?.length > 0) {
-        setEmployeeData(response.data.employees[0]);
+
+      const employees = response?.employees || response?.data?.employees || [];
+      if (employees.length > 0) {
+        const employee = employees[0];
+        setEmployeeData(employee);
+        fetchDashboardStats(employee);
       } else {
         // Try direct employee endpoint
         const empResponse = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees?userId=${user.id}`, {
@@ -100,18 +128,21 @@ const EmployeePortal = () => {
         });
         const empData = await empResponse.json();
         if (empData.data?.employees?.length > 0) {
-          setEmployeeData(empData.data.employees[0]);
+          const employee = empData.data.employees[0];
+          setEmployeeData(employee);
+          fetchDashboardStats(employee);
         }
       }
     } catch (error) {
       console.error('Failed to fetch employee data:', error);
+      setLoadError(error?.message || 'Failed to load employee information');
       toast.error('Failed to load employee information');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = async (employee = null) => {
     try {
       // Fetch attendance stats
       const attendanceRes = await fetch(`/api/tenant/${tenantSlug}/organization/hr/attendance?employeeId=${user.id}&stats=true`, {
@@ -133,8 +164,9 @@ const EmployeePortal = () => {
       }
 
       // Fetch leave balance
-      if (employeeData?._id) {
-        const leaveRes = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees/${employeeData._id}`, {
+      const employeeId = employee?._id || employeeData?._id;
+      if (employeeId) {
+        const leaveRes = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees/${employeeId}`, {
           credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
         });
         if (leaveRes.ok) {
@@ -162,14 +194,14 @@ const EmployeePortal = () => {
     { id: PORTAL_SECTIONS.PAYROLL, label: 'Payroll', icon: CurrencyDollarIcon, path: 'payroll' },
     { id: PORTAL_SECTIONS.DOCUMENTS, label: 'Documents', icon: DocumentTextIcon, path: 'documents' }
   ];
-  const menuItems = filterMenuByAccess(allMenuItems, user?.role);
+  const menuItems = allMenuItems.filter((item) => canAccessPortalSection(item.id));
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading employee portal..." className="min-h-[60vh] bg-transparent" />;
+  }
+
+  if (loadError) {
+    return <ErrorState title="Employee portal unavailable" message={loadError} onRetry={fetchEmployeeData} className="max-w-xl mx-auto" />;
   }
 
   return (
@@ -230,14 +262,14 @@ const EmployeePortal = () => {
           {/* Main Content - routes protected by access level */}
           <div className="flex-1">
             <Routes>
-              <Route index element={<ProtectedPortalRoute section={PORTAL_SECTIONS.DASHBOARD} userRole={user?.role} tenantSlug={tenantSlug}><EmployeeDashboardContent stats={dashboardStats} employee={employeeData} /></ProtectedPortalRoute>} />
-              <Route path="workspaces" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.WORKSPACES} userRole={user?.role} tenantSlug={tenantSlug}><EmployeeWorkspacesView tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
-              <Route path="profile" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.PROFILE} userRole={user?.role} tenantSlug={tenantSlug}><EmployeeProfileView tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
-              <Route path="attendance" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.ATTENDANCE} userRole={user?.role} tenantSlug={tenantSlug}><EmployeeAttendanceView tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
-              <Route path="leave" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.LEAVE} userRole={user?.role} tenantSlug={tenantSlug}><EmployeeLeaveRequests tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
-              <Route path="performance" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.PERFORMANCE} userRole={user?.role} tenantSlug={tenantSlug}><EmployeePerformanceView tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
-              <Route path="payroll" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.PAYROLL} userRole={user?.role} tenantSlug={tenantSlug}><EmployeePayrollView tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
-              <Route path="documents" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.DOCUMENTS} userRole={user?.role} tenantSlug={tenantSlug}><EmployeeDocumentsView tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
+              <Route index element={<ProtectedPortalRoute section={PORTAL_SECTIONS.DASHBOARD} canAccessSection={canAccessPortalSection} tenantSlug={tenantSlug}><EmployeeDashboardContent stats={dashboardStats} employee={employeeData} /></ProtectedPortalRoute>} />
+              <Route path="workspaces" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.WORKSPACES} canAccessSection={canAccessPortalSection} tenantSlug={tenantSlug}><EmployeeWorkspacesView tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
+              <Route path="profile" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.PROFILE} canAccessSection={canAccessPortalSection} tenantSlug={tenantSlug}><EmployeeProfileView tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
+              <Route path="attendance" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.ATTENDANCE} canAccessSection={canAccessPortalSection} tenantSlug={tenantSlug}><EmployeeAttendanceView tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
+              <Route path="leave" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.LEAVE} canAccessSection={canAccessPortalSection} tenantSlug={tenantSlug}><EmployeeLeaveRequests tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
+              <Route path="performance" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.PERFORMANCE} canAccessSection={canAccessPortalSection} tenantSlug={tenantSlug}><EmployeePerformanceView tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
+              <Route path="payroll" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.PAYROLL} canAccessSection={canAccessPortalSection} tenantSlug={tenantSlug}><EmployeePayrollView tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
+              <Route path="documents" element={<ProtectedPortalRoute section={PORTAL_SECTIONS.DOCUMENTS} canAccessSection={canAccessPortalSection} tenantSlug={tenantSlug}><EmployeeDocumentsView tenantSlug={tenantSlug} /></ProtectedPortalRoute>} />
               <Route path="*" element={<Navigate to="" replace />} />
             </Routes>
           </div>

@@ -364,7 +364,7 @@ const ClientsBilling = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       {getStatusIcon(invoice.status)}
-                      <span className={'ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}'}>
+                      <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
                         {invoice.status}
                       </span>
                     </div>

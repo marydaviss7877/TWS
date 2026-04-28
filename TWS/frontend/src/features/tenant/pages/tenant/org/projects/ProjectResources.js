@@ -21,6 +21,8 @@ import tenantProjectApiService from './services/tenantProjectApiService';
 import ErrorBoundary from './components/ErrorBoundary';
 import { handleApiError } from './utils/errorHandler';
 import toast from 'react-hot-toast';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
 
 /* ─── constants ────────────────────────────────────────────────────────────── */
 
@@ -650,22 +652,11 @@ const ProjectResources = () => {
 
   /* ── loading / error ── */
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-72 gap-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
-        <p className="text-sm text-gray-500 dark:text-gray-400">Loading team…</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading team..." className="min-h-[40vh] bg-transparent" />;
   }
 
   if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-72 gap-4 text-center px-4">
-        <ExclamationTriangleIcon className="w-12 h-12 text-red-400" />
-        <p className="text-red-600 dark:text-red-400 font-medium">{error}</p>
-        <button onClick={() => load()} className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700">Retry</button>
-      </div>
-    );
+    return <ErrorState title="Project team unavailable" message={error} onRetry={() => load()} className="max-w-xl mx-auto" />;
   }
 
   return (

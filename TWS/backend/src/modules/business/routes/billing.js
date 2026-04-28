@@ -4,16 +4,20 @@
  */
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const { getTenantSubscriptionInfo } = require('../../../middleware/common/featureGate');
 const Organization = require('../../../models/Organization');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
+const billingRead = requireErpAccess({ module: 'finance', action: ['read', 'read_own'], checkRevocation: true });
+
+router.use(verifyERPToken);
 
 /**
  * GET /usage - Current tenant subscription + usage (for Software House; others get N/A-style response).
  * Returns usage, limits, atRisk (80% warning), readOnlyMode, plan.
  */
-router.get('/usage', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/usage', billingRead, ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = req.user?.orgId || req.user?.organization;
   if (!orgId) {
     return res.status(400).json({

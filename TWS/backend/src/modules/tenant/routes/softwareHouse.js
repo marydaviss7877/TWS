@@ -11,17 +11,17 @@ const Card = require('../../../models/Card');
 const Sprint = require('../../../models/Sprint');
 const DevelopmentMetrics = require('../../../models/DevelopmentMetrics');
 const { TimeEntry, Transaction, Invoice, Bill, ProjectCosting, ChartOfAccounts, CashFlowForecast, Vendor } = require('../../../models/Finance');
+const Expense = require('../../../models/Expense');
 const Client = require('../../../models/Client');
 const Workspace = require('../../../models/Workspace');
 const ProjectMember = require('../../../models/ProjectMember');
 const tenantOrgService = require('../../../services/tenant/tenant-org.service');
-const timeTrackingService = require('../../../services/softwareHouse/timeTrackingService');
+const timeTrackingService = require('../../../services/softwareHouse/time-tracking.service');
 const { getProjectMetricsForRequest } = require('../../../services/tenant/project-organization-metrics.service');
 
-// ✅ UNIFIED AUTHENTICATION MIDDLEWARE - Replaces unifiedSoftwareHouseAuth + verifyERPToken
-// Single middleware that handles all authentication, tenant context, and orgId resolution
-// Performance: 1-2 queries instead of 8-17 queries
-const unifiedSoftwareHouseAuth = require('../../../middleware/auth/unifiedSoftwareHouseAuth');
+// Use tenant ERP auth middleware used by other tenant routes to keep
+// software-house endpoints compatible with active cookie sessions.
+const unifiedSoftwareHouseAuth = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const shFinanceRead = requireErpAccess({ module: 'finance', action: 'read' });
 const shFinanceWrite = requireErpAccess({ module: 'finance', action: 'write' });
@@ -903,6 +903,22 @@ require('./softwareHouseFinanceReads')(router, {
   ProjectCosting
 });
 
+require('./softwareHouseFinanceWrites')(router, {
+  mongoose,
+  unifiedSoftwareHouseAuth,
+  shFinanceRead,
+  shFinanceWrite,
+  Invoice,
+  Bill,
+  Vendor,
+  ChartOfAccounts,
+  TimeEntry,
+  Project,
+  ProjectCosting,
+  CashFlowForecast,
+  Expense
+});
+
 // ==================== SOFTWARE-HOUSE FINANCE: CLIENTS ====================
 // Used by tenant finance UI (Accounts Receivable, client management)
 const buildTenantContext = (req) => ({
@@ -1191,7 +1207,9 @@ router.post('/finance/reports/generate', unifiedSoftwareHouseAuth, shFinanceRead
         { $group: { _id: { $month: '$date' }, month: { $first: '$date' }, amount: { $sum: '$amount' } } },
         { $sort: { '_id': 1 } }
       ]),
-      CashFlowForecast.find({ orgId, date: { $gte: new Date(), $lte: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) } }).sort({ date: 1 }).limit(10)
+      CashFlowForecast.find({ orgId, 'period.start': { $lte: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) } })
+        .sort({ 'period.start': 1 })
+        .limit(20)
     ]);
     const totalInflows = inflowRows.reduce((s, r) => s + r.amount, 0);
     const totalOutflows = outflowRows.reduce((s, r) => s + r.amount, 0);
@@ -1204,7 +1222,14 @@ router.post('/finance/reports/generate', unifiedSoftwareHouseAuth, shFinanceRead
         inflow: r.amount,
         outflow: outflowRows.find(o => o._id === r._id)?.amount || 0
       })),
-      upcomingForecasts: forecasts.map(f => ({ date: f.date, type: f.type, amount: f.amount, category: f.category, confidence: f.confidence }))
+      upcomingForecasts: forecasts.flatMap((f) => {
+        const events = [];
+        (f.scenarios || []).forEach((scenario) => {
+          (scenario.inflows || []).forEach((x) => events.push({ date: x.date, type: 'inflow', amount: x.amount, category: x.category, confidence: 'medium' }));
+          (scenario.outflows || []).forEach((x) => events.push({ date: x.date, type: 'outflow', amount: x.amount, category: x.category, confidence: 'medium' }));
+        });
+        return events;
+      }).slice(0, 25)
     };
 
   } else if (reportId === 'balance-sheet') {
@@ -1228,13 +1253,13 @@ router.post('/finance/reports/generate', unifiedSoftwareHouseAuth, shFinanceRead
       title: 'Project Profitability Report',
       period: periodLabel,
       projects: costings.map(c => {
-        const revenue = c.revenue || 0;
-        const costs = c.actualCost || 0;
+        const revenue = c.budget?.totalRevenue || c.budget?.total || 0;
+        const costs = c.actualCosts?.total || 0;
         const profit = revenue - costs;
         return {
           name: c.projectId?.name || c.projectName || 'Unknown Project',
           client: c.clientName || 'N/A',
-          budget: c.budget || 0,
+          budget: c.budget?.total || c.budget?.totalRevenue || 0,
           revenue,
           costs,
           profit,
@@ -1250,10 +1275,10 @@ router.post('/finance/reports/generate', unifiedSoftwareHouseAuth, shFinanceRead
     for (const inv of invoices) {
       const key = inv.clientName || 'Unknown';
       if (!clientMap[key]) clientMap[key] = { name: key, revenue: 0, invoices: 0, paid: 0, outstanding: 0 };
-      clientMap[key].revenue += inv.totalAmount || inv.amount || 0;
+      clientMap[key].revenue += inv.total || 0;
       clientMap[key].invoices++;
-      if (inv.status === 'paid') clientMap[key].paid += inv.totalAmount || inv.amount || 0;
-      else clientMap[key].outstanding += inv.totalAmount || inv.amount || 0;
+      if (inv.status === 'paid') clientMap[key].paid += inv.total || 0;
+      else clientMap[key].outstanding += (inv.remainingAmount ?? Math.max(0, (inv.total || 0) - (inv.paidAmount || 0)));
     }
     data = {
       title: 'Client Analysis Report',
@@ -1268,11 +1293,11 @@ router.post('/finance/reports/generate', unifiedSoftwareHouseAuth, shFinanceRead
   } else if (reportId === 'time-tracking') {
     const entries = await TimeEntry.find({ orgId, date: { $gte: start, $lte: end } })
       .populate('projectId', 'name')
-      .populate('userId', 'fullName')
+      .populate('employeeId', 'fullName')
       .lean();
     const byEmployee = {};
     for (const e of entries) {
-      const key = e.userId?.fullName || e.employeeName || 'Unknown';
+      const key = e.employeeId?.fullName || e.employeeName || 'Unknown';
       if (!byEmployee[key]) byEmployee[key] = { employee: key, hours: 0, projects: new Set(), billable: 0 };
       byEmployee[key].hours += e.hours || e.duration || 0;
       byEmployee[key].billable += e.billable ? (e.hours || 0) : 0;
@@ -1338,6 +1363,123 @@ router.post('/finance/reports/generate', unifiedSoftwareHouseAuth, shFinanceRead
   }
 
   res.json({ success: true, data });
+}));
+
+router.post('/finance/reports/export', unifiedSoftwareHouseAuth, shFinanceRead, ErrorHandler.asyncHandler(async (req, res) => {
+  const rawOrgId = req.user.orgId;
+  const orgId = mongoose.Types.ObjectId.isValid(rawOrgId) ? new mongoose.Types.ObjectId(rawOrgId) : rawOrgId;
+  const { reportId, format = 'csv', startDate, endDate } = req.body || {};
+
+  const start = new Date(startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const end = new Date(endDate || new Date());
+  end.setHours(23, 59, 59, 999);
+  const periodLabel = `${start.toISOString().split('T')[0]}_${end.toISOString().split('T')[0]}`;
+
+  let data = {};
+  if (reportId === 'profit-loss') {
+    const [revenueRows, expenseRows] = await Promise.all([
+      Transaction.aggregate([{ $match: { orgId, type: 'revenue', date: { $gte: start, $lte: end } } }, { $group: { _id: '$category', amount: { $sum: '$amount' } } }, { $sort: { amount: -1 } }]),
+      Transaction.aggregate([{ $match: { orgId, type: 'expense', date: { $gte: start, $lte: end } } }, { $group: { _id: '$category', amount: { $sum: '$amount' } } }, { $sort: { amount: -1 } }])
+    ]);
+    const totalRevenue = revenueRows.reduce((s, r) => s + r.amount, 0);
+    const totalExpenses = expenseRows.reduce((s, r) => s + r.amount, 0);
+    data = {
+      title: 'Profit & Loss Statement',
+      period: periodLabel,
+      revenue: { total: totalRevenue, breakdown: revenueRows.map(r => ({ category: r._id || 'Uncategorized', amount: r.amount })) },
+      expenses: { total: totalExpenses, breakdown: expenseRows.map(r => ({ category: r._id || 'Uncategorized', amount: r.amount })) },
+      netProfit: totalRevenue - totalExpenses
+    };
+  } else if (reportId === 'balance-sheet') {
+    const accounts = await ChartOfAccounts.find({ orgId }).sort({ code: 1 }).lean();
+    const byType = (type) => accounts.filter(a => a.type === type);
+    const sum = (arr) => arr.reduce((s, a) => s + Number(a.balance || 0), 0);
+    data = { title: 'Balance Sheet', period: periodLabel, assets: { items: byType('asset'), total: sum(byType('asset')) }, liabilities: { items: byType('liability'), total: sum(byType('liability')) }, equity: { items: byType('equity'), total: sum(byType('equity')) } };
+  } else if (reportId === 'cash-flow') {
+    const tx = await Transaction.find({ orgId, date: { $gte: start, $lte: end } }).lean();
+    const inflows = tx.filter(t => t.type === 'revenue').reduce((s, t) => s + Number(t.amount || 0), 0);
+    const outflows = tx.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0);
+    data = { title: 'Cash Flow Statement', period: periodLabel, operating: { inflows, outflows, net: inflows - outflows }, transactions: tx };
+  } else {
+    return res.status(400).json({ success: false, message: 'Unsupported report for export' });
+  }
+
+  const flattenedRows = [];
+  const writeRows = (obj, prefix = '') => {
+    Object.entries(obj || {}).forEach(([k, v]) => {
+      const key = prefix ? `${prefix}.${k}` : k;
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        writeRows(v, key);
+      } else {
+        flattenedRows.push({
+          field: key,
+          value: Array.isArray(v) ? JSON.stringify(v) : (v ?? '')
+        });
+      }
+    });
+  };
+  writeRows(data);
+
+  const normalizedFormat = String(format || 'csv').toLowerCase();
+  const baseName = `${reportId || 'finance-report'}-${periodLabel}`;
+
+  const writeCsvResponse = () => {
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=${baseName}.csv`);
+    res.write('field,value\n');
+    flattenedRows.forEach((row) => {
+      const safeField = String(row.field).replace(/"/g, '""');
+      const safeValue = String(row.value).replace(/"/g, '""');
+      res.write(`"${safeField}","${safeValue}"\n`);
+    });
+    res.end();
+  };
+
+  if (normalizedFormat === 'csv') {
+    return writeCsvResponse();
+  }
+
+  if (normalizedFormat === 'xlsx' || normalizedFormat === 'excel') {
+    try {
+      const ExcelJS = require('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Report');
+      sheet.addRow(['field', 'value']);
+      flattenedRows.forEach((row) => sheet.addRow([row.field, row.value]));
+      sheet.getRow(1).font = { bold: true };
+      sheet.getColumn(1).width = 48;
+      sheet.getColumn(2).width = 60;
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=${baseName}.xlsx`);
+      await workbook.xlsx.write(res);
+      return res.end();
+    } catch (_) {
+      return writeCsvResponse();
+    }
+  }
+
+  if (normalizedFormat === 'pdf') {
+    try {
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument({ margin: 36 });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=${baseName}.pdf`);
+      doc.pipe(res);
+      doc.fontSize(14).text(data.title || 'Finance Report');
+      doc.moveDown(0.25);
+      doc.fontSize(10).text(`Period: ${data.period || periodLabel}`);
+      doc.moveDown();
+      flattenedRows.forEach((row) => {
+        doc.fontSize(9).text(`${row.field}: ${row.value}`);
+      });
+      doc.end();
+      return;
+    } catch (_) {
+      return writeCsvResponse();
+    }
+  }
+
+  return res.status(400).json({ success: false, message: 'Unsupported export format' });
 }));
 
 module.exports = router;

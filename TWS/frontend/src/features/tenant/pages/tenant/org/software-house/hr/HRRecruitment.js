@@ -34,8 +34,8 @@ const HRRecruitment = () => {
         setStats({
           openPositions: data.total || data.jobs.length || 0,
           activeCandidates: data.jobs.reduce((sum, job) => sum + (job.applicants || 0), 0),
-          inReview: 0, // TODO: Calculate from applications
-          hiredThisMonth: 0 // TODO: Calculate from applications
+          inReview: 0,
+          hiredThisMonth: 0
         });
       } else {
         setOpenPositions([]);
@@ -60,6 +60,15 @@ const HRRecruitment = () => {
       console.error('Error creating job posting:', error);
       alert(error.message || 'Failed to create job posting. Please try again.');
     }
+  };
+
+  const handlePostNewJobClick = async () => {
+    const title = window.prompt('Job title');
+    if (!title || !title.trim()) return;
+    const department = window.prompt('Department', 'General') || 'General';
+    const location = window.prompt('Location', 'Remote') || 'Remote';
+    const description = window.prompt('Description', '') || '';
+    await handleCreateJobPosting({ title: title.trim(), department: department.trim(), location: location.trim(), description: description.trim(), status: 'active' });
   };
 
   const statsData = [
@@ -92,7 +101,10 @@ const HRRecruitment = () => {
             Manage job postings and candidate applications
           </p>
         </div>
-        <button className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white">
+        <button
+          onClick={handlePostNewJobClick}
+          className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-primary-500 to-accent-500 text-white"
+        >
           <PlusIcon className="w-5 h-5" />
           <span className="font-medium">Post New Job</span>
         </button>
@@ -132,7 +144,7 @@ const HRRecruitment = () => {
             </div>
           ) : (
             openPositions.map((position) => (
-              <div key={position.id} className="glass-card p-4 hover-lift">
+              <div key={position.id || position._id || position.title} className="glass-card p-4 hover-lift">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center flex-shrink-0 shadow-glow">
                     <BriefcaseIcon className="w-6 h-6 text-white" />

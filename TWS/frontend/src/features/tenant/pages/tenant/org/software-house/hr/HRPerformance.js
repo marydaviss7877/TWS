@@ -26,21 +26,20 @@ const HRPerformance = () => {
   const fetchPerformanceData = async () => {
     try {
       setLoading(true);
-      // TODO: Add performance API to tenantApiService
-      // const data = await tenantApiService.getPerformanceData(tenantSlug);
-      // Mock data for now
-      const mockData = {
-        employees: [
-          { name: 'John Smith', department: 'Engineering', rating: 4.8, lastReview: '2023-12-15', nextReview: '2024-03-15', status: 'Excellent' },
-          { name: 'Sarah Johnson', department: 'Management', rating: 4.5, lastReview: '2023-11-20', nextReview: '2024-02-20', status: 'Very Good' },
-          { name: 'Michael Chen', department: 'Design', rating: 4.7, lastReview: '2023-12-01', nextReview: '2024-03-01', status: 'Excellent' }
-        ],
-        stats: { averageRating: 4.2, reviewsDue: 15, topPerformers: 24, improvementPlans: 5 }
-      };
-      setPerformanceData(mockData.employees);
-      setStats(mockData.stats);
+      const data = await tenantApiService.getPerformanceData(tenantSlug);
+      const employees = data?.employees || data?.data?.employees || [];
+      const overview = data?.stats || data?.data?.stats || {};
+      setPerformanceData(employees);
+      setStats({
+        averageRating: Number(overview.averageRating || 0),
+        reviewsDue: Number(overview.reviewsDue || 0),
+        topPerformers: Number(overview.topPerformers || 0),
+        improvementPlans: Number(overview.improvementPlans || 0)
+      });
     } catch (err) {
       console.error('Error fetching performance data:', err);
+      setPerformanceData([]);
+      setStats({ averageRating: 0, reviewsDue: 0, topPerformers: 0, improvementPlans: 0 });
     } finally {
       setLoading(false);
     }

@@ -1045,7 +1045,7 @@ exports.createTask = async (req, res) => {
       priority: rawPriority = 'medium',
       type = 'task',
       projectId,
-      departmentId,
+      departmentId: initialDepartmentId,
       sprintId,
       milestoneId,
       assigneeId,
@@ -1107,6 +1107,7 @@ exports.createTask = async (req, res) => {
       }
     }
 
+    let departmentId = initialDepartmentId;
     // Auto-resolve departmentId from project when not supplied by the client
     if (!departmentId) {
       try {
@@ -2038,7 +2039,7 @@ exports.getTimesheets = async (req, res) => {
           periodStart = new Date(now.setHours(0, 0, 0, 0));
           periodEnd = new Date(now.setHours(23, 59, 59, 999));
           break;
-        case 'this_week':
+        case 'this_week': {
           const startOfWeek = new Date(now);
           startOfWeek.setDate(now.getDate() - now.getDay());
           startOfWeek.setHours(0, 0, 0, 0);
@@ -2046,6 +2047,7 @@ exports.getTimesheets = async (req, res) => {
           periodEnd = new Date(now);
           periodEnd.setHours(23, 59, 59, 999);
           break;
+        }
         case 'this_month':
           periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
           periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -2663,21 +2665,14 @@ exports.getClients = async (req, res) => {
         tenantSlug: req.params.tenantSlug,
         user: req.user ? { id: req.user.userId, orgId: req.user.orgId } : null
       });
-      // Return empty clients array instead of 500 error
-      // This allows the modal to work even if orgId is not available
-      return res.json({
-        success: true,
-        data: {
-          clients: []
-        }
+      return res.status(500).json({
+        success: false,
+        message: 'Organization context not available'
       });
     }
 
-    // Only return clients created from Users module flow.
-    // Those records are linked to a real User via `userId`.
     const clients = await Client.find({
       orgId,
-      userId: { $exists: true, $ne: null },
       status: { $ne: 'inactive' }
     })
       .select('name company slug type contact billing userId')
@@ -2692,13 +2687,10 @@ exports.getClients = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching clients:', error);
-    // Return empty clients array instead of 500 error
-    // This allows the modal to work even if there's an error
-    res.json({
-      success: true,
-      data: {
-        clients: []
-      }
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch clients',
+      error: error.message
     });
   }
 };
@@ -2712,9 +2704,6 @@ exports.createClient = async (req, res) => {
     // Get orgId directly from request context
     const orgId = await getOrgId(req);
     if (!orgId) {
-      // #region agent log
-      agentDebugLog({ runId: 'run1', hypothesisId: 'H0', location: 'projectsController.js:createClient:noOrg', message: 'missing orgId', data: { tenantSlug: req.params?.tenantSlug || null } });
-      // #endregion
       return res.status(500).json({ 
         success: false, 
         message: 'Organization context not available'
@@ -2722,10 +2711,6 @@ exports.createClient = async (req, res) => {
     }
     
     const { name, company, type = 'company', contact, billing } = req.body;
-    // #region agent log
-    agentDebugLog({ runId: 'run1', hypothesisId: 'H1', location: 'projectsController.js:createClient:entry', message: 'createClient entry', data: { hasOrgId: !!orgId, name: name || null, type: type || null, companyType: company == null ? 'null' : typeof company, hasContact: !!contact, hasBilling: !!billing } });
-    fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H1',location:'projectsController.js:createClient:entry',message:'createClient entry',data:{hasOrgId:!!orgId,name:name||null,type:type||null,hasCompany:!!company,hasContact:!!contact,hasBilling:!!billing},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
 
     if (!name) {
       return res.status(400).json({
@@ -2748,32 +2733,22 @@ exports.createClient = async (req, res) => {
       slug = `${baseSlug}-${slugCounter}`;
       slugCounter += 1;
     }
-    // #region agent log
-    agentDebugLog({ runId: 'run1', hypothesisId: 'H2', location: 'projectsController.js:createClient:slug', message: 'slug resolution complete', data: { baseSlug, finalSlug: slug, collisionCount } });
-    fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H2',location:'projectsController.js:createClient:slug',message:'slug resolution complete',data:{baseSlug,finalSlug:slug,collisionCount},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
 
     // Ownership fields: createdBy and orgId (Issue #4.4)
     const client = new Client({
       orgId,
       name,
       slug,
-      company: company || name,
+      company: typeof company === 'string'
+        ? { name: company }
+        : (company || { name }),
       type,
       contact: contact || {},
       billing: billing || {},
       createdBy: req.user?._id || req.body.createdBy || null // Issue #4.4: Always set createdBy
     });
-    // #region agent log
-    agentDebugLog({ runId: 'run1', hypothesisId: 'H3', location: 'projectsController.js:createClient:beforeSave', message: 'attempting client save', data: { slug: client.slug, companyType: typeof client.company, companyPreview: typeof client.company === 'string' ? client.company.slice(0, 40) : null, hasCompanyName: !!(client.company && client.company.name), paymentTerms: client.billing?.paymentTerms || null } });
-    fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H3',location:'projectsController.js:createClient:beforeSave',message:'attempting client save',data:{slug:client.slug,companyType:typeof client.company,hasCompanyName:!!client.company?.name,paymentTerms:client.billing?.paymentTerms||null},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
 
     await client.save();
-    // #region agent log
-    agentDebugLog({ runId: 'run1', hypothesisId: 'H4', location: 'projectsController.js:createClient:afterSave', message: 'client save success', data: { clientId: String(client._id), slug: client.slug } });
-    fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H4',location:'projectsController.js:createClient:afterSave',message:'client save success',data:{clientId:String(client._id),slug:client.slug},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
 
     res.status(201).json({
       success: true,
@@ -2782,10 +2757,6 @@ exports.createClient = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating client:', error);
-    // #region agent log
-    agentDebugLog({ runId: 'run1', hypothesisId: 'H5', location: 'projectsController.js:createClient:catch', message: 'client save failed', data: { errorName: error?.name || null, errorCode: error?.code || null, errorMessage: error?.message || null, keyPattern: error?.keyPattern || null, keyValue: error?.keyValue || null } });
-    fetch('http://127.0.0.1:7280/ingest/c29a4886-b00c-4865-bbe9-b1bfbf9a861e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'772451'},body:JSON.stringify({sessionId:'772451',runId:'run1',hypothesisId:'H5',location:'projectsController.js:createClient:catch',message:'client save failed',data:{errorName:error?.name||null,errorCode:error?.code||null,errorMessage:error?.message||null,keyPattern:error?.keyPattern||null,keyValue:error?.keyValue||null},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     res.status(500).json({
       success: false,
       message: 'Failed to create client',
@@ -3319,7 +3290,10 @@ exports.getIntegrationStatus = async (req, res) => {
     const orgId = await getOrgId(req);
 
     if (!orgId) {
-      return res.json({ success: true, data: { healthy: true, issues: [] } });
+      return res.status(500).json({
+        success: false,
+        message: 'Organization context not available'
+      });
     }
 
     let health;
@@ -3327,13 +3301,21 @@ exports.getIntegrationStatus = async (req, res) => {
       health = await projectIntegrationService.checkIntegrationHealth(orgId, projectId);
     } catch (serviceError) {
       console.warn('Integration health check unavailable:', serviceError?.message);
-      health = { healthy: true, issues: [] };
+      return res.status(503).json({
+        success: false,
+        message: 'Integration health check unavailable',
+        error: serviceError?.message || 'Unknown service error'
+      });
     }
 
     res.json({ success: true, data: health });
   } catch (error) {
     console.error('Error checking integration status:', error);
-    res.json({ success: true, data: { healthy: true, issues: [] } });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check integration status',
+      error: error.message
+    });
   }
 };
 
@@ -3483,7 +3465,7 @@ exports.uploadProjectLogo = async (req, res) => {
   try {
     const orgId = await getOrgId(req);
     if (!orgId) {
-      if (req.file) try { await fsPromises.unlink(req.file.path); } catch (_) {}
+      if (req.file) try { await fsPromises.unlink(req.file.path); } catch (_) { void 0; }
       return res.status(500).json({ success: false, message: 'Organization context not available' });
     }
     if (!req.file) {
@@ -3492,14 +3474,14 @@ exports.uploadProjectLogo = async (req, res) => {
     const { projectId } = req.params;
     const project = await Project.findOne({ _id: projectId, orgId });
     if (!project) {
-      try { await fsPromises.unlink(req.file.path); } catch (_) {}
+      try { await fsPromises.unlink(req.file.path); } catch (_) { void 0; }
       return res.status(404).json({ success: false, message: 'Project not found' });
     }
     if (project.logoUrl && typeof project.logoUrl === 'string') {
       try {
         const oldPath = path.join(process.cwd(), project.logoUrl.replace(/^\//, ''));
         await fsPromises.access(oldPath).then(() => fsPromises.unlink(oldPath)).catch(() => {});
-      } catch (_) {}
+      } catch (_) { void 0; }
     }
     const logoUrl = `/uploads/project-logos/${req.file.filename}`;
     project.logoUrl = logoUrl;
@@ -3507,7 +3489,7 @@ exports.uploadProjectLogo = async (req, res) => {
     res.json({ success: true, message: 'Project logo uploaded', data: { logoUrl } });
   } catch (error) {
     console.error('uploadProjectLogo:', error);
-    if (req.file) try { await fsPromises.unlink(req.file.path); } catch (_) {}
+    if (req.file) try { await fsPromises.unlink(req.file.path); } catch (_) { void 0; }
     res.status(500).json({ success: false, message: 'Failed to upload logo', error: error.message });
   }
 };
@@ -3530,7 +3512,7 @@ exports.deleteProjectLogo = async (req, res) => {
       try {
         const oldPath = path.join(process.cwd(), project.logoUrl.replace(/^\//, ''));
         await fsPromises.access(oldPath).then(() => fsPromises.unlink(oldPath)).catch(() => {});
-      } catch (_) {}
+      } catch (_) { void 0; }
     }
     project.logoUrl = undefined;
     await project.save();

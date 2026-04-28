@@ -18,6 +18,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import tenantProjectApiService from './services/tenantProjectApiService';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 /* ─── constants ─────────────────────────────────────────────────────────────── */
 const STATUS_COLOR = {
@@ -224,14 +226,7 @@ const ProjectActivityView = () => {
   const dayKeys = Object.keys(byDay).sort((a, b) => b.localeCompare(a));
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto" />
-          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading activity…</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading activity..." className="min-h-[40vh] bg-transparent" />;
   }
 
   return (
@@ -277,11 +272,11 @@ const ProjectActivityView = () => {
 
       {/* ── Feed ── */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-          <BoltIcon className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-          <p className="font-medium text-gray-500 dark:text-gray-400">No activity yet</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Tasks, milestones, and changes will appear here</p>
-        </div>
+        <EmptyState
+          title="No activity yet"
+          message="Tasks, milestones, and changes will appear here."
+          className="max-w-xl mx-auto"
+        />
       ) : (
         <div className="space-y-6">
           {dayKeys.map(key => (

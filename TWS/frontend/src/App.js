@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './app/providers/AuthContext';
 import { SocketProvider } from './app/providers/SocketContext';
 import { ThemeProvider } from './app/providers/ThemeContext';
@@ -15,6 +15,7 @@ import './assets/software-house-premium.css';
 import SupraAdminLogin from './features/auth/pages/SupraAdminLogin';
 import SoftwareHouseSignup from './features/auth/pages/SoftwareHouseSignup';
 import SoftwareHouseLogin from './features/auth/pages/SoftwareHouseLogin';
+import SoftwareHouseForgotPassword from './features/auth/pages/SoftwareHouseForgotPassword';
 import SoftwareHouseLanding from './features/auth/pages/SoftwareHouseLanding';
 import InviteAccept from './features/auth/pages/InviteAccept';
 import FinanceSystemPage from './features/auth/pages/FinanceSystemPage';
@@ -46,6 +47,15 @@ import SystemIntegrations from './features/admin/pages/system-admin/SystemIntegr
 // SupraAdmin Pages
 import SupraAdmin from './features/admin/pages/SupraAdmin/SupraAdmin';
 
+function ScrollToTopOnRouteChange() {
+  const location = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  return null;
+}
 
 function App() {
   const { user, loading } = useAuth();
@@ -69,6 +79,7 @@ function App() {
   return (
     <ThemeProvider>
       <SocketProvider>
+        <ScrollToTopOnRouteChange />
         <Routes key={routingKey}>
           {/* Public Routes */}
           <Route
@@ -114,6 +125,14 @@ function App() {
             element={user ? <Navigate to="/" replace /> : <SoftwareHouseSignup />}
           />
           <Route
+            path="/software-house-forgot-password"
+            element={user ? <Navigate to="/" replace /> : <SoftwareHouseForgotPassword />}
+          />
+          <Route
+            path="/forgot-password"
+            element={<Navigate to="/software-house-forgot-password" replace />}
+          />
+          <Route
             path="/software-house"
             element={<SoftwareHouseLanding />}
           />
@@ -128,6 +147,10 @@ function App() {
           <Route
             path="/software-house/projects"
             element={<ProjectSystemPage />}
+          />
+          <Route
+            path="/software-house/analytics"
+            element={<Navigate to="/software-house/projects" replace />}
           />
           <Route
             path="/access-denied"

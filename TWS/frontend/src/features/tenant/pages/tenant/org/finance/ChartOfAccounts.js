@@ -63,12 +63,14 @@ const ChartOfAccounts = () => {
       // Use new organization route
       const response = await tenantApiService.getChartOfAccountsOrg(tenantSlug);
       
-      // Handle response format: { success: true, data: { accounts: [...], flat: [...] } }
+      // makeRequest() already unwraps `data`, so response is typically an array.
       let accountsData = [];
-      if (response && response.success && response.data) {
-        accountsData = response.data.accounts || response.data.flat || [];
-      } else if (Array.isArray(response)) {
+      if (Array.isArray(response)) {
         accountsData = response;
+      } else if (response && Array.isArray(response.accounts)) {
+        accountsData = response.accounts;
+      } else if (response && Array.isArray(response.flat)) {
+        accountsData = response.flat;
       } else if (response && response.data && Array.isArray(response.data)) {
         accountsData = response.data;
       }

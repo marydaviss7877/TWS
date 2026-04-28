@@ -33,12 +33,12 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
         const empData = await empResponse.json();
         if (empData.data?.employees?.length > 0) {
           const employee = empData.data.employees[0];
-          setPerformance(employee.performanceMetrics || {
+          setPerformance({
             overallRating: 0,
             goals: [],
             competencies: []
           });
-          setGoals(employee.performanceMetrics?.goals || []);
+          setGoals([]);
         }
       }
 
@@ -49,7 +49,26 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
 
       if (reviewsResponse.ok) {
         const reviewsData = await reviewsResponse.json();
-        setReviews(reviewsData.data?.reviews || []);
+        const mappedReviews = (reviewsData.data?.reviews || []).map((review) => ({
+          reviewType: 'Performance Review',
+          reviewDate: review.date,
+          rating: review.rating,
+          feedback: review.note,
+          reviewer: review.reviewedBy ? { name: review.reviewedBy.fullName || review.reviewedBy.email } : null
+        }));
+        setReviews(mappedReviews);
+        if (mappedReviews.length > 0) {
+          const ratings = mappedReviews
+            .map((review) => Number(review.rating))
+            .filter((value) => Number.isFinite(value) && value > 0);
+          const overallRating = ratings.length > 0
+            ? ratings.reduce((sum, value) => sum + value, 0) / ratings.length
+            : 0;
+          setPerformance((prev) => ({
+            ...(prev || {}),
+            overallRating
+          }));
+        }
       }
     } catch (error) {
       console.error('Failed to fetch performance data:', error);

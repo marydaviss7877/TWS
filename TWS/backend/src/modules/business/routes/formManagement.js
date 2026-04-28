@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const { validateFormData, validateResponseData, validateJobPostingData, validateInterviewData } = require('../../../middleware/validation/formValidation');
+const formRead = requireErpAccess({ module: 'employees', action: ['read', 'read_own'], checkRevocation: false });
+const formWrite = requireErpAccess({ allowedRoles: ['admin', 'hr_manager'], checkRevocation: false });
+router.use(verifyERPToken);
 
 // In-memory storage for demo purposes - in production, use a proper database
 let formTemplates = [
@@ -157,7 +161,7 @@ let interviews = [
 ];
 
 // Form Templates Routes
-router.get('/templates', authenticateToken, (req, res) => {
+router.get('/templates', formRead, (req, res) => {
   try {
     const { category, search, sortBy = 'updatedAt', sortOrder = 'desc' } = req.query;
     
@@ -226,7 +230,7 @@ router.get('/templates', authenticateToken, (req, res) => {
   }
 });
 
-router.get('/templates/:id', authenticateToken, (req, res) => {
+router.get('/templates/:id', formRead, (req, res) => {
   try {
     const template = formTemplates.find(t => t.id === req.params.id);
     
@@ -251,7 +255,7 @@ router.get('/templates/:id', authenticateToken, (req, res) => {
   }
 });
 
-router.post('/templates', authenticateToken, requireRole(['admin', 'hr_manager']), validateFormData, (req, res) => {
+router.post('/templates', formWrite, validateFormData, (req, res) => {
   try {
     const { title, description, category, fields, settings, tags } = req.body;
     
@@ -296,7 +300,7 @@ router.post('/templates', authenticateToken, requireRole(['admin', 'hr_manager']
   }
 });
 
-router.put('/templates/:id', authenticateToken, requireRole(['admin', 'hr_manager']), validateFormData, (req, res) => {
+router.put('/templates/:id', formWrite, validateFormData, (req, res) => {
   try {
     const templateIndex = formTemplates.findIndex(t => t.id === req.params.id);
     
@@ -342,7 +346,7 @@ router.put('/templates/:id', authenticateToken, requireRole(['admin', 'hr_manage
   }
 });
 
-router.delete('/templates/:id', authenticateToken, requireRole(['admin', 'hr_manager']), (req, res) => {
+router.delete('/templates/:id', formWrite, (req, res) => {
   try {
     const templateIndex = formTemplates.findIndex(t => t.id === req.params.id);
     
@@ -370,7 +374,7 @@ router.delete('/templates/:id', authenticateToken, requireRole(['admin', 'hr_man
 });
 
 // Job Postings Routes
-router.get('/job-postings', authenticateToken, (req, res) => {
+router.get('/job-postings', formRead, (req, res) => {
   try {
     const { status, search, sortBy = 'updatedAt', sortOrder = 'desc' } = req.query;
     
@@ -444,7 +448,7 @@ router.get('/job-postings', authenticateToken, (req, res) => {
   }
 });
 
-router.post('/job-postings', authenticateToken, requireRole(['admin', 'hr_manager']), (req, res) => {
+router.post('/job-postings', formWrite, (req, res) => {
   try {
     const { title, department, location, employmentType, experienceLevel, salaryRange, formTemplateId, description, tags } = req.body;
     
@@ -486,7 +490,7 @@ router.post('/job-postings', authenticateToken, requireRole(['admin', 'hr_manage
 });
 
 // Form Responses Routes
-router.get('/responses', authenticateToken, (req, res) => {
+router.get('/responses', formRead, (req, res) => {
   try {
     const { formId, jobPostingId, status, search, sortBy = 'submittedAt', sortOrder = 'desc' } = req.query;
     
@@ -564,7 +568,7 @@ router.get('/responses', authenticateToken, (req, res) => {
   }
 });
 
-router.post('/responses', authenticateToken, validateResponseData, (req, res) => {
+router.post('/responses', formRead, validateResponseData, (req, res) => {
   try {
     const { formId, jobPostingId, candidate, responses } = req.body;
     
@@ -606,7 +610,7 @@ router.post('/responses', authenticateToken, validateResponseData, (req, res) =>
 });
 
 // Interview Routes
-router.get('/interviews', authenticateToken, (req, res) => {
+router.get('/interviews', formRead, (req, res) => {
   try {
     const { status, search, sortBy = 'scheduledAt', sortOrder = 'asc' } = req.query;
     
@@ -675,7 +679,7 @@ router.get('/interviews', authenticateToken, (req, res) => {
   }
 });
 
-router.post('/interviews', authenticateToken, requireRole(['admin', 'hr_manager']), (req, res) => {
+router.post('/interviews', formWrite, (req, res) => {
   try {
     const { candidate, job, interviewer, scheduledAt, duration, type, formTemplateId } = req.body;
     
@@ -712,7 +716,7 @@ router.post('/interviews', authenticateToken, requireRole(['admin', 'hr_manager'
   }
 });
 
-router.put('/interviews/:id', authenticateToken, (req, res) => {
+router.put('/interviews/:id', formRead, (req, res) => {
   try {
     const interviewIndex = interviews.findIndex(i => i.id === req.params.id);
     
@@ -749,7 +753,7 @@ router.put('/interviews/:id', authenticateToken, (req, res) => {
 });
 
 // Analytics Routes
-router.get('/analytics/overview', authenticateToken, (req, res) => {
+router.get('/analytics/overview', formRead, (req, res) => {
   try {
     const totalTemplates = formTemplates.length;
     const totalJobPostings = jobPostings.length;

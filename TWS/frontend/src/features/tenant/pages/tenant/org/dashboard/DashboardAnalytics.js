@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import FeatureUnavailable from '../../../../../../shared/components/feedback/FeatureUnavailable';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
 
 const DashboardAnalytics = () => {
   const { tenantSlug } = useParams();
@@ -27,27 +30,11 @@ const DashboardAnalytics = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading analytics...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading analytics..." className="min-h-[40vh] bg-transparent" />;
   }
 
   if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <div className="flex">
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800">Error</h3>
-            <p className="mt-1 text-sm text-red-700">{error}</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <ErrorState title="Analytics error" message={error} onRetry={fetchAnalytics} />;
   }
 
   return (
@@ -59,13 +46,10 @@ const DashboardAnalytics = () => {
         </p>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Analytics Coming Soon</h2>
-        <p className="text-gray-600">
-          Advanced analytics and reporting features will be available here.
-          This will include charts, graphs, and detailed insights into your organization's performance.
-        </p>
-      </div>
+      <FeatureUnavailable
+        title="Analytics unavailable"
+        description="Advanced analytics and reporting are not available in this release yet."
+      />
     </div>
   );
 };

@@ -9,6 +9,7 @@ import {
   PlusIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import FeatureUnavailable from '../../../../../../shared/components/feedback/FeatureUnavailable';
 
 const FinanceBudgeting = () => {
   const { tenantSlug } = useParams();
@@ -229,10 +230,10 @@ const FinanceBudgeting = () => {
           <h3 className="text-lg font-bold font-heading text-gray-900 dark:text-white mb-4">
             Monthly Spending Trend
           </h3>
-          <div className="text-center py-12">
-            <ChartPieIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">Chart visualization coming soon</p>
-          </div>
+          <FeatureUnavailable
+            title="Budget trend chart unavailable"
+            description="Chart visualization is not available in this release yet."
+          />
         </div>
 
         <div className="glass-card-premium p-6 hover-glow">

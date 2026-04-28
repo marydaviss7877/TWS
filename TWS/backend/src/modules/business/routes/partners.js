@@ -1,14 +1,12 @@
 const express = require('express');
 const router = express.Router();
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+router.use(verifyERPToken);
 const Partner = require('../../../models/Partner');
 const Tenant = require('../../../models/Tenant');
 const SubscriptionPlan = require('../../../models/SubscriptionPlan');
-const { authenticateToken } = require('../../../middleware/auth/auth');
 const { checkFeatureAccess } = require('../../../middleware/common/featureGate');
 const auditLogService = require('../../../services/compliance/audit-log.service');
-
-// Apply authentication to all routes
-router.use(authenticateToken);
 
 /**
  * @route   GET /api/partners

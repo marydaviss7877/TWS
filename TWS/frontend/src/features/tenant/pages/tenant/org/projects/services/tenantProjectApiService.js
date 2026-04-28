@@ -95,9 +95,6 @@ const makeRequest = async (endpoint, options = {}, retry = true) => {
         // SECURITY FIX: Increment retry counter
         sessionStorage.setItem(retryKey, String(retryCount + 1));
         
-        // SECURITY FIX: Add exponential backoff (1 second delay)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
         // Use shared refresh (tries /api/auth/refresh then /api/tenant-auth/refresh).
         // Org staff use main auth cookies; tenant-only refresh would 403 and wrongly log users out.
         await refreshSessionCookies();

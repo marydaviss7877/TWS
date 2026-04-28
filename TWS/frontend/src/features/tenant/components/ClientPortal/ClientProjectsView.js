@@ -245,11 +245,19 @@ const ProjectDetailView = ({
 );
 
 const DeliverableItem = ({ deliverable, onOpen }) => {
+  const decisionStatus = typeof deliverable?.clientApproval?.approved === 'boolean'
+    ? (deliverable.clientApproval.approved ? 'approved' : 'rejected')
+    : null;
+  const effectiveStatus = decisionStatus || deliverable.status;
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'approved': return <CheckCircleIcon className="h-5 w-5 text-green-600" />;
       case 'rejected': return <XCircleIcon className="h-5 w-5 text-red-600" />;
+      case 'review':
+      case 'testing':
       case 'pending': return <ClockIcon className="h-5 w-5 text-yellow-600" />;
+      case 'done': return <CheckCircleIcon className="h-5 w-5 text-green-600" />;
       default: return <EyeIcon className="h-5 w-5 text-gray-400" />;
     }
   };
@@ -258,7 +266,12 @@ const DeliverableItem = ({ deliverable, onOpen }) => {
     switch (status) {
       case 'approved': return 'text-green-600';
       case 'rejected': return 'text-red-600';
+      case 'review':
+      case 'testing':
       case 'pending': return 'text-yellow-600';
+      case 'done': return 'text-green-600';
+      case 'blocked': return 'text-red-600';
+      case 'in_progress': return 'text-blue-600';
       default: return 'text-gray-500';
     }
   };
@@ -268,10 +281,10 @@ const DeliverableItem = ({ deliverable, onOpen }) => {
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center mb-2">
-            {getStatusIcon(deliverable.status)}
+            {getStatusIcon(effectiveStatus)}
             <h4 className="ml-2 text-lg font-medium text-gray-900 dark:text-white">{deliverable.title}</h4>
-            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(deliverable.status)}`}>
-              {deliverable.status}
+            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(effectiveStatus)}`}>
+              {String(effectiveStatus || 'pending').replace('_', ' ')}
             </span>
           </div>
 

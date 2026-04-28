@@ -13,6 +13,12 @@ import { tenantApiService } from '../../../../../../shared/services/tenant/tenan
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import toast from 'react-hot-toast';
 
+const unwrapApiData = (response) => {
+  if (!response) return null;
+  if (response.data && typeof response.data === 'object') return response.data;
+  return response;
+};
+
 const TimeTracking = () => {
   const { tenantSlug } = useParams();
   const { isAuthenticated, loading: authLoading } = useTenantAuth();
@@ -25,8 +31,11 @@ const TimeTracking = () => {
   });
   const [timeEntries, setTimeEntries] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [projectTasks, setProjectTasks] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
   const [newEntry, setNewEntry] = useState({
     projectId: '',
+    taskId: '',
     task: '',
     description: '',
     startTime: new Date().toISOString().slice(0, 16)
@@ -52,10 +61,11 @@ const TimeTracking = () => {
     
     try {
       const response = await tenantApiService.getActiveTimer(tenantSlug);
-      if (response?.success && response.data) {
+      const activeTimer = unwrapApiData(response);
+      if (activeTimer && activeTimer._id) {
         setActiveTracking({
-          ...response.data,
-          task: response.data.description || response.data.task
+          ...activeTimer,
+          task: activeTimer.description || activeTimer.task
         });
       } else {
         setActiveTracking(null);
@@ -73,8 +83,8 @@ const TimeTracking = () => {
     try {
       setLoading(true);
       const response = await tenantApiService.getTodayTimeTracking(tenantSlug);
-      if (response?.success) {
-        const data = response.data;
+      const data = unwrapApiData(response);
+      if (data) {
         setTodayStats({
           totalHours: data.totalHours || 0,
           billableHours: data.billableHours || 0,
@@ -119,32 +129,72 @@ const TimeTracking = () => {
     }
   };
 
-  const handleStartTracking = async () => {
-    if (!newEntry.projectId || !newEntry.task) {
-      toast.error('Please select a project and enter a task name');
+  const fetchProjectTasks = async (projectId) => {
+    if (!isAuthenticated || !tenantSlug || !projectId) {
+      setProjectTasks([]);
       return;
     }
 
     try {
+      setTasksLoading(true);
+      const response = await tenantApiService.getProjectTasks(tenantSlug, { projectId });
+      const tasks = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.tasks)
+          ? response.tasks
+          : Array.isArray(response?.data)
+            ? response.data
+            : [];
+      setProjectTasks(tasks);
+    } catch (error) {
+      console.error('Error fetching project tasks:', error);
+      setProjectTasks([]);
+    } finally {
+      setTasksLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!newEntry.projectId) {
+      setProjectTasks([]);
+      setNewEntry((prev) => ({ ...prev, taskId: '' }));
+      return;
+    }
+    fetchProjectTasks(newEntry.projectId);
+  }, [newEntry.projectId]);
+
+  const handleStartTracking = async () => {
+    if (!newEntry.projectId || !newEntry.taskId) {
+      toast.error('Please select a project and task');
+      return;
+    }
+
+    try {
+      const selectedTask = projectTasks.find((task) => task._id === newEntry.taskId);
+      const selectedTaskTitle = selectedTask?.title || selectedTask?.name || 'Task';
       const response = await tenantApiService.startTimeTracking(tenantSlug, {
         projectId: newEntry.projectId,
-        taskId: null, // Can be added later if task selection is implemented
-        description: newEntry.description || newEntry.task
+        taskId: newEntry.taskId,
+        description: newEntry.description || selectedTaskTitle
       });
+      const timeEntry = unwrapApiData(response);
 
-      if (response?.success) {
+      if (timeEntry && timeEntry._id) {
         setActiveTracking({
-          ...response.data,
-          task: newEntry.task
+          ...timeEntry,
+          task: selectedTaskTitle
         });
         toast.success('Time tracking started');
         setNewEntry({
           projectId: '',
+          taskId: '',
           task: '',
           description: '',
           startTime: new Date().toISOString().slice(0, 16)
         });
         fetchTimeTrackingData(); // Refresh data
+      } else {
+        toast.error('Failed to start time tracking');
       }
     } catch (error) {
       console.error('Error starting time tracking:', error);
@@ -157,12 +207,15 @@ const TimeTracking = () => {
 
     try {
       const response = await tenantApiService.stopTimeTracking(tenantSlug, activeTracking._id);
+      const stoppedEntry = unwrapApiData(response);
 
-      if (response?.success && response.data) {
-        const duration = response.data.hours || 0;
+      if (stoppedEntry && stoppedEntry._id) {
+        const duration = stoppedEntry.hours || 0;
         toast.success(`Tracked ${duration.toFixed(2)} hours`);
         setActiveTracking(null);
         fetchTimeTrackingData();
+      } else {
+        toast.error('Failed to stop time tracking');
       }
     } catch (error) {
       console.error('Error stopping time tracking:', error);
@@ -308,13 +361,32 @@ const TimeTracking = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Task <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                value={newEntry.task}
-                onChange={(e) => setNewEntry({ ...newEntry, task: e.target.value })}
-                placeholder="e.g., Feature Development, Bug Fix"
+              <select
+                value={newEntry.taskId}
+                onChange={(e) => {
+                  const selectedTask = projectTasks.find((task) => task._id === e.target.value);
+                  setNewEntry({
+                    ...newEntry,
+                    taskId: e.target.value,
+                    task: selectedTask?.title || selectedTask?.name || ''
+                  });
+                }}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-              />
+                disabled={!newEntry.projectId || tasksLoading}
+              >
+                <option value="">
+                  {!newEntry.projectId
+                    ? 'Select a project first'
+                    : tasksLoading
+                      ? 'Loading tasks...'
+                      : 'Select a task'}
+                </option>
+                {projectTasks.map((task) => (
+                  <option key={task._id} value={task._id}>
+                    {task.title || task.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

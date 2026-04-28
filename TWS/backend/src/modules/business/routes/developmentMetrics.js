@@ -1,14 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const DevelopmentMetrics = require('../../../models/DevelopmentMetrics');
 const Project = require('../../../models/Project');
 const Card = require('../../../models/Card');
 const Sprint = require('../../../models/Sprint');
+const metricsRead = requireErpAccess({ module: 'projects', action: ['read', 'read_own'], checkRevocation: false });
+const metricsWrite = requireErpAccess({ module: 'projects', action: 'write', checkRevocation: false });
+router.use(verifyERPToken);
 
 // Get development metrics for a project
-router.get('/project/:projectId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/project/:projectId', metricsRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const { period = 'weekly', limit = 12 } = req.query;
   
@@ -26,7 +30,7 @@ router.get('/project/:projectId', authenticateToken, ErrorHandler.asyncHandler(a
 }));
 
 // Get organization-wide development metrics
-router.get('/organization', authenticateToken, requireRole(['Super Admin', 'Org Manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/organization', metricsRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { period = 'monthly', limit = 12 } = req.query;
   const orgId = req.user.orgId;
   
@@ -44,7 +48,7 @@ router.get('/organization', authenticateToken, requireRole(['Super Admin', 'Org 
 }));
 
 // Get tenant-specific development metrics
-router.get('/tenant/:tenantId', authenticateToken, requireRole(['Super Admin', 'Supra Admin']), ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/tenant/:tenantId', metricsRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { tenantId } = req.params;
   const { period = 'monthly', limit = 12 } = req.query;
   
@@ -63,7 +67,7 @@ router.get('/tenant/:tenantId', authenticateToken, requireRole(['Super Admin', '
 }));
 
 // Calculate and store development metrics
-router.post('/calculate/:projectId', authenticateToken, requireRole(['PMO', 'Project Manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/calculate/:projectId', metricsWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const { period, startDate, endDate } = req.body;
   const orgId = req.user.orgId;
@@ -117,7 +121,7 @@ router.post('/calculate/:projectId', authenticateToken, requireRole(['PMO', 'Pro
 }));
 
 // Get velocity trends
-router.get('/velocity/:projectId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/velocity/:projectId', metricsRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const { limit = 10 } = req.query;
   
@@ -142,7 +146,7 @@ router.get('/velocity/:projectId', authenticateToken, ErrorHandler.asyncHandler(
 }));
 
 // Get burndown chart data
-router.get('/burndown/:projectId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/burndown/:projectId', metricsRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const { sprintId } = req.query;
   
@@ -175,7 +179,7 @@ router.get('/burndown/:projectId', authenticateToken, ErrorHandler.asyncHandler(
 }));
 
 // Get code quality metrics
-router.get('/code-quality/:projectId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/code-quality/:projectId', metricsRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const { limit = 6 } = req.query;
   
@@ -202,7 +206,7 @@ router.get('/code-quality/:projectId', authenticateToken, ErrorHandler.asyncHand
 }));
 
 // Get client satisfaction metrics
-router.get('/client-satisfaction/:projectId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/client-satisfaction/:projectId', metricsRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const { limit = 6 } = req.query;
   

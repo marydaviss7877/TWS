@@ -20,6 +20,7 @@ import tenantProjectApiService from './services/tenantProjectApiService';
 import { handleApiError } from './utils/errorHandler';
 import { showSuccess, showError } from './utils/toastNotifications';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
+import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
 import ChangeRequestAuditTrail from './components/changeRequests/ChangeRequestAuditTrail';
 import ChangeRequestEvaluationForm from './components/changeRequests/ChangeRequestEvaluationForm';
 import DeliverableCardSkeleton from './components/deliverables/DeliverableCardSkeleton';
@@ -28,6 +29,7 @@ const ChangeRequestDetailPage = () => {
   const { tenantSlug, changeRequestId } = useParams();
   const navigate = useNavigate();
   const { user } = useTenantAuth();
+  const { hasModulePermission } = useTenantPermissions();
   const [cr, setCr] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -110,7 +112,10 @@ const ChangeRequestDetailPage = () => {
   const project = deliverable?.project_id;
   const projectName = project?.name || (typeof project === 'object' && project?.name) || '—';
   const isSubmitter = user?.email && cr?.submitted_by && user.email === cr.submitted_by;
-  const isAdminOrOwner = ['owner', 'admin', 'super_admin'].includes(user?.role);
+  const isAdminOrOwner =
+    hasModulePermission?.('projects', 'admin') ||
+    hasModulePermission?.('users', 'admin') ||
+    hasModulePermission?.('settings', 'admin');
   const canDecide = cr?.status === 'evaluated' && (isSubmitter || isAdminOrOwner);
   const canAcknowledge = cr?.status === 'submitted';
   const canEvaluate = cr?.status === 'acknowledged';

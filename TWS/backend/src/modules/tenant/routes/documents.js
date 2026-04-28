@@ -16,6 +16,10 @@ const SubscriptionPlan = require('../../../models/SubscriptionPlan');
 const usageTrackerService = require('../../../services/usageTrackerService');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { checkReadOnlySoftwareHouseOnly, getEffectiveUsageLimit } = require('../../../middleware/common/featureGate');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
+
+const documentsReadAccess = requireErpAccess({ module: 'documents', action: ['read', 'write', 'admin'] });
+const documentsWriteAccess = requireErpAccess({ module: 'documents', action: ['write', 'admin'] });
 
 function getOrgId(req) {
   return req.orgId || req.tenant?.organizationId || req.tenant?.orgId;
@@ -42,6 +46,7 @@ router.get('/',
   ],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsReadAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id;
@@ -54,6 +59,7 @@ router.get('/',
       orgId,
       tenantId,
       userId: getUserId(req),
+      role: req.user?.role,
       folderId: req.query.folderId || undefined,
       tags,
       status: req.query.status,
@@ -73,6 +79,7 @@ router.get('/',
 // Org users list (for assign/share picker); must be before /:id
 router.get('/org-users',
   verifyERPToken,
+  documentsReadAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -87,15 +94,15 @@ router.get('/org-users',
 
 router.get('/in-review',
   verifyERPToken,
+  documentsReadAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
-    const result = await documentHubService.listDocuments({
+    const result = await documentHubService.listInReviewForReviewer({
       orgId,
       tenantId: req.tenantId || req.tenant?._id,
-      status: 'in_review',
-      sort: 'updatedAt',
-      order: 'desc',
+      userId: getUserId(req),
+      role: req.user?.role,
       page: 1,
       limit: 50
     });
@@ -108,6 +115,8 @@ router.get('/audit/log',
   [
     query('documentId').optional().isMongoId(),
     query('userId').optional().isMongoId(),
+    query('documentSearch').optional().isString(),
+    query('userSearch').optional().isString(),
     query('action').optional().isString(),
     query('dateFrom').optional().isISO8601(),
     query('dateTo').optional().isISO8601(),
@@ -116,6 +125,7 @@ router.get('/audit/log',
   ],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsReadAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -123,6 +133,8 @@ router.get('/audit/log',
       orgId,
       documentId: req.query.documentId,
       userId: req.query.userId,
+      documentSearch: req.query.documentSearch,
+      userSearch: req.query.userSearch,
       action: req.query.action,
       dateFrom: req.query.dateFrom,
       dateTo: req.query.dateTo,
@@ -137,6 +149,7 @@ router.get('/audit/log',
 router.post('/upload',
   verifyERPToken,
   checkReadOnlySoftwareHouseOnly,
+  documentsWriteAccess,
   (req, res, next) => {
     if (!isS3Configured()) {
       return res.status(503).json({
@@ -151,6 +164,13 @@ router.post('/upload',
       }
       next();
     });
+  },
+  (req, _res, next) => {
+    // FormData may send repeated "tags" fields as string or array depending count.
+    if (req.body && req.body.tags !== undefined && !Array.isArray(req.body.tags)) {
+      req.body.tags = [req.body.tags].filter(Boolean);
+    }
+    next();
   },
   [
     body('title').optional().trim().isLength({ max: 500 }),
@@ -205,6 +225,7 @@ router.post('/upload',
 // Folders (must be before /:id)
 router.get('/folders/list',
   verifyERPToken,
+  documentsReadAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id;
@@ -224,6 +245,7 @@ router.post('/folders',
   ],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id;
@@ -251,6 +273,7 @@ router.patch('/folders/:folderId',
   ],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -267,6 +290,7 @@ router.delete('/folders/:folderId',
   [param('folderId').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -278,6 +302,7 @@ router.delete('/folders/:folderId',
 // Tags (must be before /:id)
 router.get('/tags/list',
   verifyERPToken,
+  documentsReadAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id;
@@ -294,6 +319,7 @@ router.post('/tags',
   ],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id;
@@ -318,6 +344,7 @@ router.patch('/tags/:tagId',
   ],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -334,6 +361,7 @@ router.delete('/tags/:tagId',
   [param('tagId').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
@@ -347,10 +375,14 @@ router.get('/:id/comments',
   [param('id').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsReadAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
-    const comments = await documentHubService.listComments(req.params.id, orgId);
+    const comments = await documentHubService.listComments(req.params.id, orgId, {
+      userId: getUserId(req),
+      role: req.user?.role
+    });
     if (comments === null) return res.status(404).json({ success: false, message: 'Document not found' });
     res.json({ success: true, data: { comments } });
   })
@@ -360,11 +392,14 @@ router.post('/:id/comments',
   [param('id').isMongoId(), body('content').trim().notEmpty().isLength({ max: 5000 })],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsReadAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
     if (!orgId || !userId) return res.status(400).json({ success: false, message: 'Organization and user context required' });
-    const comment = await documentHubService.createComment(req.params.id, orgId, userId, req.body.content);
+    const comment = await documentHubService.createComment(req.params.id, orgId, userId, req.body.content, {
+      role: req.user?.role
+    });
     if (!comment) return res.status(404).json({ success: false, message: 'Document not found' });
     if (comment.error) return res.status(400).json({ success: false, message: comment.error });
     res.status(201).json({ success: true, data: { comment } });
@@ -376,10 +411,14 @@ router.get('/:id/shares',
   [param('id').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsReadAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
-    const shares = await documentHubService.listShares(req.params.id, orgId);
+    const shares = await documentHubService.listShares(req.params.id, orgId, {
+      userId: getUserId(req),
+      role: req.user?.role
+    });
     if (shares === null) return res.status(404).json({ success: false, message: 'Document not found' });
     res.json({ success: true, data: { shares } });
   })
@@ -389,12 +428,16 @@ router.post('/:id/shares',
   [param('id').isMongoId(), body('userId').isMongoId(), body('permission').optional().isIn(['view', 'edit'])],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const sharedBy = getUserId(req);
     if (!orgId || !sharedBy) return res.status(400).json({ success: false, message: 'Organization and user context required' });
-    const share = await documentHubService.addShare(req.params.id, orgId, sharedBy, req.body.userId, req.body.permission || 'view');
+    const share = await documentHubService.addShare(req.params.id, orgId, sharedBy, req.body.userId, req.body.permission || 'view', {
+      role: req.user?.role
+    });
     if (!share) return res.status(404).json({ success: false, message: 'Document not found' });
+    if (share.error) return res.status(400).json({ success: false, message: share.error, code: share.code });
     res.status(201).json({ success: true, data: { share } });
   })
 );
@@ -403,10 +446,14 @@ router.delete('/:id/shares/:userId',
   [param('id').isMongoId(), param('userId').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
-    const result = await documentHubService.removeShare(req.params.id, orgId, req.params.userId);
+    const result = await documentHubService.removeShare(req.params.id, orgId, req.params.userId, {
+      actorUserId: getUserId(req),
+      role: req.user?.role
+    });
     if (result === null) return res.status(404).json({ success: false, message: 'Document not found' });
     res.json({ success: true, data: result });
   })
@@ -416,10 +463,15 @@ router.get('/:id',
   [param('id').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsReadAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
-    const doc = await documentHubService.getDocument(req.params.id, orgId, { includeDownloadUrl: true });
+    const doc = await documentHubService.getDocument(req.params.id, orgId, {
+      includeDownloadUrl: true,
+      userId: getUserId(req),
+      role: req.user?.role
+    });
     if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
     res.json({ success: true, data: { document: doc } });
   })
@@ -436,6 +488,7 @@ router.post('/',
   ],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const tenantId = req.tenantId || req.tenant?._id;
@@ -468,6 +521,7 @@ router.patch('/:id',
   ],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
@@ -480,7 +534,9 @@ router.patch('/:id',
       status: req.body.status
     };
     if (req.body.assigneeId !== undefined) payload.assigneeId = req.body.assigneeId;
-    const doc = await documentHubService.updateDocument(req.params.id, orgId, userId, payload);
+    const doc = await documentHubService.updateDocument(req.params.id, orgId, userId, payload, {
+      role: req.user?.role
+    });
     if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
     res.json({ success: true, data: { document: doc } });
   })
@@ -490,11 +546,14 @@ router.delete('/:id',
   [param('id').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
     if (!orgId || !userId) return res.status(400).json({ success: false, message: 'Organization and user context required' });
-    const doc = await documentHubService.deleteDocument(req.params.id, orgId, userId);
+    const doc = await documentHubService.deleteDocument(req.params.id, orgId, userId, {
+      role: req.user?.role
+    });
     if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
     res.json({ success: true, data: { document: doc } });
   })
@@ -504,11 +563,14 @@ router.post('/:id/submit-for-review',
   [param('id').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
     if (!orgId || !userId) return res.status(400).json({ success: false, message: 'Organization and user context required' });
-    const doc = await documentHubService.submitForReview(req.params.id, orgId, userId);
+    const doc = await documentHubService.submitForReview(req.params.id, orgId, userId, {
+      role: req.user?.role
+    });
     if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
     if (doc.error) return res.status(400).json({ success: false, message: doc.error });
     res.json({ success: true, data: { document: doc } });
@@ -522,12 +584,16 @@ router.post('/:id/approve',
   ],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
     if (!orgId || !userId) return res.status(400).json({ success: false, message: 'Organization and user context required' });
-    const doc = await documentHubService.setReviewOutcome(req.params.id, orgId, userId, 'approved', req.body.comment);
+    const doc = await documentHubService.setReviewOutcome(req.params.id, orgId, userId, 'approved', req.body.comment, {
+      role: req.user?.role
+    });
     if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+    if (doc.error && doc.code === 'FORBIDDEN') return res.status(403).json({ success: false, message: doc.error });
     if (doc.error) return res.status(400).json({ success: false, message: doc.error });
     res.json({ success: true, data: { document: doc } });
   })
@@ -540,12 +606,16 @@ router.post('/:id/reject',
   ],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
     if (!orgId || !userId) return res.status(400).json({ success: false, message: 'Organization and user context required' });
-    const doc = await documentHubService.setReviewOutcome(req.params.id, orgId, userId, 'rejected', req.body.comment);
+    const doc = await documentHubService.setReviewOutcome(req.params.id, orgId, userId, 'rejected', req.body.comment, {
+      role: req.user?.role
+    });
     if (!doc) return res.status(404).json({ success: false, message: 'Document not found' });
+    if (doc.error && doc.code === 'FORBIDDEN') return res.status(403).json({ success: false, message: doc.error });
     if (doc.error) return res.status(400).json({ success: false, message: doc.error });
     res.json({ success: true, data: { document: doc } });
   })
@@ -556,10 +626,14 @@ router.get('/:id/versions',
   [param('id').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsReadAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
-    const versions = await documentHubService.listVersions(req.params.id, orgId);
+    const versions = await documentHubService.listVersions(req.params.id, orgId, {
+      userId: getUserId(req),
+      role: req.user?.role
+    });
     if (versions === null) return res.status(404).json({ success: false, message: 'Document not found' });
     res.json({ success: true, data: { versions } });
   })
@@ -569,11 +643,14 @@ router.post('/:id/versions/:versionId/restore',
   [param('id').isMongoId(), param('versionId').isMongoId()],
   ValidationMiddleware.handleValidationErrors,
   verifyERPToken,
+  documentsWriteAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const orgId = getOrgId(req);
     const userId = getUserId(req);
     if (!orgId || !userId) return res.status(400).json({ success: false, message: 'Organization and user context required' });
-    const doc = await documentHubService.restoreVersion(req.params.id, req.params.versionId, orgId, userId);
+    const doc = await documentHubService.restoreVersion(req.params.id, req.params.versionId, orgId, userId, {
+      role: req.user?.role
+    });
     if (!doc) return res.status(404).json({ success: false, message: 'Document or version not found' });
     res.json({ success: true, data: { document: doc } });
   })

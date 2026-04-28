@@ -72,6 +72,15 @@ const CardSchema = new mongoose.Schema({
   dueDate: Date,
   startDate: Date,
   completedAt: Date,
+  // Client portal visibility and milestones
+  clientVisible: { type: Boolean, default: false },
+  isMilestone: { type: Boolean, default: false },
+  clientApproval: {
+    approved: { type: Boolean, default: null },
+    comment: String,
+    approvedBy: { type: ObjectId, ref: 'User' },
+    approvedAt: Date
+  },
   
   // Enhanced Time Tracking for Software House Billing
   timeTracking: {
@@ -91,8 +100,7 @@ const CardSchema = new mongoose.Schema({
     }]
   },
   
-  // Story Points & Effort (Agile/Scrum)
-  storyPoints: { type: Number, default: 0 },
+  // Effort sizing (Agile/Scrum)
   effort: { 
     type: String, 
     enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL'], 

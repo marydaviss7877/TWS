@@ -26,6 +26,9 @@ export const clientPortalApi = {
   getProjectById: (projectId) => request(`/api/client-portal/projects/${projectId}`),
   getProjectDeliverables: (projectId) => request(`/api/client-portal/projects/${projectId}/deliverables`),
   getTimesheetSummary: (projectId, range = '30d') => request(`/api/client-portal/projects/${projectId}/timesheets/summary?range=${encodeURIComponent(range)}`),
+  getProjectInvoices: (projectId) => request(`/api/client-portal/projects/${projectId}/invoices`),
+  getProjectDocuments: (projectId) => request(`/api/client-portal/projects/${projectId}/documents`),
+  getContactProfile: () => request('/api/client-portal/contact'),
   approveDeliverable: (cardId, approved, comment) => request(`/api/client-portal/cards/${cardId}/approve`, {
     method: 'POST',
     body: JSON.stringify({ approved, comment })

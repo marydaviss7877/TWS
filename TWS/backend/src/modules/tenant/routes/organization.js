@@ -12,12 +12,14 @@ const User = require('../../../models/User');
 const Employee = require('../../../models/Employee');
 const LeaveRequest = require('../../../models/LeaveRequest');
 const { PayrollRecord, PayrollCycle } = require('../../../models/Payroll');
+const { buildEmployeeTimeMap, buildPayrollTimeSnapshot } = require('../../../services/hr/payroll-time-sync.service');
 const OrgLeavePolicy = require('../../../models/OrgLeavePolicy');
 const TenantSettings = require('../../../models/TenantSettings');
 const TenantAuditLog = require('../../../models/TenantAuditLog');
 const bcrypt = require('bcryptjs');
 const { authenticateToken } = require('../../../middleware/auth/auth');
 const tenantOrgService = require('../../../services/tenant/tenant-org.service');
+const recruitmentService = require('../../../services/hr/recruitment.service');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const { tokenVerificationLimiter, strictLimiter } = require('../../../middleware/rateLimiting/rateLimiter');
@@ -31,6 +33,15 @@ const ADMIN_LIKE_ROLES = new Set(['owner', 'admin', 'super_admin', 'org_manager'
 const TenantMiddleware = require('../../../middleware/tenant/tenantMiddleware');
 const { checkUsageLimitSoftwareHouseOnly, checkReadOnlySoftwareHouseOnly } = require('../../../middleware/common/featureGate');
 const CLIENT_PORTAL_ROLES = new Set(['client', 'customer']);
+const SETTINGS_ADMIN_ROLES = new Set([
+  'owner',
+  'admin',
+  'super_admin',
+  'org_manager',
+  'org_admin',
+  'tenant_owner',
+  'ceo'
+]);
 
 const denyClientSettingsAccess = (req, res, next) => {
   const role = String(req.user?.role || '').toLowerCase();
@@ -39,6 +50,18 @@ const denyClientSettingsAccess = (req, res, next) => {
       success: false,
       message: 'Client users cannot access organization settings.',
       code: 'CLIENT_SETTINGS_FORBIDDEN'
+    });
+  }
+  next();
+};
+
+const requireSettingsAdmin = (req, res, next) => {
+  const role = String(req.user?.role || '').toLowerCase();
+  if (!SETTINGS_ADMIN_ROLES.has(role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Only organization admins can modify organization settings.',
+      code: 'SETTINGS_ADMIN_REQUIRED'
     });
   }
   next();
@@ -690,7 +713,7 @@ router.get('/info', authenticateToken, async (req, res) => {
 
 // ── Organization Profile (GET + PUT) ─────────────────────────────────────────
 // Returns full org profile: name, description, contactInfo, businessInfo, branding, subscription
-router.get('/profile', authenticateToken, async (req, res) => {
+router.get('/profile', verifyERPToken, async (req, res) => {
   try {
     const { tenantSlug } = req.params;
     const tenant = await Tenant.findOne({ slug: tenantSlug })
@@ -706,7 +729,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
 });
 
 // Update org profile (name, description, contactInfo, businessInfo, branding colors)
-router.put('/profile', verifyERPToken, async (req, res) => {
+router.put('/profile', verifyERPToken, requireSettingsAdmin, async (req, res) => {
   try {
     const { tenantSlug } = req.params;
     const { name, description, contactInfo, businessInfo, branding } = req.body;
@@ -1386,6 +1409,48 @@ router.post('/hr/employees', verifyERPToken, employeesWrite, async (req, res) =>
   }
 });
 
+// Update employee
+router.patch('/hr/employees/:id', verifyERPToken, employeesWrite, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { id } = req.params;
+    const employeeData = req.body || {};
+
+    if (!employeeData || Object.keys(employeeData).length === 0) {
+      return res.status(400).json({ success: false, message: 'Employee update data is required' });
+    }
+
+    const employee = await tenantOrgService.updateEmployee(tenantContext, id, employeeData);
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Employee not found or no valid fields to update' });
+    }
+
+    return res.json({ success: true, data: { employee } });
+  } catch (error) {
+    console.error('Update HR employee error:', error);
+    const status = error.name === 'ValidationError' ? 400 : 500;
+    return res.status(status).json({ success: false, message: error.message || 'Failed to update employee', error: error.message });
+  }
+});
+
+// Delete employee
+router.delete('/hr/employees/:id', verifyERPToken, employeesWrite, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { id } = req.params;
+    const deleted = await tenantOrgService.deleteEmployee(tenantContext, id);
+
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Employee not found' });
+    }
+
+    return res.json({ success: true, message: 'Employee deleted successfully' });
+  } catch (error) {
+    console.error('Delete HR employee error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to delete employee', error: error.message });
+  }
+});
+
 // ==================== HR PAYROLL ROUTES ====================
 
 router.get('/hr/payroll', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'read', checkRevocation: true }), async (req, res) => {
@@ -1522,6 +1587,56 @@ router.get('/hr/payroll/analytics', verifyERPToken, requireErpAccess({ module: '
   }
 });
 
+router.post('/hr/payroll/time-sync/preview', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'read', checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { periodStart, periodEnd, employeeIds = [] } = req.body || {};
+    if (!periodStart || !periodEnd) {
+      return res.status(400).json({ success: false, message: 'periodStart and periodEnd are required' });
+    }
+
+    const employeeFilter = { orgId: tenantContext.orgId, status: { $in: ['active', 'probation', 'on-leave'] } };
+    if (Array.isArray(employeeIds) && employeeIds.length > 0) employeeFilter._id = { $in: employeeIds };
+    const employees = await Employee.find(employeeFilter).populate('userId', 'fullName email').lean();
+    const userIds = employees.map((employee) => employee.userId?._id || employee.userId).filter(Boolean);
+    const timeMap = await buildEmployeeTimeMap({
+      orgId: tenantContext.orgId,
+      periodStart,
+      periodEnd,
+      employeeUserIds: userIds
+    });
+
+    const employeeSummaries = employees.map((employee) => {
+      const userId = employee.userId?._id || employee.userId;
+      const timeData = timeMap.get(String(userId)) || {};
+      const snapshot = buildPayrollTimeSnapshot(employee, timeData, periodStart, periodEnd);
+      return {
+        employeeId: employee._id,
+        userId,
+        name: employee.userId?.fullName || employee.employeeId,
+        department: employee.department,
+        contractType: employee.contractType,
+        salaryBase: Number(employee.salary?.base || 0),
+        currency: employee.salary?.currency || 'USD',
+        ...snapshot
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        periodStart: new Date(periodStart),
+        periodEnd: new Date(periodEnd),
+        employeeCount: employeeSummaries.length,
+        employeeSummaries
+      }
+    });
+  } catch (error) {
+    console.error('Payroll time sync preview error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to preview payroll time sync', error: error.message });
+  }
+});
+
 router.post('/hr/payroll/process', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'write', checkRevocation: true }), async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
@@ -1533,6 +1648,13 @@ router.post('/hr/payroll/process', verifyERPToken, requireErpAccess({ module: 'p
     const employeeFilter = { orgId: tenantContext.orgId, status: { $in: ['active', 'probation', 'on-leave'] } };
     if (Array.isArray(employeeIds) && employeeIds.length > 0) employeeFilter._id = { $in: employeeIds };
     const employees = await Employee.find(employeeFilter).populate('userId', 'fullName email');
+    const employeeUserIds = employees.map((employee) => employee.userId?._id || employee.userId).filter(Boolean);
+    const payrollTimeMap = await buildEmployeeTimeMap({
+      orgId: tenantContext.orgId,
+      periodStart,
+      periodEnd,
+      employeeUserIds
+    });
     const records = [];
     let createdCount = 0;
     let reusedCount = 0;
@@ -1551,8 +1673,21 @@ router.post('/hr/payroll/process', verifyERPToken, requireErpAccess({ module: 'p
         continue;
       }
 
-      const grossPay = Number(employee.salary?.base || 0);
+      const timeData = payrollTimeMap.get(String(employee.userId?._id || employee.userId)) || {};
+      const snapshot = buildPayrollTimeSnapshot(employee, timeData, periodStart, periodEnd);
+      const basePay = Number(employee.salary?.base || 0);
+      const grossPay = Math.round((basePay + snapshot.overtimePay) * 100) / 100;
       const deductionsTotal = 0;
+      const payrollComponents = [
+        { name: 'Base Salary', amount: basePay, type: 'earnings' }
+      ];
+      if (snapshot.overtimePay > 0) {
+        payrollComponents.push({
+          name: `Overtime (${snapshot.hoursWorked.overtime}h @ ${snapshot.overtimeRate}/h)`,
+          amount: snapshot.overtimePay,
+          type: 'earnings'
+        });
+      }
       const payrollRecord = await PayrollRecord.findOneAndUpdate(
         idempotencyFilter,
         {
@@ -1563,10 +1698,20 @@ router.post('/hr/payroll/process', verifyERPToken, requireErpAccess({ module: 'p
             userId: employee.userId?._id || employee.userId,
             periodStart: new Date(periodStart),
             periodEnd: new Date(periodEnd),
-            components: [{ name: 'Base Salary', amount: grossPay, type: 'earnings' }],
+            components: payrollComponents,
             grossPay,
             deductions: { total: deductionsTotal },
             netPay: grossPay - deductionsTotal,
+            hoursWorked: snapshot.hoursWorked,
+            hourlyRate: snapshot.hourlyRate,
+            overtimeRate: snapshot.overtimeRate,
+            notes: [
+              `Time sync: total=${snapshot.hoursWorked.total}h`,
+              `billable=${snapshot.billableHours}h`,
+              `non_billable=${snapshot.nonBillableHours}h`,
+              `entries=${snapshot.entryCount}`,
+              `projects=${snapshot.projectsCount}`
+            ].join(' | '),
             status: 'pending'
           }
         },
@@ -1579,7 +1724,16 @@ router.post('/hr/payroll/process', verifyERPToken, requireErpAccess({ module: 'p
     return res.status(201).json({
       success: true,
       message: 'Payroll processed successfully',
-      data: { payrollRecords: records, telemetry: { employeesEvaluated: employees.length, createdCount, reusedCount } }
+      data: {
+        payrollRecords: records,
+        telemetry: {
+          employeesEvaluated: employees.length,
+          createdCount,
+          reusedCount,
+          centralizedTimeSync: true,
+          syncedEmployeeCount: employeeUserIds.length
+        }
+      }
     });
   } catch (error) {
     console.error('Process HR payroll error:', error);
@@ -1644,6 +1798,42 @@ router.post('/hr/payroll/cycles/:id/close', verifyERPToken, requireErpAccess({ m
   }
 });
 
+router.post('/hr/payroll/cycles/:id/start', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'admin', checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const cycle = await PayrollCycle.findOne({ _id: req.params.id, orgId: tenantContext.orgId });
+    if (!cycle) return res.status(404).json({ success: false, message: 'Payroll cycle not found' });
+    if (cycle.status !== 'draft') {
+      return res.status(400).json({ success: false, message: `Cannot start payroll cycle from ${cycle.status} status` });
+    }
+    cycle.status = 'processing';
+    cycle.processedBy = req.user?._id || req.user?.id;
+    await cycle.save();
+    return res.json({ success: true, message: 'Payroll cycle started successfully', data: { cycle } });
+  } catch (error) {
+    console.error('Start payroll cycle error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to start payroll cycle', error: error.message });
+  }
+});
+
+router.post('/hr/payroll/cycles/:id/cancel', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'admin', checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const cycle = await PayrollCycle.findOne({ _id: req.params.id, orgId: tenantContext.orgId });
+    if (!cycle) return res.status(404).json({ success: false, message: 'Payroll cycle not found' });
+    if (!['draft', 'processing'].includes(cycle.status)) {
+      return res.status(400).json({ success: false, message: `Cannot cancel payroll cycle from ${cycle.status} status` });
+    }
+    cycle.status = 'cancelled';
+    cycle.processedBy = req.user?._id || req.user?.id;
+    await cycle.save();
+    return res.json({ success: true, message: 'Payroll cycle cancelled successfully', data: { cycle } });
+  } catch (error) {
+    console.error('Cancel payroll cycle error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to cancel payroll cycle', error: error.message });
+  }
+});
+
 router.get('/hr/payroll/:id', verifyERPToken, requireErpAccess({ module: 'payroll', action: ['read', 'read_own'], checkRevocation: true }), async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
@@ -1676,6 +1866,10 @@ router.post('/hr/payroll/:id/approve', verifyERPToken, requireErpAccess({ module
     const employee = await Employee.findOne({ _id: payrollRecord.employeeId, orgId: tenantContext.orgId }).select('_id').lean();
     if (!employee) return res.status(404).json({ success: false, message: 'Payroll record not found' });
 
+    if (!['draft', 'pending'].includes(payrollRecord.status)) {
+      return res.status(400).json({ success: false, message: `Cannot approve payroll from ${payrollRecord.status} status` });
+    }
+
     payrollRecord.status = 'approved';
     payrollRecord.approvedBy = req.user?._id || req.user?.id;
     payrollRecord.approvedAt = new Date();
@@ -1696,6 +1890,10 @@ router.post('/hr/payroll/:id/mark-paid', verifyERPToken, requireErpAccess({ modu
     const employee = await Employee.findOne({ _id: payrollRecord.employeeId, orgId: tenantContext.orgId }).select('_id').lean();
     if (!employee) return res.status(404).json({ success: false, message: 'Payroll record not found' });
 
+    if (payrollRecord.status !== 'approved') {
+      return res.status(400).json({ success: false, message: `Cannot mark payroll as paid from ${payrollRecord.status} status` });
+    }
+
     payrollRecord.status = 'paid';
     payrollRecord.paidAt = new Date();
     payrollRecord.paymentMethod = req.body?.paymentMethod || payrollRecord.paymentMethod || 'bank-transfer';
@@ -1704,6 +1902,28 @@ router.post('/hr/payroll/:id/mark-paid', verifyERPToken, requireErpAccess({ modu
   } catch (error) {
     console.error('Mark payroll paid error:', error);
     return res.status(500).json({ success: false, message: 'Failed to mark payroll paid', error: error.message });
+  }
+});
+
+router.post('/hr/payroll/:id/cancel', verifyERPToken, requireErpAccess({ module: 'payroll', action: 'write', checkRevocation: true }), async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const payrollRecord = await PayrollRecord.findOne({ _id: req.params.id, orgId: tenantContext.orgId });
+    if (!payrollRecord) return res.status(404).json({ success: false, message: 'Payroll record not found' });
+    const employee = await Employee.findOne({ _id: payrollRecord.employeeId, orgId: tenantContext.orgId }).select('_id').lean();
+    if (!employee) return res.status(404).json({ success: false, message: 'Payroll record not found' });
+
+    if (!['draft', 'pending', 'approved'].includes(payrollRecord.status)) {
+      return res.status(400).json({ success: false, message: `Cannot cancel payroll from ${payrollRecord.status} status` });
+    }
+
+    payrollRecord.status = 'cancelled';
+    if (req.body?.notes) payrollRecord.notes = req.body.notes;
+    await payrollRecord.save();
+    return res.json({ success: true, message: 'Payroll cancelled successfully', data: { payrollRecord } });
+  } catch (error) {
+    console.error('Cancel HR payroll error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to cancel payroll', error: error.message });
   }
 });
 
@@ -2251,6 +2471,375 @@ router.get('/hr/performance-reviews', verifyERPToken, async (req, res) => {
   }
 });
 
+// HR performance overview for dashboards
+router.get('/hr/performance', verifyERPToken, employeesRead, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const models = tenantOrgService.getTenantModels(tenantContext);
+    const filter = tenantOrgService.getTenantFilter(tenantContext);
+    const employees = await models.Employee.find({ ...filter })
+      .populate('userId', 'fullName email')
+      .sort({ updatedAt: -1 })
+      .limit(100)
+      .lean();
+
+    const rows = employees.map((employee) => {
+      const notes = Array.isArray(employee.performanceNotes) ? employee.performanceNotes : [];
+      const ratings = notes.map((item) => Number(item.rating)).filter((value) => Number.isFinite(value));
+      const avgRating = ratings.length ? Number((ratings.reduce((sum, value) => sum + value, 0) / ratings.length).toFixed(1)) : 0;
+      const lastReviewDate = notes
+        .map((item) => item.date ? new Date(item.date) : null)
+        .filter((date) => date && !Number.isNaN(date.getTime()))
+        .sort((a, b) => b.getTime() - a.getTime())[0];
+
+      const status = avgRating >= 4.5 ? 'Excellent'
+        : avgRating >= 4 ? 'Very Good'
+          : avgRating >= 3 ? 'Good'
+            : avgRating > 0 ? 'Needs Improvement'
+              : 'Not Reviewed';
+
+      return {
+        id: String(employee._id),
+        name: employee.userId?.fullName || employee.employeeId || 'Employee',
+        department: employee.department || 'General',
+        rating: avgRating,
+        lastReview: lastReviewDate ? lastReviewDate.toISOString().slice(0, 10) : 'N/A',
+        nextReview: lastReviewDate
+          ? new Date(lastReviewDate.getFullYear(), lastReviewDate.getMonth() + 3, lastReviewDate.getDate()).toISOString().slice(0, 10)
+          : 'TBD',
+        status
+      };
+    });
+
+    const ratedRows = rows.filter((row) => row.rating > 0);
+    const averageRating = ratedRows.length
+      ? Number((ratedRows.reduce((sum, row) => sum + row.rating, 0) / ratedRows.length).toFixed(1))
+      : 0;
+
+    const reviewsDue = rows.filter((row) => row.nextReview !== 'TBD' && row.nextReview !== 'N/A' && new Date(row.nextReview) <= new Date()).length;
+    const topPerformers = rows.filter((row) => row.rating >= 4.5).length;
+    const improvementPlans = rows.filter((row) => row.rating > 0 && row.rating < 3.5).length;
+
+    return res.json({
+      success: true,
+      data: {
+        employees: rows,
+        stats: { averageRating, reviewsDue, topPerformers, improvementPlans }
+      }
+    });
+  } catch (error) {
+    console.error('Get HR performance error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch HR performance data', error: error.message });
+  }
+});
+
+// HR training overview
+router.get('/hr/training', verifyERPToken, employeesRead, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const models = tenantOrgService.getTenantModels(tenantContext);
+    const filter = tenantOrgService.getTenantFilter(tenantContext);
+    const employees = await models.Employee.find({ ...filter, status: { $in: ['active', 'probation', 'on-leave'] } })
+      .select('skills department')
+      .lean();
+
+    const skillHistogram = new Map();
+    let enrolledEmployees = 0;
+    for (const employee of employees) {
+      const skills = Array.isArray(employee.skills) ? employee.skills : [];
+      if (skills.length > 0) enrolledEmployees += 1;
+      for (const skill of skills) {
+        const name = String(skill?.name || '').trim();
+        if (!name) continue;
+        skillHistogram.set(name, (skillHistogram.get(name) || 0) + 1);
+      }
+    }
+
+    const programs = Array.from(skillHistogram.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([title, participants], index) => ({
+        id: `${title}-${index}`,
+        title,
+        participants,
+        duration: '4 weeks',
+        status: 'Active',
+        completion: Math.min(95, 20 + participants * 5)
+      }));
+
+    const activePrograms = programs.length;
+    const totalCourses = skillHistogram.size;
+    const completedThisMonth = programs.reduce((sum, item) => sum + Math.floor((item.participants * item.completion) / 100), 0);
+
+    return res.json({
+      success: true,
+      data: {
+        programs,
+        stats: { activePrograms, totalCourses, enrolledEmployees, completedThisMonth }
+      }
+    });
+  } catch (error) {
+    console.error('Get HR training error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch HR training data', error: error.message });
+  }
+});
+
+// HR onboarding overview
+router.get('/hr/onboarding', verifyERPToken, employeesRead, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const models = tenantOrgService.getTenantModels(tenantContext);
+    const filter = tenantOrgService.getTenantFilter(tenantContext);
+    const employees = await models.Employee.find({ ...filter })
+      .populate('userId', 'fullName')
+      .sort({ hireDate: -1, createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    const now = Date.now();
+    const days = (value) => Math.max(0, Math.floor((now - new Date(value).getTime()) / (1000 * 60 * 60 * 24)));
+
+    const onboardingEmployees = employees
+      .filter((employee) => employee.hireDate)
+      .slice(0, 20)
+      .map((employee) => {
+        const daysSinceHire = days(employee.hireDate);
+        const progress = Math.min(100, Math.max(10, Math.round((daysSinceHire / 90) * 100)));
+        const status = progress >= 100 ? 'Completed' : progress >= 90 ? 'Almost Complete' : 'In Progress';
+        return {
+          id: String(employee._id),
+          name: employee.userId?.fullName || employee.employeeId || 'Employee',
+          position: employee.jobTitle || 'Team Member',
+          startDate: new Date(employee.hireDate).toISOString().slice(0, 10),
+          progress,
+          status
+        };
+      });
+
+    const monthAgo = new Date();
+    monthAgo.setDate(monthAgo.getDate() - 30);
+    const newHires = employees.filter((employee) => employee.hireDate && new Date(employee.hireDate) >= monthAgo).length;
+    const inProgress = onboardingEmployees.filter((employee) => employee.progress < 100).length;
+    const completed = onboardingEmployees.filter((employee) => employee.progress >= 100).length;
+    const trainingSessions = onboardingEmployees.length * 2;
+
+    return res.json({
+      success: true,
+      data: {
+        employees: onboardingEmployees,
+        stats: { newHires, inProgress, completed, trainingSessions }
+      }
+    });
+  } catch (error) {
+    console.error('Get HR onboarding error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch HR onboarding data', error: error.message });
+  }
+});
+
+router.get('/hr/onboarding/checklist', verifyERPToken, employeesRead, async (req, res) => {
+  return res.json({
+    success: true,
+    data: {
+      checklist: [
+        'Complete HR documentation',
+        'IT equipment setup',
+        'System access and accounts',
+        'Company orientation',
+        'Department introduction',
+        'Assign mentor/buddy',
+        'First project assignment',
+        '30-day check-in'
+      ]
+    }
+  });
+});
+
+// HR recruitment jobs
+router.get('/hr/recruitment/jobs', verifyERPToken, employeesRead, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const result = await recruitmentService.getJobPostings(tenantContext.orgId, req.query || {});
+    const jobs = (result?.jobs || []).map((job) => ({
+      id: String(job._id || job.id),
+      title: job.title || 'Untitled role',
+      department: job.metadata?.department || 'General',
+      location: job.metadata?.location || 'Remote',
+      applicants: Number(job.applicants || 0),
+      posted: job.createdAt ? new Date(job.createdAt).toISOString().slice(0, 10) : 'N/A',
+      status: job.metadata?.status || 'draft',
+      description: job.description || ''
+    }));
+    return res.json({ success: true, data: { jobs, total: jobs.length } });
+  } catch (error) {
+    console.error('Get HR recruitment jobs error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch job postings', error: error.message });
+  }
+});
+
+router.get('/hr/recruitment', verifyERPToken, employeesRead, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const result = await recruitmentService.getJobPostings(tenantContext.orgId, req.query || {});
+    const jobs = result?.jobs || [];
+    const activeCandidates = jobs.reduce((sum, job) => sum + Number(job.applicants || 0), 0);
+    return res.json({
+      success: true,
+      data: {
+        jobs,
+        stats: {
+          openPositions: jobs.length,
+          activeCandidates,
+          inReview: 0,
+          hiredThisMonth: 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get HR recruitment overview error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch recruitment data', error: error.message });
+  }
+});
+
+router.post('/hr/recruitment/jobs', verifyERPToken, employeesWrite, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { title, department, location, description, employmentType, experienceLevel, salaryRange, status, expiresAt, tags } = req.body || {};
+    if (!String(title || '').trim()) {
+      return res.status(400).json({ success: false, message: 'title is required' });
+    }
+    const created = await recruitmentService.createJobPosting(tenantContext.orgId, {
+      title: String(title).trim(),
+      department: String(department || 'General').trim(),
+      location: String(location || 'Remote').trim(),
+      description: String(description || '').trim(),
+      employmentType: String(employmentType || 'full-time').trim(),
+      experienceLevel: String(experienceLevel || 'mid').trim(),
+      salaryRange: salaryRange || null,
+      status: String(status || 'draft').trim(),
+      expiresAt: expiresAt || null,
+      tags: Array.isArray(tags) ? tags : []
+    });
+    return res.status(201).json({
+      success: true,
+      data: {
+        id: String(created._id),
+        title: created.title,
+        department: created.metadata?.department || 'General',
+        location: created.metadata?.location || 'Remote',
+        applicants: 0,
+        posted: created.createdAt ? new Date(created.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+        status: created.metadata?.status || 'draft'
+      }
+    });
+  } catch (error) {
+    console.error('Create HR recruitment job error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to create job posting', error: error.message });
+  }
+});
+
+router.put('/hr/recruitment/jobs/:id', verifyERPToken, employeesWrite, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { id } = req.params;
+    const FormTemplate = require('../../../models/FormTemplate');
+    const updatePayload = {};
+    const { title, description, department, location, employmentType, experienceLevel, salaryRange, status, expiresAt, tags } = req.body || {};
+    if (title !== undefined) updatePayload.title = String(title || '').trim();
+    if (description !== undefined) updatePayload.description = String(description || '').trim();
+    if (department !== undefined || location !== undefined || employmentType !== undefined || experienceLevel !== undefined || salaryRange !== undefined || status !== undefined || expiresAt !== undefined || tags !== undefined) {
+      updatePayload.metadata = {
+        ...(department !== undefined ? { department: String(department || 'General').trim() } : {}),
+        ...(location !== undefined ? { location: String(location || 'Remote').trim() } : {}),
+        ...(employmentType !== undefined ? { employmentType: String(employmentType || 'full-time').trim() } : {}),
+        ...(experienceLevel !== undefined ? { experienceLevel: String(experienceLevel || 'mid').trim() } : {}),
+        ...(salaryRange !== undefined ? { salaryRange: salaryRange || null } : {}),
+        ...(status !== undefined ? { status: String(status || 'draft').trim() } : {}),
+        ...(expiresAt !== undefined ? { expiresAt: expiresAt || null } : {}),
+        ...(tags !== undefined ? { tags: Array.isArray(tags) ? tags : [] } : {})
+      };
+    }
+
+    const updated = await FormTemplate.findOneAndUpdate(
+      { _id: id, orgId: tenantContext.orgId, category: 'job_posting', isActive: true },
+      { $set: updatePayload },
+      { new: true }
+    ).lean();
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Job posting not found' });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        id: String(updated._id),
+        title: updated.title,
+        department: updated.metadata?.department || 'General',
+        location: updated.metadata?.location || 'Remote',
+        applicants: 0,
+        posted: updated.createdAt ? new Date(updated.createdAt).toISOString().slice(0, 10) : 'N/A',
+        status: updated.metadata?.status || 'draft'
+      }
+    });
+  } catch (error) {
+    console.error('Update HR recruitment job error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update job posting', error: error.message });
+  }
+});
+
+router.delete('/hr/recruitment/jobs/:id', verifyERPToken, employeesWrite, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { id } = req.params;
+    const FormTemplate = require('../../../models/FormTemplate');
+    const deleted = await FormTemplate.findOneAndUpdate(
+      { _id: id, orgId: tenantContext.orgId, category: 'job_posting', isActive: true },
+      { $set: { isActive: false } },
+      { new: true }
+    ).lean();
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Job posting not found' });
+    }
+    return res.json({ success: true, message: 'Job posting deleted successfully' });
+  } catch (error) {
+    console.error('Delete HR recruitment job error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to delete job posting', error: error.message });
+  }
+});
+
+router.get('/hr/recruitment/jobs/:id/applications', verifyERPToken, employeesRead, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const applications = await recruitmentService.getJobApplications(tenantContext.orgId, req.params.id);
+    return res.json({ success: true, data: { applications, total: applications.length } });
+  } catch (error) {
+    console.error('Get HR recruitment applications error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch job applications', error: error.message });
+  }
+});
+
+router.get('/hr/recruitment/interviews', verifyERPToken, employeesRead, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const interviews = await recruitmentService.getInterviews(tenantContext.orgId, req.query || {});
+    return res.json({ success: true, data: { interviews, total: interviews.length } });
+  } catch (error) {
+    console.error('Get HR interviews error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch interviews', error: error.message });
+  }
+});
+
+router.post('/hr/recruitment/interviews', verifyERPToken, employeesWrite, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const interview = await recruitmentService.createInterview(tenantContext.orgId, req.body || {});
+    return res.status(201).json({ success: true, data: interview });
+  } catch (error) {
+    console.error('Create HR interview error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to create interview', error: error.message });
+  }
+});
+
 // ==================== USER MANAGEMENT ROUTES ====================
 
 const TENANT_ROLE_ENUM = ['owner', 'admin', 'manager', 'project_manager', 'hr', 'finance', 'employee', 'contractor', 'client'];
@@ -2504,7 +3093,7 @@ const orgLogoUpload = multer({
 });
 
 // POST /profile/logo — upload org logo (admin only)
-router.post('/profile/logo', verifyERPToken, (req, res, next) => {
+router.post('/profile/logo', verifyERPToken, requireSettingsAdmin, (req, res, next) => {
   orgLogoUpload.single('logo')(req, res, (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ success: false, message: 'Logo must be under 2 MB' });
@@ -2540,7 +3129,7 @@ router.post('/profile/logo', verifyERPToken, (req, res, next) => {
 });
 
 // DELETE /profile/logo — remove org logo
-router.delete('/profile/logo', verifyERPToken, async (req, res) => {
+router.delete('/profile/logo', verifyERPToken, requireSettingsAdmin, async (req, res) => {
   try {
     const { tenantSlug } = req.params;
     const tenant = await Tenant.findOne({ slug: tenantSlug });
@@ -2952,7 +3541,7 @@ router.post('/reports/generate',
 // ==================== SETTINGS ROUTES ====================
 
 // Get all settings
-router.get('/settings', verifyTenantOrgAccess, denyClientSettingsAccess, async (req, res) => {
+router.get('/settings', verifyERPToken, denyClientSettingsAccess, requireSettingsAdmin, async (req, res) => {
   try {
     const tenantContext = await buildTenantContext(req);
     const { tenantId, orgId } = tenantContext;
@@ -2981,7 +3570,7 @@ router.get('/settings', verifyTenantOrgAccess, denyClientSettingsAccess, async (
 });
 
 // Update general settings
-router.put('/settings/general', verifyERPToken, denyClientSettingsAccess, async (req, res) => {
+router.put('/settings/general', verifyERPToken, denyClientSettingsAccess, requireSettingsAdmin, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { tenantId, orgId } = tenantContext;
@@ -3003,7 +3592,7 @@ router.put('/settings/general', verifyERPToken, denyClientSettingsAccess, async 
 });
 
 // Update notification settings
-router.put('/settings/notifications', verifyERPToken, denyClientSettingsAccess, async (req, res) => {
+router.put('/settings/notifications', verifyERPToken, denyClientSettingsAccess, requireSettingsAdmin, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { tenantId, orgId } = tenantContext;
@@ -3025,7 +3614,7 @@ router.put('/settings/notifications', verifyERPToken, denyClientSettingsAccess, 
 });
 
 // Update security settings
-router.put('/settings/security', verifyERPToken, denyClientSettingsAccess, async (req, res) => {
+router.put('/settings/security', verifyERPToken, denyClientSettingsAccess, requireSettingsAdmin, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { tenantId, orgId } = tenantContext;
@@ -3047,36 +3636,18 @@ router.put('/settings/security', verifyERPToken, denyClientSettingsAccess, async
 });
 
 // Get theme settings
-router.get('/settings/theme', verifyTenantOrgAccess, denyClientSettingsAccess, async (req, res) => {
+router.get('/settings/theme', verifyERPToken, denyClientSettingsAccess, async (req, res) => {
   try {
-    console.log('🎨 GET /settings/theme called', { 
-      tenantSlug: req.params.tenantSlug,
-      tenantId: req.tenant?._id,
-      userId: req.user?._id
-    });
-    
     const tenantContext = await buildTenantContext(req);
     const { tenantId, orgId } = tenantContext;
-    
-    console.log('🎨 Tenant context:', { tenantId, orgId: orgId?.toString() });
-    
     const settings = await TenantSettings.getOrCreate(tenantId, orgId);
-    
-    console.log('🎨 Settings found/created:', {
-      settingsId: settings._id,
-      theme: settings.theme,
-      hasTheme: !!settings.theme,
-      themeName: settings.theme?.name
-    });
-    
+
     const themeResponse = settings.theme || {
       name: 'default',
       colors: { primary: '#6366F1', secondary: '#10B981', accent: '#A855F7' },
       fonts: { heading: 'Geist', body: 'Inter' }
     };
-    
-    console.log('🎨 Returning theme:', JSON.stringify(themeResponse, null, 2));
-    
+
     res.json({
       success: true,
       data: {
@@ -3091,38 +3662,18 @@ router.get('/settings/theme', verifyTenantOrgAccess, denyClientSettingsAccess, a
 });
 
 // Update theme settings
-router.put('/settings/theme', verifyTenantOrgAccess, denyClientSettingsAccess, async (req, res) => {
+router.put('/settings/theme', verifyERPToken, denyClientSettingsAccess, requireSettingsAdmin, async (req, res) => {
   try {
-    console.log('🎨 PUT /settings/theme called', { 
-      tenantSlug: req.params.tenantSlug,
-      tenantId: req.tenant?._id,
-      userId: req.user?._id,
-      body: req.body 
-    });
-    
     const tenantContext = await buildTenantContext(req);
     const { tenantId, orgId } = tenantContext;
-    
-    console.log('🎨 Tenant context:', { tenantId, orgId: orgId?.toString() });
-    
+
     const settings = await TenantSettings.getOrCreate(tenantId, orgId);
-    console.log('🎨 Settings before update:', {
-      settingsId: settings._id,
-      currentTheme: settings.theme
-    });
-    
     await settings.updateTheme(req.body);
     
     // Reload from database to get the updated theme
     await settings.save();
     const updatedSettings = await TenantSettings.findById(settings._id);
-    
-    console.log('🎨 Theme settings updated successfully:', {
-      settingsId: updatedSettings._id,
-      theme: updatedSettings.theme,
-      themeName: updatedSettings.theme?.name
-    });
-    
+
     res.json({
       success: true,
       message: 'Theme settings updated successfully',
@@ -3138,7 +3689,7 @@ router.put('/settings/theme', verifyTenantOrgAccess, denyClientSettingsAccess, a
 });
 
 // Update settings (legacy route - for backward compatibility)
-router.put('/settings', verifyERPToken, denyClientSettingsAccess, async (req, res) => {
+router.put('/settings', verifyERPToken, denyClientSettingsAccess, requireSettingsAdmin, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const settingsData = req.body;
@@ -3153,7 +3704,7 @@ router.put('/settings', verifyERPToken, denyClientSettingsAccess, async (req, re
 // ==================== UNIFIED PERMISSIONS (UPR) ====================
 
 // Get my resolved permissions (for menu and UI) — Plan Phase 1
-router.get('/me/permissions', verifyTenantOrgAccess, async (req, res) => {
+router.get('/me/permissions', verifyERPToken, async (req, res) => {
   try {
     const tenantId = req.tenant?._id || req.tenantContext?.tenantId || req.user?.tenantId;
     const userId = req.user?._id;
@@ -3278,58 +3829,60 @@ router.use('/documents', tokenVerificationLimiter, verifyERPToken, documentsRout
 // Note: The routes below are legacy routes that may still be used by older frontend code
 // The new routes above provide comprehensive CRUD operations
 
-// Log all registered routes for debugging
-console.log('✅ Tenant organization routes registered:', {
-  routes: [
-    'GET /dashboard',
-    'GET /dashboard/analytics',
-    'GET /analytics',
-    'GET /analytics/reports',
-    'GET /users',
-    'POST /users',
-    'GET /users/:id',
-    'PUT /users/:id',
-    'DELETE /users/:id',
-    'GET /hr',
-    'GET /hr/employees',
-    'POST /hr/employees',
-    'GET /hr/payroll',
-    'GET /hr/attendance',
-    'GET /hr/attendance/config',
-    'POST /hr/attendance/check-in',
-    'POST /hr/attendance/check-out',
-    'GET /hr/attendance/reports',
-    // Finance routes moved to /api/tenant/:tenantSlug/software-house/finance/* (software-house specific)
-    'GET /projects',
-    'POST /projects',
-    'GET /projects/:id',
-    'PATCH /projects/:id',
-    'DELETE /projects/:id',
-    'GET /projects/metrics',
-    'GET /projects/tasks',
-    'POST /projects/tasks',
-    'PATCH /projects/tasks/:id',
-    'DELETE /projects/tasks/:id',
-    'GET /projects/milestones',
-    'POST /projects/milestones',
-    'PATCH /projects/milestones/:id',
-    'GET /projects/resources',
-    'GET /projects/timesheets',
-    'GET /projects/sprints',
-    'GET /projects/clients',
-    'POST /projects/clients',
-    'PATCH /projects/clients/:id',
-    'DELETE /projects/clients/:id',
-    'GET /reports',
-    'POST /reports/generate',
-    'GET /settings',
-    'PUT /settings',
-    'GET /user-departments',
-    'GET /me/permissions',
-    'GET /permission-catalog',
-    'GET /role-catalog'
-  ]
-});
+// Log all registered routes for debugging (skip in tests)
+if (process.env.NODE_ENV !== 'test') {
+  console.log('✅ Tenant organization routes registered:', {
+    routes: [
+      'GET /dashboard',
+      'GET /dashboard/analytics',
+      'GET /analytics',
+      'GET /analytics/reports',
+      'GET /users',
+      'POST /users',
+      'GET /users/:id',
+      'PUT /users/:id',
+      'DELETE /users/:id',
+      'GET /hr',
+      'GET /hr/employees',
+      'POST /hr/employees',
+      'GET /hr/payroll',
+      'GET /hr/attendance',
+      'GET /hr/attendance/config',
+      'POST /hr/attendance/check-in',
+      'POST /hr/attendance/check-out',
+      'GET /hr/attendance/reports',
+      // Finance routes moved to /api/tenant/:tenantSlug/software-house/finance/* (software-house specific)
+      'GET /projects',
+      'POST /projects',
+      'GET /projects/:id',
+      'PATCH /projects/:id',
+      'DELETE /projects/:id',
+      'GET /projects/metrics',
+      'GET /projects/tasks',
+      'POST /projects/tasks',
+      'PATCH /projects/tasks/:id',
+      'DELETE /projects/tasks/:id',
+      'GET /projects/milestones',
+      'POST /projects/milestones',
+      'PATCH /projects/milestones/:id',
+      'GET /projects/resources',
+      'GET /projects/timesheets',
+      'GET /projects/sprints',
+      'GET /projects/clients',
+      'POST /projects/clients',
+      'PATCH /projects/clients/:id',
+      'DELETE /projects/clients/:id',
+      'GET /reports',
+      'POST /reports/generate',
+      'GET /settings',
+      'PUT /settings',
+      'GET /user-departments',
+      'GET /me/permissions',
+      'GET /permission-catalog',
+      'GET /role-catalog'
+    ]
+  });
+}
 
 // Export router as default
 module.exports = router;
@@ -3340,3 +3893,5 @@ module.exports.verifyTenantOrgAccess = verifyTenantOrgAccess;
 module.exports.buildTenantContext = buildTenantContext;
 // Export new middleware for convenience
 module.exports.verifyERPToken = verifyERPToken;
+module.exports.requireSettingsAdmin = requireSettingsAdmin;
+module.exports.denyClientSettingsAccess = denyClientSettingsAccess;

@@ -1,14 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const Sprint = require('../../../models/Sprint');
 const Project = require('../../../models/Project');
 const Card = require('../../../models/Card');
 const Activity = require('../../../models/Activity');
+const sprintRead = requireErpAccess({ module: 'projects', action: ['read', 'read_own'], checkRevocation: false });
+const sprintWrite = requireErpAccess({ module: 'projects', action: 'write', checkRevocation: false });
+router.use(verifyERPToken);
 
 // Get all sprints for a project
-router.get('/project/:projectId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/project/:projectId', sprintRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const { status, limit = 10, page = 1 } = req.query;
   
@@ -39,7 +43,7 @@ router.get('/project/:projectId', authenticateToken, ErrorHandler.asyncHandler(a
 }));
 
 // Get active sprint for a project
-router.get('/project/:projectId/active', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/project/:projectId/active', sprintRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   
   const activeSprint = await Sprint.findOne({ 
@@ -65,7 +69,7 @@ router.get('/project/:projectId/active', authenticateToken, ErrorHandler.asyncHa
 }));
 
 // Create a new sprint
-router.post('/', authenticateToken, requireRole(['PMO', 'Project Manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/', sprintWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId, name, description, startDate, endDate, goal, team } = req.body;
   const orgId = req.user.orgId;
   const workspaceId = req.user.workspaceId;
@@ -110,7 +114,7 @@ router.post('/', authenticateToken, requireRole(['PMO', 'Project Manager']), Err
 }));
 
 // Update sprint
-router.put('/:sprintId', authenticateToken, requireRole(['PMO', 'Project Manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.put('/:sprintId', sprintWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { sprintId } = req.params;
   const updates = req.body;
   
@@ -146,7 +150,7 @@ router.put('/:sprintId', authenticateToken, requireRole(['PMO', 'Project Manager
 }));
 
 // Start sprint
-router.post('/:sprintId/start', authenticateToken, requireRole(['PMO', 'Project Manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:sprintId/start', sprintWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { sprintId } = req.params;
   
   const sprint = await Sprint.findById(sprintId);
@@ -193,7 +197,7 @@ router.post('/:sprintId/start', authenticateToken, requireRole(['PMO', 'Project 
 }));
 
 // Complete sprint
-router.post('/:sprintId/complete', authenticateToken, requireRole(['PMO', 'Project Manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:sprintId/complete', sprintWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { sprintId } = req.params;
   const { reviewNotes, retrospectiveNotes } = req.body;
   
@@ -239,7 +243,7 @@ router.post('/:sprintId/complete', authenticateToken, requireRole(['PMO', 'Proje
 }));
 
 // Add card to sprint backlog
-router.post('/:sprintId/backlog', authenticateToken, requireRole(['PMO', 'Project Manager', 'Contributor']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:sprintId/backlog', sprintWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { sprintId } = req.params;
   const { cardId } = req.body;
   
@@ -293,7 +297,7 @@ router.post('/:sprintId/backlog', authenticateToken, requireRole(['PMO', 'Projec
 }));
 
 // Remove card from sprint backlog
-router.delete('/:sprintId/backlog/:cardId', authenticateToken, requireRole(['PMO', 'Project Manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.delete('/:sprintId/backlog/:cardId', sprintWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { sprintId, cardId } = req.params;
   
   const sprint = await Sprint.findById(sprintId);
@@ -329,7 +333,7 @@ router.delete('/:sprintId/backlog/:cardId', authenticateToken, requireRole(['PMO
 }));
 
 // Get sprint metrics
-router.get('/:sprintId/metrics', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/:sprintId/metrics', sprintRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { sprintId } = req.params;
   
   const sprint = await Sprint.findById(sprintId)

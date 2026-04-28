@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthContext';
 import toast from 'react-hot-toast';
+import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../../../../shared/components/feedback/EmptyState';
 import {
   CalendarIcon,
   PlusIcon,
@@ -34,6 +37,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
     days: 0
   });
   const currentUserId = user?._id || user?.id;
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     if (!tenantSlug || !currentUserId) return;
@@ -44,6 +48,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
     try {
       if (!tenantSlug || !currentUserId) return;
       setLoading(true);
+      setLoadError('');
       
       // Fetch employee data to get leave balance
       const empResponse = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees?userId=${currentUserId}`, {
@@ -86,6 +91,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
       }
     } catch (error) {
       console.error('Failed to fetch leave data:', error);
+      setLoadError(error?.message || 'Failed to load leave information');
       toast.error('Failed to load leave information');
     } finally {
       setLoading(false);
@@ -181,11 +187,11 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading leave information..." className="min-h-[40vh] bg-transparent" />;
+  }
+
+  if (loadError) {
+    return <ErrorState title="Leave requests unavailable" message={loadError} onRetry={fetchLeaveData} className="max-w-xl mx-auto" />;
   }
 
   return (
@@ -275,8 +281,8 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-                    No leave requests found
+                  <td colSpan="6" className="px-6 py-8">
+                    <EmptyState title="No leave requests" message="You have not submitted any leave requests yet." />
                   </td>
                 </tr>
               )}

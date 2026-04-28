@@ -215,7 +215,7 @@ export const useSprints = (tenantSlug, filters = {}) => {
       setError(null);
 
       try {
-        const data = await tenantProjectApiService.getSprints(tenantSlug, filters);
+        const data = await tenantProjectApiService.getProjectSprints(tenantSlug, filters);
         setSprints(Array.isArray(data) ? data : (data.sprints || []));
       } catch (err) {
         setError(err);

@@ -16,6 +16,7 @@ import {
   ChatBubbleLeftRightIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import { getTemplateHtml, getTemplateById, TEMPLATE_IDS } from './documentTemplates';
 import * as documentHubApi from './documentHubApi';
 import './DocumentEditor.css';
@@ -35,6 +36,7 @@ function isBlockNoteDocument(content) {
 }
 
 const DocumentEditor = () => {
+  const { user: tenantUser } = useTenantAuth();
   const { tenantSlug, id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -66,6 +68,7 @@ const DocumentEditor = () => {
 
   const templateId = searchParams.get('template') || TEMPLATE_IDS.BLANK;
   const editor = useCreateBlockNote();
+  const currentUserId = tenantUser?._id || tenantUser?.id || null;
 
   const loadDoc = useCallback(async () => {
     initialContentSetRef.current = false;
@@ -200,6 +203,19 @@ const DocumentEditor = () => {
       setAddingShare(false);
     }
   };
+
+  const shareExcludedUserIds = new Set([
+    currentUserId,
+    documentMeta?.ownerId?._id || documentMeta?.ownerId || null,
+    documentMeta?.createdBy?._id || documentMeta?.createdBy || null
+  ].filter(Boolean).map((v) => String(v)));
+  const availableShareUsers = orgUsers.filter((u) => {
+    const idStr = String(u?._id || '');
+    if (!idStr) return false;
+    if (shareExcludedUserIds.has(idStr)) return false;
+    if (shares.some((s) => String(s.userId?._id || s.userId) === idStr)) return false;
+    return true;
+  });
 
   const handleRemoveShare = async (userId) => {
     if (!tenantSlug || !docId) return;
@@ -444,8 +460,11 @@ const DocumentEditor = () => {
     try {
       const doc = await documentHubApi.restoreVersion(tenantSlug, docId, versionId);
       if (!doc) return;
-      const blocks = Array.isArray(doc.content) ? doc.content : [];
-      if (editor.document != null && blocks.length > 0) {
+      let blocks = Array.isArray(doc.content) ? doc.content : [];
+      if (blocks.length === 0) {
+        blocks = await editor.tryParseHTMLToBlocks('<p></p>');
+      }
+      if (editor.document != null) {
         try {
           editor.replaceBlocks(editor.document, blocks);
         } catch (e) {
@@ -666,7 +685,7 @@ const DocumentEditor = () => {
                 {documentMeta?.folderId && (
                   <div>
                     <span className="text-[var(--tenant-muted)]">Folder:</span>
-                    <span className="ml-2 text-[var(--tenant-text)]">—</span>
+                    <span className="ml-2 text-[var(--tenant-text)]">{documentMeta.folderId?.name || '—'}</span>
                   </div>
                 )}
                 {documentMeta?.tags && documentMeta.tags.length > 0 && (
@@ -675,7 +694,7 @@ const DocumentEditor = () => {
                     <div className="mt-1 flex flex-wrap gap-1">
                       {documentMeta.tags.map((tag, idx) => (
                         <span key={idx} className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-[var(--tenant-primary)]/10 text-[var(--tenant-primary)]">
-                          {tag}
+                          {typeof tag === 'string' ? tag : (tag?.name || tag?._id || 'Tag')}
                         </span>
                       ))}
                     </div>
@@ -744,7 +763,7 @@ const DocumentEditor = () => {
                         className="flex-1 min-w-0 rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg)] text-[var(--tenant-text)] text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/50"
                       >
                         <option value="">Select user</option>
-                        {orgUsers.filter((u) => !shares.some((s) => s.userId?._id === u._id)).map((u) => (
+                        {availableShareUsers.map((u) => (
                           <option key={u._id} value={u._id}>{u.fullName || u.email}</option>
                         ))}
                       </select>

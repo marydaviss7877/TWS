@@ -1,15 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const Task = require('../../../models/Task');
 const Project = require('../../../models/Project');
 const ProjectMember = require('../../../models/ProjectMember');
 const Activity = require('../../../models/Activity');
 const autoCalculationService = require('../../../services/nucleusAutoCalculationService');
+router.use(verifyERPToken);
 
 // Get all tasks for organization with filtering
-router.get('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/',  ErrorHandler.asyncHandler(async (req, res) => {
   const { 
     projectId, 
     departmentId,
@@ -81,7 +82,7 @@ router.get('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) =>
 }));
 
 // Get tasks grouped by status (for Kanban board)
-router.get('/kanban', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/kanban',  ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId, assignee } = req.query;
   const orgId = req.user.orgId;
   
@@ -111,7 +112,7 @@ router.get('/kanban', authenticateToken, ErrorHandler.asyncHandler(async (req, r
 }));
 
 // Get single task
-router.get('/:taskId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/:taskId',  ErrorHandler.asyncHandler(async (req, res) => {
   const { taskId } = req.params;
   const orgId = req.user.orgId;
   
@@ -152,7 +153,7 @@ router.get('/:taskId', authenticateToken, ErrorHandler.asyncHandler(async (req, 
 }));
 
 // Create new task
-router.post('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/',  ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = req.user.orgId;
   const {
     projectId,
@@ -252,7 +253,7 @@ router.post('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) =
 }));
 
 // Update task
-router.patch('/:taskId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.patch('/:taskId',  ErrorHandler.asyncHandler(async (req, res) => {
   const { taskId } = req.params;
   const orgId = req.user.orgId;
   const updates = req.body;
@@ -337,7 +338,7 @@ router.patch('/:taskId', authenticateToken, ErrorHandler.asyncHandler(async (req
 }));
 
 // Update task status (for drag and drop)
-router.patch('/:taskId/status', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.patch('/:taskId/status',  ErrorHandler.asyncHandler(async (req, res) => {
   const { taskId } = req.params;
   const { status, listId, order } = req.body;
   const orgId = req.user.orgId;
@@ -388,16 +389,6 @@ router.patch('/:taskId/status', authenticateToken, ErrorHandler.asyncHandler(asy
   
   await task.save();
   
-  // Nucleus: Auto-update deliverable progress if task status changed and is linked to deliverable
-  if (task.milestoneId && oldStatus !== task.status) {
-    try {
-      await autoCalculationService.onTaskStatusChange(task._id);
-    } catch (error) {
-      console.warn('Error updating deliverable progress:', error.message);
-      // Don't fail task update if deliverable update fails
-    }
-  }
-  
   await task.save();
   
   // Nucleus: Auto-update deliverable progress if task status changed and is linked to deliverable
@@ -430,7 +421,7 @@ router.patch('/:taskId/status', authenticateToken, ErrorHandler.asyncHandler(asy
 }));
 
 // Delete task
-router.delete('/:taskId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.delete('/:taskId',  ErrorHandler.asyncHandler(async (req, res) => {
   const { taskId } = req.params;
   const orgId = req.user.orgId;
   
@@ -482,7 +473,7 @@ router.delete('/:taskId', authenticateToken, ErrorHandler.asyncHandler(async (re
 }));
 
 // Add comment to task
-router.post('/:taskId/comments', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:taskId/comments',  ErrorHandler.asyncHandler(async (req, res) => {
   const { taskId } = req.params;
   const { content } = req.body;
   const orgId = req.user.orgId;
@@ -528,7 +519,7 @@ router.post('/:taskId/comments', authenticateToken, ErrorHandler.asyncHandler(as
 }));
 
 // Add time entry to task
-router.post('/:taskId/time-entries', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:taskId/time-entries',  ErrorHandler.asyncHandler(async (req, res) => {
   const { taskId } = req.params;
   const { hours, description, date } = req.body;
   const orgId = req.user.orgId;
@@ -569,7 +560,7 @@ router.post('/:taskId/time-entries', authenticateToken, ErrorHandler.asyncHandle
 }));
 
 // Get task statistics
-router.get('/stats/overview', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/stats/overview',  ErrorHandler.asyncHandler(async (req, res) => {
   const { projectId } = req.query;
   const orgId = req.user.orgId;
   

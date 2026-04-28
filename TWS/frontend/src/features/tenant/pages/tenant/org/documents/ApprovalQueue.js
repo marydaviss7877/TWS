@@ -16,7 +16,7 @@ const ApprovalQueue = () => {
   const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [comment, setComment] = useState('');
+  const [commentsByDocId, setCommentsByDocId] = useState({});
   const [actingId, setActingId] = useState(null);
 
   const fetchQueue = useCallback(async () => {
@@ -41,9 +41,14 @@ const ApprovalQueue = () => {
   const handleApprove = async (id) => {
     setActingId(id);
     try {
+      const comment = (commentsByDocId[id] || '').trim();
       await documentHubApi.approveDocument(tenantSlug, id, comment);
       setDocuments((prev) => prev.filter((d) => d._id !== id));
-      setComment('');
+      setCommentsByDocId((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
       toast.success('Document approved');
     } catch (e) {
       toast.error(e.message);
@@ -55,9 +60,14 @@ const ApprovalQueue = () => {
   const handleReject = async (id) => {
     setActingId(id);
     try {
+      const comment = (commentsByDocId[id] || '').trim();
       await documentHubApi.rejectDocument(tenantSlug, id, comment);
       setDocuments((prev) => prev.filter((d) => d._id !== id));
-      setComment('');
+      setCommentsByDocId((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
       toast.success('Document returned to draft');
     } catch (e) {
       toast.error(e.message);
@@ -116,8 +126,8 @@ const ApprovalQueue = () => {
                   <input
                     type="text"
                     placeholder="Comment (optional)"
-                    value={actingId === doc._id ? comment : ''}
-                    onChange={(e) => setComment(e.target.value)}
+                    value={commentsByDocId[doc._id] || ''}
+                    onChange={(e) => setCommentsByDocId((prev) => ({ ...prev, [doc._id]: e.target.value }))}
                     className="sm:w-48 rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg)] px-3 py-2 text-sm placeholder-[var(--tenant-muted)]"
                   />
                   <div className="flex gap-2">

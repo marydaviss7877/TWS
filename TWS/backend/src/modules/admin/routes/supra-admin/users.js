@@ -191,6 +191,40 @@ router.delete('/users/:id', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATF
   }
 });
 
+router.patch('/users/:id/assign-portal-responsibility', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.UPDATE), async (req, res) => {
+  try {
+    const { portalResponsibility } = req.body || {};
+    const allowed = ['finance', 'hr', 'admin', 'support', 'erp_management', 'billing'];
+    if (!allowed.includes(String(portalResponsibility || '').toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        message: `portalResponsibility must be one of: ${allowed.join(', ')}`
+      });
+    }
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    user.supraAdminPortalResponsibility = String(portalResponsibility).toLowerCase();
+    user.supraAdminPortalAssignedAt = new Date();
+    user.supraAdminPortalAssignedBy = req.user._id;
+    await user.save();
+    res.json({
+      success: true,
+      message: 'User assigned to Supra Admin portal responsibility',
+      data: {
+        user: {
+          _id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          supraAdminPortalResponsibility: user.supraAdminPortalResponsibility
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Assign portal responsibility error:', error);
+    res.status(500).json({ success: false, message: 'Failed to assign portal responsibility', error: error.message });
+  }
+});
+
 router.patch('/users/:id/remove-portal-responsibility', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.UPDATE), async (req, res) => {
   try {
     const user = await User.findById(req.params.id);

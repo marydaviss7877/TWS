@@ -26,6 +26,8 @@ import QuickAddTask from './components/QuickAddTask';
 import { showSuccess, showError } from './utils/toastNotifications';
 import { PROJECT_WORKSPACE_EVENTS } from '../../../../components/ProjectWorkspaceLayout';
 import { toMongoIdString } from './utils/validation';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 /* ─── helpers ──────────────────────────────────────────────────────────────── */
 
@@ -726,9 +728,11 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
     } catch {}
   };
 
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = useCallback(async ({ silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const params = { groupBy: 'status' };
       if (scopeProjectId || filterProject !== 'all') params.projectId = scopeProjectId || filterProject;
       if (filterDepartment !== 'all') params.departmentId = filterDepartment;
@@ -752,7 +756,9 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
       console.error(err);
       setTasks({ todo: [], in_progress: [], under_review: [], completed: [] });
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [tenantSlug, scopeProjectId, filterProject, filterDepartment]);
 
@@ -804,7 +810,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
     try {
       await tenantProjectApiService.updateTask(tenantSlug, task._id || task.id, { status: targetColumnId });
     } catch {
-      fetchTasks();
+      fetchTasks({ silent: true });
     }
   };
 
@@ -841,17 +847,38 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
     if (departmentId) payload.departmentId = departmentId;
     await tenantProjectApiService.createTask(tenantSlug, payload);
     showSuccess('Task created');
-    fetchTasks();
+    fetchTasks({ silent: true });
   };
 
   const handleAssigneeChange = async (task, assigneeId) => {
     const id = task._id || task.id;
     if (!id) return;
+    const prevTasks = tasks;
+    setTasks((prev) => {
+      const updated = {};
+      for (const [col, list] of Object.entries(prev)) {
+        updated[col] = list.map((t) => {
+          const taskId = t._id || t.id;
+          if (taskId !== id) return t;
+          return {
+            ...t,
+            assigneeId: assigneeId || null,
+            assignee: assigneeId
+              ? (orgUsers.find((u) => String(u._id || u.id) === String(assigneeId)) || t.assignee)
+              : null,
+          };
+        });
+      }
+      return updated;
+    });
     try {
       await tenantProjectApiService.updateTask(tenantSlug, id, { assigneeId: assigneeId || undefined });
       showSuccess('Assignee updated');
-      fetchTasks();
-    } catch (err) { showError(err?.message || 'Failed to update'); }
+      fetchTasks({ silent: true });
+    } catch (err) {
+      setTasks(prevTasks);
+      showError(err?.message || 'Failed to update');
+    }
   };
 
   const handleDuplicateTask = async (task) => {
@@ -866,7 +893,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
         assigneeId: task.assignee?._id || task.assigneeId || undefined,
       });
       showSuccess('Task duplicated');
-      fetchTasks();
+      fetchTasks({ silent: true });
     } catch (err) { showError(err?.message || 'Failed to duplicate'); }
   };
 
@@ -880,7 +907,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
       if (taskDrawer && (taskDrawer._id || taskDrawer.id) === (confirmDelete._id || confirmDelete.id)) {
         setTaskDrawer(null);
       }
-      fetchTasks();
+      fetchTasks({ silent: true });
     } catch (err) { showError(err?.message || 'Failed to delete'); }
     finally { setDeleteLoading(false); }
   };
@@ -905,7 +932,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
         billable: true,
       });
       showSuccess(`Logged ${elapsedHours.toFixed(2)}h`);
-      fetchTasks();
+      fetchTasks({ silent: true });
     } catch (err) { showError(err?.message || 'Failed to log time'); }
   };
 
@@ -933,14 +960,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mx-auto" />
-          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Loading board…</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading board..." className="min-h-[40vh] bg-transparent" />;
   }
 
   const sharedCardProps = {
@@ -1213,8 +1233,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
         <div className="glass-card-premium rounded-2xl overflow-hidden min-w-0">
           {totalTasks === 0 ? (
             <div className="text-center py-12 sm:py-16 px-4">
-              <ClipboardDocumentCheckIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-500 dark:text-gray-400 font-medium">No tasks found</p>
+              <EmptyState title="No tasks found" message="Create your first task to get started." className="max-w-lg mx-auto" />
               <button type="button" onClick={() => setIsCreateModalOpen(true)} className="mt-3 text-sm text-primary-500 hover:underline">
                 Create your first task
               </button>
@@ -1349,7 +1368,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
         <TaskDrawer
           task={taskDrawer}
           onClose={() => setTaskDrawer(null)}
-          onSaved={() => { fetchTasks(); setTaskDrawer(null); }}
+          onSaved={() => { fetchTasks({ silent: true }); setTaskDrawer(null); }}
           onDelete={(task) => { setTaskDrawer(null); setConfirmDelete(task); }}
           tenantSlug={tenantSlug}
           orgUsers={orgUsers}
@@ -1368,7 +1387,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
       <CreateTaskModal
         isOpen={isCreateModalOpen}
         onClose={() => { setIsCreateModalOpen(false); setSelectedColumnForTask(null); }}
-        onTaskCreated={() => { fetchTasks(); setIsCreateModalOpen(false); setSelectedColumnForTask(null); }}
+        onTaskCreated={() => { fetchTasks({ silent: true }); setIsCreateModalOpen(false); setSelectedColumnForTask(null); }}
         defaultStatus={selectedColumnForTask || CARD_STATUS.TODO}
         projectId={scopeProjectId || (filterProject !== 'all' ? filterProject : undefined)}
       />
@@ -1378,7 +1397,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
         isOpen={!!editingTask}
         initialTask={editingTask}
         onClose={() => setEditingTask(null)}
-        onTaskCreated={() => { fetchTasks(); setEditingTask(null); }}
+        onTaskCreated={() => { fetchTasks({ silent: true }); setEditingTask(null); }}
         projectId={scopeProjectId || (editingTask?.projectId?._id || editingTask?.projectId?.id || editingTask?.projectId)}
       />
     </div>

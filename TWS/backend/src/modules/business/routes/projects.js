@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const Project = require('../../../models/Project');
 const ProjectClient = require('../../../models/Client');
@@ -12,8 +13,14 @@ const ProjectTemplate = require('../../../models/ProjectTemplate');
 const Activity = require('../../../models/Activity');
 const Milestone = require('../../../models/Milestone');
 
+const projectsRead = requireErpAccess({ module: 'projects', action: ['read', 'read_own'], checkRevocation: false });
+const projectsWrite = requireErpAccess({ module: 'projects', action: 'write', checkRevocation: false });
+const projectsAdmin = requireErpAccess({ module: 'projects', action: 'admin', checkRevocation: false });
+
+router.use(verifyERPToken);
+
 // Get all projects for organization
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', projectsRead, async (req, res) => {
   try {
     const { status, clientId, search, departmentId, primaryDepartmentId } = req.query;
     const orgId = req.user.orgId;
@@ -77,7 +84,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get portfolio metrics
-router.get('/metrics', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/metrics', projectsRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { orgId } = req.user;
 
   // Project status distribution
@@ -138,7 +145,7 @@ router.get('/metrics', authenticateToken, ErrorHandler.asyncHandler(async (req, 
 }));
 
 // Manager cockpit dashboard (stub structure for frontend compatibility)
-router.get('/manager/cockpit', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/manager/cockpit', projectsRead, ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = req.user?.orgId;
   const activeCount = await Project.countDocuments({ orgId, status: 'active' });
   res.json({
@@ -160,7 +167,7 @@ router.get('/manager/cockpit', authenticateToken, ErrorHandler.asyncHandler(asyn
 }));
 
 // Project templates list (org-scoped; frontend compatibility)
-router.get('/templates', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/templates', projectsRead, ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = req.user?.orgId;
   const templates = await ProjectTemplate.find({ $or: [{ orgId }, { isPublic: true }] })
     .select('name description category')
@@ -177,7 +184,7 @@ router.get('/templates', authenticateToken, ErrorHandler.asyncHandler(async (req
 }));
 
 // Upcoming milestones (org-scoped)
-router.get('/milestones/upcoming', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/milestones/upcoming', projectsRead, ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = req.user?.orgId;
   const now = new Date();
   const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -197,7 +204,7 @@ router.get('/milestones/upcoming', authenticateToken, ErrorHandler.asyncHandler(
 }));
 
 // Get single project
-router.get('/:projectId', authenticateToken, async (req, res) => {
+router.get('/:projectId', projectsRead, async (req, res) => {
   try {
     const { projectId } = req.params;
     const orgId = req.user.orgId;
@@ -242,7 +249,7 @@ router.get('/:projectId', authenticateToken, async (req, res) => {
 });
 
 // Create new project
-router.post('/', authenticateToken, requireRole(['super_admin', 'org_manager', 'pmo', 'project_manager']), async (req, res) => {
+router.post('/', projectsWrite, async (req, res) => {
   try {
     const orgId = req.user.orgId;
     const {
@@ -386,7 +393,7 @@ router.post('/', authenticateToken, requireRole(['super_admin', 'org_manager', '
 });
 
 // Update project
-router.patch('/:projectId', authenticateToken, async (req, res) => {
+router.patch('/:projectId', projectsWrite, async (req, res) => {
   try {
     const { projectId } = req.params;
     const orgId = req.user.orgId;
@@ -450,7 +457,7 @@ router.patch('/:projectId', authenticateToken, async (req, res) => {
 });
 
 // Delete project
-router.delete('/:projectId', authenticateToken, async (req, res) => {
+router.delete('/:projectId', projectsAdmin, async (req, res) => {
   try {
     const { projectId } = req.params;
     const orgId = req.user.orgId;
@@ -522,10 +529,31 @@ router.delete('/:projectId', authenticateToken, async (req, res) => {
 });
 
 // Get project members
-router.get('/:projectId/members', authenticateToken, async (req, res) => {
+router.get('/:projectId/members', projectsRead, async (req, res) => {
   try {
     const { projectId } = req.params;
     const orgId = req.user.orgId;
+
+    const project = await Project.findOne({ _id: projectId, orgId });
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    const member = await ProjectMember.findOne({
+      projectId,
+      userId: req.user._id,
+      status: 'active'
+    });
+
+    if (!member && !['super_admin', 'org_manager', 'pmo'].includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied to this project'
+      });
+    }
     
     const members = await ProjectMember.find({ projectId, status: 'active' })
       .populate('userId', 'fullName email role department jobTitle')
@@ -545,7 +573,7 @@ router.get('/:projectId/members', authenticateToken, async (req, res) => {
 });
 
 // Invite member to project
-router.post('/:projectId/invite', authenticateToken, async (req, res) => {
+router.post('/:projectId/invite', projectsWrite, async (req, res) => {
   try {
     const { projectId } = req.params;
     const { userId, role, permissions } = req.body;

@@ -1,14 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const Resource = require('../../../models/Resource');
 const User = require('../../../models/User');
 const Project = require('../../../models/Project');
 const Activity = require('../../../models/Activity');
+const resourcesRead = requireErpAccess({ module: 'employees', action: ['read', 'read_own'], checkRevocation: false });
+const resourcesWrite = requireErpAccess({ module: 'employees', action: 'write', checkRevocation: false });
+const resourcesAdmin = requireErpAccess({ module: 'employees', action: 'admin', checkRevocation: false });
+router.use(verifyERPToken);
 
 // Get all resources with filtering and search
-router.get('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/', resourcesRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { 
     department, 
     status, 
@@ -79,7 +84,7 @@ router.get('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) =>
 }));
 
 // Get resource statistics
-router.get('/stats', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/stats', resourcesRead, ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = req.user.orgId;
   
   const stats = await Resource.aggregate([
@@ -171,7 +176,7 @@ router.get('/stats', authenticateToken, ErrorHandler.asyncHandler(async (req, re
 }));
 
 // Get single resource
-router.get('/:resourceId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/:resourceId', resourcesRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { resourceId } = req.params;
   const orgId = req.user.orgId;
   
@@ -195,7 +200,7 @@ router.get('/:resourceId', authenticateToken, ErrorHandler.asyncHandler(async (r
 }));
 
 // Create new resource (assign user as resource)
-router.post('/', authenticateToken, requireRole(['super_admin', 'org_manager', 'hr_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/', resourcesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = req.user.orgId;
   const {
     userId,
@@ -289,7 +294,7 @@ router.post('/', authenticateToken, requireRole(['super_admin', 'org_manager', '
 }));
 
 // Update resource
-router.patch('/:resourceId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.patch('/:resourceId', resourcesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { resourceId } = req.params;
   const orgId = req.user.orgId;
   const updates = req.body;
@@ -339,7 +344,7 @@ router.patch('/:resourceId', authenticateToken, ErrorHandler.asyncHandler(async 
 }));
 
 // Add project allocation to resource
-router.post('/:resourceId/projects', authenticateToken, requireRole(['super_admin', 'org_manager', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:resourceId/projects', resourcesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { resourceId } = req.params;
   const { projectId, role, allocation, startDate, endDate, hourlyRate } = req.body;
   const orgId = req.user.orgId;
@@ -400,7 +405,7 @@ router.post('/:resourceId/projects', authenticateToken, requireRole(['super_admi
 }));
 
 // Update project allocation
-router.patch('/:resourceId/projects/:projectId', authenticateToken, requireRole(['super_admin', 'org_manager', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.patch('/:resourceId/projects/:projectId', resourcesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { resourceId, projectId } = req.params;
   const { allocation, role, endDate, hourlyRate } = req.body;
   const orgId = req.user.orgId;
@@ -451,7 +456,7 @@ router.patch('/:resourceId/projects/:projectId', authenticateToken, requireRole(
 }));
 
 // Remove project allocation
-router.delete('/:resourceId/projects/:projectId', authenticateToken, requireRole(['super_admin', 'org_manager', 'project_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.delete('/:resourceId/projects/:projectId', resourcesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { resourceId, projectId } = req.params;
   const orgId = req.user.orgId;
   
@@ -491,7 +496,7 @@ router.delete('/:resourceId/projects/:projectId', authenticateToken, requireRole
 }));
 
 // Add skill to resource
-router.post('/:resourceId/skills', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.post('/:resourceId/skills', resourcesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { resourceId } = req.params;
   const { name, level, category } = req.body;
   const orgId = req.user.orgId;
@@ -524,7 +529,7 @@ router.post('/:resourceId/skills', authenticateToken, ErrorHandler.asyncHandler(
 }));
 
 // Update skill
-router.patch('/:resourceId/skills/:skillId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.patch('/:resourceId/skills/:skillId', resourcesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { resourceId, skillId } = req.params;
   const { name, level, category } = req.body;
   const orgId = req.user.orgId;
@@ -559,7 +564,7 @@ router.patch('/:resourceId/skills/:skillId', authenticateToken, ErrorHandler.asy
 }));
 
 // Remove skill
-router.delete('/:resourceId/skills/:skillId', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.delete('/:resourceId/skills/:skillId', resourcesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { resourceId, skillId } = req.params;
   const orgId = req.user.orgId;
   
@@ -582,7 +587,7 @@ router.delete('/:resourceId/skills/:skillId', authenticateToken, ErrorHandler.as
 }));
 
 // Update time tracking
-router.patch('/:resourceId/time-tracking', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.patch('/:resourceId/time-tracking', resourcesWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const { resourceId } = req.params;
   const { hours, period = 'week' } = req.body;
   const orgId = req.user.orgId;
@@ -619,7 +624,7 @@ router.patch('/:resourceId/time-tracking', authenticateToken, ErrorHandler.async
 }));
 
 // Delete resource
-router.delete('/:resourceId', authenticateToken, requireRole(['super_admin', 'org_manager']), ErrorHandler.asyncHandler(async (req, res) => {
+router.delete('/:resourceId', resourcesAdmin, ErrorHandler.asyncHandler(async (req, res) => {
   const { resourceId } = req.params;
   const orgId = req.user.orgId;
   

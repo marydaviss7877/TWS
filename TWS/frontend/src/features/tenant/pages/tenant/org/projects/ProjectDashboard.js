@@ -24,6 +24,9 @@ import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AtRiskDeliverables } from './components/deliverables';
 import { useProjectDashboard, fmtDate, fmtNum } from './useProjectDashboard';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 
@@ -251,36 +254,15 @@ const ProjectDashboard = () => {
   );
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 gap-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
-        <p className="text-sm text-gray-500 dark:text-gray-400">Loading project overview…</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading project overview..." className="min-h-[40vh] bg-transparent" />;
   }
 
   if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 gap-4 text-center px-4">
-        <ExclamationTriangleIcon className="w-12 h-12 text-red-400" />
-        <p className="text-red-600 dark:text-red-400 font-medium">{error}</p>
-        <button
-          type="button"
-          onClick={() => fetchDashboard()}
-          className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700"
-        >
-          Retry
-        </button>
-      </div>
-    );
+    return <ErrorState title="Project overview unavailable" message={error} onRetry={() => fetchDashboard()} className="max-w-xl mx-auto" />;
   }
 
   if (!dashboard) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <p className="text-gray-400 dark:text-gray-500">No project data available.</p>
-      </div>
-    );
+    return <EmptyState title="No project data available" message="Project metrics will appear once data is available." className="max-w-xl mx-auto" />;
   }
 
   return (

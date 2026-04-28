@@ -5,14 +5,15 @@ const ProjectBoard = require('../../../models/Board');
 const Project = require('../../../models/Project');
 const ProjectMember = require('../../../models/ProjectMember');
 const Activity = require('../../../models/Activity');
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+router.use(verifyERPToken);
 
 // Create new list
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { boardId, name, description, color } = req.body;
     
-    const board = await Board.findById(boardId)
+    const board = await ProjectBoard.findById(boardId)
       .populate('projectId', 'orgId');
     
     if (!board) {
@@ -81,7 +82,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update list
-router.patch('/:listId', authenticateToken, async (req, res) => {
+router.patch('/:listId', async (req, res) => {
   try {
     const { listId } = req.params;
     const updates = req.body;
@@ -142,7 +143,7 @@ router.patch('/:listId', authenticateToken, async (req, res) => {
 });
 
 // Delete list
-router.delete('/:listId', authenticateToken, async (req, res) => {
+router.delete('/:listId', async (req, res) => {
   try {
     const { listId } = req.params;
     

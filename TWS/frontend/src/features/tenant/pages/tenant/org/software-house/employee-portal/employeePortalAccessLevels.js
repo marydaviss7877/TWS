@@ -105,13 +105,9 @@ export const ACCESS_LEVELS = {
   }
 };
 
-// Roles that are redirected to admin org (not employee portal)
-export const ADMIN_ONLY_ROLES = ['owner', 'admin', 'super_admin', 'org_manager'];
-
-// Roles that can use the employee portal (everyone except admin-only)
-export const EMPLOYEE_PORTAL_ROLES = Object.keys(ACCESS_LEVELS).filter(
-  role => !ADMIN_ONLY_ROLES.includes(role)
-);
+// Backward-compat exports: portal gating is now permission-driven in EmployeePortal.
+export const ADMIN_ONLY_ROLES = [];
+export const EMPLOYEE_PORTAL_ROLES = Object.keys(ACCESS_LEVELS);
 
 /**
  * Get access level config for a user role.
@@ -125,22 +121,26 @@ export function getAccessLevel(role) {
 }
 
 /**
- * Check if the user's role can access a given portal section.
- * @param {string} userRole - User role
+ * Check if a portal section is accessible.
+ * @param {string} _userRole - Deprecated legacy argument (unused)
  * @param {string} section - Section key (e.g. PORTAL_SECTIONS.PAYROLL)
+ * @param {(section: string) => boolean} permissionChecker - Optional permission checker callback
  * @returns {boolean}
  */
-export function canAccessSection(userRole, section) {
-  const level = getAccessLevel(userRole);
-  return level.sections.includes(section);
+export function canAccessSection(_userRole, section, permissionChecker) {
+  if (typeof permissionChecker === 'function') {
+    return permissionChecker(section);
+  }
+  return true;
 }
 
 /**
  * Filter menu items by the user's access level.
  * @param {Array<{ id: string, label: string, icon: any, path: string }>} menuItems
- * @param {string} userRole
+ * @param {string} userRole - Deprecated legacy argument (unused)
+ * @param {(section: string) => boolean} permissionChecker - Optional permission checker callback
  * @returns {Array}
  */
-export function filterMenuByAccess(menuItems, userRole) {
-  return menuItems.filter(item => canAccessSection(userRole, item.id));
+export function filterMenuByAccess(menuItems, userRole, permissionChecker) {
+  return menuItems.filter(item => canAccessSection(userRole, item.id, permissionChecker));
 }

@@ -157,7 +157,7 @@
     height: 100%;
     opacity: 0.03;
     pointer-events: none;
-    z-index: 100;
+    z-index: 20;
 }
 
 @keyframes pulse-glow {
@@ -184,8 +184,6 @@
     pointer-events: none;
     z-index: 0;
     animation: pulse-glow 10s infinite ease-in-out;
-    will-change: transform;
-    transform: translateZ(0);
 }
 
 .sh-glow-1 {
@@ -433,4 +431,16 @@
     color: #fff;
     transform: translateY(-4px);
     box-shadow: 0 20px 60px var(--sh-project-accent-glow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sh-glow-orb,
+    .sh-project-button,
+    .sh-delivery-card,
+    .sh-step-card,
+    .sh-checklist-node {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+    }
 }

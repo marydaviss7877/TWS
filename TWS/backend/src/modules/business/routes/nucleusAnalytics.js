@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { verifyWorkspaceAccess } = require('../../../middleware/auth/workspaceIsolation');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const { getWorkspaceStatistics, getProjectDeliverablesSummary, getDeliverableStatusSummary } = require('../../../utils/nucleusHelpers');
@@ -10,6 +10,7 @@ const ChangeRequest = require('../../../models/ChangeRequest');
 const Task = require('../../../models/Task');
 
 const router = express.Router();
+router.use(verifyERPToken);
 
 /**
  * Nucleus Analytics Routes
@@ -28,7 +29,6 @@ const router = express.Router();
  */
 router.get(
   '/workspaces/:workspaceId/statistics',
-  authenticateToken,
   verifyWorkspaceAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const { workspaceId } = req.params;
@@ -48,7 +48,6 @@ router.get(
  */
 router.get(
   '/workspaces/:workspaceId/projects/:projectId/summary',
-  authenticateToken,
   verifyWorkspaceAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const { projectId } = req.params;
@@ -82,7 +81,6 @@ router.get(
  */
 router.get(
   '/workspaces/:workspaceId/deliverables/at-risk',
-  authenticateToken,
   verifyWorkspaceAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const { workspaceId } = req.params;
@@ -136,7 +134,6 @@ router.get(
  */
 router.get(
   '/workspaces/:workspaceId/deliverables/pending-approval',
-  authenticateToken,
   verifyWorkspaceAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const { workspaceId } = req.params;
@@ -193,7 +190,6 @@ router.get(
  */
 router.get(
   '/workspaces/:workspaceId/change-requests/pending',
-  authenticateToken,
   verifyWorkspaceAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const { workspaceId } = req.params;
@@ -245,7 +241,6 @@ router.get(
  */
 router.get(
   '/workspaces/:workspaceId/deliverables/:deliverableId/status-summary',
-  authenticateToken,
   verifyWorkspaceAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const { deliverableId } = req.params;
@@ -265,7 +260,6 @@ router.get(
  */
 router.get(
   '/workspaces/:workspaceId/projects/:projectId/timeline',
-  authenticateToken,
   verifyWorkspaceAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const { projectId } = req.params;
@@ -320,7 +314,6 @@ router.get(
  */
 router.get(
   '/workspaces/:workspaceId/metrics',
-  authenticateToken,
   verifyWorkspaceAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const { workspaceId } = req.params;

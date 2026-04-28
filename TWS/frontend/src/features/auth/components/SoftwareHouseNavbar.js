@@ -1,0 +1,122 @@
+import React, { useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import ThemeToggle from '../../../shared/components/ui/ThemeToggle';
+import './SoftwareHouseNavbar.css';
+
+const SoftwareHouseNavbar = ({
+  isDarkMode,
+  fixed = true,
+  showThemeToggle = true,
+  className = ''
+}) => {
+  const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navLinks = useMemo(
+    () => [
+      { id: 'modules', label: 'Modules', href: '/software-house#features', isRoute: false },
+      { id: 'projects', label: 'Projects', href: '/software-house/projects', isRoute: true },
+      { id: 'hrm', label: 'HRM', href: '/software-house/hrm', isRoute: true },
+      { id: 'finance', label: 'Finance', href: '/software-house/finance', isRoute: true },
+      { id: 'documents', label: 'Documents', href: '/software-house#solution', isRoute: false }
+    ],
+    []
+  );
+
+  const isActive = (link) => {
+    if (link.isRoute) return location.pathname === link.href;
+    return location.pathname === '/software-house';
+  };
+
+  return (
+    <header className={`sh-nav-shell ${fixed ? 'sh-nav-fixed' : ''} ${className}`.trim()}>
+      <nav
+        className={`sh-nav ${isDarkMode ? 'sh-nav-dark' : 'sh-nav-light'}`}
+        aria-label="Software House navigation"
+      >
+        <div className="sh-nav-inner">
+          <Link to="/software-house" className="sh-brand" onClick={() => setMobileOpen(false)}>
+            <span className="sh-brand-wordmark">TWS</span>
+            <span className="sh-brand-badge">Software House</span>
+          </Link>
+
+          <div className="sh-nav-links-desktop">
+            {navLinks.map((link) =>
+              link.isRoute ? (
+                <Link
+                  key={link.id}
+                  to={link.href}
+                  className={`sh-nav-link ${isActive(link) ? 'active' : ''}`}
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <a
+                  key={link.id}
+                  href={link.href}
+                  className={`sh-nav-link ${isActive(link) ? 'active' : ''}`}
+                >
+                  {link.label}
+                </a>
+              )
+            )}
+          </div>
+
+          <div className="sh-nav-actions">
+            {showThemeToggle ? <ThemeToggle size="sm" shortcut={true} /> : null}
+            <Link to="/software-house-login" className="sh-nav-login">
+              Login
+            </Link>
+            <Link to="/software-house-signup" className="sh-nav-cta">
+              Start free trial
+            </Link>
+            <button
+              type="button"
+              className="sh-nav-mobile-toggle"
+              onClick={() => setMobileOpen((prev) => !prev)}
+              aria-expanded={mobileOpen}
+              aria-label="Toggle navigation"
+            >
+              {mobileOpen ? <XMarkIcon /> : <Bars3Icon />}
+            </button>
+          </div>
+        </div>
+
+        {mobileOpen && (
+          <div className="sh-nav-mobile-menu">
+            {navLinks.map((link) =>
+              link.isRoute ? (
+                <Link
+                  key={link.id}
+                  to={link.href}
+                  className={`sh-nav-link ${isActive(link) ? 'active' : ''}`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <a
+                  key={link.id}
+                  href={link.href}
+                  className={`sh-nav-link ${isActive(link) ? 'active' : ''}`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {link.label}
+                </a>
+              )
+            )}
+            <Link to="/software-house-login" className="sh-nav-login" onClick={() => setMobileOpen(false)}>
+              Login
+            </Link>
+            <Link to="/software-house-signup" className="sh-nav-cta" onClick={() => setMobileOpen(false)}>
+              Start free trial
+            </Link>
+          </div>
+        )}
+      </nav>
+    </header>
+  );
+};
+
+export default SoftwareHouseNavbar;

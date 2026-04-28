@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, MotionConfig, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import {
     UserGroupIcon,
     ArrowRightIcon,
@@ -15,21 +15,16 @@ import {
 
 import './SoftwareHouseHRM.css';
 import { useTheme } from '../../../app/providers/ThemeContext';
+import SoftwareHouseNavbar from '../components/SoftwareHouseNavbar';
 
 const HRMSystemPage = () => {
     const { isDarkMode } = useTheme();
-    const [scrollY, setScrollY] = useState(0);
+    const prefersReducedMotion = useReducedMotion();
     const { scrollYProgress } = useScroll();
 
     // Premium background transforms
     const y1 = useTransform(scrollYProgress, [0, 1], [0, -200]);
     const y2 = useTransform(scrollYProgress, [0, 1], [0, 200]);
-
-    useEffect(() => {
-        const handleScroll = () => setScrollY(window.scrollY);
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
     const hrmModules = [
         { title: 'Employee Management', path: 'Org → HRM → Employees', icon: UserGroupIcon, desc: 'Complete employee profiles—personal info, department, position, and documents. Your entire team directory in one place.' },
@@ -55,32 +50,12 @@ const HRMSystemPage = () => {
     ];
 
     return (
+        <MotionConfig reducedMotion="user">
         <div className={`sh-hrm-page sh-dot-grid min-h-screen${!isDarkMode ? ' day-mode' : ''}`}>
             <div className="sh-noise-overlay" />
-            <motion.div style={{ y: y1 }} className="sh-glow-orb sh-glow-1" />
-            <motion.div style={{ y: y2 }} className="sh-glow-orb sh-glow-2" />
-
-            {/* Premium Navigation */}
-            <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrollY > 50 ? 'sh-hrm-glass h-16 mt-4 mx-auto max-w-6xl inset-x-0' : 'h-20 bg-transparent'}`}>
-                <div className="container mx-auto px-6 h-full flex items-center justify-between">
-                    <Link to="/software-house" className="flex items-center gap-2 font-sora font-extrabold text-2xl tracking-tighter">
-                        <span className="text-white">TWS</span>
-                        <span className="text-purple-500">HRM</span>
-                    </Link>
-                    <div className="hidden md:flex items-center gap-8">
-                        <Link to="/software-house" className="text-xs font-bold uppercase tracking-widest text-[#8B8BA8] hover:text-white transition-colors">Platform</Link>
-                        <Link to="/software-house/finance" className="text-xs font-bold uppercase tracking-widest text-[#8B8BA8] hover:text-white transition-colors">Finance</Link>
-                        <Link to="/software-house/projects" className="text-xs font-bold uppercase tracking-widest text-[#8B8BA8] hover:text-white transition-colors">Projects</Link>
-                        <a href="#features" className="text-xs font-bold uppercase tracking-widest text-[#8B8BA8] hover:text-white transition-colors">Features</a>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Link to="/software-house-login" className="text-sm font-bold text-white">Login</Link>
-                        <Link to="/software-house-signup" className="bg-purple-600 text-white px-5 py-2.5 rounded-none font-sora text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-                            Start Trial
-                        </Link>
-                    </div>
-                </div>
-            </nav>
+            <motion.div style={prefersReducedMotion ? undefined : { y: y1 }} className="sh-glow-orb sh-glow-1" />
+            <motion.div style={prefersReducedMotion ? undefined : { y: y2 }} className="sh-glow-orb sh-glow-2" />
+            <SoftwareHouseNavbar isDarkMode={isDarkMode} />
 
             <main className="relative z-10">
                 {/* Hero Section */}
@@ -114,7 +89,7 @@ const HRMSystemPage = () => {
                 </section>
 
                 {/* Features Section */}
-                <section id="features" className="py-32 px-6">
+                <section id="features" className="py-32 px-6 scroll-mt-24">
                     <div className="container mx-auto max-w-7xl">
                         <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12">
                             <div className="max-w-2xl text-left">
@@ -321,6 +296,7 @@ const HRMSystemPage = () => {
                 </div>
             </footer>
         </div>
+        </MotionConfig>
     );
 };
 

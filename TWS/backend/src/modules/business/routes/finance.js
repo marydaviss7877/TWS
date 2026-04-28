@@ -21,10 +21,14 @@ const {
   CashFlowForecast,
   FinancialKPI
 } = require('../../../models/Finance');
+const { PayrollRecord } = require('../../../models/Payroll');
+const Project = require('../../../models/Project');
 const FinanceDashboardService = require('../../../services/financeDashboardService');
 const FinanceExportService = require('../../../services/financeExportService');
 
 const router = express.Router();
+
+const getOrgId = (req) => req.user?.orgId;
 
 // Get transactions
 router.get('/', [
@@ -39,7 +43,7 @@ router.get('/', [
   const limit = parseInt(req.query.limit) || 20;
   const skip = (page - 1) * limit;
 
-  const filter = {};
+  const filter = { orgId: getOrgId(req) };
   if (req.query.type) filter.type = req.query.type;
   
   if (req.query.from || req.query.to) {
@@ -80,7 +84,7 @@ router.post('/', [
   body('date').optional().isISO8601(),
   body('accountId').optional().isMongoId()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
-  const transaction = new Transaction(req.body);
+  const transaction = new Transaction({ ...req.body, orgId: getOrgId(req) });
   await transaction.save();
 
   res.status(201).json({
@@ -92,7 +96,7 @@ router.post('/', [
 
 // Get accounts
 router.get('/accounts', financeRead, ErrorHandler.asyncHandler(async (req, res) => {
-  const accounts = await Account.find({ active: true }).sort({ code: 1 });
+  const accounts = await Account.find({ active: true, orgId: getOrgId(req) }).sort({ code: 1 });
 
   res.json({
     success: true,
@@ -107,7 +111,7 @@ router.post('/accounts', [
   body('type').isIn(['asset', 'liability', 'equity', 'revenue', 'expense']),
   body('code').notEmpty().trim()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
-  const account = new Account(req.body);
+  const account = new Account({ ...req.body, orgId: getOrgId(req) });
   await account.save();
 
   res.status(201).json({
@@ -128,7 +132,7 @@ router.get('/invoices', [
   const limit = parseInt(req.query.limit) || 20;
   const skip = (page - 1) * limit;
 
-  const filter = {};
+  const filter = { orgId: getOrgId(req) };
   if (req.query.status) filter.status = req.query.status;
 
   const invoices = await Invoice.find(filter)
@@ -168,7 +172,7 @@ router.post('/invoices', [
   const { items, subtotal, taxAmount, total, ...invoiceData } = req.body;
 
   // Generate invoice number
-  const lastInvoice = await Invoice.findOne().sort({ invoiceNumber: -1 });
+  const lastInvoice = await Invoice.findOne({ orgId: getOrgId(req) }).sort({ invoiceNumber: -1 });
   const lastNumber = lastInvoice ? parseInt(lastInvoice.invoiceNumber.split('-')[1]) : 0;
   const invoiceNumber = `INV-${String(lastNumber + 1).padStart(4, '0')}`;
 
@@ -178,7 +182,8 @@ router.post('/invoices', [
     items,
     subtotal,
     taxAmount,
-    total
+    total,
+    orgId: getOrgId(req)
   });
 
   await invoice.save();
@@ -202,7 +207,8 @@ router.get('/reports/pnl', [
     {
       $match: {
         type: 'revenue',
-        date: { $gte: new Date(start), $lte: new Date(end) }
+        date: { $gte: new Date(start), $lte: new Date(end) },
+        orgId: getOrgId(req)
       }
     },
     {
@@ -217,7 +223,8 @@ router.get('/reports/pnl', [
     {
       $match: {
         type: 'expense',
-        date: { $gte: new Date(start), $lte: new Date(end) }
+        date: { $gte: new Date(start), $lte: new Date(end) },
+        orgId: getOrgId(req)
       }
     },
     {
@@ -737,20 +744,53 @@ router.post('/kpis/calculate', [
   const totalHours = timeData[0]?.totalHours || 0;
   const billableHours = timeData[0]?.billableHours || 0;
 
+  const previousStart = new Date(period.start);
+  const previousEnd = new Date(period.end);
+  const durationMs = previousEnd.getTime() - previousStart.getTime();
+  previousEnd.setTime(previousStart.getTime() - 1);
+  previousStart.setTime(previousEnd.getTime() - durationMs);
+
+  const [previousRevenueAgg, previousExpenseAgg, recurringRevenueAgg, payrollAgg, activeProjects] = await Promise.all([
+    Transaction.aggregate([
+      { $match: { type: 'revenue', date: { $gte: previousStart, $lte: previousEnd }, orgId: req.user.orgId } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]),
+    Transaction.aggregate([
+      { $match: { type: 'expense', date: { $gte: previousStart, $lte: previousEnd }, orgId: req.user.orgId } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]),
+    Invoice.aggregate([
+      { $match: { orgId: req.user.orgId, recurring: true, issueDate: { $gte: new Date(period.start), $lte: new Date(period.end) } } },
+      { $group: { _id: null, total: { $sum: '$total' } } }
+    ]),
+    PayrollRecord.aggregate([
+      { $match: { orgId: req.user.orgId, periodStart: { $gte: new Date(period.start) }, periodEnd: { $lte: new Date(period.end) }, status: { $in: ['approved', 'paid'] } } },
+      { $group: { _id: null, total: { $sum: '$grossPay' } } }
+    ]),
+    Project.countDocuments({ orgId: req.user.orgId, status: { $in: ['active', 'in_progress'] } })
+  ]);
+
+  const previousRevenue = previousRevenueAgg[0]?.total || 0;
+  const previousExpenses = previousExpenseAgg[0]?.total || 0;
+  const revenueGrowth = previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0;
+  const expenseGrowth = previousExpenses > 0 ? ((totalExpenses - previousExpenses) / previousExpenses) * 100 : 0;
+  const recurringRevenue = recurringRevenueAgg[0]?.total || 0;
+  const payrollTotal = payrollAgg[0]?.total || 0;
+
   const kpiData = {
     period,
     metrics: {
       revenue: {
         total: totalRevenue,
-        recurring: 0, // TODO: Calculate from recurring invoices
-        oneTime: totalRevenue,
-        growth: 0 // TODO: Calculate vs previous period
+        recurring: recurringRevenue,
+        oneTime: Math.max(totalRevenue - recurringRevenue, 0),
+        growth: revenueGrowth
       },
       expenses: {
         total: totalExpenses,
-        payroll: 0, // TODO: Calculate from payroll data
-        overhead: totalExpenses,
-        growth: 0 // TODO: Calculate vs previous period
+        payroll: payrollTotal,
+        overhead: Math.max(totalExpenses - payrollTotal, 0),
+        growth: expenseGrowth
       },
       profitability: {
         grossMargin: totalRevenue - totalExpenses,
@@ -765,11 +805,11 @@ router.post('/kpis/calculate', [
       },
       utilization: {
         billable: totalHours > 0 ? (billableHours / totalHours) * 100 : 0,
-        overall: 100, // TODO: Calculate based on available hours
+        overall: totalHours > 0 ? (billableHours / totalHours) * 100 : 0,
         target: 80
       },
       projectMetrics: {
-        activeProjects: 0, // TODO: Calculate from projects
+        activeProjects,
         completedProjects: 0,
         averageMargin: 0,
         onTimeDelivery: 0
@@ -971,6 +1011,9 @@ router.get('/export/kpis/excel', [
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';
+  if (!FinanceExportService.supportsExcel()) {
+    return FinanceExportService.exportKPIsToCSV(req.user.orgId, period, res);
+  }
   await FinanceExportService.exportKPIsToExcel(req.user.orgId, period, res);
 }));
 
@@ -980,6 +1023,9 @@ router.get('/export/kpis/pdf', [
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';
+  if (!FinanceExportService.supportsPdf()) {
+    return FinanceExportService.exportKPIsToCSV(req.user.orgId, period, res);
+  }
   await FinanceExportService.exportKPIsToPDF(req.user.orgId, period, res);
 }));
 
@@ -998,6 +1044,9 @@ router.get('/export/dashboard/excel', [
   query('period').optional().isIn(['week', 'month', 'quarter', 'year'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const period = req.query.period || 'month';
+  if (!FinanceExportService.supportsExcel()) {
+    return FinanceExportService.exportKPIsToCSV(req.user.orgId, period, res);
+  }
   await FinanceExportService.exportDashboardToExcel(req.user.orgId, period, res);
 }));
 

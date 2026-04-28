@@ -4,6 +4,7 @@ const Tenant = require('../models/Tenant');
 // const TenantAnalyticsSummary = require('../models/TenantAnalyticsSummary'); // Model not yet implemented
 const EmployeeMetrics = require('../models/EmployeeMetrics');
 const Project = require('../models/Project');
+const Client = require('../models/Client');
 const Attendance = require('../models/Attendance');
 const usageTrackerService = require('../services/usageTrackerService');
 const projectProfitabilityService = require('../services/projectProfitabilityService');
@@ -463,6 +464,12 @@ class JobScheduler {
    * Generate analytics summary for a tenant
    */
   async generateAnalyticsSummary(tenantId, periodType) {
+    const TenantAnalyticsSummary = mongoose.models.TenantAnalyticsSummary;
+    if (!TenantAnalyticsSummary) {
+      logger.debug('TenantAnalyticsSummary model unavailable; skipping analytics summary generation');
+      return null;
+    }
+
     const now = new Date();
     let startDate, endDate;
     
@@ -471,11 +478,12 @@ class JobScheduler {
         startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
         break;
-      case 'weekly':
+      case 'weekly': {
         const dayOfWeek = now.getDay();
         startDate = new Date(now.getTime() - dayOfWeek * 24 * 60 * 60 * 1000);
         endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
         break;
+      }
       case 'monthly':
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -700,7 +708,11 @@ class JobScheduler {
     
     for (const tenant of tenants) {
       try {
-        await clientHealthService.updateClientHealthMetrics(tenant.tenantId);
+        const clients = await Client.find({ orgId: tenant.tenantId, status: { $ne: 'inactive' } }).select('_id orgId');
+        for (const client of clients) {
+          const clientHealth = await clientHealthService.getOrCreateClientHealth(client._id, tenant.tenantId);
+          await clientHealthService.updateClientHealthMetrics(clientHealth);
+        }
         logger.debug(`Client health updated for tenant: ${tenant.tenantId}`);
       } catch (error) {
         logger.error(`Failed to update client health for tenant ${tenant.tenantId}:`, error);
@@ -767,13 +779,16 @@ class JobScheduler {
    */
   async runDataCleanup() {
     try {
+      const TenantAnalyticsSummary = mongoose.models.TenantAnalyticsSummary;
       // Clean up old analytics summaries (keep last 2 years)
       const twoYearsAgo = new Date();
       twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
       
-      await TenantAnalyticsSummary.deleteMany({
-        'period.startDate': { $lt: twoYearsAgo }
-      });
+      if (TenantAnalyticsSummary) {
+        await TenantAnalyticsSummary.deleteMany({
+          'period.startDate': { $lt: twoYearsAgo }
+        });
+      }
       
       // Clean up old employee metrics (keep last 1 year)
       const oneYearAgo = new Date();

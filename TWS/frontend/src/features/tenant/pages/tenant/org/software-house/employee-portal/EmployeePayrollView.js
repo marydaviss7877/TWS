@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../../../../../app/providers/AuthContext';
 import toast from 'react-hot-toast';
+import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
+import ErrorState from '../../../../../../../shared/components/feedback/ErrorState';
+import EmptyState from '../../../../../../../shared/components/feedback/EmptyState';
 import {
   CurrencyDollarIcon,
   DocumentTextIcon,
@@ -15,6 +18,7 @@ const EmployeePayrollView = ({ tenantSlug }) => {
   const [salary, setSalary] = useState(null);
   const [payslips, setPayslips] = useState([]);
   const [selectedPeriod, setSelectedPeriod] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     fetchPayrollData();
@@ -23,6 +27,7 @@ const EmployeePayrollView = ({ tenantSlug }) => {
   const fetchPayrollData = async () => {
     try {
       setLoading(true);
+      setLoadError('');
       
       // Fetch employee data
       const empResponse = await fetch(`/api/tenant/${tenantSlug}/organization/hr/employees?userId=${currentUserId}`, {
@@ -57,6 +62,7 @@ const EmployeePayrollView = ({ tenantSlug }) => {
       }
     } catch (error) {
       console.error('Failed to fetch payroll data:', error);
+      setLoadError(error?.message || 'Failed to load payroll information');
       toast.error('Failed to load payroll information');
     } finally {
       setLoading(false);
@@ -104,11 +110,11 @@ const EmployeePayrollView = ({ tenantSlug }) => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading payroll information..." className="min-h-[40vh] bg-transparent" />;
+  }
+
+  if (loadError) {
+    return <ErrorState title="Payroll unavailable" message={loadError} onRetry={fetchPayrollData} className="max-w-xl mx-auto" />;
   }
 
   return (
@@ -274,8 +280,8 @@ const EmployeePayrollView = ({ tenantSlug }) => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-                    No payslips available
+                  <td colSpan="6" className="px-6 py-8">
+                    <EmptyState title="No payslips available" message="No payslips were found for the selected period." />
                   </td>
                 </tr>
               )}

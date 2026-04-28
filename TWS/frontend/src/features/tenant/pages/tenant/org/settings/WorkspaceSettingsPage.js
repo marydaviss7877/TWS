@@ -13,6 +13,7 @@ import {
   ArchiveBoxArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
+import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
 import toast from 'react-hot-toast';
 
 /* ─── tokens (mirrors OrgProfile) ──────────────────────────────────────────── */
@@ -26,8 +27,6 @@ const S = {
     a ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
       : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200'}`,
 };
-
-const ADMIN_ROLES = ['admin', 'super_admin', 'org_manager', 'owner'];
 
 /* ─── atoms ──────────────────────────────────────────────────────────────────── */
 const Lbl  = ({ children }) => <label className={S.label}>{children}</label>;
@@ -89,8 +88,9 @@ function Skeleton() {
 const WorkspaceSettingsPage = () => {
   const navigate = useNavigate();
   const { user } = useTenantAuth();
+  const { hasModulePermission } = useTenantPermissions();
 
-  const isAdmin = ADMIN_ROLES.includes(user?.role);
+  const isAdmin = hasModulePermission?.('settings', 'admin') || hasModulePermission?.('users', 'admin');
 
   const NAV = [
     { id: 'identity', label: 'Identity',    Icon: Squares2X2Icon },

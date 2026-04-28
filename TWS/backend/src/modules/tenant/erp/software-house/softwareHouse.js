@@ -546,30 +546,35 @@ router.get('/time-tracking/today', requireRole(['owner', 'admin', 'employee', 'c
   
   try {
     const result = await timeTrackingService.getTimeEntries(orgId, filters);
-    const stats = await timeTrackingService.getTimeEntryStats(orgId, filters);
     
-    // Group by project
-  const projects = {};
+    // Group by project and compute summary directly from today's entries.
+    // This keeps the UI cards in sync with what the table shows (including draft/submitted entries).
+    const projects = {};
+    let totalHours = 0;
+    let billableHours = 0;
     result.timeEntries.forEach(entry => {
-    const projectName = entry.projectId?.name || 'Unknown';
-    if (!projects[projectName]) {
-      projects[projectName] = {
-        name: projectName,
-        hours: 0,
-        billable: false
-      };
-    }
-    projects[projectName].hours += entry.hours || 0;
-    if (entry.billable) {
-      projects[projectName].billable = true;
-    }
-  });
+      const entryHours = Number(entry.hours || 0);
+      const projectName = entry.projectId?.name || 'Unknown';
+      totalHours += entryHours;
+      if (entry.billable) billableHours += entryHours;
+      if (!projects[projectName]) {
+        projects[projectName] = {
+          name: projectName,
+          hours: 0,
+          billable: false
+        };
+      }
+      projects[projectName].hours += entryHours;
+      if (entry.billable) {
+        projects[projectName].billable = true;
+      }
+    });
   
   res.json({
     success: true,
     data: {
-        totalHours: stats.totalHours,
-        billableHours: stats.billableHours,
+        totalHours,
+        billableHours,
       projects: Object.values(projects),
         entries: result.timeEntries
     }
@@ -799,7 +804,7 @@ router.get('/client-portal/projects', requireRole(['owner', 'admin', 'project_ma
   
   const projects = await Project.find({
     orgId,
-    'settings.allowClientAccess': true
+    'settings.portalSettings.allowClientPortal': true
   })
     .select('name slug description status clientId settings')
     .populate('clientId', 'name contact')
@@ -827,11 +832,15 @@ router.put('/client-portal/project/:projectId', requireRole(['owner', 'admin', '
   }
   
   if (allowClientAccess !== undefined) {
-    project.settings.allowClientAccess = allowClientAccess;
+    if (!project.settings) project.settings = {};
+    if (!project.settings.portalSettings) project.settings.portalSettings = {};
+    project.settings.portalSettings.allowClientPortal = allowClientAccess;
   }
   
   if (clientVisibilityLevel) {
-    project.settings.clientVisibilityLevel = clientVisibilityLevel;
+    if (!project.settings) project.settings = {};
+    if (!project.settings.portalSettings) project.settings.portalSettings = {};
+    project.settings.portalSettings.portalVisibility = clientVisibilityLevel;
   }
   
   await project.save();

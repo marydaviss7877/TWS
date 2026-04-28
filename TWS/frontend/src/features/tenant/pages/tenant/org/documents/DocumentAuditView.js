@@ -33,9 +33,9 @@ const DocumentAuditView = () => {
     setLoading(true);
     try {
       const params = { page, limit: 20 };
-      if (documentSearch) params.documentId = documentSearch;
+      if (documentSearch) params.documentSearch = documentSearch;
       if (actionFilter) params.action = actionFilter;
-      if (userSearch) params.userId = userSearch;
+      if (userSearch) params.userSearch = userSearch;
       if (dateFrom) params.dateFrom = dateFrom;
       if (dateTo) params.dateTo = dateTo;
       const res = await documentHubApi.listAudit(tenantSlug, params);

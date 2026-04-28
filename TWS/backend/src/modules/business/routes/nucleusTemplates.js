@@ -1,5 +1,5 @@
 const express = require('express');
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { verifyWorkspaceAccess, requireWorkspaceRole } = require('../../../middleware/auth/workspaceIsolation');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const Workspace = require('../../../models/Workspace');
@@ -7,6 +7,7 @@ const templateService = require('../../../services/nucleusTemplateService');
 const onboardingService = require('../../../services/nucleusOnboardingService');
 
 const router = express.Router();
+router.use(verifyERPToken);
 
 /**
  * Nucleus Template Routes
@@ -23,7 +24,6 @@ const router = express.Router();
  */
 router.post(
   '/workspaces/:workspaceId/projects/from-template',
-  authenticateToken,
   verifyWorkspaceAccess,
   requireWorkspaceRole(['owner', 'admin']),
   ErrorHandler.asyncHandler(async (req, res) => {
@@ -97,7 +97,6 @@ router.post(
  */
 router.get(
   '/workspaces/:workspaceId/onboarding/checklist',
-  authenticateToken,
   verifyWorkspaceAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const { workspaceId } = req.params;
@@ -117,7 +116,6 @@ router.get(
  */
 router.post(
   '/onboarding/quick-start',
-  authenticateToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const {
       workspaceName,
@@ -180,7 +178,6 @@ router.post(
  */
 router.get(
   '/workspaces/:workspaceId/onboarding/progress',
-  authenticateToken,
   verifyWorkspaceAccess,
   ErrorHandler.asyncHandler(async (req, res) => {
     const { workspaceId } = req.params;
@@ -204,7 +201,6 @@ router.get(
  */
 router.get(
   '/templates/list',
-  authenticateToken,
   ErrorHandler.asyncHandler(async (req, res) => {
     const templates = [
       {

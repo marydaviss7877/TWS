@@ -47,7 +47,9 @@ function requireErpAccess(options = {}) {
           const Organization = require('../../models/Organization');
           const org = await Organization.findById(req.user.orgId).select('tenantId').lean();
           tenantId = org?.tenantId;
-        } catch (_) {}
+        } catch (_) {
+          // Ignore org lookup fallback failures; access checks continue with available tenant context.
+        }
       }
       const orgId = req.tenantContext?.orgId || req.user?.orgId;
       if (!tenantId || !req.user?._id) {
@@ -130,6 +132,13 @@ function requireErpAccess(options = {}) {
       if (projectIdParam != null) {
         const projectId = req.params[projectIdParam] || req.body?.[projectIdParam];
         if (projectId) {
+          const role = String(req.user.role || '').toLowerCase();
+          const isClientRole = role === 'client' || role === 'customer';
+          // Client portal routes enforce ownership in their own handlers.
+          // Skipping workspace membership here avoids false 403 for valid clients.
+          if (isClientRole) {
+            return next();
+          }
           const project = await Project.findById(projectId).select('workspaceId').lean();
           if (project?.workspaceId) {
             const workspace = await Workspace.findById(project.workspaceId).select('ownerId members').lean();
@@ -152,7 +161,7 @@ function requireErpAccess(options = {}) {
             tenantId,
             orgId,
             userId: req.user._id,
-            action: 'access',
+            action: 'READ',
             resourceType: auditResourceType,
             resourceId: req.path || req.originalUrl,
             ip: req.ip || req.connection?.remoteAddress,

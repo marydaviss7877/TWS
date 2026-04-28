@@ -164,51 +164,234 @@ const ClientPortalLauncher = () => {
 };
 
 const ClientInvoicesView = () => (
-  <div className="max-w-5xl mx-auto px-4 py-8">
-    <div className="mb-6 flex items-center justify-between">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Invoices</h2>
-      <Link to="../" className="text-sm text-blue-600 hover:text-blue-800">Back to Apps</Link>
-    </div>
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
-      <p className="text-sm text-gray-700 dark:text-gray-300">
-        Your invoice feed is configured as read-only. When invoices are published for your assigned projects,
-        they appear here with status and download links.
-      </p>
-    </div>
-  </div>
+  <ClientInvoicesViewImpl />
 );
 
-const ClientDocumentsView = () => (
-  <div className="max-w-5xl mx-auto px-4 py-8">
-    <div className="mb-6 flex items-center justify-between">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Documents</h2>
-      <Link to="../" className="text-sm text-blue-600 hover:text-blue-800">Back to Apps</Link>
-    </div>
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
-      <p className="text-sm text-gray-700 dark:text-gray-300">
-        Shared and approved project documents are available through project deliverables.
-        Open <span className="font-medium">Project Overview</span> to access download links by deliverable.
-      </p>
-    </div>
-  </div>
-);
+const ClientInvoicesViewImpl = () => {
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-const ClientContactView = () => (
-  <div className="max-w-5xl mx-auto px-4 py-8">
-    <div className="mb-6 flex items-center justify-between">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Contact</h2>
-      <Link to="../" className="text-sm text-blue-600 hover:text-blue-800">Back to Apps</Link>
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const list = await clientPortalApi.getProjects();
+        const safe = Array.isArray(list) ? list : [];
+        setProjects(safe);
+        setSelectedProjectId(safe[0]?._id || '');
+      } catch (err) {
+        setError(err?.message || 'Failed to load projects');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProjects();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    const loadInvoices = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await clientPortalApi.getProjectInvoices(selectedProjectId);
+        setInvoices(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setError(err?.message || 'Failed to load invoices');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInvoices();
+  }, [selectedProjectId]);
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Invoices</h2>
+        <Link to="../" className="text-sm text-blue-600 hover:text-blue-800">Back to Apps</Link>
+      </div>
+      {error ? <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-4">
+        <select
+          value={selectedProjectId}
+          onChange={(e) => setSelectedProjectId(e.target.value)}
+          className="w-full md:w-96 rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm bg-white dark:bg-gray-800"
+        >
+          {projects.map((project) => (
+            <option key={project._id} value={project._id}>{project.name}</option>
+          ))}
+        </select>
+        {loading ? <p className="text-sm text-gray-500">Loading invoices...</p> : null}
+        {!loading && !invoices.length ? <p className="text-sm text-gray-500">No invoices available for this project.</p> : null}
+        {!loading && invoices.length ? (
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {invoices.map((invoice) => (
+              <div key={invoice._id} className="py-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{invoice.invoiceNumber || 'Invoice'}</p>
+                  <p className="text-xs text-gray-500">
+                    Issued: {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString() : '-'} | Due: {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : '-'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{invoice.currency || 'USD'} {Number(invoice.total || 0).toFixed(2)}</p>
+                  <p className="text-xs text-gray-500 capitalize">{invoice.status || 'draft'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
     </div>
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
-      <p className="text-sm text-gray-700 dark:text-gray-300">
-        Use the company profile page for organization contact details:
-      </p>
-      <Link to="../settings/organization" className="mt-3 inline-block text-sm text-blue-600 hover:text-blue-800">
-        Open Company Profile
-      </Link>
+  );
+};
+
+const ClientDocumentsView = () => <ClientDocumentsViewImpl />;
+
+const ClientDocumentsViewImpl = () => {
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const list = await clientPortalApi.getProjects();
+        const safe = Array.isArray(list) ? list : [];
+        setProjects(safe);
+        setSelectedProjectId(safe[0]?._id || '');
+      } catch (err) {
+        setError(err?.message || 'Failed to load projects');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProjects();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    const loadDocuments = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await clientPortalApi.getProjectDocuments(selectedProjectId);
+        setDocuments(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setError(err?.message || 'Failed to load documents');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadDocuments();
+  }, [selectedProjectId]);
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Documents</h2>
+        <Link to="../" className="text-sm text-blue-600 hover:text-blue-800">Back to Apps</Link>
+      </div>
+      {error ? <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-4">
+        <select
+          value={selectedProjectId}
+          onChange={(e) => setSelectedProjectId(e.target.value)}
+          className="w-full md:w-96 rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm bg-white dark:bg-gray-800"
+        >
+          {projects.map((project) => (
+            <option key={project._id} value={project._id}>{project.name}</option>
+          ))}
+        </select>
+        {loading ? <p className="text-sm text-gray-500">Loading documents...</p> : null}
+        {!loading && !documents.length ? <p className="text-sm text-gray-500">No shared documents available for this project.</p> : null}
+        {!loading && documents.length ? (
+          <div className="space-y-2">
+            {documents.map((doc) => (
+              <a
+                key={doc.id}
+                href={doc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded border border-gray-200 dark:border-gray-700 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/40"
+              >
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{doc.name}</p>
+                <p className="text-xs text-gray-500">{doc.deliverableTitle || 'Deliverable attachment'}</p>
+              </a>
+            ))}
+          </div>
+        ) : null}
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+const ClientContactView = () => <ClientContactViewImpl />;
+
+const ClientContactViewImpl = () => {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const data = await clientPortalApi.getContactProfile();
+        setProfile(data || null);
+      } catch (err) {
+        setError(err?.message || 'Failed to load contact profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProfile();
+  }, []);
+
+  const org = profile?.organization || {};
+  const client = profile?.client || {};
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Contact</h2>
+        <Link to="../" className="text-sm text-blue-600 hover:text-blue-800">Back to Apps</Link>
+      </div>
+      {error ? <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
+      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-4">
+        {loading ? <p className="text-sm text-gray-500">Loading contact details...</p> : null}
+        {!loading ? (
+          <>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Organization</p>
+              <p className="text-base font-semibold text-gray-900 dark:text-white">{org.name || '-'}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{org.email || '-'} {org.phone ? `| ${org.phone}` : ''}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="rounded border border-gray-200 dark:border-gray-700 p-3">
+                <p className="text-xs text-gray-500">Primary Contact</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{client.primaryContact?.name || '-'}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-300">{client.primaryContact?.email || '-'}</p>
+              </div>
+              <div className="rounded border border-gray-200 dark:border-gray-700 p-3">
+                <p className="text-xs text-gray-500">Billing Contact</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{client.billingContact?.name || '-'}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-300">{client.billingContact?.email || '-'}</p>
+              </div>
+            </div>
+            <Link to="../settings/organization" className="inline-block text-sm text-blue-600 hover:text-blue-800">
+              Open Company Profile
+            </Link>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+};
 
 const ClientDashboard = ({ clientId }) => {
   const safeClientId = useMemo(() => clientId, [clientId]);

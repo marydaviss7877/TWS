@@ -1,12 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ProjectClient = require('../../../models/Client');
 const Project = require('../../../models/Project');
 
+const clientsRead = requireErpAccess({ module: 'clients', action: ['read', 'read_own'], checkRevocation: false });
+const clientsWrite = requireErpAccess({ module: 'clients', action: 'write', checkRevocation: false });
+const clientsAdmin = requireErpAccess({ module: 'clients', action: 'admin', checkRevocation: false });
+
+router.use(verifyERPToken);
+
 // Get all clients for organization
-router.get('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/', clientsRead, ErrorHandler.asyncHandler(async (req, res) => {
   const { status, search } = req.query;
   const orgId = req.user.orgId;
   
@@ -34,7 +41,7 @@ router.get('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) =>
 }));
 
 // Get single client
-router.get('/:clientId', authenticateToken, async (req, res) => {
+router.get('/:clientId', clientsRead, async (req, res) => {
   try {
     const { clientId } = req.params;
     const orgId = req.user.orgId;
@@ -69,12 +76,12 @@ router.get('/:clientId', authenticateToken, async (req, res) => {
 });
 
 // Create new client
-router.post('/', authenticateToken, requireRole(['super_admin', 'org_manager', 'pmo', 'project_manager', 'admin', 'owner']), async (req, res) => {
+router.post('/', clientsWrite, async (req, res) => {
   try {
     const orgId = req.user.orgId;
     const {
       name,
-      type = 'business',
+      type = 'company',
       contact,
       company,
       address,
@@ -138,7 +145,7 @@ router.post('/', authenticateToken, requireRole(['super_admin', 'org_manager', '
 });
 
 // Update client
-router.patch('/:clientId', authenticateToken, requireRole(['super_admin', 'org_manager', 'pmo', 'project_manager']), async (req, res) => {
+router.patch('/:clientId', clientsWrite, async (req, res) => {
   try {
     const { clientId } = req.params;
     const orgId = req.user.orgId;
@@ -174,7 +181,7 @@ router.patch('/:clientId', authenticateToken, requireRole(['super_admin', 'org_m
 });
 
 // Delete client
-router.delete('/:clientId', authenticateToken, requireRole(['super_admin', 'org_manager']), async (req, res) => {
+router.delete('/:clientId', clientsAdmin, async (req, res) => {
   try {
     const { clientId } = req.params;
     const orgId = req.user.orgId;
@@ -218,7 +225,7 @@ router.delete('/:clientId', authenticateToken, requireRole(['super_admin', 'org_
 });
 
 // Get client portal access
-router.get('/:clientId/portal', authenticateToken, async (req, res) => {
+router.get('/:clientId/portal', clientsRead, async (req, res) => {
   try {
     const { clientId } = req.params;
     const orgId = req.user.orgId;

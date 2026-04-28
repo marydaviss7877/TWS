@@ -587,6 +587,47 @@ const Reporting = () => {
   };
 
   const handlePrint = () => window.print();
+  const handleExport = async (format) => {
+    try {
+      if (!activeReportId) {
+        toast.error('Generate a report before exporting.');
+        return;
+      }
+
+      const exportFormat = format === 'excel' ? 'xlsx' : format;
+      const response = await tenantApiService.exportFinanceReport(
+        tenantSlug,
+        activeReportId,
+        exportFormat,
+        dateRange.startDate,
+        dateRange.endDate
+      );
+      if (!response || !response.ok) {
+        throw new Error('Export request failed.');
+      }
+
+      const contentType = response?.headers?.get?.('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const payload = await response.json();
+        throw new Error(payload?.message || 'Export format is not currently available.');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const disposition = response.headers.get('content-disposition') || '';
+      const filenameMatch = disposition.match(/filename="?([^"]+)"?/i);
+      const backendFilename = filenameMatch?.[1];
+      link.href = objectUrl;
+      link.download = backendFilename || `${activeReportId}-${dateRange.startDate}-${dateRange.endDate}.${exportFormat}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      toast.error(error?.message || 'Export failed. Please try again.');
+    }
+  };
 
   const ReportRenderer = activeReportId ? REPORT_RENDERERS[activeReportId] : null;
   const activeReportMeta = REPORT_CATALOG.find(r => r.id === activeReportId);
@@ -719,14 +760,14 @@ const Reporting = () => {
                   Print
                 </button>
                 <button
-                  onClick={() => toast('PDF export coming soon')}
+                  onClick={() => handleExport('pdf')}
                   className="flex items-center gap-2 px-3 py-1.5 text-sm text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
                 >
                   <ArrowDownTrayIcon className="w-4 h-4" />
                   PDF
                 </button>
                 <button
-                  onClick={() => toast('Excel export coming soon')}
+                  onClick={() => handleExport('excel')}
                   className="flex items-center gap-2 px-3 py-1.5 text-sm text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
                 >
                   <ArrowDownTrayIcon className="w-4 h-4" />
