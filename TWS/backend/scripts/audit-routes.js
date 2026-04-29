@@ -31,7 +31,6 @@ const AUTHZ_MIDDLEWARE = [
   'requirePermission',
   'requirePlatformPermission',
   'requirePlatformRole',
-  'requirePatientAccess',
   'requirePermission'
 ];
 

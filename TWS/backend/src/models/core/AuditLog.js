@@ -57,9 +57,6 @@ const auditLogSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  phiFieldsAccessed: [{
-    type: String // e.g., 'personalInfo.firstName', 'medicalInfo.diagnosis'
-  }],
   resource: {
     type: String,
     required: true,
@@ -138,7 +135,7 @@ const auditLogSchema = new mongoose.Schema({
     },
     dataCategories: [{
       type: String,
-      enum: ['personal_data', 'sensitive_data', 'financial_data', 'health_data', 'biometric_data', 'location_data']
+      enum: ['personal_data', 'sensitive_data', 'financial_data', 'biometric_data', 'location_data']
     }]
   },
   
@@ -259,7 +256,7 @@ auditLogSchema.virtual('riskScore').get(function() {
   // Add score for sensitive data categories
   if (this.compliance.dataCategories) {
     this.compliance.dataCategories.forEach(category => {
-      if (['sensitive_data', 'financial_data', 'health_data', 'biometric_data'].includes(category)) {
+      if (['sensitive_data', 'financial_data', 'biometric_data'].includes(category)) {
         score += 2;
       }
     });

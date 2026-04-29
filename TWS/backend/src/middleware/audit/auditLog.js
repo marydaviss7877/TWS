@@ -51,9 +51,7 @@ const createAuditLog = async (req, res, action, resource, status, details = {}) 
       'USER', 'ORGANIZATION', 'TENANT', 'PROJECT', 'CLIENT',
       'EMPLOYEE', 'ATTENDANCE', 'INVOICE', 'SUBSCRIPTION',
       'PAYMENT', 'FILE', 'API', 'SYSTEM', 'AUDIT_LOG',
-      'AUTH', 'SESSION', 'RESOURCE', 'TASK', 'SPRINT', 'MILESTONE',
-      'PATIENT', 'MEDICAL_RECORD', 'PRESCRIPTION', 'APPOINTMENT',
-      'DOCTOR', 'LAB_RESULT', 'BILLING_CLAIM'
+      'AUTH', 'SESSION', 'RESOURCE', 'TASK', 'SPRINT', 'MILESTONE'
     ]);
     const safeResource = allowedResources.has(normalizedResource) ? normalizedResource : 'SYSTEM';
 

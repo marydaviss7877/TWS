@@ -62,8 +62,8 @@ const validateTenantCreation = [
 //       modules: ['students', 'teachers', 'classes', 'grades', 'courses', 'academic_year', 'exams', 'admissions']
 //     },
 //     {
-//       icon: '🏥',
-//       modules: ['patients', 'doctors', 'appointments', 'medical_records', 'prescriptions', 'departments', 'billing']
+//       icon: '🧩',
+//       modules: []
 //     },
 //     {
 //       value: 'finance',
@@ -183,14 +183,7 @@ router.get('/industry/:industry', masterErpAdmin, ErrorHandler.asyncHandler(asyn
 //       { value: 'exams', label: 'Exam Management', description: 'Exam scheduling, grading, results' },
 //       { value: 'admissions', label: 'Admissions', description: 'Application process, enrollment, documentation' }
 //     ],
-//     legacy: [
-//       { value: 'patients', label: 'Patient Management', description: 'Patient records, medical history, appointments' },
-//       { value: 'doctors', label: 'Doctor Management', description: 'Doctor profiles, specializations, schedules' },
-//       { value: 'appointments', label: 'Appointment Management', description: 'Scheduling, reminders, cancellations' },
-//       { value: 'medical_records', label: 'Medical Records', description: 'Patient history, diagnoses, treatments' },
-//       { value: 'prescriptions', label: 'Prescription Management', description: 'Medication management, drug interactions' },
-//       { value: 'departments', label: 'Department Management', description: 'Hospital departments, staff allocation' }
-//     ],
+//     legacy: [],
 //     finance: [
 //       { value: 'accounts', label: 'Account Management', description: 'Account setup, management, monitoring' },
 //       { value: 'transactions', label: 'Transaction Management', description: 'Transaction processing, recording, reconciliation' },

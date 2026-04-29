@@ -131,14 +131,14 @@ class EncryptionService {
   /**
    * Encrypt selected fields on an object.
    */
-  encryptPHIObject(obj, phiFields) {
+  encryptSensitiveObject(obj, sensitiveFields) {
     if (process.env.FIELD_LEVEL_ENCRYPTION !== 'true') {
       return obj;
     }
 
     const encrypted = { ...obj };
     
-    phiFields.forEach(field => {
+    sensitiveFields.forEach(field => {
       const fieldValue = this.getNestedValue(encrypted, field);
       if (fieldValue) {
         this.setNestedValue(encrypted, field, this.encryptField(fieldValue));
@@ -151,14 +151,14 @@ class EncryptionService {
   /**
    * Decrypt selected fields on an object.
    */
-  decryptPHIObject(obj, phiFields) {
+  decryptSensitiveObject(obj, sensitiveFields) {
     if (process.env.FIELD_LEVEL_ENCRYPTION !== 'true') {
       return obj;
     }
 
     const decrypted = { ...obj };
     
-    phiFields.forEach(field => {
+    sensitiveFields.forEach(field => {
       const fieldValue = this.getNestedValue(decrypted, field);
       if (fieldValue && typeof fieldValue === 'object' && fieldValue.encrypted) {
         this.setNestedValue(decrypted, field, this.decryptField(fieldValue));

@@ -422,7 +422,7 @@ async function seed() {
       pm: 'NCT-015',
     },
     {
-      name: 'HealthBridge Patient Portal',
+      name: 'HealthBridge Customer Portal',
       clientIdx: 2,
       projectType: 'web_application',
       methodology: 'waterfall',
@@ -431,7 +431,7 @@ async function seed() {
       budget: { total: 1800000, spent: 900000, currency: 'PKR' },
       startDate: daysAgo(90),
       endDate: daysFromNow(90),
-      description: 'compliance-ready patient portal with appointment scheduling, telemedicine, electronic health records and prescription management.',
+      description: 'compliance-ready customer portal with appointment scheduling and account management.',
       priority: 'high',
       dept: 'ENG',
       pm: 'NCT-015',
@@ -622,7 +622,7 @@ async function seed() {
     ]},
     // HealthBridge (project 2)
     { projectIdx: 2, sprintIdx: -1, tasks: [
-      { title: 'Patient registration flow',        status: 'completed',  priority: 'high',     assignee: 'NCT-002', storyPoints: 5, hours: 8  },
+      { title: 'Customer registration flow',       status: 'completed',  priority: 'high',     assignee: 'NCT-002', storyPoints: 5, hours: 8  },
       { title: 'Appointment booking calendar',     status: 'completed',  priority: 'high',     assignee: 'NCT-002', storyPoints: 8, hours: 12 },
       { title: 'Telemedicine video integration',   status: 'in_progress',priority: 'critical', assignee: 'NCT-001', storyPoints: 13, hours: 18 },
       { title: 'Electronic health records module', status: 'in_progress',priority: 'high',     assignee: 'NCT-003', storyPoints: 8, hours: 14 },

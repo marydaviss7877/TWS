@@ -26,7 +26,7 @@
  * const unifiedTenantAuth = require('./middleware/auth/unifiedTenantAuth');
  * 
  * // For all tenant types
- * router.get('/patients', unifiedTenantAuth(), controller.getPatients);
+ * router.get('/items', unifiedTenantAuth(), controller.getItems);
  * 
  * // For specific ERP category
  * router.get('/projects', unifiedTenantAuth({ erpCategory: 'software_house' }), controller.getProjects);
