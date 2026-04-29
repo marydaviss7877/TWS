@@ -3,7 +3,7 @@
  */
 
 const mongoose = require('mongoose');
-const TWSAdmin = require('../src/models/TWSAdmin');
+const TWSAdmin = require('../src/models/admin-platform/TWSAdmin');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://subhan:U3SNm3nRjvtHMiN7@cluster0.rlfss7x.mongodb.net/wolfstack';
 const ADMIN_EMAIL = 'admin@tws.com';

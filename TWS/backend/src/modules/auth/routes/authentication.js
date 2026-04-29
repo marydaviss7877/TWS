@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs').promises;
 const { body, validationResult } = require('express-validator');
-const { generateTokens, setAuthCookies, clearAuthCookies } = require('../../../middleware/auth/auth');
+const { generateTokens, setAuthCookies, clearAuthCookies, authenticateToken } = require('../../../middleware/auth/auth');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const { authLimiter, registrationLimiter, passwordResetLimiter, tokenRefreshLimiter, strictLimiter } = require('../../../middleware/rateLimiting/rateLimiter');
@@ -434,7 +434,7 @@ router.get('/token-info', ErrorHandler.asyncHandler(async (req, res) => {
 }));
 
 // Get current user
-router.get('/me', verifyERPToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/me', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
   // Check if user is TWSAdmin or regular User
   const isTWSAdmin = req.authContext?.type === 'tws_admin' || 
                      (req.user && !req.user.orgId && req.user.role?.startsWith('platform_'));
