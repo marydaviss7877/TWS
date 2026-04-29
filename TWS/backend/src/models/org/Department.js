@@ -88,6 +88,7 @@ const departmentSchema = new mongoose.Schema({
   moduleKey: {
     type: String,
     enum: [
+      null,
       'projects', 'hr', 'finance', 'payroll', 'documents', 'analytics', 'nucleus',
       'clients', 'deals', 'audit', 'attendance', 'leave', 'notifications', 'settings'
     ],
