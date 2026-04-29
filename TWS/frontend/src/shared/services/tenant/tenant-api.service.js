@@ -136,12 +136,6 @@ const tenantApiService = {
     return makeRequest(`/api/tenant/${tenantSlug}/organization/analytics`);
   },
 
-  // Get analytics reports
-  getAnalyticsReports: async (tenantSlug, params = {}) => {
-    const queryParams = new URLSearchParams(params).toString();
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/analytics/reports?${queryParams}`);
-  },
-
   // Get users
   getUsers: async (tenantSlug, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
@@ -552,19 +546,6 @@ const tenantApiService = {
   getProjectMilestones: async (tenantSlug, params = {}) => {
     const queryParams = new URLSearchParams(params).toString();
     return makeRequest(`/api/tenant/${tenantSlug}/organization/projects/milestones?${queryParams}`);
-  },
-
-  // Get reports overview
-  getReportsOverview: async (tenantSlug) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/reports`);
-  },
-
-  // Generate report
-  generateReport: async (tenantSlug, type, parameters = {}) => {
-    return makeRequest(`/api/tenant/${tenantSlug}/organization/reports/generate`, {
-      method: 'POST',
-      body: JSON.stringify({ type, parameters })
-    });
   },
 
   // Generate finance report (Software House specific)

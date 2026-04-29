@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import {
   UsersIcon,
   ClipboardDocumentListIcon,
   CheckCircleIcon,
   CurrencyDollarIcon,
-  DocumentChartBarIcon,
-  ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline';
 import {
   BarChart,
@@ -32,7 +30,6 @@ const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 
 const AnalyticsOverview = () => {
   const { tenantSlug } = useParams();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
@@ -91,16 +88,6 @@ const AnalyticsOverview = () => {
             Comprehensive analytics and insights for your organization
           </p>
         </div>
-        <button
-         
-          type="button"
-          onClick={() => navigate(`/${tenantSlug}/org/analytics/reports`)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors"
-        >
-          <DocumentChartBarIcon className="w-4 h-4" />
-          View reports
-          <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-        </button>
       </div>
 
       {error && <ErrorState title="Analytics unavailable" message={error} className="max-w-xl" />}

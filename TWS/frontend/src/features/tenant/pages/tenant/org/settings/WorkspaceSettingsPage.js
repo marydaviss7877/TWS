@@ -12,20 +12,20 @@ import {
   ExclamationTriangleIcon,
   ArchiveBoxArrowDownIcon,
 } from '@heroicons/react/24/outline';
-import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
+import { refreshToken } from '../../../../../../shared/services/auth/token-refresh.service';
 import toast from 'react-hot-toast';
 
 /* ─── tokens (mirrors OrgProfile) ──────────────────────────────────────────── */
 const S = {
   card:    'bg-white dark:bg-gray-900 ring-1 ring-gray-200 dark:ring-gray-700 rounded-xl p-3',
   input:   'w-full h-8 px-2.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-600 transition',
-  label:   'block text-[10px] font-medium text-gray-400 dark:text-gray-500 mb-0.5 uppercase tracking-wide',
+  label:   'block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5 uppercase tracking-wide',
   rbox:    'flex h-8 items-center px-2.5 text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg truncate',
-  sec:     'text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-2',
+  sec:     'text-[9px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2',
   navitem: (a) => `flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
     a ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200'}`,
+      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'}`,
 };
 
 /* ─── atoms ──────────────────────────────────────────────────────────────────── */
@@ -87,7 +87,6 @@ function Skeleton() {
 /* ─── main ───────────────────────────────────────────────────────────────────── */
 const WorkspaceSettingsPage = () => {
   const navigate = useNavigate();
-  const { user } = useTenantAuth();
   const { hasModulePermission } = useTenantPermissions();
 
   const isAdmin = hasModulePermission?.('settings', 'admin') || hasModulePermission?.('users', 'admin');
@@ -121,7 +120,15 @@ const WorkspaceSettingsPage = () => {
     try {
       const res  = await fetch('/api/workspaces', { credentials: 'include' });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.message || 'Failed to load');
+      if (!res.ok) {
+        const backendMessage = json?.message || '';
+        const authExpired = res.status === 401 || backendMessage.toLowerCase().includes('token expired');
+        setError({
+          message: backendMessage || 'Failed to load workspace.',
+          authExpired,
+        });
+        return;
+      }
       const list = json.data?.workspaces || json.workspaces || json.data || [];
       const ws = Array.isArray(list) ? list.find(w => w.status === 'active') || list[0] : null;
       if (!ws) throw new Error('No workspace found for this organisation.');
@@ -133,11 +140,27 @@ const WorkspaceSettingsPage = () => {
       };
       setForm(f); setSavedForm(f); setDirty(false);
     } catch (e) {
-      setError(e.message || 'Failed to load workspace.');
+      setError({
+        message: e.message || 'Failed to load workspace.',
+        authExpired: false,
+      });
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const handleReauthenticate = async () => {
+    setSaving(true);
+    try {
+      await refreshToken();
+      toast.success('Session refreshed. Reloading workspace...');
+      await load();
+    } catch (e) {
+      toast.error(e.message || 'Failed to refresh session');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -201,7 +224,7 @@ const WorkspaceSettingsPage = () => {
           <h1 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
             {loading ? 'Workspace' : (workspace?.name || 'Workspace')}
           </h1>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500">Workspace settings</p>
+          <p className="text-[10px] text-gray-500 dark:text-gray-400">Workspace settings</p>
         </div>
         {dirty && !loading && (
           <span className="ml-auto flex items-center gap-1.5 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
@@ -222,7 +245,16 @@ const WorkspaceSettingsPage = () => {
       {error && !loading && (
         <div className="flex items-center gap-2 p-3 mb-3 rounded-xl bg-red-50 dark:bg-red-900/20 ring-1 ring-red-200 dark:ring-red-800">
           <ExclamationTriangleIcon className="w-4 h-4 text-red-500 shrink-0" />
-          <p className="text-xs text-red-700 dark:text-red-300 flex-1">{error}</p>
+          <p className="text-xs text-red-700 dark:text-red-300 flex-1">{error.message}</p>
+          {error.authExpired && (
+            <button
+              onClick={handleReauthenticate}
+              disabled={saving}
+              className="text-[10px] px-2 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 disabled:opacity-60 transition-colors"
+            >
+              {saving ? 'Refreshing...' : 'Re-authenticate'}
+            </button>
+          )}
           <button onClick={load} className="text-[10px] text-red-600 dark:text-red-400 hover:underline flex items-center gap-1">
             <ArrowPathIcon className="w-3 h-3" /> Retry
           </button>
@@ -267,7 +299,7 @@ const WorkspaceSettingsPage = () => {
                   <F label="Workspace Name" value={form.name} onChange={set('name')} placeholder="e.g. Default Workspace" />
                   <F label="Description" value={form.description} onChange={set('description')}
                     placeholder="Short description of this workspace" textarea />
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <ColorF label="Accent Colour" value={form.color} onChange={set('color')} />
                     <F label="Slug" value={workspace?.slug} readOnly />
                   </div>
@@ -276,7 +308,7 @@ const WorkspaceSettingsPage = () => {
 
               <div className={S.card}>
                 <Sec>Workspace Info</Sec>
-                <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
                   <F label="Type"        value={workspace?.type}        readOnly />
                   <F label="Methodology" value={workspace?.methodology} readOnly />
                   <F label="Status"      value={workspace?.status}      readOnly />
@@ -286,7 +318,7 @@ const WorkspaceSettingsPage = () => {
 
               <div className={S.card}>
                 <Sec>Usage</Sec>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <StatBadge label="Boards"  value={workspace?.usage?.boards} />
                   <StatBadge label="Members" value={workspace?.usage?.members || workspace?.members?.length} />
                   <StatBadge label="Cards"   value={workspace?.usage?.cards} />

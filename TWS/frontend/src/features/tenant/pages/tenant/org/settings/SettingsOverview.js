@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import toast from 'react-hot-toast';
 import {
@@ -13,17 +13,17 @@ import {
 const S = {
   card:    'bg-white dark:bg-gray-900 ring-1 ring-gray-200 dark:ring-gray-700 rounded-xl p-3',
   input:   'w-full h-8 px-2.5 text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-600 transition',
-  label:   'block text-[10px] font-medium text-gray-400 dark:text-gray-500 mb-0.5 uppercase tracking-wide',
-  sec:     'text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-600 mb-2',
+  label:   'block text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-0.5 uppercase tracking-wide',
+  sec:     'text-[9px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2',
   navitem: (a) => `flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
     a ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200'}`,
+      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'}`,
 };
 
 /* ─── static (outside component) ───────────────────────────────────────────── */
 const NAV = [
   { id: 'general',       label: 'General',       Icon: CogIcon },
-  { id: 'workspace',     label: 'Workspace',      Icon: Squares2X2Icon, isLink: true, to: 'workspace' },
+  { id: 'workspace',     label: 'Workspace',      Icon: Squares2X2Icon },
   { id: 'notifications', label: 'Notifications',  Icon: BellIcon },
   { id: 'security',      label: 'Security',       Icon: ShieldCheckIcon },
 ];
@@ -59,7 +59,7 @@ const Sec = ({ children }) => <p className={S.sec}>{children}</p>;
 function Lbl({ children, icon: Icon }) {
   return (
     <label className={S.label}>
-      {Icon && <Icon className="inline w-3 h-3 mr-0.5 text-gray-400" />}
+      {Icon && <Icon className="inline w-3 h-3 mr-0.5 text-gray-500 dark:text-gray-400" />}
       {children}
     </label>
   );
@@ -69,7 +69,7 @@ function Toggle({ checked, onChange }) {
   return (
     <label className="relative inline-flex items-center cursor-pointer shrink-0">
       <input type="checkbox" checked={checked} onChange={onChange} className="sr-only peer" />
-      <div className="w-8 h-4 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary-600" />
+      <div className="w-8 h-4 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus-visible:ring-2 peer-focus-visible:ring-primary-500 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-white dark:peer-focus-visible:ring-offset-gray-900 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary-600" />
     </label>
   );
 }
@@ -79,7 +79,7 @@ function ToggleRow({ label, desc, checked, onChange }) {
     <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 gap-2">
       <div className="min-w-0">
         <p className="text-xs font-medium text-gray-700 dark:text-gray-300 leading-tight">{label}</p>
-        {desc && <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 leading-tight">{desc}</p>}
+        {desc && <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{desc}</p>}
       </div>
       <Toggle checked={checked} onChange={onChange} />
     </div>
@@ -90,7 +90,7 @@ function SaveBtn({ saving, onClick, label = 'Save' }) {
   return (
     <div className="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-800 mt-1">
       <button onClick={onClick} disabled={saving}
-        className="px-3 py-1 text-xs font-medium bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50 transition-colors">
+        className="px-3 py-1 text-xs font-medium bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900">
         {saving ? 'Saving…' : label}
       </button>
     </div>
@@ -102,6 +102,7 @@ const SettingsOverview = () => {
   const { tenantSlug } = useParams();
   const { tenant, updateUser } = useTenantAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [saving,  setSaving]  = useState(false);
   const [tab,     setTab]     = useState('general');
   const [profilePicPreview, setProfilePicPreview] = useState(null);
@@ -122,6 +123,33 @@ const SettingsOverview = () => {
     sessionTimeout: 30, passwordPolicy: 'medium',
     requireStrongPassword: true, loginAlerts: true,
   });
+
+  const handleTabChange = useCallback((nextTab) => {
+    setTab(nextTab);
+    if (nextTab === 'general') {
+      navigate(`/${tenantSlug}/org/settings`, { replace: false });
+      return;
+    }
+    if (nextTab === 'workspace') {
+      navigate(`/${tenantSlug}/org/settings/workspace`, { replace: false });
+      return;
+    }
+    if (nextTab === 'notifications' || nextTab === 'security') {
+      navigate(`/${tenantSlug}/org/settings/${nextTab}`, { replace: false });
+    }
+  }, [navigate, tenantSlug]);
+
+  useEffect(() => {
+    if (location.pathname.includes('/settings/notifications')) {
+      setTab('notifications');
+      return;
+    }
+    if (location.pathname.includes('/settings/security')) {
+      setTab('security');
+      return;
+    }
+    setTab('general');
+  }, [location.pathname]);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -253,7 +281,7 @@ const SettingsOverview = () => {
         </div>
         <div>
           <h1 className="text-sm font-bold text-gray-900 dark:text-white leading-tight">Settings</h1>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500">Organization preferences</p>
+          <p className="text-[10px] text-gray-500 dark:text-gray-400">Organization preferences</p>
         </div>
       </div>
 
@@ -262,10 +290,10 @@ const SettingsOverview = () => {
 
         {/* Sidebar */}
         <nav className="hidden md:flex flex-col gap-0.5 w-36 shrink-0">
-          {NAV.map(({ id, label, Icon, isLink, to }) => (
+          {NAV.map(({ id, label, Icon }) => (
             <button key={id}
-              onClick={() => isLink ? navigate(to) : setTab(id)}
-              className={S.navitem(!isLink && tab === id)}>
+              onClick={() => handleTabChange(id)}
+              className={S.navitem(tab === id)}>
               <Icon className="w-3.5 h-3.5 shrink-0" /> {label}
             </button>
           ))}
@@ -273,12 +301,12 @@ const SettingsOverview = () => {
 
         {/* Mobile tabs */}
         <div className="md:hidden flex gap-1 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {NAV.map(({ id, label, Icon, isLink, to }) => (
+          {NAV.map(({ id, label, Icon }) => (
             <button key={id}
-              onClick={() => isLink ? navigate(to) : setTab(id)}
+              onClick={() => handleTabChange(id)}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 ${
-                !isLink && tab === id ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                           : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
+                tab === id ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                           : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}>
               <Icon className="w-3 h-3" /> {label}
             </button>
           ))}
@@ -319,7 +347,7 @@ const SettingsOverview = () => {
                 </div>
 
                 {/* 3 selects per row — all roughly equal and short */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
                     <Lbl icon={GlobeAltIcon}>Timezone</Lbl>
                     <select value={general.timezone} onChange={e => setGeneral(p => ({ ...p, timezone: e.target.value }))} className={S.input}>
@@ -347,8 +375,8 @@ const SettingsOverview = () => {
                 </div>
 
                 {/* Currency + Language — 2 cols, narrower */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="sm:col-span-2">
                     <Lbl icon={CurrencyDollarIcon}>Currency</Lbl>
                     <select value={general.currency} onChange={e => setGeneral(p => ({ ...p, currency: e.target.value }))} className={S.input}>
                       <option value="PKR">PKR — Pakistani Rupee</option>
@@ -379,8 +407,8 @@ const SettingsOverview = () => {
                 <ToggleRow label="In-app notifications" desc="Bell icon & notification panel"
                   checked={inAppEnabled} onChange={e => setInAppEnabled(e.target.checked)} />
 
-                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-600 pt-1.5">Email by event</p>
-                <div className="grid grid-cols-2 gap-1">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 pt-1.5">Email by event</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                   {Object.entries(EVENT_LABELS).map(([key, lbl]) => (
                     <ToggleRow key={key} label={lbl}
                       checked={eventTypes[key] !== false}
@@ -393,7 +421,7 @@ const SettingsOverview = () => {
 
             <div className={S.card}>
               <Sec>Channels</Sec>
-              <div className="grid grid-cols-2 gap-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                 {Object.entries(notif)
                   .filter(([k]) => !['feeReminders','examNotifications','announcementNotifications'].includes(k))
                   .map(([key, val]) => (
@@ -413,14 +441,14 @@ const SettingsOverview = () => {
               <Sec>Security</Sec>
               <div className="space-y-2">
                 {/* Timeout narrow, policy takes remaining space */}
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="col-span-1">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                  <div className="sm:col-span-1">
                     <Lbl>Timeout (min)</Lbl>
                     <input type="number" value={security.sessionTimeout} min="5" max="120"
                       onChange={e => setSecurity(p => ({ ...p, sessionTimeout: parseInt(e.target.value) }))}
                       className={S.input} />
                   </div>
-                  <div className="col-span-3">
+                  <div className="sm:col-span-3">
                     <Lbl>Password Policy</Lbl>
                     <select value={security.passwordPolicy}
                       onChange={e => setSecurity(p => ({ ...p, passwordPolicy: e.target.value }))}
@@ -432,7 +460,7 @@ const SettingsOverview = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                   <ToggleRow label="Require Strong Password" desc="Enforce complexity"
                     checked={security.requireStrongPassword}
                     onChange={e => setSecurity(p => ({ ...p, requireStrongPassword: e.target.checked }))} />

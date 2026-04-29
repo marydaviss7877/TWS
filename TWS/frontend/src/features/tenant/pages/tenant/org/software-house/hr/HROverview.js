@@ -283,7 +283,7 @@ const HROverview = () => {
           </button>
 
           <button
-            onClick={() => navigate(`/${tenantSlug}/org/reports`)}
+            onClick={() => navigate(`/${tenantSlug}/org/analytics`)}
             className="glass-card p-4 hover-lift text-left group"
           >
             <div className="flex items-center gap-3">
@@ -291,7 +291,7 @@ const HROverview = () => {
                 <EyeIcon className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Reports</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">Analytics</p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">View analytics</p>
               </div>
             </div>

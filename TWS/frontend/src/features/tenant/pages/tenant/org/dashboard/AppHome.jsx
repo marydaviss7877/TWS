@@ -14,7 +14,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   BookmarkIcon as BookmarkOutlineIcon,
-  Squares2X2Icon,
   UserIcon,
   CalendarIcon,
   ClockIcon,
@@ -60,21 +59,14 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
 
   return (
     <div
-      role="button"
-      tabIndex={0}
       data-launcher-card="true"
       data-reveal-card="true"
-      onClick={() => { setPressed(true); setTimeout(() => setPressed(false), 200); onNavigate(item.path); }}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(item.path); } }}
       className={cn(
-        `apphome-card group relative flex flex-col items-center ${LAUNCHER_UI.cardGap} ${LAUNCHER_UI.cardRadius} ${LAUNCHER_UI.cardPadding} transition-all duration-200 cursor-pointer select-none overflow-visible`,
-        'outline-none focus-visible:ring-2 focus-visible:ring-indigo-500',
-        pressed && 'scale-95',
+        `apphome-card group relative ${LAUNCHER_UI.cardRadius} transition-all duration-200 select-none overflow-visible`,
         isActive
           ? 'bg-indigo-50 dark:bg-indigo-900/30 ring-2 ring-indigo-400/60 shadow-md'
           : 'bg-[#f7f9ff] dark:bg-gray-800/60 border border-[#d8def5] dark:border-gray-700/70 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:bg-[#f2f5ff] dark:hover:bg-gray-800',
         'backdrop-blur-sm',
-        // bookmarked card gets a vivid top accent line
         isFav && 'border-t-2 border-indigo-500 dark:border-indigo-400'
       )}
     >
@@ -87,7 +79,6 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
           'opacity-0 group-hover:opacity-100 focus:opacity-100',
           isFav && 'opacity-100',
         )}
-        tabIndex={-1}
         aria-label={isFav ? 'Remove bookmark' : 'Bookmark this app'}
       >
         {isFav ? (
@@ -96,6 +87,16 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
           <BookmarkOutlineIcon className="h-6 w-[18px] text-gray-300 dark:text-gray-600 hover:text-indigo-400 transition-colors duration-150" />
         )}
       </button>
+
+      <button
+        type="button"
+        onClick={() => { setPressed(true); setTimeout(() => setPressed(false), 200); onNavigate(item.path); }}
+        className={cn(
+          `w-full flex flex-col items-center ${LAUNCHER_UI.cardGap} ${LAUNCHER_UI.cardPadding} transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-indigo-500`,
+          pressed && 'scale-95'
+        )}
+        aria-label={`Open ${item.label}`}
+      >
 
       {/* Gradient icon bubble */}
       <div className={cn(
@@ -126,6 +127,7 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
       {isActive && (
         <span className="absolute bottom-2.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-indigo-500 shadow-sm shadow-indigo-400" />
       )}
+      </button>
     </div>
   );
 });
@@ -137,11 +139,11 @@ const SectionLabel = ({ emoji, title, count, bookmarkSection }) => (
       ? <BookmarkSolidIcon className="h-4 w-4 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
       : emoji && <span className="text-base leading-none">{emoji}</span>
     }
-    <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+    <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
       {title}
     </h2>
     {count > 0 && (
-      <span className="inline-flex items-center justify-center h-4 min-w-[1rem] px-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-[10px] font-semibold text-gray-500 dark:text-gray-400">
+      <span className="inline-flex items-center justify-center h-4 min-w-[1rem] px-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-[10px] font-semibold text-gray-600 dark:text-gray-300">
         {count}
       </span>
     )}
@@ -151,7 +153,7 @@ const SectionLabel = ({ emoji, title, count, bookmarkSection }) => (
 
 // ── AppGrid ────────────────────────────────────────────────────────────────────
 const AppGrid = ({ items, activeAppKey, favoriteKeys, onNavigate, onToggleFav }) => (
-  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 sm:gap-3 lg:gap-4">
+  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 sm:gap-3 lg:gap-4">
     {items.map(item => (
       <AppCard
         key={item.key}
@@ -162,24 +164,6 @@ const AppGrid = ({ items, activeAppKey, favoriteKeys, onNavigate, onToggleFav })
         onToggleFav={onToggleFav}
       />
     ))}
-  </div>
-);
-
-// ── QuickStat ──────────────────────────────────────────────────────────────────
-const QuickStat = ({ icon: Icon, label, value, gradient }) => (
-  <div className={cn(
-    'flex items-center gap-3 rounded-xl px-4 py-3',
-    'bg-[#f4f6ff] dark:bg-gray-800/50 backdrop-blur-sm shadow-sm',
-    'border border-[#d6ddf7] dark:border-gray-700/50',
-    'hover:shadow-md transition-shadow duration-200'
-  )}>
-    <div className={cn('flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br flex-shrink-0', gradient)}>
-      <Icon className="h-5 w-5 text-white" />
-    </div>
-    <div className="min-w-0">
-      <p className="text-lg font-bold text-gray-900 dark:text-white leading-none">{value}</p>
-      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">{label}</p>
-    </div>
   </div>
 );
 
@@ -354,7 +338,6 @@ const AppHome = () => {
       onMouseLeave={handleMouseLeave}
       className={cn(
         'apphome-root min-h-full relative overflow-hidden transition-all duration-500',
-        '-mx-2 sm:-mx-3 md:-mx-4 lg:-mx-5',
         'px-2 sm:px-3 md:px-4 lg:px-5',
         'bg-gradient-to-br from-[#f2f6ff] via-[#f7f9ff] to-[#f3f7ff]',
         'dark:bg-none',
@@ -390,7 +373,7 @@ const AppHome = () => {
         {/* ── Hero / Greeting ──────────────────────────────────────────────── */}
         <div data-reveal className="apphome-fade-up apphome-fade-delay-2 apphome-hero-wrap text-center space-y-3 -mt-3 sm:-mt-4">
           {/* Date */}
-          <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-widest">
             {dateStr}
           </p>
 
@@ -520,7 +503,7 @@ const AppHome = () => {
                       <button
                         type="button"
                         onClick={clearRecent}
-                        className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline -mt-3"
+                        className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline -mt-3"
                       >
                         Clear Recent
                       </button>
@@ -549,7 +532,7 @@ const AppHome = () => {
 
         {/* ── Footer hint ──────────────────────────────────────────────────────── */}
         {!q && filteredMenuItems.length > 0 && (
-          <p className="text-center text-[11px] text-gray-400 dark:text-gray-600 pb-4">
+          <p className="text-center text-[11px] text-gray-500 dark:text-gray-400 pb-4">
             Hover any app and click the bookmark ribbon to pin it · Press{' '}
             <kbd className="inline-flex items-center rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-1 py-0.5 font-mono text-[10px]">
               /

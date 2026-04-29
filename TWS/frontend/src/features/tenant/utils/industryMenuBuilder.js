@@ -7,7 +7,6 @@ import {
   InboxIcon,
   WrenchScrewdriverIcon,
   ChatBubbleLeftRightIcon,
-  DocumentTextIcon,
   CogIcon,
   ChartBarIcon,
   ShoppingBagIcon,
@@ -184,12 +183,6 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
           description: 'Workspace stats, at-risk deliverables, status summary'
         }
       ]
-    },
-    {
-      key: 'reports',
-      icon: DocumentTextIcon,
-      label: 'Reports',
-      path: `/${tenantSlug}/org/reports`
     },
     {
       key: 'documents',

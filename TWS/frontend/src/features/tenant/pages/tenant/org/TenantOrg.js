@@ -15,7 +15,6 @@ import MyWork from './my-work/MyWork';
 
 // Analytics Components
 import AnalyticsOverview from './analytics/AnalyticsOverview';
-import AnalyticsReports from './analytics/AnalyticsReports';
 
 // User Management Components
 import UserList from './users/UserList';
@@ -302,8 +301,6 @@ const TenantOrg = () => {
 
           {/* Analytics Routes */}
           <Route path="analytics" element={<AnalyticsOverview />} />
-          <Route path="analytics/reports" element={<AnalyticsReports />} />
-          <Route path="reports" element={<AnalyticsReports />} />
 
           {/* User Management Routes */}
           <Route path="users" element={<UserList />} />
@@ -421,6 +418,8 @@ const TenantOrg = () => {
           <Route path="settings" element={<AdminOnlySettingsRoute><SettingsRoute /></AdminOnlySettingsRoute>} />
           <Route path="settings/organization" element={<OrganizationProfileAccessRoute><OrganizationProfileRoute /></OrganizationProfileAccessRoute>} />
           <Route path="settings/workspace" element={<AdminOnlySettingsRoute><WorkspaceSettingsPage /></AdminOnlySettingsRoute>} />
+          <Route path="settings/notifications" element={<AdminOnlySettingsRoute><SettingsOverview /></AdminOnlySettingsRoute>} />
+          <Route path="settings/security" element={<AdminOnlySettingsRoute><SettingsOverview /></AdminOnlySettingsRoute>} />
 
           {/* Documents (built-in word processor) */}
           <Route path="documents" element={<DocumentsHub />} />

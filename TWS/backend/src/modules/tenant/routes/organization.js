@@ -879,19 +879,6 @@ router.get('/analytics', verifyERPToken, async (req, res) => {
   }
 });
 
-// Get analytics reports
-router.get('/analytics/reports', verifyERPToken, async (req, res) => {
-  try {
-    const tenantContext = req.tenantContext || await buildTenantContext(req);
-    const { type, period, module } = req.query;
-    const reports = await tenantOrgService.getAnalyticsReports(tenantContext, { type, period, module });
-    res.json({ success: true, data: reports });
-  } catch (error) {
-    console.error('Analytics reports error:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch analytics reports', error: error.message });
-  }
-});
-
 // ==================== HR ATTENDANCE ROUTES ====================
 
 // Get HR overview
@@ -3510,34 +3497,6 @@ router.delete('/users/:id', verifyERPToken, async (req, res) => {
 // All inline project routes have been removed to avoid conflicts with the projects router
 // The projects router handles: /projects/tasks, /projects/milestones, etc.
 
-// ==================== REPORTS ROUTES ====================
-
-// Get reports overview
-router.get('/reports', verifyERPToken, async (req, res) => {
-  try {
-    const tenantContext = req.tenantContext || await buildTenantContext(req);
-    const reports = await tenantOrgService.getReportsOverview(tenantContext);
-    res.json({ success: true, data: reports });
-  } catch (error) {
-    console.error('Get reports error:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch reports' });
-  }
-});
-
-// Generate report
-router.post('/reports/generate',
-  verifyERPToken, async (req, res) => {
-  try {
-    const tenantContext = await buildTenantContext(req);
-    const { type, parameters } = req.body;
-    const report = await tenantOrgService.generateReport(tenantContext, type, parameters);
-    res.json({ success: true, data: report });
-  } catch (error) {
-    console.error('Generate report error:', error);
-    res.status(500).json({ success: false, message: 'Failed to generate report' });
-  }
-});
-
 // ==================== SETTINGS ROUTES ====================
 
 // Get all settings
@@ -3836,7 +3795,6 @@ if (process.env.NODE_ENV !== 'test') {
       'GET /dashboard',
       'GET /dashboard/analytics',
       'GET /analytics',
-      'GET /analytics/reports',
       'GET /users',
       'POST /users',
       'GET /users/:id',
@@ -3872,8 +3830,6 @@ if (process.env.NODE_ENV !== 'test') {
       'POST /projects/clients',
       'PATCH /projects/clients/:id',
       'DELETE /projects/clients/:id',
-      'GET /reports',
-      'POST /reports/generate',
       'GET /settings',
       'PUT /settings',
       'GET /user-departments',

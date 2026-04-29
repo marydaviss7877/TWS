@@ -2051,66 +2051,6 @@ class TenantOrgService {
   }
 
   /**
-   * Get reports overview
-   * @param {Object} tenantContext - Tenant context
-   * @returns {Object} Reports overview data
-   */
-  async getReportsOverview(tenantContext) {
-    const { tenantId } = tenantContext;
-    
-    try {
-      const availableReports = [
-        { id: 'user-report', name: 'User Report', description: 'Detailed user information and activity' },
-        { id: 'project-report', name: 'Project Report', description: 'Project status and progress' },
-        { id: 'task-report', name: 'Task Report', description: 'Task completion and performance' },
-        { id: 'financial-report', name: 'Financial Report', description: 'Financial overview and transactions' },
-        { id: 'hr-report', name: 'HR Report', description: 'Employee information and attendance' }
-      ];
-
-      return {
-        availableReports,
-        lastGenerated: new Date(),
-        totalReports: availableReports.length
-      };
-    } catch (error) {
-      console.error('Error getting reports overview:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Generate report
-   * @param {Object} tenantContext - Tenant context
-   * @param {String} type - Report type
-   * @param {Object} parameters - Report parameters
-   * @returns {Object} Generated report
-   */
-  async generateReport(tenantContext, type, parameters) {
-    const { tenantId } = tenantContext;
-    
-    try {
-      // This is a placeholder for report generation
-      // In a real implementation, you would generate actual reports
-      const report = {
-        id: `report-${Date.now()}`,
-        type,
-        parameters,
-        generatedAt: new Date(),
-        status: 'completed',
-        data: {
-          message: `Report of type ${type} generated successfully`,
-          parameters
-        }
-      };
-
-      return report;
-    } catch (error) {
-      console.error('Error generating report:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Get settings
    * @param {Object} tenantContext - Tenant context
    * @returns {Object} Settings data
