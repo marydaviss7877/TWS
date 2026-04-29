@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { AuditLog, SecurityEvent, RolePermission } = require('../../models/Security');
+const { AuditLog, SecurityEvent, RolePermission } = require('../../models/users-auth/Security');
 
 const getRequiredEncryptionKey = () => {
   const key = process.env.ENCRYPTION_KEY;

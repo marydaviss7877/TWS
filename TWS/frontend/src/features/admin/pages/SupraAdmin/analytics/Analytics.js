@@ -195,7 +195,6 @@ const Analytics = () => {
       const categoryColors = {
         'software_house': '#8884d8',
         'business': '#82ca9d',
-        'education': '#ffc658',
         'healthcare': '#ff7300',
         'warehouse': '#0088FE',
         'Other': '#FF8042'

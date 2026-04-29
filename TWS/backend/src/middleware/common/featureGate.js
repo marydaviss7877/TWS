@@ -1,6 +1,6 @@
-const SubscriptionPlan = require('../../models/SubscriptionPlan');
-const Tenant = require('../../models/Tenant');
-const Organization = require('../../models/Organization');
+const SubscriptionPlan = require('../../models/finance/SubscriptionPlan');
+const Tenant = require('../../models/tenant/Tenant');
+const Organization = require('../../models/org/Organization');
 const usageTrackerService = require('../../services/usageTrackerService');
 
 /**

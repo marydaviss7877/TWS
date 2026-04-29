@@ -1,7 +1,7 @@
-const Tenant = require('../../models/Tenant');
-const User = require('../../models/User');
-const Organization = require('../../models/Organization');
-const Project = require('../../models/Project');
+const Tenant = require('../../models/tenant/Tenant');
+const User = require('../../models/users-auth/User');
+const Organization = require('../../models/org/Organization');
+const Project = require('../../models/project-delivery/Project');
 // Message and Chat models removed - messaging features have been removed
 
 /**

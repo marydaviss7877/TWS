@@ -23,19 +23,6 @@ class RBACMiddleware {
       owner: 70,          // Business owner
       admin: 60,          // Tenant admin
       
-      // Healthcare-specific roles (RESTRICTED to Healthcare ERP only - NOT available in Education ERP)
-      // These roles are only valid for healthcare tenants (erpCategory === 'healthcare')
-      // SECURITY FIX: Disabled for Education ERP to prevent inappropriate role assignments
-      chief_medical_officer: 59,    // CMO - highest clinical authority (HEALTHCARE ONLY)
-      doctor: 55,                   // Physician - can access assigned patients (HEALTHCARE ONLY)
-      nurse_practitioner: 54,      // NP - can access assigned patients (HEALTHCARE ONLY)
-      physician_assistant: 53,     // PA - can access assigned patients (HEALTHCARE ONLY)
-      nurse: 50,                   // Registered nurse (HEALTHCARE ONLY)
-      medical_assistant: 45,        // MA - limited clinical access (HEALTHCARE ONLY)
-      receptionist: 40,            // Front desk - demographics only (HEALTHCARE ONLY)
-      billing_staff: 35,           // Billing - no clinical data (HEALTHCARE ONLY)
-      medical_records_staff: 30,   // Records - read-only clinical data (HEALTHCARE ONLY)
-      patient: 10,                 // Patient - own records only (HEALTHCARE ONLY)
       
       // Education-specific roles (integrated into RBAC)
       principal: 58,      // School principal (below admin, can manage school)
@@ -45,7 +32,7 @@ class RBACMiddleware {
       hr: 45,             // HR manager
       finance: 45,        // Finance manager
       pmo: 40,            // Project management office
-      head_teacher: 35,   // Head teacher / Department head (education)
+      head_teacher: 35,   // Head teacher / Department head
       project_manager: 35, // Project manager
       counselor: 32,      // Student counselor (special privacy permissions)
       teacher: 30,        // Teacher (can manage classes)
@@ -53,7 +40,7 @@ class RBACMiddleware {
       department_lead: 30, // Department lead
       assistant_teacher: 25, // Teaching assistant (below teacher)
       librarian: 25,      // Library staff
-      sports_coach: 25,   // Physical education/sports coach
+      sports_coach: 25,   // Sports coach
       manager: 25,        // Team manager
       admin_staff: 22,   // Administrative staff (non-teaching)
       employee: 20,       // Regular employee
@@ -100,7 +87,7 @@ class RBACMiddleware {
         'audit:read', 'audit:export',
         'retention:read', 'retention:write',
         'reports:read', 'reports:generate',
-        'education:*'  // Full education access
+        'tenant:*'  // Full tenant access
       ],
       
       // Education role permissions
@@ -108,127 +95,127 @@ class RBACMiddleware {
         'users:read',
         // Messaging permissions removed - messaging system removed
         'audit:read',
-        'education:students:*',        // Full student management
-        'education:teachers:read',     // View teachers
-        'education:teachers:update',   // Manage teacher assignments
-        'education:classes:*',         // Full class management
-        'education:grades:read',       // View all grades
-        'education:attendance:*',      // Attendance management
-        'education:exams:*',           // Exam management
-        'education:fees:*',            // Fee management
-        'education:reports:*',         // Generate reports
-        'education:timetable:*',       // Timetable management
-        'education:announcements:*'    // School announcements
+        'tenant:students:*',        // Full student management
+        'tenant:teachers:read',     // View teachers
+        'tenant:teachers:update',   // Manage teacher assignments
+        'tenant:classes:*',         // Full class management
+        'tenant:grades:read',       // View all grades
+        'tenant:attendance:*',      // Attendance management
+        'tenant:exams:*',           // Exam management
+        'tenant:fees:*',            // Fee management
+        'tenant:reports:*',         // Generate reports
+        'tenant:timetable:*',       // Timetable management
+        'tenant:announcements:*'    // School announcements
       ],
       
       head_teacher: [
         // Messaging permissions removed - messaging system removed
-        'education:students:read',     // View students
-        'education:teachers:read',     // View teachers in dept
-        'education:classes:read',      // View classes
-        'education:grades:*',          // Manage dept grades
-        'education:attendance:*',      // Dept attendance
-        'education:homework:*',        // Dept homework
-        'education:exams:read',        // View exams
-        'education:timetable:read',    // View timetable
-        'education:department:manage'  // Manage department
+        'tenant:students:read',     // View students
+        'tenant:teachers:read',     // View teachers in dept
+        'tenant:classes:read',      // View classes
+        'tenant:grades:*',          // Manage dept grades
+        'tenant:attendance:*',      // Dept attendance
+        'tenant:homework:*',        // Dept homework
+        'tenant:exams:read',        // View exams
+        'tenant:timetable:read',    // View timetable
+        'tenant:department:manage'  // Manage department
       ],
       
       teacher: [
         // Messaging permissions removed - messaging system removed
-        'education:students:read',     // View assigned students
-        'education:classes:read',      // View assigned classes
-        'education:grades:create',     // Enter grades
-        'education:grades:read',       // View grades
-        'education:grades:update',     // Update grades
-        'education:attendance:create', // Mark attendance
-        'education:attendance:read',   // View attendance
-        'education:attendance:update', // Update attendance
-        'education:homework:create',   // Create homework
-        'education:homework:read',     // View homework
-        'education:homework:update',   // Update homework
-        'education:homework:grade',    // Grade submissions
-        'education:exams:read',        // View exam schedule
-        'education:timetable:read',    // View timetable
-        'education:announcements:read' // Read announcements
+        'tenant:students:read',     // View assigned students
+        'tenant:classes:read',      // View assigned classes
+        'tenant:grades:create',     // Enter grades
+        'tenant:grades:read',       // View grades
+        'tenant:grades:update',     // Update grades
+        'tenant:attendance:create', // Mark attendance
+        'tenant:attendance:read',   // View attendance
+        'tenant:attendance:update', // Update attendance
+        'tenant:homework:create',   // Create homework
+        'tenant:homework:read',     // View homework
+        'tenant:homework:update',   // Update homework
+        'tenant:homework:grade',    // Grade submissions
+        'tenant:exams:read',        // View exam schedule
+        'tenant:timetable:read',    // View timetable
+        'tenant:announcements:read' // Read announcements
       ],
       
       // New faculty role permissions
       academic_coordinator: [
         // Messaging permissions removed - messaging system removed
-        'education:students:read',      // View all students
-        'education:teachers:read',      // View all teachers
-        'education:classes:*',          // Full class management
-        'education:grades:read',        // View all grades
-        'education:attendance:read',    // View attendance
-        'education:exams:*',            // Full exam management
-        'education:programs:*',          // Program management
-        'education:reports:generate',    // Generate reports
-        'education:timetable:*'         // Timetable management
+        'tenant:students:read',      // View all students
+        'tenant:teachers:read',      // View all teachers
+        'tenant:classes:*',          // Full class management
+        'tenant:grades:read',        // View all grades
+        'tenant:attendance:read',    // View attendance
+        'tenant:exams:*',            // Full exam management
+        'tenant:programs:*',          // Program management
+        'tenant:reports:generate',    // Generate reports
+        'tenant:timetable:*'         // Timetable management
       ],
       
       counselor: [
         'messages:read', 'messages:write',
         'chats:read', 'chats:write',
-        'education:students:read',      // View assigned students only (DB-filtered)
-        'education:students:counsel',   // Special counseling permission
-        'education:grades:read',        // View grades (for counseling, DB-filtered)
-        'education:attendance:read',    // View attendance (DB-filtered)
-        'education:reports:read',       // View reports (privacy-filtered)
+        'tenant:students:read',      // View assigned students only (DB-filtered)
+        'tenant:students:counsel',   // Special counseling permission
+        'tenant:grades:read',        // View grades (for counseling, DB-filtered)
+        'tenant:attendance:read',    // View attendance (DB-filtered)
+        'tenant:reports:read',       // View reports (privacy-filtered)
         // NO access to: exams, fees, other sensitive data
       ],
       
       lab_instructor: [
         'messages:read', 'messages:write',
-        'education:students:read',      // View assigned lab students
-        'education:classes:read',       // View lab classes
-        'education:attendance:mark',     // Mark lab attendance
-        'education:grades:create',      // Enter lab grades
-        'education:equipment:manage'     // Lab equipment management
+        'tenant:students:read',      // View assigned lab students
+        'tenant:classes:read',       // View lab classes
+        'tenant:attendance:mark',     // Mark lab attendance
+        'tenant:grades:create',      // Enter lab grades
+        'tenant:equipment:manage'     // Lab equipment management
       ],
       
       assistant_teacher: [
         'messages:read', 'messages:write',
-        'education:students:read',      // View assigned students
-        'education:classes:read',       // View assigned classes
-        'education:attendance:mark',    // Mark attendance
-        'education:homework:read',      // View homework
+        'tenant:students:read',      // View assigned students
+        'tenant:classes:read',       // View assigned classes
+        'tenant:attendance:mark',    // Mark attendance
+        'tenant:homework:read',      // View homework
         // NO access to: grades, exams (read-only)
       ],
       
       librarian: [
         'messages:read',
-        'education:students:read',      // View students (for library access)
-        'education:library:*',          // Full library management
-        'education:books:*'             // Book management
+        'tenant:students:read',      // View students (for library access)
+        'tenant:library:*',          // Full library management
+        'tenant:books:*'             // Book management
       ],
       
       sports_coach: [
         'messages:read', 'messages:write',
-        'education:students:read',      // View assigned students
-        'education:attendance:mark',    // Mark sports attendance
-        'education:sports:*'           // Sports management
+        'tenant:students:read',      // View assigned students
+        'tenant:attendance:mark',    // Mark sports attendance
+        'tenant:sports:*'           // Sports management
       ],
       
       admin_staff: [
         'messages:read',
-        'education:students:read',      // View students (for admin tasks)
-        'education:fees:read',         // View fees (billing)
-        'education:reports:read',       // View reports
+        'tenant:students:read',      // View students (for admin tasks)
+        'tenant:fees:read',         // View fees (billing)
+        'tenant:reports:read',       // View reports
         // NO access to: grades, exams, academic data
       ],
       
       student: [
         'messages:read', 'messages:write',
         'chats:read', 'chats:write',
-        'education:student:profile:read',      // View own profile
-        'education:student:grades:read',       // View own grades
-        'education:student:attendance:read',   // View own attendance
-        'education:student:timetable:read',    // View own timetable
-        'education:student:homework:read',     // View assigned homework
-        'education:student:homework:submit',   // Submit homework
-        'education:student:fees:read',         // View fee status
-        'education:student:announcements:read' // Read announcements
+        'tenant:student:profile:read',      // View own profile
+        'tenant:student:grades:read',       // View own grades
+        'tenant:student:attendance:read',   // View own attendance
+        'tenant:student:timetable:read',    // View own timetable
+        'tenant:student:homework:read',     // View assigned homework
+        'tenant:student:homework:submit',   // Submit homework
+        'tenant:student:fees:read',         // View fee status
+        'tenant:student:announcements:read' // Read announcements
       ],
       
       moderator: [
@@ -696,9 +683,8 @@ class RBACMiddleware {
 
   /**
    * Check if a role is allowed for a specific ERP category
-   * SECURITY FIX: Prevents healthcare roles from being used in Education ERP
    * @param {String} role - Role to check
-   * @param {String} erpCategory - ERP category (education, healthcare, business, etc.)
+   * @param {String} erpCategory - ERP category (tenant, business, etc.)
    * @returns {Boolean} - True if role is allowed for this ERP category
    */
   isRoleAllowedForERP(role, erpCategory) {
@@ -708,7 +694,6 @@ class RBACMiddleware {
 
   /**
    * Middleware to validate role assignment based on ERP category
-   * SECURITY FIX: Prevents healthcare roles from being assigned in Education ERP
    */
   validateRoleForERP(erpCategory) {
     return (req, res, next) => {
@@ -748,20 +733,7 @@ class RBACMiddleware {
    */
   getAllowedRolesForERP(erpCategory) {
     const allRoles = Object.keys(this.roleHierarchy);
-    const healthcareRoles = [
-      'chief_medical_officer',
-      'doctor',
-      'nurse_practitioner',
-      'physician_assistant',
-      'nurse',
-      'medical_assistant',
-      'receptionist',
-      'billing_staff',
-      'medical_records_staff',
-      'patient'
-    ];
-
-    return allRoles.filter(role => !healthcareRoles.includes(role));
+    return allRoles;
   }
 }
 

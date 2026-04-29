@@ -2,9 +2,9 @@ const express = require('express');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { verifyWorkspaceAccess, requireWorkspaceRole } = require('../../../middleware/auth/workspaceIsolation');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const Deliverable = require('../../../models/Deliverable');
-const Task = require('../../../models/Task');
-const Approval = require('../../../models/Approval');
+const Deliverable = require('../../../models/project-delivery/Deliverable');
+const Task = require('../../../models/project-delivery/Task');
+const Approval = require('../../../models/core/Approval');
 const autoCalculationService = require('../../../services/nucleusAutoCalculationService');
 const { paramValidators, handleValidationErrors } = require('../../../validators/nucleusValidators');
 

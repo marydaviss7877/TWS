@@ -4,10 +4,10 @@
  * Pricing: $10/org flat rate, 7 days free trial
  */
 
-const Billing = require('../models/Billing');
-const Tenant = require('../models/Tenant');
-const SubscriptionPlan = require('../models/SubscriptionPlan');
-const Organization = require('../models/Organization');
+const Billing = require('../models/finance/Billing');
+const Tenant = require('../models/tenant/Tenant');
+const SubscriptionPlan = require('../models/finance/SubscriptionPlan');
+const Organization = require('../models/org/Organization');
 const billingConfig = require('../config/billingConfig');
 
 class BillingService {

@@ -60,12 +60,11 @@ app.get('/api/master-erp/stats/overview', (req, res) => {
     success: true,
     data: [
       {
-        _id: 'healthcare',
         activeTenants: 5,
         totalUsage: 120
       },
       {
-        _id: 'education',
+        _id: 'legacy',
         activeTenants: 3,
         totalUsage: 80
       },

@@ -154,7 +154,7 @@
 }
 
 /* Education Industry Tokens */
-.tenant-portal[data-industry="education"] {
+.tenant-portal[data-industry="legacy"] {
   --token-grade-a: #10B981;
   --token-grade-b: #3B82F6;
   --token-grade-c: #F59E0B;

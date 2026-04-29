@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const ProjectList = require('../../../models/List');
-const ProjectBoard = require('../../../models/Board');
-const Project = require('../../../models/Project');
-const ProjectMember = require('../../../models/ProjectMember');
-const Activity = require('../../../models/Activity');
+const ProjectList = require('../../../models/project-delivery/List');
+const ProjectBoard = require('../../../models/project-delivery/Board');
+const Project = require('../../../models/project-delivery/Project');
+const ProjectMember = require('../../../models/project-delivery/ProjectMember');
+const Activity = require('../../../models/analytics/Activity');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 router.use(verifyERPToken);
 

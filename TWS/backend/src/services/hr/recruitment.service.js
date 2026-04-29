@@ -12,8 +12,8 @@ class RecruitmentService {
     try {
       // For now, integrate with form management system
       // In production, use dedicated JobPosting model
-      const FormTemplate = require('../../models/FormTemplate');
-      const FormResponse = require('../../models/FormResponse');
+      const FormTemplate = require('../../models/documents/FormTemplate');
+      const FormResponse = require('../../models/documents/FormResponse');
       
       // Get job posting form templates
       const jobPostings = await FormTemplate.find({
@@ -58,7 +58,7 @@ class RecruitmentService {
    */
   async createJobPosting(orgId, jobData) {
     try {
-      const FormTemplate = require('../../models/FormTemplate');
+      const FormTemplate = require('../../models/documents/FormTemplate');
       
       // Create form template for job posting
       const jobPosting = new FormTemplate({
@@ -101,7 +101,7 @@ class RecruitmentService {
    */
   async getJobApplications(orgId, jobId) {
     try {
-      const FormResponse = require('../../models/FormResponse');
+      const FormResponse = require('../../models/documents/FormResponse');
       
       const applications = await FormResponse.find({
         formId: jobId,

@@ -6,11 +6,11 @@
  */
 
 const PROJECT_MANAGEMENT_PERMISSIONS = require('../../config/projectManagementPermissions');
-const ProjectAccess = require('../../models/ProjectAccess');
-const Approval = require('../../models/Approval');
-const ChangeRequest = require('../../models/ChangeRequest');
-const Deliverable = require('../../models/Deliverable');
-const Project = require('../../models/Project');
+const ProjectAccess = require('../../models/project-delivery/ProjectAccess');
+const Approval = require('../../models/core/Approval');
+const ChangeRequest = require('../../models/project-delivery/ChangeRequest');
+const Deliverable = require('../../models/project-delivery/Deliverable');
+const Project = require('../../models/project-delivery/Project');
 
 /**
  * Check if user has permission for project management action

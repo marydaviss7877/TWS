@@ -1,5 +1,5 @@
 const jwtService = require('./auth/jwt.service');
-const User = require('../../models/User');
+const User = require('../../models/users-auth/User');
 // Chat and Message models removed
 const metricsService = require('./metricsService');
 const websocketRateLimitService = require('./websocketRateLimitService');

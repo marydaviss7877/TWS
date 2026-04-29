@@ -1,4 +1,4 @@
-const MasterERP = require('../../../models/MasterERP');
+const MasterERP = require('../../../models/integrations/MasterERP');
 const { seedSoftwareHouseData } = require('./softwareHouseSeeder');
 const defaultSeeder = require('./defaultSeeder');
 

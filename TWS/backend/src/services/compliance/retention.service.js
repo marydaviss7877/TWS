@@ -1,7 +1,7 @@
 // Message and Chat models removed - messaging features have been removed
 // const Message = require('../../models/Message');
 // const Chat = require('../../models/Chat');
-const User = require('../../models/User');
+const User = require('../../models/users-auth/User');
 const auditService = require('./audit.service');
 const mongoose = require('mongoose');
 

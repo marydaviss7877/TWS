@@ -1,9 +1,7 @@
-const MasterERP = require('../models/MasterERP');
-const Education = require('../models/industry/Education');
-const Healthcare = require('../models/industry/Healthcare');
-const Tenant = require('../models/Tenant');
-const Organization = require('../models/Organization');
-const User = require('../models/User');
+const MasterERP = require('../models/integrations/MasterERP');
+const Tenant = require('../models/tenant/Tenant');
+const Organization = require('../models/org/Organization');
+const User = require('../models/users-auth/User');
 const mongoose = require('mongoose');
 
 class MasterERPService {
@@ -214,10 +212,6 @@ class MasterERPService {
         const validModules = [
           // Common modules
           'hr', 'finance', 'projects', 'operations', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles',
-          // Healthcare modules
-          'patients', 'doctors', 'appointments', 'medical_records', 'prescriptions', 'departments', 'billing',
-          // Education modules
-          'students', 'teachers', 'classes', 'grades', 'courses', 'academic_year', 'exams', 'admissions',
           // Software house modules
           'development_methodology', 'tech_stack', 'project_types', 'time_tracking', 'code_quality', 'client_portal'
         ];
@@ -791,12 +785,6 @@ class MasterERPService {
   async seedIndustrySpecificData(masterERP, tenant, organization, session) {
     try {
       switch (masterERP.industry) {
-        case 'education':
-          await this.seedEducationData(tenant, organization, session);
-          break;
-        case 'healthcare':
-          await this.seedHealthcareData(tenant, organization, session);
-          break;
         case 'software_house':
           // For software_house, seed default ERP data (projects, clients, vendors, etc.)
           // Import tenantProvisioningService (already instantiated)
@@ -810,83 +798,6 @@ class MasterERPService {
     } catch (error) {
       console.error('Error seeding industry-specific data:', error);
       throw error;
-    }
-  }
-  
-  /**
-   * Seed education-specific data
-   */
-  async seedEducationData(tenant, organization, session) {
-    // Create default academic year
-    const academicYear = new Education.AcademicYear({
-      orgId: organization._id,
-      tenantId: tenant.tenantId,
-      yearName: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
-      startDate: new Date(new Date().getFullYear(), 8, 1), // September 1
-      endDate: new Date(new Date().getFullYear() + 1, 5, 30), // June 30
-      terms: [
-        {
-          termName: 'Fall Semester',
-          startDate: new Date(new Date().getFullYear(), 8, 1),
-          endDate: new Date(new Date().getFullYear(), 11, 31),
-          isActive: true
-        },
-        {
-          termName: 'Spring Semester',
-          startDate: new Date(new Date().getFullYear() + 1, 0, 1),
-          endDate: new Date(new Date().getFullYear() + 1, 5, 30),
-          isActive: false
-        }
-      ],
-      isCurrent: true,
-      status: 'active'
-    });
-    
-      await academicYear.save(session ? { session } : {});
-    
-    // Create default courses
-    const defaultCourses = [
-      { name: 'Mathematics', code: 'MATH101', credits: 3 },
-      { name: 'English', code: 'ENG101', credits: 3 },
-      { name: 'Science', code: 'SCI101', credits: 4 },
-      { name: 'History', code: 'HIST101', credits: 3 }
-    ];
-    
-    for (const courseData of defaultCourses) {
-      const course = new Education.Course({
-        orgId: organization._id,
-        tenantId: tenant.tenantId,
-        ...courseData,
-        description: `Default ${courseData.name} course`,
-        duration: 'semester',
-        status: 'active'
-      });
-      
-      await course.save(session ? { session } : {});
-    }
-  }
-  
-  /**
-   * Seed healthcare-specific data
-   */
-  async seedHealthcareData(tenant, organization, session) {
-    // Create default departments
-    const defaultDepartments = [
-      { name: 'General Medicine', code: 'GM', description: 'General medical services' },
-      { name: 'Cardiology', code: 'CARD', description: 'Heart and cardiovascular services' },
-      { name: 'Pediatrics', code: 'PED', description: 'Children healthcare services' },
-      { name: 'Emergency', code: 'ER', description: 'Emergency medical services' }
-    ];
-    
-    for (const deptData of defaultDepartments) {
-      const department = new Healthcare.Department({
-        orgId: organization._id,
-        tenantId: tenant.tenantId,
-        ...deptData,
-        status: 'active'
-      });
-      
-      await department.save(session ? { session } : {});
     }
   }
   

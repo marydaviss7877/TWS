@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const EmailVerification = require('../../models/EmailVerification');
+const EmailVerification = require('../../models/users-auth/EmailVerification');
 const emailService = require('./email.service');
 const envConfig = require('../../config/environment');
 

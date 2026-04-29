@@ -34,7 +34,7 @@ const userSchema = new mongoose.Schema({
       'academic_coordinator', // Academic program coordinators
       'assistant_teacher',   // Teaching assistants
       'librarian',           // Library staff
-      'sports_coach',        // Physical education/sports
+      'sports_coach',        // Sports coaching
       'admin_staff'          // Administrative staff (non-teaching)
     ],
     default: 'employee'

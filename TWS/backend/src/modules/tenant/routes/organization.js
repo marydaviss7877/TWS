@@ -5,17 +5,17 @@ const path = require('path');
 const fs = require('fs').promises;
 // Use mergeParams: true to access :tenantSlug from parent route (/api/tenant/:tenantSlug/organization)
 const router = express.Router({ mergeParams: true });
-const Tenant = require('../../../models/Tenant');
-const Organization = require('../../../models/Organization');
-const DepartmentAccess = require('../../../models/DepartmentAccess');
-const User = require('../../../models/User');
-const Employee = require('../../../models/Employee');
-const LeaveRequest = require('../../../models/LeaveRequest');
-const { PayrollRecord, PayrollCycle } = require('../../../models/Payroll');
+const Tenant = require('../../../models/tenant/Tenant');
+const Organization = require('../../../models/org/Organization');
+const DepartmentAccess = require('../../../models/org/DepartmentAccess');
+const User = require('../../../models/users-auth/User');
+const Employee = require('../../../models/hr-payroll/Employee');
+const LeaveRequest = require('../../../models/hr-payroll/LeaveRequest');
+const { PayrollRecord, PayrollCycle } = require('../../../models/hr-payroll/Payroll');
 const { buildEmployeeTimeMap, buildPayrollTimeSnapshot } = require('../../../services/hr/payroll-time-sync.service');
-const OrgLeavePolicy = require('../../../models/OrgLeavePolicy');
-const TenantSettings = require('../../../models/TenantSettings');
-const TenantAuditLog = require('../../../models/TenantAuditLog');
+const OrgLeavePolicy = require('../../../models/org/OrgLeavePolicy');
+const TenantSettings = require('../../../models/tenant/TenantSettings');
+const TenantAuditLog = require('../../../models/tenant/TenantAuditLog');
 const bcrypt = require('bcryptjs');
 const { authenticateToken } = require('../../../middleware/auth/auth');
 const tenantOrgService = require('../../../services/tenant/tenant-org.service');
@@ -337,7 +337,7 @@ const verifyTenantOrgAccess = async (req, res, next) => {
     }
     
     // Case 2: Tenant users authenticated via main auth (org-based access)
-    // Check if user is an education user and their orgId matches the tenant's orgId
+    // Check if user is an org-bound user and their orgId matches the tenant's orgId
     // Regular user tokens have type: 'access' (not 'user'), so check for userId or id
     if (!hasAccess && decoded.type !== 'tenant_owner') {
       try {
@@ -384,12 +384,12 @@ const verifyTenantOrgAccess = async (req, res, next) => {
             }
           }
           
-          // Skip education user check if no userId and email lookup didn't grant access
+          // Skip org-bound user check if no userId and email lookup didn't grant access
           if (!hasAccess) {
             // Continue to next check
           }
         } else {
-          console.log('🔍 Checking education user access:', {
+          console.log('🔍 Checking org-bound user access:', {
             decodedType: decoded.type,
             decodedUserId: decoded.userId,
             decodedId: decoded.id,
@@ -406,7 +406,7 @@ const verifyTenantOrgAccess = async (req, res, next) => {
           
           // If orgId is not populated (still ObjectId), fetch it manually
           if (user && user.orgId && typeof user.orgId === 'string') {
-            const Organization = require('../../../models/Organization');
+            const Organization = require('../../../models/org/Organization');
             const org = await Organization.findById(user.orgId).select('slug name _id').lean();
             if (org) {
               user.orgId = org;
@@ -431,11 +431,11 @@ const verifyTenantOrgAccess = async (req, res, next) => {
             // Check if user has access to this tenant
             if (isOrgBasedUser) {
               // Method 1: Match by orgId slug (tenant slug usually matches org slug)
-              // This is the PRIMARY and MOST COMMON match for education users
+              // This is the PRIMARY and MOST COMMON match for org-bound users
               const orgSlugMatches = user.orgId?.slug === tenantSlug;
               
               // EARLY RETURN: If org slug matches tenant slug, grant access immediately
-              // This handles 99% of education user access cases
+              // This handles 99% of org-bound user access cases
               if (orgSlugMatches) {
                 hasAccess = true;
                 req.user = user;
@@ -465,7 +465,7 @@ const verifyTenantOrgAccess = async (req, res, next) => {
                 // Method 5: If tenant has a slug field, match it directly
                 const tenantSlugMatches = tenant.slug === tenantSlug;
               
-                // Method 6: If tenant slug matches org slug (common case for education)
+                // Method 6: If tenant slug matches org slug (common case for legacy)
                 const tenantSlugMatchesOrgSlug = tenant.slug === user.orgId?.slug;
               
                 // Method 7: Try to find tenant by organization - if org has a tenant with matching slug
@@ -489,12 +489,12 @@ const verifyTenantOrgAccess = async (req, res, next) => {
                 }
               
                 // Method 8: Most permissive - if tenant slug matches org slug, grant access
-                // This is the most common case for education: tenant slug = org slug
+                // This is the most common case for legacy: tenant slug = org slug
                 const tenantSlugEqualsOrgSlug = tenantSlug === user.orgId?.slug || tenant.slug === user.orgId?.slug;
               
                 // CRITICAL FIX: Add explicit check for tenant.organizationId or tenant.orgId matching user.orgId
-                // This is the most reliable match for education users
-                // Check both organizationId (set during education signup) and orgId (if exists)
+                // This is the most reliable match for org-bound users
+                // Check both organizationId (set during legacy signup) and orgId (if exists)
                 // MUST be declared BEFORE console.log to avoid "before initialization" error
                 const tenantOrgId = tenant.organizationId || tenant.orgId;
                 const tenantOrgIdMatches = tenantOrgId && 
@@ -600,7 +600,7 @@ const verifyTenantOrgAccess = async (req, res, next) => {
                     tenantOrgId: tenantOrgId?.toString()
                   });
                 } else {
-                  console.log('⚠️ User is not an education user or admin, and tenantId/orgId does not match:', {
+                  console.log('⚠️ User is not an org-bound user or admin, and tenantId/orgId does not match:', {
                     userRole: user.role,
                     userTenantId: userTenantId,
                     tenantSlug: tenantSlug,
@@ -615,7 +615,7 @@ const verifyTenantOrgAccess = async (req, res, next) => {
           }
         }
       } catch (userError) {
-        console.error('❌ Error checking education user access:', userError);
+        console.error('❌ Error checking org-bound user access:', userError);
         console.error('Error stack:', userError.stack);
       }
     }
@@ -675,10 +675,10 @@ router.get('/info', authenticateToken, async (req, res) => {
     
     // Get tenant info
     let tenant = await Tenant.findOne({ slug: tenantSlug })
-      .select('name slug erpCategory erpModules educationConfig status subscription.plan');
+      .select('name slug erpCategory erpModules status subscription.plan');
     if (!tenant && /^[0-9a-f]{24}$/i.test(tenantSlug)) {
       tenant = await Tenant.findById(tenantSlug)
-        .select('name slug erpCategory erpModules educationConfig status subscription.plan');
+        .select('name slug erpCategory erpModules status subscription.plan');
     }
     
     if (!tenant) {
@@ -696,7 +696,6 @@ router.get('/info', authenticateToken, async (req, res) => {
         slug: tenant.slug,
         erpCategory: tenant.erpCategory,
         erpModules: tenant.erpModules,
-        educationConfig: tenant.educationConfig || null,
         status: tenant.status,
         plan: tenant.subscription?.plan
       }
@@ -2316,8 +2315,8 @@ router.post('/hr/employees/invite', verifyERPToken, employeesWrite, async (req, 
     const { tenantId, orgId } = tenantContext;
     if (!tenantId) return res.status(400).json({ success: false, message: 'Tenant context required' });
 
-    const User = require('../../../models/User');
-    const TenantUser = require('../../../models/TenantUser');
+    const User = require('../../../models/users-auth/User');
+    const TenantUser = require('../../../models/tenant/TenantUser');
     const fullName = req.body.fullName || email.split('@')[0];
     const normalizedEmail = email.toLowerCase().trim();
 
@@ -2367,7 +2366,7 @@ router.post('/hr/employees/invite', verifyERPToken, employeesWrite, async (req, 
     const frontendUrl = envConfig.get('FRONTEND_URL') || process.env.FRONTEND_URL || '';
     const inviteLink = `${frontendUrl}/invite/accept?token=${tenantUser.invitation.invitationToken}`;
 
-    const Organization = require('../../../models/Organization');
+    const Organization = require('../../../models/org/Organization');
     const org = await Organization.findById(orgId).select('name').lean();
     const inviter = await User.findById(req.user?._id).select('fullName').lean();
 
@@ -2388,7 +2387,7 @@ router.post('/hr/employees/invite', verifyERPToken, employeesWrite, async (req, 
 router.get('/hr/employees/invite/accept', async (req, res) => {
   const { token } = req.query;
   if (!token) return res.status(400).json({ success: false, message: 'token required' });
-  const TenantUser = require('../../../models/TenantUser');
+  const TenantUser = require('../../../models/tenant/TenantUser');
   const tenantUser = await TenantUser.findOne({
     'invitation.invitationToken': token,
     'invitation.invitationExpires': { $gt: new Date() },
@@ -2404,8 +2403,8 @@ router.post('/hr/employees/invite/accept', async (req, res) => {
   if (!token || !password) return res.status(400).json({ success: false, message: 'token and password are required' });
   if (password.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
 
-  const TenantUser = require('../../../models/TenantUser');
-  const User = require('../../../models/User');
+  const TenantUser = require('../../../models/tenant/TenantUser');
+  const User = require('../../../models/users-auth/User');
   const tenantUser = await TenantUser.findOne({
     'invitation.invitationToken': token,
     'invitation.invitationExpires': { $gt: new Date() },
@@ -2728,7 +2727,7 @@ router.put('/hr/recruitment/jobs/:id', verifyERPToken, employeesWrite, async (re
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { id } = req.params;
-    const FormTemplate = require('../../../models/FormTemplate');
+    const FormTemplate = require('../../../models/documents/FormTemplate');
     const updatePayload = {};
     const { title, description, department, location, employmentType, experienceLevel, salaryRange, status, expiresAt, tags } = req.body || {};
     if (title !== undefined) updatePayload.title = String(title || '').trim();
@@ -2778,7 +2777,7 @@ router.delete('/hr/recruitment/jobs/:id', verifyERPToken, employeesWrite, async 
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { id } = req.params;
-    const FormTemplate = require('../../../models/FormTemplate');
+    const FormTemplate = require('../../../models/documents/FormTemplate');
     const deleted = await FormTemplate.findOneAndUpdate(
       { _id: id, orgId: tenantContext.orgId, category: 'job_posting', isActive: true },
       { $set: { isActive: false } },
@@ -2894,7 +2893,7 @@ router.get('/users/:id', verifyERPToken, async (req, res) => {
     const { id } = req.params;
     const user = await tenantOrgService.getUserById(tenantContext, id);
     const userObj = user?.toObject ? user.toObject() : { ...user };
-    const TenantUser = require('../../../models/TenantUser');
+    const TenantUser = require('../../../models/tenant/TenantUser');
     const tenantUser = await TenantUser.findOne({ userId: id, tenantId })
       .select('roles hrSubRole financeSubRole status metadata.customFields.permissionOverrides')
       .lean();
@@ -2967,7 +2966,7 @@ router.put('/users/:id', verifyERPToken, async (req, res) => {
       });
     }
 
-    const TenantUser = require('../../../models/TenantUser');
+    const TenantUser = require('../../../models/tenant/TenantUser');
     const { invalidateResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
     const tenantUser = await TenantUser.findOne({ userId: id, tenantId });
 
@@ -3677,7 +3676,7 @@ router.get('/me/permissions', verifyERPToken, async (req, res) => {
     });
     const { buildModuleAccessFromResolved } = require('../../../services/tenant/permissionProjection.service');
     const modules = buildModuleAccessFromResolved(resolved);
-    const ProjectMember = require('../../../models/ProjectMember');
+    const ProjectMember = require('../../../models/project-delivery/ProjectMember');
     const memberships = await ProjectMember.find({ userId, status: 'active' }).select('projectId').lean();
     const projectIds = memberships.map(m => m.projectId?.toString?.()).filter(Boolean);
     res.json({

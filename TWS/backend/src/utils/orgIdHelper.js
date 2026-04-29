@@ -15,9 +15,9 @@
  * with proper fallback chain and error handling.
  */
 
-const Organization = require('../models/Organization');
-const Tenant = require('../models/Tenant');
-const User = require('../models/User');
+const Organization = require('../models/org/Organization');
+const Tenant = require('../models/tenant/Tenant');
+const User = require('../models/users-auth/User');
 
 /**
  * Get Organization ID from request context
@@ -94,7 +94,7 @@ async function getOrgId(req, options = {}) {
   const tenantSlug = req.params?.tenantSlug;
   if (tenantSlug && typeof tenantSlug === 'string' && /^[a-zA-Z0-9_-]+$/.test(tenantSlug)) {
     try {
-      const Tenant = require('../models/Tenant');
+      const Tenant = require('../models/tenant/Tenant');
       const tenant = await Tenant.findOne({ slug: tenantSlug })
         .select('organizationId orgId slug')
         .lean();

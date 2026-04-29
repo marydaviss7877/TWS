@@ -1,4 +1,4 @@
-const { Bill, Vendor, JournalEntry, ChartOfAccounts } = require('../../models/Finance');
+const { Bill, Vendor, JournalEntry, ChartOfAccounts } = require('../../models/finance/Finance');
 
 class AccountsPayableService {
   /**

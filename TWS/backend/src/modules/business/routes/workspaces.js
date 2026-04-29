@@ -5,8 +5,8 @@ const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
-const Workspace = require('../../../models/Workspace');
-const User = require('../../../models/User');
+const Workspace = require('../../../models/org/Workspace');
+const User = require('../../../models/users-auth/User');
 
 const router = express.Router();
 

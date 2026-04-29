@@ -50,8 +50,6 @@ app.get('/api/master-erp', testAuth, async (req, res) => {
 app.get('/api/master-erp/meta/industries', testAuth, (req, res) => {
   const industries = [
     { value: 'software_house', label: 'Software House', icon: 'CogIcon' },
-    { value: 'education', label: 'Education', icon: 'AcademicCapIcon' },
-    { value: 'healthcare', label: 'Healthcare', icon: 'HeartIcon' },
     { value: 'finance', label: 'Finance', icon: 'BanknotesIcon' }
   ];
   
@@ -79,8 +77,6 @@ app.get('/api/master-erp/stats/overview', testAuth, async (req, res) => {
         totalTenants,
         industries: [
           { industry: 'software_house', count: await MasterERP.countDocuments({ industry: 'software_house' }) },
-          { industry: 'education', count: await MasterERP.countDocuments({ industry: 'education' }) },
-          { industry: 'healthcare', count: await MasterERP.countDocuments({ industry: 'healthcare' }) },
         ]
       },
       message: 'Statistics fetched successfully'

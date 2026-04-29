@@ -345,7 +345,6 @@ async function seed() {
       name: 'HealthBridge Systems',
       type: 'company',
       contact: { primary: { name: 'Dr. Michael Nguyen', email: 'm.nguyen@healthbridge.com', phone: '+1-310-555-0182', title: 'CIO' } },
-      company: { name: 'HealthBridge Systems', website: 'https://healthbridge.com', industry: 'Healthcare IT', size: '500+' },
       address: { city: 'Los Angeles', state: 'CA', country: 'US' },
       billing: { currency: 'USD', paymentTerms: 'net_30', taxRate: 9.5 },
       status: 'active',
@@ -432,7 +431,7 @@ async function seed() {
       budget: { total: 1800000, spent: 900000, currency: 'PKR' },
       startDate: daysAgo(90),
       endDate: daysFromNow(90),
-      description: 'HIPAA-compliant patient portal with appointment scheduling, telemedicine, electronic health records and prescription management.',
+      description: 'compliance-ready patient portal with appointment scheduling, telemedicine, electronic health records and prescription management.',
       priority: 'high',
       dept: 'ENG',
       pm: 'NCT-015',
@@ -576,7 +575,7 @@ async function seed() {
     { title: 'Production Go-Live',           projectIdx: 0, status: 'in_progress', dueDate: daysFromNow(30), progress: 65, owner: 'NCT-015' },
     { title: 'Regulatory Compliance Review', projectIdx: 1, status: 'in_progress', dueDate: daysFromNow(45), progress: 40, owner: 'NCT-015' },
     { title: 'Security Penetration Test',    projectIdx: 1, status: 'pending',    dueDate: daysFromNow(60), progress: 0, owner: 'NCT-015' },
-    { title: 'HIPAA Compliance Certification',projectIdx: 2, status: 'in_progress', dueDate: daysFromNow(30), progress: 55, owner: 'NCT-015' },
+    { title: 'Compliance Certification',projectIdx: 2, status: 'in_progress', dueDate: daysFromNow(30), progress: 55, owner: 'NCT-015' },
     { title: 'Phase 1: Course Builder Live', projectIdx: 3, status: 'in_progress', dueDate: daysFromNow(21), progress: 70, owner: 'NCT-015' },
     { title: 'Project Delivery',             projectIdx: 4, status: 'completed', dueDate: daysAgo(30), completedDate: daysAgo(30), progress: 100, owner: 'NCT-015' },
   ];
@@ -628,7 +627,7 @@ async function seed() {
       { title: 'Telemedicine video integration',   status: 'in_progress',priority: 'critical', assignee: 'NCT-001', storyPoints: 13, hours: 18 },
       { title: 'Electronic health records module', status: 'in_progress',priority: 'high',     assignee: 'NCT-003', storyPoints: 8, hours: 14 },
       { title: 'HL7 FHIR data export',             status: 'todo',       priority: 'high',     assignee: 'NCT-003', storyPoints: 8, hours: 10 },
-      { title: 'HIPAA audit log implementation',   status: 'todo',       priority: 'critical', assignee: 'NCT-014', storyPoints: 5, hours: 8  },
+      { title: 'compliance audit log implementation',   status: 'todo',       priority: 'critical', assignee: 'NCT-014', storyPoints: 5, hours: 8  },
     ]},
     // EduLearn (project 3)
     { projectIdx: 3, sprintIdx: -1, tasks: [
@@ -865,13 +864,13 @@ async function seed() {
     { title: 'Team lunch – sprint retrospective',      amount: 8500,  category: 'food',           paymentMethod: 'cash',          userId: 'NCT-015', daysBack: 3  },
     { title: 'Uber – client meeting at Liberty Market', amount: 2200,  category: 'transportation',  paymentMethod: 'digital_wallet', userId: 'NCT-013', daysBack: 5  },
     { title: 'Adobe Creative Cloud – monthly',         amount: 12000, category: 'business',        paymentMethod: 'credit',         userId: 'NCT-009', daysBack: 7  },
-    { title: 'Conference tickets – DevFest Lahore',    amount: 45000, category: 'education',       paymentMethod: 'bank_transfer',  userId: 'NCT-001', daysBack: 10 },
+    { title: 'Conference tickets – DevFest Lahore',    amount: 45000, category: 'business',       paymentMethod: 'bank_transfer',  userId: 'NCT-001', daysBack: 10 },
     { title: 'Office stationery & supplies',           amount: 6500,  category: 'business',        paymentMethod: 'cash',           userId: 'NCT-005', daysBack: 12 },
     { title: 'Domain renewal – nexacore.io (3 yrs)',   amount: 9800,  category: 'business',        paymentMethod: 'credit',         userId: 'NCT-014', daysBack: 15 },
     { title: 'Flight – Islamabad client visit',        amount: 28000, category: 'travel',          paymentMethod: 'credit',         userId: 'NCT-013', daysBack: 18 },
     { title: 'Electricity bill – June',                amount: 22000, category: 'utilities',       paymentMethod: 'bank_transfer',  userId: 'NCT-007', daysBack: 20 },
     { title: 'Internet – PTCL Fiber (monthly)',        amount: 8000,  category: 'utilities',       paymentMethod: 'bank_transfer',  userId: 'NCT-007', daysBack: 25 },
-    { title: 'Employee medical reimbursement – Usman', amount: 15000, category: 'healthcare',      paymentMethod: 'bank_transfer',  userId: 'NCT-003', daysBack: 28 },
+    { title: 'Employee reimbursement – Usman', amount: 15000, category: 'other',      paymentMethod: 'bank_transfer',  userId: 'NCT-003', daysBack: 28 },
     { title: 'Postman Teams subscription',             amount: 7200,  category: 'business',        paymentMethod: 'credit',         userId: 'NCT-014', daysBack: 30 },
     { title: 'Dinner – FinTech client onboarding',     amount: 18000, category: 'food',            paymentMethod: 'credit',         userId: 'NCT-013', daysBack: 35 },
   ];
@@ -996,7 +995,7 @@ async function seed() {
     // Client Contracts
     { title: 'RetailEdge – Service Agreement 2025',  folderIdx: 1, type: 'created', status: 'approved',   creator: 'NCT-013', tags: ['contract', 'client'] },
     { title: 'FinTech Solutions – NDA & MSA',        folderIdx: 1, type: 'created', status: 'approved',   creator: 'NCT-013', tags: ['nda', 'contract'] },
-    { title: 'HealthBridge – HIPAA BAA Agreement',   folderIdx: 1, type: 'created', status: 'approved',   creator: 'NCT-013', tags: ['contract', 'compliance'] },
+    { title: 'HealthBridge – Compliance Agreement',   folderIdx: 1, type: 'created', status: 'approved',   creator: 'NCT-013', tags: ['contract', 'compliance'] },
     { title: 'EduLearn – Project Scope of Work',     folderIdx: 1, type: 'created', status: 'in_review',  creator: 'NCT-013', tags: ['scope', 'contract'] },
     // Project Documentation
     { title: 'RetailEdge – System Requirements Specification', folderIdx: 2, type: 'created', status: 'approved', creator: 'NCT-015', tags: ['srs', 'technical'] },

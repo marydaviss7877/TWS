@@ -18,13 +18,13 @@ const {
 } = require('../../../middleware/auth/platformRBAC');
 
 // Import models
-const TWSAdmin = require('../../../models/TWSAdmin');
-const Tenant = require('../../../models/Tenant');
-const User = require('../../../models/User');
-const Organization = require('../../../models/Organization');
-const Billing = require('../../../models/Billing');
-const MasterERP = require('../../../models/MasterERP');
-const Department = require('../../../models/Department');
+const TWSAdmin = require('../../../models/admin-platform/TWSAdmin');
+const Tenant = require('../../../models/tenant/Tenant');
+const User = require('../../../models/users-auth/User');
+const Organization = require('../../../models/org/Organization');
+const Billing = require('../../../models/finance/Billing');
+const MasterERP = require('../../../models/integrations/MasterERP');
+const Department = require('../../../models/org/Department');
 const bcrypt = require('bcryptjs');
 
 // Import services
@@ -1953,8 +1953,6 @@ router.get('/infrastructure/apis', requirePlatformPermission(PLATFORM_PERMISSION
       { name: 'User Management API', endpoint: '/api/users', description: 'User CRUD operations and profile management' },
       { name: 'Tenant Management API', endpoint: '/api/tenant', description: 'Tenant and organization management' },
       { name: 'Supra Admin API', endpoint: '/api/supra-admin', description: 'Supra admin panel endpoints' },
-      { name: 'Education API', endpoint: '/api/tenant/:tenantSlug/org/:orgSlug/education', description: 'Education ERP endpoints' },
-      { name: 'Healthcare API', endpoint: '/api/tenant/:tenantSlug/org/:orgSlug/healthcare', description: 'Healthcare ERP endpoints' },
       { name: 'Projects API', endpoint: '/api/projects', description: 'Project management endpoints' },
       { name: 'HR API', endpoint: '/api/employees', description: 'Employee and HR management' },
       { name: 'Attendance API', endpoint: '/api/attendance', description: 'Attendance tracking endpoints' },
@@ -2988,7 +2986,7 @@ if (process.env.NODE_ENV === 'development') {
 // ==================== PLATFORM ADMIN ACCESS CONTROL ====================
 
 const platformAdminAccessService = require('../../../services/tenant/platform-admin-access.service');
-const PlatformAdminApproval = require('../../../models/PlatformAdminApproval');
+const PlatformAdminApproval = require('../../../models/admin-platform/PlatformAdminApproval');
 
 // Request approval for tenant access
 router.post('/access/request-approval', requirePlatformPermission(PLATFORM_PERMISSIONS.TENANTS.READ), async (req, res) => {
@@ -3323,7 +3321,7 @@ router.post('/master-erp',
   requirePlatformPermission(PLATFORM_PERMISSIONS.TEMPLATES.CREATE),
   [
     body('name').notEmpty().withMessage('Name is required'),
-    body('industry').isIn(['software_house', 'education', 'healthcare', 'finance']).withMessage('Invalid industry'),
+    body('industry').isIn(['software_house', 'finance']).withMessage('Invalid industry'),
     body('description').optional().isString()
   ],
   async (req, res) => {

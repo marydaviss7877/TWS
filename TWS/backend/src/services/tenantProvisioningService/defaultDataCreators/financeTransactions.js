@@ -1,5 +1,5 @@
-const { Transaction, ChartOfAccounts } = require('../../../models/Finance');
-const User = require('../../../models/User');
+const { Transaction, ChartOfAccounts } = require('../../../models/finance/Finance');
+const User = require('../../../models/users-auth/User');
 
 /**
  * Create sample finance transactions

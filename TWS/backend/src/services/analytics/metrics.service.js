@@ -1,6 +1,6 @@
 const client = require('prom-client');
 // Chat and Message models removed
-const User = require('../../models/User');
+const User = require('../../models/users-auth/User');
 const mongoose = require('mongoose');
 
 /**

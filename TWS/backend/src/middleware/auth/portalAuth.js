@@ -1,5 +1,5 @@
-const PortalUser = require('../../models/PortalUser');
-const Workspace = require('../../models/Workspace');
+const PortalUser = require('../../models/users-auth/PortalUser');
+const Workspace = require('../../models/org/Workspace');
 
 /**
  * Middleware to check if user has access to a specific workspace
@@ -95,7 +95,7 @@ const checkWorkspacePermission = (permission) => {
 const checkCardAccess = async (req, res, next) => {
   try {
     const { cardId } = req.params;
-    const Card = require('../../models/Card');
+    const Card = require('../../models/industry/Card');
 
     const card = await Card.findById(cardId);
     if (!card) {

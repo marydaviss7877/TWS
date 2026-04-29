@@ -3,24 +3,24 @@
  * Handles all project management operations for tenant organizations
  */
 
-const Project = require('../../models/Project');
-const Task = require('../../models/Task');
-const Organization = require('../../models/Organization');
-const Client = require('../../models/Client');
-const Milestone = require('../../models/Milestone');
-const Resource = require('../../models/Resource');
-const Sprint = require('../../models/Sprint');
-const { TimeEntry } = require('../../models/Finance');
-const User = require('../../models/User');
-const TaskDependency = require('../../models/TaskDependency');
-const ProjectTimeline = require('../../models/ProjectTimeline');
-const GanttSettings = require('../../models/GanttSettings');
+const Project = require('../../models/project-delivery/Project');
+const Task = require('../../models/project-delivery/Task');
+const Organization = require('../../models/org/Organization');
+const Client = require('../../models/industry/Client');
+const Milestone = require('../../models/project-delivery/Milestone');
+const Resource = require('../../models/core/Resource');
+const Sprint = require('../../models/project-delivery/Sprint');
+const { TimeEntry } = require('../../models/finance/Finance');
+const User = require('../../models/users-auth/User');
+const TaskDependency = require('../../models/project-delivery/TaskDependency');
+const ProjectTimeline = require('../../models/project-delivery/ProjectTimeline');
+const GanttSettings = require('../../models/project-delivery/GanttSettings');
 const ganttChartService = require('../../services/ganttChartService');
 const projectIntegrationService = require('../../services/integrations/project-integration.service');
 const { getUserDepartmentIds, shouldFilterByDepartment } = require('../../services/tenant/userDepartmentsService');
 const { getProjectMetricsForRequest } = require('../../services/tenant/project-organization-metrics.service');
 const { getViewConfigForUserDepartments, applyViewConfigToProject, buildDefaultProjectDepartmentConfigs, normalizeProjectDepartmentConfigs } = require('../../utils/projectDepartmentView');
-const ProjectMember = require('../../models/ProjectMember');
+const ProjectMember = require('../../models/project-delivery/ProjectMember');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 const path = require('path');
@@ -1088,7 +1088,7 @@ exports.createTask = async (req, res) => {
     // Default sprint: active sprint for this project, else latest planning (so board tasks roll up to sprint metrics)
     let effectiveSprintId = sprintId;
     if (!effectiveSprintId) {
-      const Sprint = require('../../models/Sprint');
+      const Sprint = require('../../models/project-delivery/Sprint');
       const activeSp = await Sprint.findOne({ orgId, projectId: projectIdObj, status: 'active' })
         .select('_id')
         .lean();
@@ -1123,7 +1123,7 @@ exports.createTask = async (req, res) => {
       // Last resort: any department in the org, or auto-create a "General" one
       if (!departmentId) {
         try {
-          const Department = require('../../models/Department');
+          const Department = require('../../models/org/Department');
           let dept = await Department.findOne({ orgId }).select('_id').lean();
           if (!dept) {
             // No departments exist — create a default "General" department so tasks can proceed
@@ -1198,12 +1198,12 @@ exports.createTask = async (req, res) => {
         }
       }
       if (!tenantIdForTask && org?.slug) {
-        const Tenant = require('../../models/Tenant');
+        const Tenant = require('../../models/tenant/Tenant');
         const t = await Tenant.findOne({ slug: org.slug }).select('_id').lean();
         if (t) tenantIdForTask = t._id;
       }
       if (!tenantIdForTask) {
-        const Tenant = require('../../models/Tenant');
+        const Tenant = require('../../models/tenant/Tenant');
         const t = await Tenant.findOne({ organizationId: orgId }).select('_id').lean();
         if (t) tenantIdForTask = t._id;
       }
@@ -1374,7 +1374,7 @@ exports.updateTask = async (req, res) => {
 
     // Legacy board tasks: attach default sprint so metrics roll up (only when client did not send sprintId)
     if (raw.sprintId === undefined && !existingTask.sprintId) {
-      const Sprint = require('../../models/Sprint');
+      const Sprint = require('../../models/project-delivery/Sprint');
       const pid = updates.projectId || existingTask.projectId;
       let attach = await Sprint.findOne({ orgId, projectId: pid, status: 'active' }).select('_id').lean();
       if (!attach) {

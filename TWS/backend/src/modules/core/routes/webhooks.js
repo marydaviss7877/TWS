@@ -3,8 +3,8 @@ const { body, query, param } = require('express-validator');
 const { authenticateToken } = require('../../../middleware/auth/auth');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
-const Webhook = require('../../../models/Webhook');
-const Workspace = require('../../../models/Workspace');
+const Webhook = require('../../../models/integrations/Webhook');
+const Workspace = require('../../../models/org/Workspace');
 // Chat and Message models removed - messaging features have been removed
 // const Chat = require('../../../models/Chat');
 // const Message = require('../../../models/Message');

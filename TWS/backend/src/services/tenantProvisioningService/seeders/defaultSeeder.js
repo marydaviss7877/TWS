@@ -1,4 +1,4 @@
-const Tenant = require('../../../models/Tenant');
+const Tenant = require('../../../models/tenant/Tenant');
 
 // Import default data creators
 const { createDefaultAttendancePolicy } = require('../defaultDataCreators/attendancePolicy');

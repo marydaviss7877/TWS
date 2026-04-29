@@ -3,8 +3,8 @@
  * All methods are no-ops that return graceful responses.
  * Notifications are still saved to NotificationQueue for future use.
  */
-const NotificationQueue    = require('../../models/NotificationQueue');
-const NotificationPreference = require('../../models/NotificationPreference');
+const NotificationQueue    = require('../../models/notifications/NotificationQueue');
+const NotificationPreference = require('../../models/notifications/NotificationPreference');
 
 class PushNotificationService {
   constructor() {

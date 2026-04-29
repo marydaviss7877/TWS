@@ -1,4 +1,4 @@
-const CodeQuality = require('../../models/CodeQuality');
+const CodeQuality = require('../../models/analytics/CodeQuality');
 
 class CodeQualityService {
   /**

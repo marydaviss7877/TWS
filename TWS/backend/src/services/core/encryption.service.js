@@ -1,10 +1,9 @@
 /**
- * Encryption Service for PHI (Protected Health Information)
- * Provides field-level encryption for HIPAA compliance
+ * Encryption Service
+ * Provides field-level encryption when enabled
  */
 
 const crypto = require('crypto');
-const securityConfig = require('../../config/security');
 
 class EncryptionService {
   constructor() {
@@ -20,11 +19,11 @@ class EncryptionService {
    * Get encryption key from environment or config
    */
   getEncryptionKey() {
-    const key = process.env.ENCRYPTION_KEY;
+    const key = process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_MASTER_KEY;
 
     if (!key) {
       if (process.env.NODE_ENV === 'production') {
-        throw new Error('ENCRYPTION_KEY must be set');
+        throw new Error('ENCRYPTION_KEY or ENCRYPTION_MASTER_KEY must be set');
       }
       // Allow development to boot without a configured encryption key.
       console.warn('⚠️ ENCRYPTION_KEY missing; using non-persistent development fallback key');
@@ -102,11 +101,11 @@ class EncryptionService {
   }
 
   /**
-   * Encrypt a field value (checks HIPAA compliance mode)
+   * Encrypt a field value when field encryption is enabled.
    */
   encryptField(value) {
-    if (!securityConfig.compliance.hipaa.enabled || !securityConfig.compliance.hipaa.requireFieldLevelEncryption) {
-      return value; // No encryption if HIPAA disabled
+    if (process.env.FIELD_LEVEL_ENCRYPTION !== 'true') {
+      return value;
     }
     
     if (typeof value === 'string' && value.length > 0) {
@@ -116,10 +115,10 @@ class EncryptionService {
   }
 
   /**
-   * Decrypt a field value (checks HIPAA compliance mode)
+   * Decrypt a field value when field encryption is enabled.
    */
   decryptField(value) {
-    if (!securityConfig.compliance.hipaa.enabled) {
+    if (process.env.FIELD_LEVEL_ENCRYPTION !== 'true') {
       return value;
     }
     
@@ -130,10 +129,10 @@ class EncryptionService {
   }
 
   /**
-   * Encrypt an object's PHI fields
+   * Encrypt selected fields on an object.
    */
   encryptPHIObject(obj, phiFields) {
-    if (!securityConfig.compliance.hipaa.enabled || !securityConfig.compliance.hipaa.requireFieldLevelEncryption) {
+    if (process.env.FIELD_LEVEL_ENCRYPTION !== 'true') {
       return obj;
     }
 
@@ -150,10 +149,10 @@ class EncryptionService {
   }
 
   /**
-   * Decrypt an object's PHI fields
+   * Decrypt selected fields on an object.
    */
   decryptPHIObject(obj, phiFields) {
-    if (!securityConfig.compliance.hipaa.enabled) {
+    if (process.env.FIELD_LEVEL_ENCRYPTION !== 'true') {
       return obj;
     }
 

@@ -8,7 +8,7 @@ const ValidationMiddleware = require('../../../middleware/validation/validation'
 const {
   IntegrationConfig,
   IntegrationLog
-} = require('../../../models/Integration');
+} = require('../../../models/integrations/Integration');
 // const PaymentGatewayService = require('../../../services/integrations/PaymentGatewayService'); // Service not yet implemented
 
 const router = express.Router();

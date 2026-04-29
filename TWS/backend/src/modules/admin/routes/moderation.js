@@ -4,9 +4,9 @@ const { authenticateToken, requireRole } = require('../../../middleware/auth/aut
 // Messaging models removed - messaging feature disabled
 // const Message = require('../../../models/Message');
 // const Chat = require('../../../models/Chat');
-const User = require('../../../models/User');
-const AuditLog = require('../../../models/AuditLog');
-const UserBan = require('../../../models/UserBan');
+const User = require('../../../models/users-auth/User');
+const AuditLog = require('../../../models/core/AuditLog');
+const UserBan = require('../../../models/users-auth/UserBan');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 
 // ===== MESSAGE MODERATION ROUTES =====

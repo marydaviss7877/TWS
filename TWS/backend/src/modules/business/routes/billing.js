@@ -7,7 +7,7 @@ const router = express.Router();
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const { getTenantSubscriptionInfo } = require('../../../middleware/common/featureGate');
-const Organization = require('../../../models/Organization');
+const Organization = require('../../../models/org/Organization');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const billingRead = requireErpAccess({ module: 'finance', action: ['read', 'read_own'], checkRevocation: true });
 

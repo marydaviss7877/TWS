@@ -21,15 +21,15 @@ const ErrorHandler = require('../../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../../middleware/validation/validation');
 
 // Models
-const TWSAdmin = require('../../../../models/TWSAdmin');
-const Tenant = require('../../../../models/Tenant');
-const User = require('../../../../models/User');
-const Organization = require('../../../../models/Organization');
-const Billing = require('../../../../models/Billing');
-const MasterERP = require('../../../../models/MasterERP');
-const Department = require('../../../../models/Department');
-const PlatformAdminApproval = require('../../../../models/PlatformAdminApproval');
-const PortalUser = require('../../../../models/PortalUser');
+const TWSAdmin = require('../../../../models/admin-platform/TWSAdmin');
+const Tenant = require('../../../../models/tenant/Tenant');
+const User = require('../../../../models/users-auth/User');
+const Organization = require('../../../../models/org/Organization');
+const Billing = require('../../../../models/finance/Billing');
+const MasterERP = require('../../../../models/integrations/MasterERP');
+const Department = require('../../../../models/org/Department');
+const PlatformAdminApproval = require('../../../../models/admin-platform/PlatformAdminApproval');
+const PortalUser = require('../../../../models/users-auth/PortalUser');
 
 // Services
 const tenantService = require('../../../../services/tenant/tenant.service');

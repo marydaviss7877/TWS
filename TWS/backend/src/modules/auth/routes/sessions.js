@@ -4,12 +4,12 @@ const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { body, validationResult } = require('express-validator');
 
 // Import models
-const Session = require('../../../models/Session');
-const DepartmentAccess = require('../../../models/DepartmentAccess');
-const Department = require('../../../models/Department');
-const Tenant = require('../../../models/Tenant');
-const User = require('../../../models/User');
-const SupraAdmin = require('../../../models/SupraAdmin');
+const Session = require('../../../models/core/Session');
+const DepartmentAccess = require('../../../models/org/DepartmentAccess');
+const Department = require('../../../models/org/Department');
+const Tenant = require('../../../models/tenant/Tenant');
+const User = require('../../../models/users-auth/User');
+const SupraAdmin = require('../../../models/admin-platform/SupraAdmin');
 
 // Import RBAC middleware for consistent authorization
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');

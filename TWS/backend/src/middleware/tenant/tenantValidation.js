@@ -1,5 +1,5 @@
-const Tenant = require('../../models/Tenant');
-const Organization = require('../../models/Organization');
+const Tenant = require('../../models/tenant/Tenant');
+const Organization = require('../../models/org/Organization');
 
 /**
  * Tenant Validation Middleware for Education Routes
@@ -38,7 +38,7 @@ const validateTenantAccess = async (req, res, next) => {
     
     // Verify user belongs to tenant (if user is authenticated)
     if (req.user) {
-      const User = require('../../models/User');
+      const User = require('../../models/users-auth/User');
       const WorkspaceMember = require('../../models/WorkspaceMember');
       
       // Get tenant orgId for comparison
@@ -96,7 +96,7 @@ const validateTenantAccess = async (req, res, next) => {
         // Check 3: Tenant slug match (for backward compatibility)
         const tenantSlugMatch = userTenantId === tenantSlug || userTenantId === tenant.slug;
         
-        // Check 4: Organization match (most reliable for education users)
+        // Check 4: Organization match (most reliable for org-bound users)
         const orgMatch = userOrgId && tenantOrgId && userOrgId.toString() === tenantOrgId.toString();
         
         // Check 5: Workspace membership

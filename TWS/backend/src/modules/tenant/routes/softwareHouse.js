@@ -4,17 +4,17 @@ const mongoose = require('mongoose');
 const router = express.Router({ mergeParams: true });
 const { requireRole } = require('../../../middleware/auth/rbac');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const Tenant = require('../../../models/Tenant');
-const SoftwareHouseRole = require('../../../models/SoftwareHouseRole');
-const Project = require('../../../models/Project');
-const Card = require('../../../models/Card');
-const Sprint = require('../../../models/Sprint');
-const DevelopmentMetrics = require('../../../models/DevelopmentMetrics');
-const { TimeEntry, Transaction, Invoice, Bill, ProjectCosting, ChartOfAccounts, CashFlowForecast, Vendor } = require('../../../models/Finance');
-const Expense = require('../../../models/Expense');
-const Client = require('../../../models/Client');
-const Workspace = require('../../../models/Workspace');
-const ProjectMember = require('../../../models/ProjectMember');
+const Tenant = require('../../../models/tenant/Tenant');
+const SoftwareHouseRole = require('../../../models/admin-platform/SoftwareHouseRole');
+const Project = require('../../../models/project-delivery/Project');
+const Card = require('../../../models/industry/Card');
+const Sprint = require('../../../models/project-delivery/Sprint');
+const DevelopmentMetrics = require('../../../models/analytics/DevelopmentMetrics');
+const { TimeEntry, Transaction, Invoice, Bill, ProjectCosting, ChartOfAccounts, CashFlowForecast, Vendor } = require('../../../models/finance/Finance');
+const Expense = require('../../../models/finance/Expense');
+const Client = require('../../../models/industry/Client');
+const Workspace = require('../../../models/org/Workspace');
+const ProjectMember = require('../../../models/project-delivery/ProjectMember');
 const tenantOrgService = require('../../../services/tenant/tenant-org.service');
 const timeTrackingService = require('../../../services/softwareHouse/time-tracking.service');
 const { getProjectMetricsForRequest } = require('../../../services/tenant/project-organization-metrics.service');
@@ -975,7 +975,7 @@ router.get('/employee-portal/workspaces', unifiedSoftwareHouseAuth, requireRole(
 
     // If personal workspace doesn't exist, create it
     if (!personalWorkspace) {
-      const user = await require('../../../models/User').findById(userId).select('fullName email');
+      const user = await require('../../../models/users-auth/User').findById(userId).select('fullName email');
       const userName = user?.fullName || 'Employee';
       
       // Generate unique slug
@@ -1101,7 +1101,7 @@ router.post('/employee-portal/workspaces/personal', unifiedSoftwareHouseAuth, ch
     }
 
     // Create personal workspace
-    const User = require('../../../models/User');
+    const User = require('../../../models/users-auth/User');
     const user = await User.findById(userId).select('fullName email');
     const userName = user?.fullName || 'Employee';
     

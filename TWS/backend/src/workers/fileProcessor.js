@@ -4,7 +4,7 @@ const sharp = require('sharp');
 const ffmpeg = require('fluent-ffmpeg');
 const { spawn } = require('child_process');
 const fileService = require('../services/file.service');
-const File = require('../models/File');
+const File = require('../models/documents/File');
 
 class FileProcessor {
   constructor() {

@@ -1,5 +1,5 @@
-const Deliverable = require('../models/Deliverable');
-const Task = require('../models/Task');
+const Deliverable = require('../models/project-delivery/Deliverable');
+const Task = require('../models/project-delivery/Task');
 const { calculateDeliverableProgress, isDeliverableAtRisk } = require('../utils/nucleusHelpers');
 
 /**

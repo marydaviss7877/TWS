@@ -3,8 +3,8 @@ const router = express.Router();
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const ProjectClient = require('../../../models/Client');
-const Project = require('../../../models/Project');
+const ProjectClient = require('../../../models/industry/Client');
+const Project = require('../../../models/project-delivery/Project');
 
 const clientsRead = requireErpAccess({ module: 'clients', action: ['read', 'read_own'], checkRevocation: false });
 const clientsWrite = requireErpAccess({ module: 'clients', action: 'write', checkRevocation: false });

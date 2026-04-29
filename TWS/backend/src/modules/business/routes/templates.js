@@ -2,11 +2,11 @@ const express = require('express');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const ProjectTemplate = require('../../../models/ProjectTemplate');
-const Project = require('../../../models/Project');
-const ProjectBoard = require('../../../models/Board');
-const ProjectList = require('../../../models/List');
-const Card = require('../../../models/Card');
+const ProjectTemplate = require('../../../models/project-delivery/ProjectTemplate');
+const Project = require('../../../models/project-delivery/Project');
+const ProjectBoard = require('../../../models/project-delivery/Board');
+const ProjectList = require('../../../models/project-delivery/List');
+const Card = require('../../../models/industry/Card');
 
 const router = express.Router();
 const templatesRead = requireErpAccess({ module: 'projects', action: ['read', 'read_own'], checkRevocation: false });

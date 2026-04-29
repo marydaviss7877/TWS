@@ -1,4 +1,4 @@
-// TLS Verification Middleware for HIPAA Compliance
+// TLS Verification Middleware
 // This middleware ensures TLS/HTTPS is used in production environments
 
 /**

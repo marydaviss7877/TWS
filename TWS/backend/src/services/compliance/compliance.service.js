@@ -1,7 +1,7 @@
-const { AIPayrollConfig } = require('../../models/AIPayroll');
-const Employee = require('../../models/Employee');
-const Attendance = require('../../models/Attendance');
-const { PayrollRecord } = require('../../models/Payroll');
+const { AIPayrollConfig } = require('../../models/hr-payroll/AIPayroll');
+const Employee = require('../../models/hr-payroll/Employee');
+const Attendance = require('../../models/hr-payroll/Attendance');
+const { PayrollRecord } = require('../../models/hr-payroll/Payroll');
 
 class ComplianceService {
   constructor() {

@@ -2,11 +2,11 @@ const express = require('express');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const Project = require('../../../models/Project');
-const Card = require('../../../models/Card');
-const ProjectClient = require('../../../models/Client');
-const Organization = require('../../../models/Organization');
-const { TimeEntry, Invoice } = require('../../../models/Finance');
+const Project = require('../../../models/project-delivery/Project');
+const Card = require('../../../models/industry/Card');
+const ProjectClient = require('../../../models/industry/Client');
+const Organization = require('../../../models/org/Organization');
+const { TimeEntry, Invoice } = require('../../../models/finance/Finance');
 
 const router = express.Router();
 const clientPortalAccess = requireErpAccess({ allowedRoles: ['client', 'customer'], checkRevocation: true });

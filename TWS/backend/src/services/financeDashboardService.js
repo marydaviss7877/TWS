@@ -10,9 +10,9 @@ const {
   JournalEntry,
   Vendor,
   Client
-} = require('../models/Finance');
-const Project = require('../models/Project');
-const User = require('../models/User');
+} = require('../models/finance/Finance');
+const Project = require('../models/project-delivery/Project');
+const User = require('../models/users-auth/User');
 
 /**
  * Finance Dashboard Service

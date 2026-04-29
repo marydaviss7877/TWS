@@ -51,7 +51,6 @@ const SupraAdminLayout = ({ children }) => {
       icon: CircleStackIcon, 
       children: [
         { name: 'All ERP Categories', href: '/supra-admin/erp-management', icon: CircleStackIcon },
-        { name: 'School/College ERP', href: '/supra-admin/erp-management/education', icon: DocumentTextIcon },
         { name: 'Hospital ERP', href: '/supra-admin/erp-management/healthcare', icon: ShieldCheckIcon },
         { name: 'Software House ERP', href: '/supra-admin/erp-management/software_house', icon: CogIcon }
       ]

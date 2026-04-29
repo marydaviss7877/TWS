@@ -3,13 +3,13 @@ const { body, query, param } = require('express-validator');
 const { requirePermission, auditLog, logSecurityEvent, secureExport } = require('../../../middleware/security/security');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
-const AuditLog = require('../../../models/AuditLog');
+const AuditLog = require('../../../models/core/AuditLog');
 const { 
   SecurityEvent, 
   RolePermission, 
   DataRetentionPolicy,
   ComplianceReport
-} = require('../../../models/Security');
+} = require('../../../models/users-auth/Security');
 
 const router = express.Router();
 
@@ -299,14 +299,14 @@ router.post('/data-retention/apply', [
       
       switch (policy.entityType) {
         case 'transaction':
-          const transactionResult = await require('../../../models/Finance').Transaction.deleteMany({
+          const transactionResult = await require('../../../models/finance/Finance').Transaction.deleteMany({
             orgId: req.user.orgId,
             createdAt: { $lt: cutoffDate }
           });
           deletedCount = transactionResult.deletedCount;
           break;
         case 'invoice':
-          const invoiceResult = await require('../../../models/Finance').Invoice.deleteMany({
+          const invoiceResult = await require('../../../models/finance/Finance').Invoice.deleteMany({
             orgId: req.user.orgId,
             createdAt: { $lt: cutoffDate }
           });
@@ -353,7 +353,7 @@ router.post('/data-retention/apply', [
 // Get compliance reports
 router.get('/compliance-reports', [
   requirePermission('audit', 'read'),
-  query('reportType').optional().isIn(['sox', 'pci_dss', 'gdpr', 'hipaa', 'iso27001', 'audit_trail', 'data_retention']),
+  query('reportType').optional().isIn(['sox', 'pci_dss', 'gdpr', 'iso27001', 'audit_trail', 'data_retention']),
   query('status').optional().isIn(['generating', 'completed', 'failed'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const filter = { orgId: req.user.orgId };
@@ -374,7 +374,7 @@ router.get('/compliance-reports', [
 // Generate compliance report
 router.post('/compliance-reports/generate', [
   requirePermission('audit', 'read'),
-  body('reportType').isIn(['sox', 'pci_dss', 'gdpr', 'hipaa', 'iso27001', 'audit_trail', 'data_retention']),
+  body('reportType').isIn(['sox', 'pci_dss', 'gdpr', 'iso27001', 'audit_trail', 'data_retention']),
   body('period.start').isISO8601(),
   body('period.end').isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
@@ -566,7 +566,7 @@ async function generateComplianceFindings(reportType, period, orgId) {
       
     case 'sox':
       // SOX compliance checks
-      const journalEntries = await require('../../../models/Finance').JournalEntry.countDocuments({
+      const journalEntries = await require('../../../models/finance/Finance').JournalEntry.countDocuments({
         orgId,
         createdAt: { $gte: new Date(period.start), $lte: new Date(period.end) }
       });

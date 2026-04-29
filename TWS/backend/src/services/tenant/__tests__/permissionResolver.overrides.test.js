@@ -1,12 +1,12 @@
-jest.mock('../../../models/TenantUser', () => ({
+jest.mock('../../../models/tenant/TenantUser', () => ({
   findOne: jest.fn()
 }));
 
-jest.mock('../../../models/TenantDepartmentAccess', () => ({
+jest.mock('../../../models/tenant/TenantDepartmentAccess', () => ({
   find: jest.fn()
 }));
 
-jest.mock('../../../models/TenantRole', () => ({
+jest.mock('../../../models/tenant/TenantRole', () => ({
   findOne: jest.fn()
 }));
 
@@ -18,9 +18,9 @@ jest.mock('../permissionCache.service', () => ({
   delResolvedForTenant: jest.fn()
 }));
 
-const TenantUser = require('../../../models/TenantUser');
-const TenantDepartmentAccess = require('../../../models/TenantDepartmentAccess');
-const TenantRole = require('../../../models/TenantRole');
+const TenantUser = require('../../../models/tenant/TenantUser');
+const TenantDepartmentAccess = require('../../../models/tenant/TenantDepartmentAccess');
+const TenantRole = require('../../../models/tenant/TenantRole');
 const { resolveUserPermissions } = require('../permissionResolver.service');
 
 const makeLeanChain = (value) => ({

@@ -76,9 +76,6 @@ $pathMappings = @{
     "require\('./auditLogService'\)" = "require('./compliance/audit-log.service')"
     "require\('./complianceService'\)" = "require('./compliance/compliance.service')"
     
-    # Healthcare services
-    "require\('./patientPortalService'\)" = "require('./healthcare/patient-portal.service')"
-    "require\('\.\.\/services\/patientPortalService'\)" = "require('../../services/healthcare/patient-portal.service')"
 }
 
 # Get all JavaScript files in backend/src

@@ -11,7 +11,7 @@
  * - Single aggregation query loads user + tenant + organization in one go
  * - Token validation (cookie or header)
  * - Token blacklist check
- * - Works for all tenant types (healthcare, education, software_house)
+ * - Works for all tenant types (software_house)
  * - Optional ERP category filtering
  * - Automatic orgId resolution
  * - Security event logging
@@ -29,7 +29,7 @@
  * router.get('/patients', unifiedTenantAuth(), controller.getPatients);
  * 
  * // For specific ERP category
- * router.get('/students', unifiedTenantAuth({ erpCategory: 'education' }), controller.getStudents);
+ * router.get('/projects', unifiedTenantAuth({ erpCategory: 'software_house' }), controller.getProjects);
  * 
  * // For software house (includes workspace check)
  * router.get('/projects', unifiedTenantAuth({ erpCategory: 'software_house', requireWorkspace: true }), controller.getProjects);
@@ -40,10 +40,10 @@ const jwt = require('jsonwebtoken');
 const jwtService = require('../../services/auth/jwt.service');
 const tokenBlacklistService = require('../../services/auth/token-blacklist.service');
 const mongoose = require('mongoose');
-const User = require('../../models/User');
-const Tenant = require('../../models/Tenant');
-const Organization = require('../../models/Organization');
-const Workspace = require('../../models/Workspace');
+const User = require('../../models/users-auth/User');
+const Tenant = require('../../models/tenant/Tenant');
+const Organization = require('../../models/org/Organization');
+const Workspace = require('../../models/org/Workspace');
 
 // Try to load audit service (may not exist in all environments)
 let auditService = null;
@@ -86,7 +86,7 @@ async function logSecurityEvent(event, userId, details = {}) {
  * Unified Authentication Middleware for All Tenant Routes
  * 
  * @param {Object} options - Configuration options
- * @param {String|Array<String>} options.erpCategory - Optional: Filter by ERP category ('healthcare', 'education', 'software_house')
+ * @param {String|Array<String>} options.erpCategory - Optional: Filter by ERP category ('software_house')
  * @param {Boolean} options.requireWorkspace - Optional: Require workspace membership (default: false, only for software_house)
  * @param {Boolean} options.allowSuperAdmin - Optional: Allow super admin access (default: true)
  * 
@@ -503,7 +503,7 @@ const unifiedTenantAuth = (options = {}) => {
       let hrSubRole = null;
       let financeSubRole = null;
       try {
-        const TenantUser = require('../../models/TenantUser');
+        const TenantUser = require('../../models/tenant/TenantUser');
         const tu = await TenantUser.findOne({ userId: userContext._id, tenantId: tenant._id, status: 'active' }).lean();
         if (tu?.roles?.length > 0) {
           const pr = tu.roles[0].role;

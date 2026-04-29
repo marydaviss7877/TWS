@@ -4,7 +4,7 @@ const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl'
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
 const { checkFeatureAccessSoftwareHouseOnly } = require('../../../middleware/common/featureGate');
-const { PayrollRecord, PayrollRule, PayrollCycle } = require('../../../models/Payroll');
+const { PayrollRecord, PayrollRule, PayrollCycle } = require('../../../models/hr-payroll/Payroll');
 
 // UPR Phase 1.4 + 4.2: payroll uses requireErpAccess (resolved permissions + hrSubRole) and checkRevocation
 const payrollRead = requireErpAccess({ module: 'payroll', action: 'read', checkRevocation: true, sensitive: true, auditResourceType: 'payroll' });
@@ -21,9 +21,9 @@ async function shouldFilterPayrollToOwn(req) {
   });
   return !hasPermission(resolved.permissions, 'payroll', 'read');
 }
-const { AIPayrollConfig, AIPayrollAnalytics, SmartPayrollProcessing, EmployeeAIInsights } = require('../../../models/AIPayroll');
-const Employee = require('../../../models/Employee');
-const User = require('../../../models/User');
+const { AIPayrollConfig, AIPayrollAnalytics, SmartPayrollProcessing, EmployeeAIInsights } = require('../../../models/hr-payroll/AIPayroll');
+const Employee = require('../../../models/hr-payroll/Employee');
+const User = require('../../../models/users-auth/User');
 const aiPayrollService = require('../../../services/aiPayrollService');
 
 const router = express.Router();

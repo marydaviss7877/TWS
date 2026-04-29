@@ -2,9 +2,9 @@ const express = require('express');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const Card = require('../../../models/Card');
-const Project = require('../../../models/Project');
-const { TimeEntry } = require('../../../models/Finance');
+const Card = require('../../../models/industry/Card');
+const Project = require('../../../models/project-delivery/Project');
+const { TimeEntry } = require('../../../models/finance/Finance');
 const timeTrackingService = require('../../../services/softwareHouse/time-tracking.service');
 const { aggregateTimeSources } = require('../../../services/business/timeAggregation.service');
 

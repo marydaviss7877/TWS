@@ -1,11 +1,11 @@
-const Workspace = require('../../models/Workspace');
-const PortalUser = require('../../models/PortalUser');
-const Project = require('../../models/Project');
-const ProjectBoard = require('../../models/Board');
-const List = require('../../models/List');
-const Card = require('../../models/Card');
-const Activity = require('../../models/Activity');
-const Notification = require('../../models/Notification');
+const Workspace = require('../../models/org/Workspace');
+const PortalUser = require('../../models/users-auth/PortalUser');
+const Project = require('../../models/project-delivery/Project');
+const ProjectBoard = require('../../models/project-delivery/Board');
+const List = require('../../models/project-delivery/List');
+const Card = require('../../models/industry/Card');
+const Activity = require('../../models/analytics/Activity');
+const Notification = require('../../models/notifications/Notification');
 
 class ERPIntegrationService {
   constructor(io) {

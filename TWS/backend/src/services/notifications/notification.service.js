@@ -1,6 +1,6 @@
-const Notification = require('../../models/Notification');
-const User = require('../../models/User');
-const NotificationPreference = require('../../models/NotificationPreference');
+const Notification = require('../../models/notifications/Notification');
+const User = require('../../models/users-auth/User');
+const NotificationPreference = require('../../models/notifications/NotificationPreference');
 const emailService = require('../integrations/email.service');
 
 class NotificationService {
@@ -41,8 +41,8 @@ class NotificationService {
           try {
             if (relatedEntityType === 'project' || relatedEntityType === 'deliverable' || relatedEntityType === 'approval' || relatedEntityType === 'change_request') {
               // For project-related entities, get orgId from project
-              const Project = require('../../models/Project');
-              const Deliverable = require('../../models/Deliverable');
+              const Project = require('../../models/project-delivery/Project');
+              const Deliverable = require('../../models/project-delivery/Deliverable');
               
               if (relatedEntityType === 'project') {
                 const project = await Project.findById(relatedEntityId).select('orgId');
@@ -54,7 +54,7 @@ class NotificationService {
                   if (project?.orgId) finalOrgId = project.orgId;
                 }
               } else if (relatedEntityType === 'approval') {
-                const Approval = require('../../models/Approval');
+                const Approval = require('../../models/core/Approval');
                 const approval = await Approval.findById(relatedEntityId).select('deliverable_id orgId');
                 if (approval?.orgId) {
                   finalOrgId = approval.orgId;
@@ -66,7 +66,7 @@ class NotificationService {
                   }
                 }
               } else if (relatedEntityType === 'change_request') {
-                const ChangeRequest = require('../../models/ChangeRequest');
+                const ChangeRequest = require('../../models/project-delivery/ChangeRequest');
                 const changeRequest = await ChangeRequest.findById(relatedEntityId).select('deliverable_id orgId');
                 if (changeRequest?.orgId) {
                   finalOrgId = changeRequest.orgId;
@@ -321,7 +321,7 @@ class NotificationService {
       userIds = projectMembers.map(m => m.userId);
     }
     if (userIds.length === 0 && invoice.orgId) {
-      const User = require('../../models/User');
+      const User = require('../../models/users-auth/User');
       const financeUsers = await User.find({ orgId: invoice.orgId, role: { $in: ['owner', 'admin', 'accountant', 'finance'] } })
         .select('_id')
         .limit(10)
@@ -346,7 +346,7 @@ class NotificationService {
     const projectMembers = await this.getProjectMembers(project._id);
     userIds = projectMembers.filter(m => m.userId).map(m => m.userId);
     if (userIds.length === 0 && orgId) {
-      const User = require('../../models/User');
+      const User = require('../../models/users-auth/User');
       const admins = await User.find({ orgId, role: { $in: ['owner', 'admin'] } }).select('_id').limit(10).lean();
       userIds = admins.map(u => u._id);
     }
@@ -370,7 +370,7 @@ class NotificationService {
   static async getProjectMembers(projectId) {
     if (!projectId) return [];
     try {
-      const ProjectMember = require('../../models/ProjectMember');
+      const ProjectMember = require('../../models/project-delivery/ProjectMember');
       const members = await ProjectMember.find({ projectId, status: 'active' })
         .select('userId')
         .lean();
@@ -398,7 +398,7 @@ class NotificationService {
       dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
 
       // Find cards due tomorrow
-      const Card = require('../../models/Card');
+      const Card = require('../../models/industry/Card');
       const cardsDueTomorrow = await Card.find({
         dueDate: {
           $gte: tomorrow,
@@ -433,7 +433,7 @@ class NotificationService {
    */
   static async notifyClientPortalAccessChange(project, oldSettings, newSettings, changedBy) {
     try {
-      const Client = require('../../models/Client');
+      const Client = require('../../models/industry/Client');
       const ClientPortalUser = require('../../models/ClientPortalUser');
       
       // Only notify if access was disabled or enabled

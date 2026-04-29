@@ -8,9 +8,9 @@ const express = require('express');
 const router = express.Router();
 const TenantMiddleware = require('../middleware/tenant/tenantMiddleware');
 const { getOrCreateModelOnConnection } = require('../utils/modelSchemaHelper');
-const User = require('../models/User');
-const Project = require('../models/Project');
-const Organization = require('../models/Organization');
+const User = require('../models/users-auth/User');
+const Project = require('../models/project-delivery/Project');
+const Organization = require('../models/org/Organization');
 
 // ==================== EXAMPLE 1: Basic Route with Tenant Database ====================
 

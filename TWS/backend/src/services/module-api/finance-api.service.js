@@ -7,8 +7,8 @@
  * Module Boundary: Finance module owns Invoice, Bill, TimeEntry, Client, Transaction, etc.
  */
 
-const { TimeEntry, Client, Invoice } = require('../../models/Finance');
-const Expense = require('../../models/Expense');
+const { TimeEntry, Client, Invoice } = require('../../models/finance/Finance');
+const Expense = require('../../models/finance/Expense');
 
 class FinanceModuleAPI {
   /**

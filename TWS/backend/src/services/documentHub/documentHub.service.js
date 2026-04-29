@@ -1,16 +1,16 @@
 /**
  * Document Hub – service layer: CRUD, versions, audit, S3 URLs
  */
-const OrgDocument = require('../../models/OrgDocument');
-const OrgDocumentVersion = require('../../models/OrgDocumentVersion');
-const OrgDocumentAudit = require('../../models/OrgDocumentAudit');
-const OrgDocumentComment = require('../../models/OrgDocumentComment');
-const DocumentShare = require('../../models/DocumentShare');
-const DocumentFolder = require('../../models/DocumentFolder');
-const DocumentTag = require('../../models/DocumentTag');
-const Department = require('../../models/Department');
-const TenantDepartmentAccess = require('../../models/TenantDepartmentAccess');
-const User = require('../../models/User');
+const OrgDocument = require('../../models/documents/OrgDocument');
+const OrgDocumentVersion = require('../../models/documents/OrgDocumentVersion');
+const OrgDocumentAudit = require('../../models/documents/OrgDocumentAudit');
+const OrgDocumentComment = require('../../models/documents/OrgDocumentComment');
+const DocumentShare = require('../../models/documents/DocumentShare');
+const DocumentFolder = require('../../models/documents/DocumentFolder');
+const DocumentTag = require('../../models/documents/DocumentTag');
+const Department = require('../../models/org/Department');
+const TenantDepartmentAccess = require('../../models/tenant/TenantDepartmentAccess');
+const User = require('../../models/users-auth/User');
 const NotificationService = require('../notifications/notification.service');
 const { generateSignedUrl } = require('../../config/s3');
 

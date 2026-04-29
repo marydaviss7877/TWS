@@ -1,4 +1,4 @@
-const { CashFlowForecast, Invoice, Bill, Transaction } = require('../../models/Finance');
+const { CashFlowForecast, Invoice, Bill, Transaction } = require('../../models/finance/Finance');
 
 class CashFlowService {
   /**
@@ -282,7 +282,7 @@ class CashFlowService {
   async getCurrentCashBalance(orgId) {
     try {
       // Get cash account balance from chart of accounts
-      const { ChartOfAccounts, JournalEntry } = require('../../models/Finance');
+      const { ChartOfAccounts, JournalEntry } = require('../../models/finance/Finance');
       
       const cashAccount = await ChartOfAccounts.findOne({
         orgId: orgId,

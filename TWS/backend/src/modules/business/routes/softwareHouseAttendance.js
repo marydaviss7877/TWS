@@ -5,10 +5,10 @@ const attendanceRead = requireErpAccess({ module: 'attendance', action: 'read', 
 const attendanceWrite = requireErpAccess({ module: 'attendance', action: 'write', checkRevocation: false });
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
-const Attendance = require('../../../models/Attendance');
-const Employee = require('../../../models/Employee');
-const Project = require('../../../models/Project');
-const Team = require('../../../models/Team');
+const Attendance = require('../../../models/hr-payroll/Attendance');
+const Employee = require('../../../models/hr-payroll/Employee');
+const Project = require('../../../models/project-delivery/Project');
+const Team = require('../../../models/org/Team');
 
 const router = express.Router();
 

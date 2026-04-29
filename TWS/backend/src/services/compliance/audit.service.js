@@ -1,4 +1,4 @@
-const AuditLog = require('../../models/AuditLog');
+const AuditLog = require('../../models/core/AuditLog');
 const mongoose = require('mongoose');
 
 /**
@@ -543,7 +543,7 @@ class AuditService {
    */
   async logClientPortalChange(projectId, userId, action, changes, req) {
     try {
-      const Project = require('../../models/Project');
+      const Project = require('../../models/project-delivery/Project');
       const project = await Project.findById(projectId).select('name clientId tenantId orgId');
       
       return await this.logEvent({

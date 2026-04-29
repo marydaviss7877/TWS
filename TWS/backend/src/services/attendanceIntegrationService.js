@@ -1,7 +1,7 @@
-const Attendance = require('../models/Attendance');
-const { PayrollRecord } = require('../models/Payroll');
-const Employee = require('../models/Employee');
-const Organization = require('../models/Organization');
+const Attendance = require('../models/hr-payroll/Attendance');
+const { PayrollRecord } = require('../models/hr-payroll/Payroll');
+const Employee = require('../models/hr-payroll/Employee');
+const Organization = require('../models/org/Organization');
 
 class AttendanceIntegrationService {
   // Integrate attendance data with payroll system

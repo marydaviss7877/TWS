@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 router.use(verifyERPToken);
-const Partner = require('../../../models/Partner');
-const Tenant = require('../../../models/Tenant');
-const SubscriptionPlan = require('../../../models/SubscriptionPlan');
+const Partner = require('../../../models/org/Partner');
+const Tenant = require('../../../models/tenant/Tenant');
+const SubscriptionPlan = require('../../../models/finance/SubscriptionPlan');
 const { checkFeatureAccess } = require('../../../middleware/common/featureGate');
 const auditLogService = require('../../../services/compliance/audit-log.service');
 

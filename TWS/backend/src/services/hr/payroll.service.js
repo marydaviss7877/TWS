@@ -1,6 +1,6 @@
-const { PayrollRecord, PayrollCycle } = require('../../models/Payroll');
-const Employee = require('../../models/Employee');
-const Attendance = require('../../models/Attendance');
+const { PayrollRecord, PayrollCycle } = require('../../models/hr-payroll/Payroll');
+const Employee = require('../../models/hr-payroll/Employee');
+const Attendance = require('../../models/hr-payroll/Attendance');
 
 class PayrollService {
   /**

@@ -8,13 +8,13 @@
  * - Redis caching for performance (Nucleus requirement)
  */
 
-const Task = require('../models/Task');
-const TaskDependency = require('../models/TaskDependency');
-const ProjectTimeline = require('../models/ProjectTimeline');
-const GanttSettings = require('../models/GanttSettings');
-const Project = require('../models/Project');
-const Deliverable = require('../models/Deliverable');
-const Milestone = require('../models/Milestone');
+const Task = require('../models/project-delivery/Task');
+const TaskDependency = require('../models/project-delivery/TaskDependency');
+const ProjectTimeline = require('../models/project-delivery/ProjectTimeline');
+const GanttSettings = require('../models/project-delivery/GanttSettings');
+const Project = require('../models/project-delivery/Project');
+const Deliverable = require('../models/project-delivery/Deliverable');
+const Milestone = require('../models/project-delivery/Milestone');
 
 // In-memory cache replacing Redis (60s TTL per Nucleus spec)
 const _ganttCache = new Map();

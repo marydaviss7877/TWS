@@ -6,7 +6,7 @@
 // Use the existing AuditLog model
 let AuditLog;
 try {
-  AuditLog = require('../../models/AuditLog');
+  AuditLog = require('../../models/core/AuditLog');
 } catch (error) {
   console.warn('AuditLog model not found, audit logging will be disabled');
   AuditLog = null;

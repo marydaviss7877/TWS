@@ -6,7 +6,7 @@ const envConfig = require('./environment');
 
 /**
  * AWS S3 Configuration for File Uploads
- * Supports homework submissions, documents, and other educational materials
+ * Supports homework submissions, documents, and other tenant materials
  */
 
 // Initialize S3 Client
@@ -18,7 +18,7 @@ const s3Client = new S3Client({
   }
 });
 
-const BUCKET_NAME = envConfig.get('AWS_S3_BUCKET') || 'tws-education-files';
+const BUCKET_NAME = envConfig.get('AWS_S3_BUCKET') || 'tws-files';
 
 /**
  * File upload configuration with S3

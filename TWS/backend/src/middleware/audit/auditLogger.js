@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const AuditLog = require('../../models/AuditLog');
+const AuditLog = require('../../models/core/AuditLog');
 
 class AuditLogger {
   constructor() {

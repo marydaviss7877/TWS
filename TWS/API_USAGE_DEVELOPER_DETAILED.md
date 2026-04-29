@@ -66,7 +66,6 @@ Format:
 - `backend/src/modules/tenant/routes/permissions.js` -> total=7 (GET=3, POST=2, PUT=1, PATCH=0, DELETE=1)
 - `backend/src/modules/tenant/routes/roles.js` -> total=7 (GET=3, POST=2, PUT=1, PATCH=0, DELETE=1)
 - `backend/src/modules/tenant/routes/approvals.js` -> total=5 (GET=2, POST=3, PUT=0, PATCH=0, DELETE=0)
-- `backend/src/modules/tenant/routes/gdpr.js` -> total=4 (GET=0, POST=3, PUT=0, PATCH=0, DELETE=1)
 - `backend/src/modules/tenant/routes/audit.js` -> total=1 (GET=1, POST=0, PUT=0, PATCH=0, DELETE=0)
 
 ### Business Module

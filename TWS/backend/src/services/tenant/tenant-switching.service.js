@@ -1,6 +1,6 @@
-const TenantUser = require('../../models/TenantUser');
-const Tenant = require('../../models/Tenant');
-const User = require('../../models/User');
+const TenantUser = require('../../models/tenant/TenantUser');
+const Tenant = require('../../models/tenant/Tenant');
+const User = require('../../models/users-auth/User');
 const jwt = require('jsonwebtoken');
 
 class TenantSwitchingService {

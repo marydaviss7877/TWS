@@ -1,5 +1,5 @@
-const Employee = require('../../models/Employee');
-const User = require('../../models/User');
+const Employee = require('../../models/hr-payroll/Employee');
+const User = require('../../models/users-auth/User');
 
 class EmployeeService {
   /**

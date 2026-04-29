@@ -3,9 +3,9 @@ const router = express.Router();
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const ERPTemplate = require('../../../models/ERPTemplate');
-const Tenant = require('../../../models/Tenant');
-const SoftwareHouseRole = require('../../../models/SoftwareHouseRole');
+const ERPTemplate = require('../../../models/integrations/ERPTemplate');
+const Tenant = require('../../../models/tenant/Tenant');
+const SoftwareHouseRole = require('../../../models/admin-platform/SoftwareHouseRole');
 const erpTemplateAdmin = requireErpAccess({ allowedRoles: ['supra_admin'], checkRevocation: false });
 router.use(verifyERPToken);
 
@@ -169,7 +169,7 @@ router.post('/:templateId/apply/:tenantId', erpTemplateAdmin, ErrorHandler.async
   let createdRoles = [];
   if (createDefaultRoles && template.configuration.defaultRoles.length > 0) {
     // Get tenant's first organization
-    const Organization = require('../../../models/Organization');
+    const Organization = require('../../../models/org/Organization');
     const organization = await Organization.findOne({ tenantId });
     
     if (organization) {

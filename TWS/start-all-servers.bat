@@ -204,7 +204,7 @@ echo %GREEN%Backend Health:%RESET% http://localhost:5000/health
 echo.
 echo %BLUE%Portals:%RESET%
 echo   - Supra Admin: http://localhost:3000/supra-admin-login
-echo   - Education Login: http://localhost:3000/education-login
+echo   - Tenant Login: http://localhost:3000/login
 echo   - Healthcare Login: http://localhost:3000/healthcare-login
 echo   - Employee Login: http://localhost:3000/employee-login
 echo   - Client Portal: http://localhost:3000/clients

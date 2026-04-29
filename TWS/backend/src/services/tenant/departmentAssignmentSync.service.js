@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
-const TenantUser = require('../../models/TenantUser');
-const User = require('../../models/User');
-const Employee = require('../../models/Employee');
-const TenantDepartmentAccess = require('../../models/TenantDepartmentAccess');
-const Department = require('../../models/Department');
+const TenantUser = require('../../models/tenant/TenantUser');
+const User = require('../../models/users-auth/User');
+const Employee = require('../../models/hr-payroll/Employee');
+const TenantDepartmentAccess = require('../../models/tenant/TenantDepartmentAccess');
+const Department = require('../../models/org/Department');
 
 const DEFAULT_DEPARTMENT_TEMPLATE = [
   { name: 'Human Resources', code: 'HR', description: 'Hiring, policies, and people operations', moduleKey: 'hr' },

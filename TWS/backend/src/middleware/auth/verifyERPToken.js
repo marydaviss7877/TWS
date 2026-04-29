@@ -16,11 +16,11 @@
 const jwt = require('jsonwebtoken');
 const jwtService = require('../../services/auth/jwt.service');
 const tokenBlacklistService = require('../../services/auth/token-blacklist.service');
-const Tenant = require('../../models/Tenant');
-const Organization = require('../../models/Organization');
-const User = require('../../models/User');
-const Workspace = require('../../models/Workspace');
-const TenantUser = require('../../models/TenantUser');
+const Tenant = require('../../models/tenant/Tenant');
+const Organization = require('../../models/org/Organization');
+const User = require('../../models/users-auth/User');
+const Workspace = require('../../models/org/Workspace');
+const TenantUser = require('../../models/tenant/TenantUser');
 
 // Try to load audit service (may not exist in all environments)
 let auditService = null;

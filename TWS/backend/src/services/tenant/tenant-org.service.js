@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
-const Tenant = require('../../models/Tenant');
-const Organization = require('../../models/Organization');
-const User = require('../../models/User');
-const Employee = require('../../models/Employee');
-const Project = require('../../models/Project');
-const Task = require('../../models/Task');
-const Finance = require('../../models/Finance');
-const Attendance = require('../../models/Attendance');
-const Payroll = require('../../models/Payroll');
-const Department = require('../../models/Department');
+const Tenant = require('../../models/tenant/Tenant');
+const Organization = require('../../models/org/Organization');
+const User = require('../../models/users-auth/User');
+const Employee = require('../../models/hr-payroll/Employee');
+const Project = require('../../models/project-delivery/Project');
+const Task = require('../../models/project-delivery/Task');
+const Finance = require('../../models/finance/Finance');
+const Attendance = require('../../models/hr-payroll/Attendance');
+const Payroll = require('../../models/hr-payroll/Payroll');
+const Department = require('../../models/org/Department');
 const { getOrCreateModelOnConnection } = require('../../utils/modelSchemaHelper');
 
 /**
@@ -92,7 +92,7 @@ class TenantOrgService {
       const normalizedRole = String(role || user?.role || '').toLowerCase();
       if (normalizedRole !== 'client' || !user?._id || !orgId) return;
 
-      const ProjectClient = require('../../models/Client');
+      const ProjectClient = require('../../models/industry/Client');
       const userId = user._id;
       const email = String(user.email || '').trim().toLowerCase();
       const name = String(user.fullName || email || 'Client').trim();
@@ -706,7 +706,7 @@ class TenantOrgService {
         : null;
       let userRows = users;
       if (tenantMongoId && users.length) {
-        const TenantUser = require('../../models/TenantUser');
+        const TenantUser = require('../../models/tenant/TenantUser');
         const ids = users.map((u) => u._id);
         const tus = await TenantUser.find({ tenantId: tenantMongoId, userId: { $in: ids } })
           .select('userId status')
@@ -792,7 +792,7 @@ class TenantOrgService {
         : null;
       if (mongoTenantId) {
         try {
-          const TenantUser = require('../../models/TenantUser');
+          const TenantUser = require('../../models/tenant/TenantUser');
           const tuSet = {
             userId: user._id,
             tenantId: mongoTenantId,
@@ -962,7 +962,7 @@ class TenantOrgService {
       const models = this.getTenantModels(tenantContext);
       const filter = this.getTenantFilter(tenantContext);
 
-      // User schema uses status: active|suspended|inactive — not isActive (see models/User.js)
+      // User schema uses status: active|suspended|inactive — not isActive (see models/users-auth/User.js)
       const user = await models.User.findOneAndUpdate(
         { _id: userId, ...filter, status: 'active' },
         {
@@ -978,7 +978,7 @@ class TenantOrgService {
       const tid = tenantContext.tenantId;
       if (tid) {
         try {
-          const TenantUser = require('../../models/TenantUser');
+          const TenantUser = require('../../models/tenant/TenantUser');
           await TenantUser.updateMany(
             { userId, tenantId: tid },
             { $set: { status: 'inactive' } }
@@ -1212,7 +1212,7 @@ class TenantOrgService {
         const lean = await User.findById(uid).lean();
         if (!lean) throw new Error('User record missing after save');
         try {
-          const TenantUser = require('../../models/TenantUser');
+          const TenantUser = require('../../models/tenant/TenantUser');
           const staleUsers = await models.User.find({ email: lean.email, _id: { $ne: lean._id } }).select('_id').lean();
           const staleIds = staleUsers.map((s) => s._id).filter(Boolean);
           if (staleIds.length && resolvedTenantId) {
@@ -1238,7 +1238,7 @@ class TenantOrgService {
       const provisionTenantUserForEmployee = async (uid) => {
         if (!resolvedTenantId) return;
         try {
-          const TenantUser = require('../../models/TenantUser');
+          const TenantUser = require('../../models/tenant/TenantUser');
           const existingTU = await TenantUser.findOne({ userId: uid, tenantId: resolvedTenantId });
           const baseDoc = {
             userId: uid,
@@ -1278,7 +1278,7 @@ class TenantOrgService {
         const envConfig = require('../../config/environment');
         const frontendUrl = envConfig.get('FRONTEND_URL') || process.env.FRONTEND_URL || '';
         const inviteLink = `${frontendUrl}/invite/accept?token=${tenantUserDoc.invitation.invitationToken}`;
-        const Organization = require('../../models/Organization');
+        const Organization = require('../../models/org/Organization');
         const org = orgId ? await Organization.findById(orgId).select('name').lean() : null;
         const inviter = invitedBy ? await User.findById(invitedBy).select('fullName').lean() : null;
         const emailService = require('../integrations/email.service');
@@ -1305,7 +1305,7 @@ class TenantOrgService {
 
       /** @returns {'invited'|'already_active'} */
       const runPortalInvitePath = async (uid) => {
-        const TenantUser = require('../../models/TenantUser');
+        const TenantUser = require('../../models/tenant/TenantUser');
         const existingTU = await TenantUser.findOne({ userId: uid, tenantId: resolvedTenantId });
         if (existingTU && existingTU.status === 'active') {
           await provisionTenantUserForEmployee(uid);
@@ -2177,7 +2177,7 @@ class TenantOrgService {
       // Otherwise, try to get it from tenantContext or look it up
       if (!tenant) {
         const { tenantId } = tenantContext;
-        const Tenant = require('../../models/Tenant');
+        const Tenant = require('../../models/tenant/Tenant');
         
         // Try multiple ways to find the tenant
         tenant = await Tenant.findOne({
@@ -2302,7 +2302,7 @@ class TenantOrgService {
    */
   async getAccountsPayable(tenantContext, options = {}) {
     try {
-      const { Invoice, Bill, Vendor } = require('../../models/Finance');
+      const { Invoice, Bill, Vendor } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const { page = 1, limit = 20, status, vendor } = options;
       const skip = (page - 1) * limit;
@@ -2356,7 +2356,7 @@ class TenantOrgService {
    */
   async getAccountsReceivable(tenantContext, options = {}) {
     try {
-      const { Invoice, Client } = require('../../models/Finance');
+      const { Invoice, Client } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const { page = 1, limit = 20, status, customer } = options;
       const skip = (page - 1) * limit;
@@ -2411,7 +2411,7 @@ class TenantOrgService {
    */
   async getChartOfAccounts(tenantContext, options = {}) {
     try {
-      const { ChartOfAccounts } = require('../../models/Finance');
+      const { ChartOfAccounts } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const { type, level } = options;
 
@@ -2435,7 +2435,7 @@ class TenantOrgService {
    */
   async createChartOfAccountsEntry(tenantContext, accountData) {
     try {
-      const { ChartOfAccounts } = require('../../models/Finance');
+      const { ChartOfAccounts } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const account = new ChartOfAccounts({
@@ -2456,7 +2456,7 @@ class TenantOrgService {
    */
   async updateChartOfAccountsEntry(tenantContext, accountId, accountData) {
     try {
-      const { ChartOfAccounts } = require('../../models/Finance');
+      const { ChartOfAccounts } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const account = await ChartOfAccounts.findOneAndUpdate(
@@ -2481,7 +2481,7 @@ class TenantOrgService {
    */
   async deleteChartOfAccountsEntry(tenantContext, accountId) {
     try {
-      const { ChartOfAccounts } = require('../../models/Finance');
+      const { ChartOfAccounts } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const account = await ChartOfAccounts.findOneAndUpdate(
@@ -2507,7 +2507,7 @@ class TenantOrgService {
   async loadChartOfAccountsTemplate(tenantContext, templateName) {
     const filter = this.getTenantFilter(tenantContext);
     try {
-      const { ChartOfAccounts } = require('../../models/Finance');
+      const { ChartOfAccounts } = require('../../models/finance/Finance');
 
       // Define templates
       const templates = {
@@ -2571,7 +2571,7 @@ class TenantOrgService {
    */
   async getInvoices(tenantContext, options = {}) {
     try {
-      const { Invoice } = require('../../models/Finance');
+      const { Invoice } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const { page = 1, limit = 20, status, clientId, projectId } = options;
       const skip = (page - 1) * limit;
@@ -2605,7 +2605,7 @@ class TenantOrgService {
    */
   async createInvoice(tenantContext, invoiceData) {
     try {
-      const { Invoice } = require('../../models/Finance');
+      const { Invoice } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       // Generate invoice number if not provided
@@ -2634,7 +2634,7 @@ class TenantOrgService {
    */
   async updateInvoice(tenantContext, invoiceId, invoiceData) {
     try {
-      const { Invoice } = require('../../models/Finance');
+      const { Invoice } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const invoice = await Invoice.findOneAndUpdate(
@@ -2659,7 +2659,7 @@ class TenantOrgService {
    */
   async deleteInvoice(tenantContext, invoiceId) {
     try {
-      const { Invoice } = require('../../models/Finance');
+      const { Invoice } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const invoice = await Invoice.findOneAndDelete({ _id: invoiceId, ...filter });
@@ -2680,7 +2680,7 @@ class TenantOrgService {
    */
   async recordInvoicePayment(tenantContext, invoiceId, paymentData) {
     try {
-      const { Invoice } = require('../../models/Finance');
+      const { Invoice } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const invoice = await Invoice.findOne({ _id: invoiceId, ...filter });
@@ -2720,7 +2720,7 @@ class TenantOrgService {
    */
   async getBills(tenantContext, options = {}) {
     try {
-      const { Bill } = require('../../models/Finance');
+      const { Bill } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const { page = 1, limit = 20, status, vendorId, projectId } = options;
       const skip = (page - 1) * limit;
@@ -2754,7 +2754,7 @@ class TenantOrgService {
    */
   async createBill(tenantContext, billData) {
     try {
-      const { Bill } = require('../../models/Finance');
+      const { Bill } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       // Generate bill number if not provided
@@ -2783,7 +2783,7 @@ class TenantOrgService {
    */
   async updateBill(tenantContext, billId, billData) {
     try {
-      const { Bill } = require('../../models/Finance');
+      const { Bill } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const bill = await Bill.findOneAndUpdate(
@@ -2808,7 +2808,7 @@ class TenantOrgService {
    */
   async deleteBill(tenantContext, billId) {
     try {
-      const { Bill } = require('../../models/Finance');
+      const { Bill } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const bill = await Bill.findOneAndDelete({ _id: billId, ...filter });
@@ -2829,7 +2829,7 @@ class TenantOrgService {
    */
   async recordBillPayment(tenantContext, billId, paymentData) {
     try {
-      const { Bill } = require('../../models/Finance');
+      const { Bill } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const bill = await Bill.findOne({ _id: billId, ...filter });
@@ -2869,7 +2869,7 @@ class TenantOrgService {
    */
   async getVendors(tenantContext, options = {}) {
     try {
-      const { Vendor } = require('../../models/Finance');
+      const { Vendor } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const { status } = options;
 
@@ -2890,7 +2890,7 @@ class TenantOrgService {
    */
   async createVendor(tenantContext, vendorData) {
     try {
-      const { Vendor } = require('../../models/Finance');
+      const { Vendor } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const vendor = new Vendor({
@@ -2912,7 +2912,7 @@ class TenantOrgService {
    */
   async getClients(tenantContext, options = {}) {
     try {
-      const { Client } = require('../../models/Finance');
+      const { Client } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const { status } = options;
 
@@ -2933,7 +2933,7 @@ class TenantOrgService {
    */
   async createClient(tenantContext, clientData) {
     try {
-      const { Client } = require('../../models/Finance');
+      const { Client } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const client = new Client({
@@ -2955,7 +2955,7 @@ class TenantOrgService {
    */
   async updateClient(tenantContext, clientId, clientData) {
     try {
-      const { Client } = require('../../models/Finance');
+      const { Client } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const client = await Client.findOne({ _id: clientId, ...filter });
@@ -2983,7 +2983,7 @@ class TenantOrgService {
    */
   async deleteClient(tenantContext, clientId) {
     try {
-      const { Client } = require('../../models/Finance');
+      const { Client } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const client = await Client.findOne({ _id: clientId, ...filter });
@@ -3007,7 +3007,7 @@ class TenantOrgService {
    */
   async getProjectProfitability(tenantContext, options = {}) {
     try {
-      const { ProjectCosting } = require('../../models/Finance');
+      const { ProjectCosting } = require('../../models/finance/Finance');
       const models = this.getTenantModels(tenantContext);
       const filter = this.getTenantFilter(tenantContext);
       const { projectId, clientId, status } = options;
@@ -3065,7 +3065,7 @@ class TenantOrgService {
    */
   async getCashFlow(tenantContext, options = {}) {
     try {
-      const { Transaction, CashFlowForecast } = require('../../models/Finance');
+      const { Transaction, CashFlowForecast } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const { period = 'month' } = options;
 
@@ -3092,7 +3092,7 @@ class TenantOrgService {
    */
   async getCashFlowForecasts(tenantContext, options = {}) {
     try {
-      const { CashFlowForecast } = require('../../models/Finance');
+      const { CashFlowForecast } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const { status, confidence } = options;
 
@@ -3116,7 +3116,7 @@ class TenantOrgService {
    */
   async createCashFlowForecast(tenantContext, forecastData) {
     try {
-      const { CashFlowForecast } = require('../../models/Finance');
+      const { CashFlowForecast } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const forecast = new CashFlowForecast({
@@ -3137,7 +3137,7 @@ class TenantOrgService {
    */
   async updateCashFlowForecast(tenantContext, forecastId, forecastData) {
     try {
-      const { CashFlowForecast } = require('../../models/Finance');
+      const { CashFlowForecast } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const forecast = await CashFlowForecast.findOneAndUpdate(
@@ -3162,7 +3162,7 @@ class TenantOrgService {
    */
   async deleteCashFlowForecast(tenantContext, forecastId) {
     try {
-      const { CashFlowForecast } = require('../../models/Finance');
+      const { CashFlowForecast } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const forecast = await CashFlowForecast.findOneAndDelete({ _id: forecastId, ...filter });
@@ -3183,7 +3183,7 @@ class TenantOrgService {
    */
   async getTimeEntries(tenantContext, options = {}) {
     try {
-      const { TimeEntry } = require('../../models/Finance');
+      const { TimeEntry } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const { projectId, employeeId, clientId, from, to, status, billable } = options;
 
@@ -3218,7 +3218,7 @@ class TenantOrgService {
    */
   async createTimeEntry(tenantContext, timeEntryData) {
     try {
-      const { TimeEntry } = require('../../models/Finance');
+      const { TimeEntry } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const timeEntry = new TimeEntry({
@@ -3241,7 +3241,7 @@ class TenantOrgService {
    */
   async updateTimeEntry(tenantContext, timeEntryId, timeEntryData) {
     try {
-      const { TimeEntry } = require('../../models/Finance');
+      const { TimeEntry } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const timeEntry = await TimeEntry.findOneAndUpdate(
@@ -3267,7 +3267,7 @@ class TenantOrgService {
    */
   async deleteTimeEntry(tenantContext, timeEntryId) {
     try {
-      const { TimeEntry } = require('../../models/Finance');
+      const { TimeEntry } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const timeEntry = await TimeEntry.findOneAndDelete({ _id: timeEntryId, ...filter });
@@ -3288,7 +3288,7 @@ class TenantOrgService {
    */
   async getExpenses(tenantContext, options = {}) {
     try {
-      const Expense = require('../../models/Expense');
+      const Expense = require('../../models/finance/Expense');
       const filter = this.getTenantFilter(tenantContext);
       const { projectId, employeeId, category, from, to, billable } = options;
 
@@ -3321,7 +3321,7 @@ class TenantOrgService {
    */
   async createExpense(tenantContext, expenseData, file) {
     try {
-      const Expense = require('../../models/Expense');
+      const Expense = require('../../models/finance/Expense');
       const filter = this.getTenantFilter(tenantContext);
 
       // Handle file upload if present
@@ -3348,7 +3348,7 @@ class TenantOrgService {
    */
   async updateExpense(tenantContext, expenseId, expenseData, file) {
     try {
-      const Expense = require('../../models/Expense');
+      const Expense = require('../../models/finance/Expense');
       const filter = this.getTenantFilter(tenantContext);
 
       // Handle file upload if present
@@ -3379,7 +3379,7 @@ class TenantOrgService {
    */
   async deleteExpense(tenantContext, expenseId) {
     try {
-      const Expense = require('../../models/Expense');
+      const Expense = require('../../models/finance/Expense');
       const filter = this.getTenantFilter(tenantContext);
 
       const expense = await Expense.findOneAndDelete({ _id: expenseId, ...filter });
@@ -3400,7 +3400,7 @@ class TenantOrgService {
    */
   async getRecentTransactions(tenantContext, options = {}) {
     try {
-      const { Transaction } = require('../../models/Finance');
+      const { Transaction } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const { limit = 10 } = options;
 
@@ -3421,7 +3421,7 @@ class TenantOrgService {
    */
   async getOverdueInvoices(tenantContext) {
     try {
-      const { Invoice } = require('../../models/Finance');
+      const { Invoice } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
 
       const overdueInvoices = await Invoice.find({
@@ -3446,7 +3446,7 @@ class TenantOrgService {
    */
   async getUpcomingBills(tenantContext) {
     try {
-      const { Bill } = require('../../models/Finance');
+      const { Bill } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const nextWeek = new Date();
       nextWeek.setDate(nextWeek.getDate() + 7);
@@ -3473,7 +3473,7 @@ class TenantOrgService {
    */
   async generateFinanceReport(tenantContext, reportId, startDate, endDate) {
     try {
-      const { Invoice, Transaction } = require('../../models/Finance');
+      const { Invoice, Transaction } = require('../../models/finance/Finance');
       const filter = this.getTenantFilter(tenantContext);
       const dateFilter = {
         date: { $gte: new Date(startDate), $lte: new Date(endDate) }

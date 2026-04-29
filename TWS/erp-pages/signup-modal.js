@@ -22,7 +22,6 @@ class SignupModal {
   getIndustryFromURL() {
     const path = window.location.pathname;
     if (path.includes('healthcare')) return 'healthcare';
-    if (path.includes('education')) return 'education';
     if (path.includes('software-house')) return 'software_house';
     return 'business';
   }
@@ -113,7 +112,6 @@ class SignupModal {
                 <select id="industrySelect" name="industry" required>
                   <option value="business">General Business</option>
                   <option value="healthcare" ${this.industry === 'healthcare' ? 'selected' : ''}>Healthcare</option>
-                  <option value="education" ${this.industry === 'education' ? 'selected' : ''}>Education</option>
                   <option value="software_house" ${this.industry === 'software_house' ? 'selected' : ''}>Software House</option>
                   <option value="warehouse">Warehouse</option>
                 </select>

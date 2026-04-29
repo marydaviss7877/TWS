@@ -1,8 +1,5 @@
 const { hasPermission } = require('../../config/permissions');
-const { Student, Teacher, Class } = require('../../models/industry/Education');
-const SchoolRoleConfig = require('../../models/education/SchoolRoleConfig');
-const { getCounselorFilter, counselorHasAccess } = require('../../utils/counselorPrivacyFilter');
-const AuditLog = require('../../models/AuditLog');
+const AuditLog = require('../../models/core/AuditLog');
 
 /**
  * Require permission middleware
@@ -37,29 +34,6 @@ const requirePermission = (resource, action, options = {}) => {
         });
       }
 
-      // Check school-level role configuration
-      const orgId = req.tenantContext?.orgId || user.orgId;
-      if (orgId) {
-        const roleConfig = await SchoolRoleConfig.findOne({ orgId });
-        if (roleConfig) {
-          // Filter out disabled roles
-          const enabledRoles = userRoles.filter(role => 
-            roleConfig.isRoleEnabled(role)
-          );
-          
-          if (enabledRoles.length === 0) {
-            // Log audit
-            await logPermissionCheck(req, resource, action, false, 'Role disabled for school');
-            return res.status(403).json({
-              success: false,
-              message: 'Role not enabled for this school',
-              userRoles,
-              enabledRoles: roleConfig.enabledRoles.filter(r => r.enabled).map(r => r.role)
-            });
-          }
-        }
-      }
-
       // Check if any role has permission
       let hasAccess = false;
       for (const role of userRoles) {
@@ -78,23 +52,6 @@ const requirePermission = (resource, action, options = {}) => {
           required: { resource, action },
           userRoles
         });
-      }
-
-      // Apply counselor privacy filtering
-      if (userRoles.includes('counselor') && resource === 'students') {
-        // Check if counselor has access to specific student
-        if (options.resourceLevel && req.params.id) {
-          const hasStudentAccess = await counselorHasAccess(user, req.params.id);
-          if (!hasStudentAccess) {
-            await logPermissionCheck(req, resource, action, false, 'Counselor access denied to student');
-            return res.status(403).json({
-              success: false,
-              message: 'Access denied: Student not assigned to counselor'
-            });
-          }
-        }
-        // Apply database-level filter
-        req.counselorFilter = getCounselorFilter(user);
       }
 
       // Log successful permission check (for audit)
@@ -148,62 +105,6 @@ const checkResourceAccess = async (role, resource, req, options) => {
   }
 
   try {
-    // Teacher can only access assigned classes
-    if (role === 'teacher' && resource === 'classes') {
-      const teacher = await Teacher.findOne({ 
-        userId: req.user._id,
-        tenantId: req.tenantContext?.tenantSlug || req.tenantContext?.tenantIdString,
-        orgId: req.tenantContext?.orgId
-      });
-      
-      if (!teacher) {
-        return false;
-      }
-
-      const classObj = await Class.findById(resourceId);
-      if (!classObj) {
-        return false;
-      }
-
-      // Check if teacher is assigned to this class
-      const isAssigned = teacher.professionalInfo?.classes?.some(
-        classId => classId.toString() === resourceId
-      ) || classObj.classTeacher?.toString() === teacher._id.toString();
-
-      return isAssigned;
-    }
-
-    // Student can only access own data
-    if (role === 'student' && resource === 'students') {
-      const student = await Student.findOne({ 
-        userId: req.user._id,
-        tenantId: req.tenantContext?.tenantSlug || req.tenantContext?.tenantIdString,
-        orgId: req.tenantContext?.orgId
-      });
-      
-      if (!student) {
-        return false;
-      }
-
-      return student._id.toString() === resourceId;
-    }
-
-    // Student can only view own grades
-    if (role === 'student' && resource === 'grades') {
-      const studentId = req.params.studentId || req.body.studentId;
-      const student = await Student.findOne({ 
-        userId: req.user._id,
-        tenantId: req.tenantContext?.tenantSlug || req.tenantContext?.tenantIdString,
-        orgId: req.tenantContext?.orgId
-      });
-      
-      if (!student) {
-        return false;
-      }
-
-      return student._id.toString() === studentId || student._id.toString() === resourceId;
-    }
-
     // Principal and admin have access to all resources in their tenant
     if (['principal', 'admin'].includes(role)) {
       return true;

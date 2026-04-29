@@ -9,7 +9,7 @@ let retentionService, auditService, Organization;
 function loadDeps() {
   if (!retentionService) {
     retentionService = require('../services/compliance/retention.service');
-    Organization     = require('../models/Organization');
+    Organization     = require('../models/org/Organization');
     try { auditService = require('../../services/compliance/audit.service'); } catch (_) {}
   }
 }

@@ -151,19 +151,6 @@ class DatabaseProvisioningService {
         'development_metrics',
         'software_house_roles'
       ],
-      'healthcare': [
-        'patients',
-        'appointments',
-        'medical_records',
-        'prescriptions'
-      ],
-      'education': [
-        'students',
-        'courses',
-        'enrollments',
-        'grades',
-        'assignments'
-      ],
       'business': [] // No additional collections for generic business
     };
 
@@ -186,26 +173,6 @@ class DatabaseProvisioningService {
             await connection.db.collection('tasks').createIndex({ projectId: 1, sprintId: 1 });
           } catch (error) {
             // Collections might not exist yet, that's okay
-          }
-          break;
-
-        case 'healthcare':
-          // Healthcare specific indexes
-          try {
-            await connection.db.collection('patients').createIndex({ patientId: 1 }, { unique: true });
-            await connection.db.collection('appointments').createIndex({ patientId: 1, date: 1 });
-          } catch (error) {
-            // Collections might not exist yet
-          }
-          break;
-
-        case 'education':
-          // Education specific indexes
-          try {
-            await connection.db.collection('students').createIndex({ studentId: 1 }, { unique: true });
-            await connection.db.collection('enrollments').createIndex({ studentId: 1, courseId: 1 });
-          } catch (error) {
-            // Collections might not exist yet
           }
           break;
 

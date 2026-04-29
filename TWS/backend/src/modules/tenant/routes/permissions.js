@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router({ mergeParams: true });
 const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const Permission = require('../../../models/Permission');
+const Permission = require('../../../models/core/Permission');
 const { syncCatalogToOrgPermissions } = require('../../../services/tenant/permissionCatalogSync.service');
 
 // Test route to verify router is working

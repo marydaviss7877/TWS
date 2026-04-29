@@ -1,11 +1,11 @@
 const cron = require('node-cron');
 const mongoose = require('mongoose');
-const Tenant = require('../models/Tenant');
+const Tenant = require('../models/tenant/Tenant');
 // const TenantAnalyticsSummary = require('../models/TenantAnalyticsSummary'); // Model not yet implemented
-const EmployeeMetrics = require('../models/EmployeeMetrics');
-const Project = require('../models/Project');
-const Client = require('../models/Client');
-const Attendance = require('../models/Attendance');
+const EmployeeMetrics = require('../models/hr-payroll/EmployeeMetrics');
+const Project = require('../models/project-delivery/Project');
+const Client = require('../models/industry/Client');
+const Attendance = require('../models/hr-payroll/Attendance');
 const usageTrackerService = require('../services/usageTrackerService');
 const projectProfitabilityService = require('../services/projectProfitabilityService');
 const hrPerformanceService = require('../services/hrPerformanceService');
@@ -14,7 +14,7 @@ const aiInsightsService = require('../services/analytics/ai-insights.service');
 const tenantProvisioningService = require('../services/tenantProvisioningService');
 const emailService = require('../services/integrations/email.service');
 const logger = require('../utils/logger');
-const { Invoice } = require('../models/Finance');
+const { Invoice } = require('../models/finance/Finance');
 const NotificationService = require('../services/notifications/notification.service');
 const documentHubService = require('../services/documentHub/documentHub.service');
 
@@ -370,7 +370,7 @@ class JobScheduler {
   }
 
   async runContractorAccessExpiry() {
-    const TenantDepartmentAccess = require('../models/TenantDepartmentAccess');
+    const TenantDepartmentAccess = require('../models/tenant/TenantDepartmentAccess');
     const { invalidateResolvedPermissions } = require('../services/tenant/permissionResolver.service');
     const toExpire = await TenantDepartmentAccess.find({
       status: 'active',
@@ -574,7 +574,7 @@ class JobScheduler {
    */
   async generateInvoice(tenant) {
     const usage = await usageTrackerService.getAllCurrentUsage(tenant.tenantId);
-    const subscriptionPlan = await require('../models/SubscriptionPlan').findOne({ 
+    const subscriptionPlan = await require('../models/finance/SubscriptionPlan').findOne({ 
       slug: tenant.subscription.plan 
     });
     
@@ -862,7 +862,7 @@ class JobScheduler {
       const tenants = await Tenant.find({ status: 'active' });
       for (const tenant of tenants) {
         const usage = await usageTrackerService.getAllCurrentUsage(tenant._id);
-        const subscriptionPlan = await require('../models/SubscriptionPlan').findOne({
+        const subscriptionPlan = await require('../models/finance/SubscriptionPlan').findOne({
           slug: tenant.subscription?.plan
         });
         if (subscriptionPlan) {

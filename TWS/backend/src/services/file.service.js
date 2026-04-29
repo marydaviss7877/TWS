@@ -5,7 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const sharp = require('sharp');
 const ffmpeg = require('fluent-ffmpeg');
-const File = require('../models/File');
+const File = require('../models/documents/File');
 
 class FileService {
   constructor() {

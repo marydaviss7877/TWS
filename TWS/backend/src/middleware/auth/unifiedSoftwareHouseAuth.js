@@ -31,10 +31,10 @@ const jwt = require('jsonwebtoken');
 const jwtService = require('../../services/auth/jwt.service');
 const tokenBlacklistService = require('../../services/auth/token-blacklist.service');
 const mongoose = require('mongoose');
-const User = require('../../models/User');
-const Tenant = require('../../models/Tenant');
-const Organization = require('../../models/Organization');
-const Workspace = require('../../models/Workspace');
+const User = require('../../models/users-auth/User');
+const Tenant = require('../../models/tenant/Tenant');
+const Organization = require('../../models/org/Organization');
+const Workspace = require('../../models/org/Workspace');
 
 // Try to load audit service (may not exist in all environments)
 let auditService = null;
@@ -475,7 +475,7 @@ const unifiedSoftwareHouseAuth = async (req, res, next) => {
     // ============================================
     // STEP 8: Set request context (TenantUser overrides User.role + sub-roles for UPR)
     // ============================================
-    const TenantUser = require('../../models/TenantUser');
+    const TenantUser = require('../../models/tenant/TenantUser');
     let roleForRequest = userContext.role;
     let hrSubRole = null;
     let financeSubRole = null;

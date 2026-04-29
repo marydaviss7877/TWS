@@ -1,6 +1,6 @@
-const Project = require('../../../models/Project');
-const Task = require('../../../models/Task');
-const User = require('../../../models/User');
+const Project = require('../../../models/project-delivery/Project');
+const Task = require('../../../models/project-delivery/Task');
+const User = require('../../../models/users-auth/User');
 
 /**
  * Create sample project

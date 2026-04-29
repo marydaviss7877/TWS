@@ -18,25 +18,12 @@ async function verifySetup() {
   // Check Environment Variables
   console.log('1. Checking Environment Variables...');
   
-  if (process.env.FERPA_ENCRYPTION_KEY) {
-    if (process.env.FERPA_ENCRYPTION_KEY.length >= 32) {
-      results.passed.push('FERPA_ENCRYPTION_KEY is set');
-      console.log('   ✅ FERPA_ENCRYPTION_KEY: Set');
-    } else {
-      results.warnings.push('FERPA_ENCRYPTION_KEY is too short (should be 32+ bytes)');
-      console.log('   ⚠️  FERPA_ENCRYPTION_KEY: Set but may be too short');
-    }
-  } else {
-    results.failed.push('FERPA_ENCRYPTION_KEY is not set');
-    console.log('   ❌ FERPA_ENCRYPTION_KEY: Not set');
-  }
-
   if (process.env.ENCRYPTION_KEY) {
     results.passed.push('ENCRYPTION_KEY is set');
     console.log('   ✅ ENCRYPTION_KEY: Set');
   } else {
-    results.warnings.push('ENCRYPTION_KEY is not set (will use FERPA_ENCRYPTION_KEY as fallback)');
-    console.log('   ⚠️  ENCRYPTION_KEY: Not set (optional)');
+    results.warnings.push('ENCRYPTION_KEY is not set');
+    console.log('   ⚠️  ENCRYPTION_KEY: Not set');
   }
 
   if (process.env.REDIS_HOST || process.env.REDIS_URL) {
@@ -69,15 +56,6 @@ async function verifySetup() {
   } catch (error) {
     results.failed.push(`Token Blacklist Service import failed: ${error.message}`);
     console.log('   ❌ Token Blacklist Service: Import failed');
-  }
-
-  try {
-    const ferpaService = require('../src/services/ferpaComplianceService');
-    results.passed.push('FERPA Compliance Service can be imported');
-    console.log('   ✅ FERPA Compliance Service: Importable');
-  } catch (error) {
-    results.failed.push(`FERPA Compliance Service import failed: ${error.message}`);
-    console.log('   ❌ FERPA Compliance Service: Import failed');
   }
 
   try {

@@ -1,11 +1,11 @@
 const jwt = require('jsonwebtoken');
 const jwtService = require('../../services/auth/jwt.service');
 const tokenBlacklistService = require('../../services/auth/token-blacklist.service');
-const User = require('../../models/User');
-const TWSAdmin = require('../../models/TWSAdmin');
+const User = require('../../models/users-auth/User');
+const TWSAdmin = require('../../models/admin-platform/TWSAdmin');
 const auditService = require('../../services/compliance/audit.service');
 const { setSecureCookie, setRefreshTokenCookie, clearSecureCookie } = require('../security/cookieSecurity');
-const AuditLog = require('../../models/AuditLog');
+const AuditLog = require('../../models/core/AuditLog');
 
 /**
  * Set authentication cookies
@@ -186,7 +186,7 @@ const authenticateToken = async (req, res, next) => {
     
     // Handle tenant_owner token type (from tenant login)
     if (decoded.type === 'tenant_owner') {
-      const Tenant = require('../models/Tenant');
+      const Tenant = require('../models/tenant/Tenant');
       const tenant = await Tenant.findById(decoded.tenantId || decoded.userId)
         .select('name slug status orgId ownerCredentials erpCategory erpModules');
       

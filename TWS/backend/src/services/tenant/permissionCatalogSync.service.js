@@ -3,7 +3,7 @@
  * so tenant role UIs (Create Role) can assign codes already validated by roles routes.
  */
 
-const Permission = require('../../models/Permission');
+const Permission = require('../../models/core/Permission');
 const { buildPermissionCatalog } = require('./permissionCatalog.service');
 
 const MAX_DESCRIPTION = 1000;

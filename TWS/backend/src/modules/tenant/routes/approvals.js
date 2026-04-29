@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const Approval = require('../../../models/Approval');
-const Milestone = require('../../../models/Milestone');
-const Deliverable = require('../../../models/Deliverable');
-const User = require('../../../models/User');
-const Project = require('../../../models/Project');
-const ProjectMember = require('../../../models/ProjectMember');
+const Approval = require('../../../models/core/Approval');
+const Milestone = require('../../../models/project-delivery/Milestone');
+const Deliverable = require('../../../models/project-delivery/Deliverable');
+const User = require('../../../models/users-auth/User');
+const Project = require('../../../models/project-delivery/Project');
+const ProjectMember = require('../../../models/project-delivery/ProjectMember');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const NotificationService = require('../../../services/notifications/notification.service');
 // Use standardized orgId helper utility

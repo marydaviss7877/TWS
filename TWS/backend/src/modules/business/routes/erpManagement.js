@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
-const Tenant = require('../../../models/Tenant');
+const Tenant = require('../../../models/tenant/Tenant');
 router.use(verifyERPToken);
 
 // Get ERP statistics

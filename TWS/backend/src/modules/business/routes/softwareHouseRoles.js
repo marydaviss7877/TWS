@@ -4,9 +4,9 @@ const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const { checkFeatureAccessSoftwareHouseOnly } = require('../../../middleware/common/featureGate');
-const SoftwareHouseRole = require('../../../models/SoftwareHouseRole');
-const ProjectAccess = require('../../../models/ProjectAccess');
-const User = require('../../../models/User');
+const SoftwareHouseRole = require('../../../models/admin-platform/SoftwareHouseRole');
+const ProjectAccess = require('../../../models/project-delivery/ProjectAccess');
+const User = require('../../../models/users-auth/User');
 const softwareHouseRoleAdmin = requireErpAccess({ allowedRoles: ['owner','admin'], checkRevocation: false });
 router.use(verifyERPToken);
 

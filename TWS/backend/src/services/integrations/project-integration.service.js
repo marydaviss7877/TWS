@@ -4,12 +4,12 @@
  * Ensures seamless integration between Sprints, Tasks, Milestones, Timesheets, and Gantt Chart
  */
 
-const Task = require('../../models/Task');
-const Sprint = require('../../models/Sprint');
-const Milestone = require('../../models/Milestone');
-const ProjectTypeSettings = require('../../models/ProjectTypeSettings');
-const { TimeEntry } = require('../../models/Finance');
-const TaskDependency = require('../../models/TaskDependency');
+const Task = require('../../models/project-delivery/Task');
+const Sprint = require('../../models/project-delivery/Sprint');
+const Milestone = require('../../models/project-delivery/Milestone');
+const ProjectTypeSettings = require('../../models/project-delivery/ProjectTypeSettings');
+const { TimeEntry } = require('../../models/finance/Finance');
+const TaskDependency = require('../../models/project-delivery/TaskDependency');
 const ganttChartService = require('../ganttChartService');
 const projectApi = require('../module-api/project-api.service');
 
@@ -211,7 +211,7 @@ class ProjectIntegrationService {
    * Sync task actual hours from timesheet entries
    */
   async syncTaskTimesheet(task) {
-    const Finance = require('../../models/Finance');
+    const Finance = require('../../models/finance/Finance');
     const TimeEntry = Finance.TimeEntry;
     
     const timeEntries = await TimeEntry.find({
@@ -287,7 +287,7 @@ class ProjectIntegrationService {
     const committedStoryPoints =
       prevCommitted != null && prevCommitted > 0 ? prevCommitted : totalStoryPoints;
 
-    const Finance = require('../../models/Finance');
+    const Finance = require('../../models/finance/Finance');
     const TimeEntry = Finance.TimeEntry;
 
     const timeEntries = await TimeEntry.find({
@@ -338,7 +338,7 @@ class ProjectIntegrationService {
     }
 
     // Create timesheet entry
-    const Finance = require('../../models/Finance');
+    const Finance = require('../../models/finance/Finance');
     const TimeEntry = Finance.TimeEntry;
     const timeEntry = new TimeEntry({
       orgId,
@@ -381,7 +381,7 @@ class ProjectIntegrationService {
 
     // Check timesheet requirement
     if (settings.timesheetRequiredForTaskCompletion) {
-      const Finance = require('../../models/Finance');
+      const Finance = require('../../models/finance/Finance');
       const TimeEntry = Finance.TimeEntry;
       
       const timeEntries = await TimeEntry.find({ taskId: task._id, status: 'approved' });
@@ -436,7 +436,7 @@ class ProjectIntegrationService {
       settings = { requiresSprint: false, requiresMilestone: false, requiresTimesheet: true, requiresGantt: false };
     }
 
-    const Finance = require('../../models/Finance');
+    const Finance = require('../../models/finance/Finance');
     const TimeEntry = Finance.TimeEntry;
     const query = { orgId: orgIdObj || orgId, projectId: projectIdObj || projectId };
 
@@ -564,7 +564,7 @@ class ProjectIntegrationService {
     }
 
     // Check for tasks with timesheet but no actual hours updated
-    const Finance = require('../../models/Finance');
+    const Finance = require('../../models/finance/Finance');
     const TimeEntry = Finance.TimeEntry;
     
     const tasksWithTimesheet = await Task.find({

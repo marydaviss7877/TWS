@@ -1,10 +1,10 @@
-const SoftwareHouseRole = require('../../../models/SoftwareHouseRole');
-const Client = require('../../../models/Client');
-const Project = require('../../../models/Project');
-const Sprint = require('../../../models/Sprint');
-const DevelopmentMetrics = require('../../../models/DevelopmentMetrics');
-const Workspace = require('../../../models/Workspace');
-const User = require('../../../models/User');
+const SoftwareHouseRole = require('../../../models/admin-platform/SoftwareHouseRole');
+const Client = require('../../../models/industry/Client');
+const Project = require('../../../models/project-delivery/Project');
+const Sprint = require('../../../models/project-delivery/Sprint');
+const DevelopmentMetrics = require('../../../models/analytics/DevelopmentMetrics');
+const Workspace = require('../../../models/org/Workspace');
+const User = require('../../../models/users-auth/User');
 
 /**
  * Seed software house-specific data

@@ -20,9 +20,9 @@ const {
   TimeEntry,
   CashFlowForecast,
   FinancialKPI
-} = require('../../../models/Finance');
-const { PayrollRecord } = require('../../../models/Payroll');
-const Project = require('../../../models/Project');
+} = require('../../../models/finance/Finance');
+const { PayrollRecord } = require('../../../models/hr-payroll/Payroll');
+const Project = require('../../../models/project-delivery/Project');
 const FinanceDashboardService = require('../../../services/financeDashboardService');
 const FinanceExportService = require('../../../services/financeExportService');
 

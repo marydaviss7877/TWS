@@ -432,7 +432,7 @@ router.post('/:id/archive',
   verifyERPToken,
   requireRole(['admin', 'super_admin', 'org_manager', 'project_manager', 'pmo', 'owner']),
   ErrorHandler.asyncHandler(async (req, res) => {
-    const Project = require('../../../models/Project');
+    const Project = require('../../../models/project-delivery/Project');
     const project = await Project.findById(req.params.id);
     
     if (!project) {
@@ -472,7 +472,7 @@ router.post('/:id/restore',
   checkUsageLimitSoftwareHouseOnly('projects', 1),
   requireRole(['admin', 'super_admin', 'org_manager', 'project_manager', 'pmo', 'owner']),
   ErrorHandler.asyncHandler(async (req, res) => {
-    const Project = require('../../../models/Project');
+    const Project = require('../../../models/project-delivery/Project');
     const project = await Project.findById(req.params.id);
     
     if (!project) {

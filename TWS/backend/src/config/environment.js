@@ -39,7 +39,6 @@ class EnvironmentConfig {
       'COMPLIANCE_MODE': 'disabled',
       'GDPR_COMPLIANCE': 'false',
       'SOX_COMPLIANCE': 'false',
-      'HIPAA_COMPLIANCE': 'false',
       'BACKUP_ENABLED': 'false',
       'MONITORING_ENABLED': 'true',
       'METRICS_ENABLED': 'true'

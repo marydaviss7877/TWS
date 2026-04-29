@@ -3,8 +3,8 @@ const { body, query, validationResult } = require('express-validator');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const User = require('../../../models/User');
-const Employee = require('../../../models/Employee');
+const User = require('../../../models/users-auth/User');
+const Employee = require('../../../models/hr-payroll/Employee');
 
 // Validation handler - standalone implementation (same as authentication.js)
 const handleValidationErrors = (req, res, next) => {

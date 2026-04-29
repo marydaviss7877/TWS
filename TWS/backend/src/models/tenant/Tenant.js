@@ -56,104 +56,11 @@ const tenantSchema = new mongoose.Schema({
     enum: ['software_house', 'business', 'warehouse'],
     default: 'software_house'
   },
-  // Legacy: kept for existing DB documents; not used for new tenants
-  educationConfig: {
-    _id: false, // Prevent Mongoose from creating _id for subdocuments
-    institutionType: {
-      type: String,
-      enum: ['school', 'college', 'university']
-      // Not required - validation handled in pre-save hook
-    },
-    // School-specific settings (Nursery to 8th Grade)
-    schoolSettings: {
-      gradeLevels: [String], // e.g., ['Nursery', 'KG', 'Grade 1', 'Grade 2', ..., 'Grade 8']
-      sections: [String], // e.g., ['A', 'B', 'C']
-      parentPortalEnabled: { type: Boolean, default: true },
-      transportationEnabled: { type: Boolean, default: true },
-      hostelEnabled: { type: Boolean, default: false }, // Usually not for younger kids
-      playgroundEnabled: { type: Boolean, default: true },
-      mealManagementEnabled: { type: Boolean, default: true },
-      activityClubsEnabled: { type: Boolean, default: true }
-    },
-    // College-specific settings (9th to 12th Grade)
-    collegeSettings: {
-      gradeLevels: [String], // e.g., ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12']
-      sections: [String], // e.g., ['A', 'B', 'C']
-      streams: [String], // e.g., ['Science', 'Commerce', 'Arts', 'Vocational']
-      boardExams: { type: Boolean, default: true }, // Board exam management
-      parentPortalEnabled: { type: Boolean, default: true },
-      transportationEnabled: { type: Boolean, default: true },
-      hostelEnabled: { type: Boolean, default: true },
-      careerGuidanceEnabled: { type: Boolean, default: true },
-      collegeEntrancePrepEnabled: { type: Boolean, default: true },
-      scholarshipManagementEnabled: { type: Boolean, default: true }
-    },
-    // University-specific settings (Higher Education)
-    universitySettings: {
-      degreePrograms: [String], // e.g., ['Bachelor of Science', 'Master of Arts', 'Ph.D.']
-      academicLevels: [String], // e.g., ['Undergraduate', 'Graduate', 'Doctorate']
-      departments: [String], // e.g., ['Computer Science', 'Mathematics', 'Physics']
-      semesterSystem: { type: Boolean, default: true }, // true for semesters, false for quarters/trimesters
-      gpaSystem: { type: String, enum: ['4.0', '5.0', '10.0', 'percentage'], default: '4.0' },
-      creditSystem: { type: Boolean, default: true },
-      researchEnabled: { type: Boolean, default: true },
-      internshipEnabled: { type: Boolean, default: true },
-      alumniPortalEnabled: { type: Boolean, default: true },
-      financialAidEnabled: { type: Boolean, default: true },
-      dormitoryEnabled: { type: Boolean, default: true },
-      thesisManagementEnabled: { type: Boolean, default: true },
-      academicAdvisingEnabled: { type: Boolean, default: true }
-    }
-  },
-  // Healthcare-specific configuration (for healthcare ERP category)
-  healthcareConfig: {
-    facilityType: {
-      type: String,
-      enum: ['hospital', 'clinic', 'medical_center', 'pharmacy'],
-      default: 'hospital'
-    },
-    licenseNumber: String,
-    hipaaCompliant: {
-      type: Boolean,
-      default: true
-    },
-    ehrEnabled: {
-      type: Boolean,
-      default: true
-    },
-    // Hospital-specific settings
-    hospitalSettings: {
-      bedManagementEnabled: { type: Boolean, default: true },
-      icuManagementEnabled: { type: Boolean, default: true },
-      erManagementEnabled: { type: Boolean, default: true },
-      surgeryManagementEnabled: { type: Boolean, default: true },
-      wardManagementEnabled: { type: Boolean, default: true },
-      dischargeManagementEnabled: { type: Boolean, default: true }
-    },
-    // Clinic-specific settings
-    clinicSettings: {
-      appointmentSchedulingEnabled: { type: Boolean, default: true },
-      walkInEnabled: { type: Boolean, default: true },
-      prescriptionManagementEnabled: { type: Boolean, default: true },
-      basicLabEnabled: { type: Boolean, default: true }
-    },
-    // Pharmacy-specific settings
-    pharmacySettings: {
-      prescriptionFulfillmentEnabled: { type: Boolean, default: true },
-      medicationTrackingEnabled: { type: Boolean, default: true }
-    }
-  },
   erpModules: [{
     type: String,
     enum: [
       // Common modules
       'hr', 'finance', 'projects', 'operations', 'clients', 'reports', 'messaging', 'meetings', 'attendance', 'roles',
-      // Healthcare modules
-      'patients', 'doctors', 'appointments', 'medical_records', 'prescriptions', 'departments', 'billing',
-      // Education modules (for schools)
-      'students', 'teachers', 'classes', 'grades', 'courses', 'academic_year', 'exams', 'admissions',
-      // Education modules (for universities)
-      'programs', 'departments', 'faculty', 'semesters', 'course_registration', 'gpa_tracking', 'research', 'alumni', 'financial_aid', 'dormitories',
       // Software house modules
       'development_methodology', 'tech_stack', 'project_types', 'time_tracking', 'code_quality', 'client_portal'
     ]
@@ -540,20 +447,6 @@ tenantSchema.pre('save', async function(next) {
     }
   }
   
-  // Remove educationConfig if erpCategory is not 'education'
-  if (this.erpCategory !== 'education') {
-    if (this.educationConfig !== undefined && this.educationConfig !== null) {
-      this.set('educationConfig', undefined);
-    }
-  }
-  
-  // Remove healthcareConfig if erpCategory is not 'healthcare'
-  if (this.erpCategory !== 'healthcare') {
-    if (this.healthcareConfig !== undefined && this.healthcareConfig !== null) {
-      this.set('healthcareConfig', undefined);
-    }
-  }
-  
   next();
 });
 
@@ -567,24 +460,6 @@ tenantSchema.pre('validate', function(next) {
     if (this.softwareHouseConfig !== undefined && this.softwareHouseConfig !== null) {
       this.set('softwareHouseConfig', undefined);
       delete this.softwareHouseConfig;
-    }
-  }
-  
-  // Remove educationConfig entirely for non-education tenants
-  // CRITICAL: This must happen before Mongoose validates required fields
-  if (this.erpCategory !== 'education') {
-    console.log('🗑️ Removing educationConfig for non-education tenant');
-    // Remove from Mongoose's internal state
-    this.set('educationConfig', undefined);
-    // Also delete from the document object
-    delete this.educationConfig;
-  }
-  
-  // Remove healthcareConfig entirely for non-healthcare tenants
-  if (this.erpCategory !== 'healthcare') {
-    if (this.healthcareConfig !== undefined && this.healthcareConfig !== null) {
-      this.set('healthcareConfig', undefined);
-      delete this.healthcareConfig;
     }
   }
   

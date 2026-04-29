@@ -7,7 +7,7 @@
  */
 
 module.exports = {
-  // Per-org/tenant pricing (flat rate for all categories: software_house, education, healthcare, business, warehouse)
+  // Per-org/tenant pricing (flat rate for all categories: software_house, business, warehouse)
   PRICE_PER_ORG: 10,
   CURRENCY: 'USD',
   

@@ -1,5 +1,5 @@
-const Attendance = require('../../models/Attendance');
-const Employee = require('../../models/Employee');
+const Attendance = require('../../models/hr-payroll/Attendance');
+const Employee = require('../../models/hr-payroll/Employee');
 
 function normalizeDeviceValue(device) {
   if (!device) return undefined;

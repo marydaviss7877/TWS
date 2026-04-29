@@ -1,5 +1,5 @@
-const { ProjectCosting, TimeEntry, Invoice, Transaction, Client } = require('../../models/Finance');
-const Expense = require('../../models/Expense');
+const { ProjectCosting, TimeEntry, Invoice, Transaction, Client } = require('../../models/finance/Finance');
+const Expense = require('../../models/finance/Expense');
 const projectApi = require('../module-api/project-api.service');
 const financeApi = require('../module-api/finance-api.service');
 

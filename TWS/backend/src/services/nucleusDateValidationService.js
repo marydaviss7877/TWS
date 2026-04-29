@@ -1,5 +1,5 @@
-const Deliverable = require('../models/Deliverable');
-const Project = require('../models/Project');
+const Deliverable = require('../models/project-delivery/Deliverable');
+const Project = require('../models/project-delivery/Project');
 
 /**
  * Nucleus Date Validation Service

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const config = require('../../config/environment');
-const Tenant = require('../../models/Tenant');
+const Tenant = require('../../models/tenant/Tenant');
 const logger = require('../../utils/logger');
 
 /**

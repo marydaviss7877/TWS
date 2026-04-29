@@ -7,7 +7,7 @@ const SignupFlows = {
   /**
    * Education ERP Signup Flow (5 steps)
    */
-  education: {
+  legacy: {
     steps: [
       {
         id: 1,
@@ -50,7 +50,7 @@ const SignupFlows = {
         subtitle: 'Choose your subdomain',
         fields: [
           { name: 'slug', label: 'Tenant Subdomain', type: 'slug', required: true, hint: '3-50 characters, lowercase letters, numbers, and hyphens only', checkAvailability: true },
-          { name: 'industry', label: 'Industry', type: 'hidden', value: 'education' }
+          { name: 'industry', label: 'Industry', type: 'hidden', value: 'legacy' }
         ]
       },
       {

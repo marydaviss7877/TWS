@@ -3,11 +3,11 @@ const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { verifyWorkspaceAccess } = require('../../../middleware/auth/workspaceIsolation');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const { getWorkspaceStatistics, getProjectDeliverablesSummary, getDeliverableStatusSummary } = require('../../../utils/nucleusHelpers');
-const Project = require('../../../models/Project');
-const Deliverable = require('../../../models/Deliverable');
-const Approval = require('../../../models/Approval');
-const ChangeRequest = require('../../../models/ChangeRequest');
-const Task = require('../../../models/Task');
+const Project = require('../../../models/project-delivery/Project');
+const Deliverable = require('../../../models/project-delivery/Deliverable');
+const Approval = require('../../../models/core/Approval');
+const ChangeRequest = require('../../../models/project-delivery/ChangeRequest');
+const Task = require('../../../models/project-delivery/Task');
 
 const router = express.Router();
 router.use(verifyERPToken);

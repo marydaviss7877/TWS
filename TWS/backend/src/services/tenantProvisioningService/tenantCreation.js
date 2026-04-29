@@ -1,4 +1,4 @@
-const Tenant = require('../../models/Tenant');
+const Tenant = require('../../models/tenant/Tenant');
 const mongoose = require('mongoose');
 const { generateConnectionString } = require('./utils');
 const billingConfig = require('../../config/billingConfig');

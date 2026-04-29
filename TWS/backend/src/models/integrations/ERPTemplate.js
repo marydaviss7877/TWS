@@ -10,7 +10,7 @@ const erpTemplateSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['education', 'healthcare', 'software_house'],
+    enum: ['software_house'],
     required: true
   },
   description: String,

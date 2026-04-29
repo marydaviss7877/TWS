@@ -1,4 +1,4 @@
-const Tenant = require('../../models/Tenant');
+const Tenant = require('../../models/tenant/Tenant');
 const { calculateOnboardingProgress } = require('./utils');
 
 /**

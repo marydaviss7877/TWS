@@ -4,7 +4,7 @@ const { requireRole } = require('../../../middleware/auth/auth');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const Department = require('../../../models/Department');
+const Department = require('../../../models/org/Department');
 const DepartmentDashboardService = require('../../../services/analytics/department-dashboard.service');
 const {
   DEFAULT_DEPARTMENT_TEMPLATE,

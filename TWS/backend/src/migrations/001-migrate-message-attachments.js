@@ -8,7 +8,7 @@ let Message;
 let File;
 try {
   Message = require('../models/Message');
-  File = require('../models/File');
+  File = require('../models/documents/File');
 } catch (e) {
   Message = null;
   File = null;

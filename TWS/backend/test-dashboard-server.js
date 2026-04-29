@@ -177,8 +177,6 @@ app.get('/api/master-erp/meta/industries', (req, res) => {
     success: true,
     data: [
       { value: 'software_house', label: 'Software House' },
-      { value: 'education', label: 'Education' },
-      { value: 'healthcare', label: 'Healthcare' }
     ]
   });
 });

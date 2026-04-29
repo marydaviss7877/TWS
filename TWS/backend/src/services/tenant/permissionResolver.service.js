@@ -5,9 +5,9 @@
  * Results are cached; cache is invalidated on grant/revoke/expiry/offboard.
  */
 
-const TenantUser = require('../../models/TenantUser');
-const TenantDepartmentAccess = require('../../models/TenantDepartmentAccess');
-const TenantRole = require('../../models/TenantRole');
+const TenantUser = require('../../models/tenant/TenantUser');
+const TenantDepartmentAccess = require('../../models/tenant/TenantDepartmentAccess');
+const TenantRole = require('../../models/tenant/TenantRole');
 const permissionCache = require('./permissionCache.service');
 
 // ---------------------------------------------------------------------------
@@ -144,8 +144,8 @@ async function resolveUserPermissions(userId, tenantId, opts = {}) {
     // Legacy / edge: active User in tenant org but no TenantUser row yet — grant base role perms
     // so employee portal (attendance, self employee record) is not hard-denied.
     try {
-      const Tenant = require('../../models/Tenant');
-      const User = require('../../models/User');
+      const Tenant = require('../../models/tenant/Tenant');
+      const User = require('../../models/users-auth/User');
       const [tenantDoc, userDoc] = await Promise.all([
         Tenant.findById(tenantId).select('organizationId orgId').lean(),
         User.findById(userId).select('orgId role status').lean()

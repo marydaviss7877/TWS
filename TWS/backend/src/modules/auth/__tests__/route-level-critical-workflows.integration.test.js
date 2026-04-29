@@ -28,19 +28,19 @@ describe('route-level critical workflow checks', () => {
         return next();
       }
     }));
-    jest.doMock('../../../models/Payroll', () => ({
+    jest.doMock('../../../models/hr-payroll/Payroll', () => ({
       PayrollRecord: {},
       PayrollRule: {},
       PayrollCycle: {}
     }));
-    jest.doMock('../../../models/AIPayroll', () => ({
+    jest.doMock('../../../models/hr-payroll/AIPayroll', () => ({
       AIPayrollConfig: { findOne: jest.fn().mockResolvedValue({}) },
       AIPayrollAnalytics: {},
       SmartPayrollProcessing: {},
       EmployeeAIInsights: {}
     }));
-    jest.doMock('../../../models/Employee', () => ({ find: jest.fn().mockResolvedValue([]) }));
-    jest.doMock('../../../models/User', () => ({}));
+    jest.doMock('../../../models/hr-payroll/Employee', () => ({ find: jest.fn().mockResolvedValue([]) }));
+    jest.doMock('../../../models/users-auth/User', () => ({}));
     jest.doMock('../../../services/aiPayrollService', () => ({
       initializeAIPayroll: jest.fn().mockResolvedValue({ enabled: true })
     }));
@@ -77,10 +77,10 @@ describe('route-level critical workflow checks', () => {
     jest.doMock('../../../middleware/auth/erpAccessControl', () => ({
       requireErpAccess: () => (_req, _res, next) => next()
     }));
-    jest.doMock('../../../models/Project', () => ({
+    jest.doMock('../../../models/project-delivery/Project', () => ({
       findOne: jest.fn().mockResolvedValue({ _id: 'p-1', orgId: 'org-1' })
     }));
-    jest.doMock('../../../models/ProjectMember', () => ({
+    jest.doMock('../../../models/project-delivery/ProjectMember', () => ({
       findOne: jest.fn().mockImplementation(({ userId }) => Promise.resolve(
         String(userId) === 'u-owner' ? { userId: 'u-owner', role: 'owner', status: 'active' } : null
       )),
@@ -90,13 +90,13 @@ describe('route-level critical workflow checks', () => {
         })
       })
     }));
-    jest.doMock('../../../models/Client', () => ({}));
-    jest.doMock('../../../models/Board', () => ({}));
-    jest.doMock('../../../models/List', () => ({}));
-    jest.doMock('../../../models/Card', () => ({}));
-    jest.doMock('../../../models/ProjectTemplate', () => ({}));
-    jest.doMock('../../../models/Activity', () => ({}));
-    jest.doMock('../../../models/Milestone', () => ({}));
+    jest.doMock('../../../models/industry/Client', () => ({}));
+    jest.doMock('../../../models/project-delivery/Board', () => ({}));
+    jest.doMock('../../../models/project-delivery/List', () => ({}));
+    jest.doMock('../../../models/industry/Card', () => ({}));
+    jest.doMock('../../../models/project-delivery/ProjectTemplate', () => ({}));
+    jest.doMock('../../../models/analytics/Activity', () => ({}));
+    jest.doMock('../../../models/project-delivery/Milestone', () => ({}));
 
     const app = express();
     app.use(express.json());

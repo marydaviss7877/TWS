@@ -7,8 +7,8 @@
  * Module Boundary: Projects module owns Project, Task, Milestone, Sprint models.
  */
 
-const Project = require('../../models/Project');
-const ProjectMember = require('../../models/ProjectMember');
+const Project = require('../../models/project-delivery/Project');
+const ProjectMember = require('../../models/project-delivery/ProjectMember');
 
 class ProjectModuleAPI {
   /**

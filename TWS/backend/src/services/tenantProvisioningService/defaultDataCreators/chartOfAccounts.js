@@ -1,4 +1,4 @@
-const { ChartOfAccounts } = require('../../../models/Finance');
+const { ChartOfAccounts } = require('../../../models/finance/Finance');
 
 /**
  * Create default chart of accounts

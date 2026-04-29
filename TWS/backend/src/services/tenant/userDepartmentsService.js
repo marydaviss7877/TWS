@@ -3,7 +3,7 @@
  * Returns department IDs the user has access to via TenantDepartmentAccess.
  * Used for filtering workspaces/projects and visibility.
  */
-const TenantDepartmentAccess = require('../../models/TenantDepartmentAccess');
+const TenantDepartmentAccess = require('../../models/tenant/TenantDepartmentAccess');
 
 /**
  * Get list of department IDs the user has active access to (tenant-scoped).

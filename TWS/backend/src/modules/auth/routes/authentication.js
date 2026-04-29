@@ -24,9 +24,9 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 const validator = require('validator');
-const User = require('../../../models/User');
-const Organization = require('../../../models/Organization');
-const TWSAdmin = require('../../../models/TWSAdmin');
+const User = require('../../../models/users-auth/User');
+const Organization = require('../../../models/org/Organization');
+const TWSAdmin = require('../../../models/admin-platform/TWSAdmin');
 
 const router = express.Router();
 
@@ -190,8 +190,8 @@ router.post('/login',
     await User.updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } }).catch(() => {});
 
     // Build token payload with tenant context
-    const Organization = require('../../../models/Organization');
-    const Tenant = require('../../../models/Tenant');
+    const Organization = require('../../../models/org/Organization');
+    const Tenant = require('../../../models/tenant/Tenant');
 
     let additionalPayload = {};
     let orgData = null;
@@ -484,7 +484,7 @@ router.get('/me', verifyERPToken, ErrorHandler.asyncHandler(async (req, res) => 
           userData.tenantId = u.orgId.slug;
         }
       } else {
-        const Organization = require('../../../models/Organization');
+        const Organization = require('../../../models/org/Organization');
         const org = await Organization.findById(u.orgId).select('slug name').lean();
         if (org) {
           userData.orgId = {
@@ -618,7 +618,7 @@ router.get('/invite/accept', checkDatabaseConnection, ErrorHandler.asyncHandler(
   const { token } = req.query;
   if (!token) return res.status(400).json({ success: false, message: 'token required' });
 
-  const TenantUser = require('../../../models/TenantUser');
+  const TenantUser = require('../../../models/tenant/TenantUser');
   const tenantUser = await TenantUser.findOne({
     'invitation.invitationToken': token,
     'invitation.invitationExpires': { $gt: new Date() },
@@ -647,7 +647,7 @@ router.post('/invite/accept',
   ErrorHandler.asyncHandler(async (req, res) => {
     const { token, password } = req.body;
 
-    const TenantUser = require('../../../models/TenantUser');
+    const TenantUser = require('../../../models/tenant/TenantUser');
     const tenantUser = await TenantUser.findOne({
       'invitation.invitationToken': token,
       'invitation.invitationExpires': { $gt: new Date() },

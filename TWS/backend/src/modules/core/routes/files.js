@@ -8,7 +8,7 @@ const { strictLimiter } = require('../../../middleware/rateLimiting/rateLimiter'
 const fileService = require('../../../services/file.service');
 // Chat model removed - messaging features have been removed
 // const Chat = require('../../../models/Chat');
-const File = require('../../../models/File');
+const File = require('../../../models/documents/File');
 const fileProcessorQueue = require('../../../workers/fileProcessorQueue');
 
 const router = express.Router();

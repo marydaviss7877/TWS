@@ -4,9 +4,9 @@
  */
 
 const auditService = require('../compliance/audit.service');
-const Notification = require('../../models/Notification');
-const Tenant = require('../../models/Tenant');
-const User = require('../../models/User');
+const Notification = require('../../models/notifications/Notification');
+const Tenant = require('../../models/tenant/Tenant');
+const User = require('../../models/users-auth/User');
 const mongoose = require('mongoose');
 
 // Legitimate reasons for platform admin to access tenant data
@@ -311,7 +311,7 @@ class PlatformAdminAccessService {
           
           // Auto-approve in development
           if (autoApproval.success && autoApproval.approval) {
-            const PlatformAdminApproval = require('../../models/PlatformAdminApproval');
+            const PlatformAdminApproval = require('../../models/admin-platform/PlatformAdminApproval');
             await PlatformAdminApproval.findByIdAndUpdate(autoApproval.approval._id, {
               status: 'approved',
               approvedBy: platformAdmin._id,
@@ -333,7 +333,7 @@ class PlatformAdminAccessService {
       } else {
         // Update approval to mark access as granted
         if (approvalCheck.approval) {
-          const PlatformAdminApproval = require('../../models/PlatformAdminApproval');
+          const PlatformAdminApproval = require('../../models/admin-platform/PlatformAdminApproval');
           await PlatformAdminApproval.findByIdAndUpdate(approvalCheck.approval._id, {
             accessGranted: true,
             accessGrantedAt: new Date()
@@ -400,7 +400,7 @@ class PlatformAdminAccessService {
    */
   async checkApproval(platformAdminId, tenantId, reason) {
     try {
-      const PlatformAdminApproval = require('../../models/PlatformAdminApproval');
+      const PlatformAdminApproval = require('../../models/admin-platform/PlatformAdminApproval');
       
       // Find active approval
       const approval = await PlatformAdminApproval.findOne({
@@ -491,7 +491,7 @@ class PlatformAdminAccessService {
     method
   }) {
     try {
-      const PlatformAdminApproval = require('../../models/PlatformAdminApproval');
+      const PlatformAdminApproval = require('../../models/admin-platform/PlatformAdminApproval');
       
       // Check if pending approval already exists
       const existingApproval = await PlatformAdminApproval.findOne({

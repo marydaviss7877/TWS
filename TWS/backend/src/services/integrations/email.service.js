@@ -9,7 +9,7 @@ const envConfig = require('../../config/environment');
 class EmailService {
   constructor() {
     this.transporter = null;
-    this.from = envConfig.get('EMAIL_FROM') || 'noreply@tws-education.com';
+    this.from = envConfig.get('EMAIL_FROM') || 'noreply@tws-platform.com';
     this.initializeTransporter();
   }
 

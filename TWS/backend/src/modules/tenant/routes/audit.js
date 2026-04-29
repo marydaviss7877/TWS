@@ -9,7 +9,7 @@ const { requireRole } = require('../../../middleware/auth/auth');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
-const TenantAuditLog = require('../../../models/TenantAuditLog');
+const TenantAuditLog = require('../../../models/tenant/TenantAuditLog');
 
 router.use(verifyERPToken);
 const auditAccess = requireErpAccess({

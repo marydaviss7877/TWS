@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Tenant = require('../../../models/Tenant');
+const Tenant = require('../../../models/tenant/Tenant');
 const TenantProvisioningService = require('../../../services/tenantProvisioningService');
 const TenantMiddleware = require('../../../middleware/tenant/tenantMiddleware');
 const { TenantController } = require('../../../routes/tenantRouter');

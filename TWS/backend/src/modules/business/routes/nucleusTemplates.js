@@ -2,7 +2,7 @@ const express = require('express');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { verifyWorkspaceAccess, requireWorkspaceRole } = require('../../../middleware/auth/workspaceIsolation');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const Workspace = require('../../../models/Workspace');
+const Workspace = require('../../../models/org/Workspace');
 const templateService = require('../../../services/nucleusTemplateService');
 const onboardingService = require('../../../services/nucleusOnboardingService');
 

@@ -284,7 +284,7 @@ const complianceReportSchema = new mongoose.Schema({
   reportType: {
     type: String,
     required: true,
-    enum: ['sox', 'pci_dss', 'gdpr', 'hipaa', 'iso27001', 'audit_trail', 'data_retention']
+    enum: ['sox', 'pci_dss', 'gdpr', 'iso27001', 'audit_trail', 'data_retention']
   },
   period: {
     start: Date,

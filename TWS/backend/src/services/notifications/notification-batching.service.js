@@ -1,5 +1,5 @@
 // SIMPLIFIED: Removed notification queue and push notifications - email only
-const NotificationPreference = require('../../models/NotificationPreference');
+const NotificationPreference = require('../../models/notifications/NotificationPreference');
 const emailService = require('./integrations/email.service');
 
 class NotificationBatchingService {
@@ -300,8 +300,8 @@ class NotificationBatchingService {
   // Process digest notifications
   async processDigestNotifications() {
     try {
-      const NotificationPreference = require('../../models/NotificationPreference');
-      const User = require('../../models/User');
+      const NotificationPreference = require('../../models/notifications/NotificationPreference');
+      const User = require('../../models/users-auth/User');
       
       // Get all users with digest preferences
       const users = await User.find({}).select('_id email fullName');
@@ -350,7 +350,7 @@ class NotificationBatchingService {
   async sendDigestForPeriod(userId, frequency, cutoffDate) {
     try {
       // Use Notification model instead of NotificationQueue
-      const Notification = require('../../models/Notification');
+      const Notification = require('../../models/notifications/Notification');
       const notifications = await Notification.find({
         userId,
         read: false,

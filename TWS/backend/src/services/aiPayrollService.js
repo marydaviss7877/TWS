@@ -3,7 +3,7 @@
  * This service handles AI-powered payroll processing and analytics
  */
 
-const { AIPayrollConfig, AIPayrollAnalytics, SmartPayrollProcessing, EmployeeAIInsights } = require('../models/AIPayroll');
+const { AIPayrollConfig, AIPayrollAnalytics, SmartPayrollProcessing, EmployeeAIInsights } = require('../models/hr-payroll/AIPayroll');
 
 class AIPayrollService {
   /**

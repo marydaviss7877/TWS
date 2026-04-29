@@ -1,4 +1,4 @@
-const ProjectTemplate = require('../../../models/ProjectTemplate');
+const ProjectTemplate = require('../../../models/project-delivery/ProjectTemplate');
 
 /**
  * Create default project templates

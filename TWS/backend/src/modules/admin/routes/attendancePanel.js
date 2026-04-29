@@ -3,8 +3,8 @@ const { body, query } = require('express-validator');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
-const Attendance = require('../../../models/Attendance');
-const Employee = require('../../../models/Employee');
+const Attendance = require('../../../models/hr-payroll/Attendance');
+const Employee = require('../../../models/hr-payroll/Employee');
 const csv = require('csv-writer').createObjectCsvWriter;
 
 const router = express.Router();

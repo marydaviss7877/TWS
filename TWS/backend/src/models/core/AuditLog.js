@@ -67,10 +67,7 @@ const auditLogSchema = new mongoose.Schema({
       'USER', 'ORGANIZATION', 'TENANT', 'PROJECT', 'CLIENT',
       'EMPLOYEE', 'ATTENDANCE', 'INVOICE', 'SUBSCRIPTION',
       'PAYMENT', 'FILE', 'API', 'SYSTEM', 'AUDIT_LOG',
-      'AUTH', 'SESSION', 'RESOURCE', 'TASK', 'SPRINT', 'MILESTONE',
-      // Healthcare resources
-      'PATIENT', 'MEDICAL_RECORD', 'PRESCRIPTION', 'APPOINTMENT',
-      'DOCTOR', 'LAB_RESULT', 'BILLING_CLAIM'
+      'AUTH', 'SESSION', 'RESOURCE', 'TASK', 'SPRINT', 'MILESTONE'
     ]
   },
   resourceId: {

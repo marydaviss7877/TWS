@@ -281,7 +281,7 @@ router.post('/create-tenant',
     body('organizationName').notEmpty().trim().isLength({ min: 2, max: 255 }),
     body('slug').notEmpty().trim(),
     body('industry').optional().isIn([
-      'business', 'education', 'warehouse', 'healthcare', 
+      'business', 'warehouse', 
       'software_house'
     ]),
     handleValidationErrors

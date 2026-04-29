@@ -349,7 +349,7 @@ app.get('/api/supra-admin/tenants', (req, res) => {
       slug: 'edutech',
       status: 'active',
       plan: 'trial',
-      industry: 'education',
+      industry: 'legacy',
       createdAt: new Date(Date.now() - 345600000).toISOString(),
       adminEmail: 'admin@edutech.com',
       revenue: 0,
@@ -357,20 +357,6 @@ app.get('/api/supra-admin/tenants', (req, res) => {
       storage: 180,
       lastActive: new Date(Date.now() - 14400000).toISOString()
     },
-    {
-      _id: 'tenant6',
-      name: 'HealthCare Plus',
-      slug: 'healthcare-plus',
-      status: 'suspended',
-      plan: 'professional',
-      industry: 'healthcare',
-      createdAt: new Date(Date.now() - 432000000).toISOString(),
-      adminEmail: 'admin@healthcareplus.com',
-      revenue: 45000,
-      users: 25,
-      storage: 1200,
-      lastActive: new Date(Date.now() - 604800000).toISOString()
-    }
   ];
   
   // Calculate stats from mock data
@@ -400,8 +386,7 @@ app.get('/api/supra-admin/erp/stats', (req, res) => {
     activeInstances: 22,
     industryBreakdown: {
       software_house: 8,
-      education: 4,
-      healthcare: 3,
+      legacy: 4,
       finance: 2
     },
     performanceMetrics: {
@@ -446,7 +431,7 @@ async function seedIndustrySpecificData(masterERPConfig, tenantId) {
         };
         break;
         
-      case 'education':
+      case 'legacy':
         seededData = {
           totalRecords: 38,
           categories: [
@@ -456,19 +441,6 @@ async function seedIndustrySpecificData(masterERPConfig, tenantId) {
             { name: 'Roles', count: 6, items: ['Principal', 'Vice Principal', 'Teacher', 'Counselor', 'Librarian', 'Administrative Staff'] },
             { name: 'Departments', count: 5, items: ['Elementary', 'Middle School', 'High School', 'Administration', 'Support Services'] },
             { name: 'Default Settings', count: 4, items: ['Grading System: Percentage', 'Academic Year: September-June', 'Attendance Tracking: Daily', 'Parent Portal: Enabled'] }
-          ]
-        };
-        break;
-        
-      case 'healthcare':
-        seededData = {
-          totalRecords: 35,
-          categories: [
-            { name: 'Departments', count: 8, items: ['Emergency', 'Cardiology', 'Pediatrics', 'Orthopedics', 'Radiology', 'Laboratory', 'Pharmacy', 'Administration'] },
-            { name: 'Roles', count: 7, items: ['Doctor', 'Nurse', 'Specialist', 'Technician', 'Pharmacist', 'Administrator', 'Receptionist'] },
-            { name: 'Appointment Types', count: 6, items: ['Consultation', 'Follow-up', 'Emergency', 'Surgery', 'Diagnostic', 'Therapy'] },
-            { name: 'Medical Specialties', count: 10, items: ['General Medicine', 'Cardiology', 'Pediatrics', 'Orthopedics', 'Dermatology', 'Neurology', 'Psychiatry', 'Radiology', 'Pathology', 'Anesthesiology'] },
-            { name: 'Default Settings', count: 4, items: ['Appointment Duration: 30 minutes', 'Records Retention: 7 years', 'Prescription Tracking: Enabled', 'Insurance Integration: Enabled'] }
           ]
         };
         break;
@@ -530,26 +502,15 @@ app.get('/api/master-erp', (req, res) => {
       icon: '💻'
     },
     {
-      _id: 'education',
+      _id: 'legacy',
       name: 'Education ERP',
-      industry: 'education',
+      industry: 'legacy',
       description: 'Comprehensive ERP for schools, colleges, and universities',
       configuration: {
         coreModules: ['employees', 'finance', 'reports'],
         industryModules: ['students', 'teachers', 'classes', 'grades', 'courses', 'exams', 'admissions']
       },
       icon: '🎓'
-    },
-    {
-      _id: 'healthcare',
-      name: 'Healthcare ERP',
-      industry: 'healthcare',
-      description: 'ERP solution for hospitals, clinics, and medical centers',
-      configuration: {
-        coreModules: ['employees', 'finance', 'reports'],
-        industryModules: ['patients', 'doctors', 'appointments', 'medical_records', 'prescriptions', 'departments']
-      },
-      icon: '🏥'
     },
     {
       _id: 'finance',
@@ -593,18 +554,11 @@ app.get('/api/master-erp/meta/industries', (req, res) => {
       modules: ['development_methodology', 'tech_stack', 'project_types', 'time_tracking', 'code_quality', 'client_portal']
     },
     {
-      value: 'education',
+      value: 'legacy',
       label: 'Education',
-      description: 'Schools, colleges, universities, educational institutions',
+      description: 'Schools, colleges, universities, legacyal institutions',
       icon: '🎓',
       modules: ['students', 'teachers', 'classes', 'grades', 'courses', 'academic_year', 'exams', 'admissions']
-    },
-    {
-      value: 'healthcare',
-      label: 'Healthcare',
-      description: 'Hospitals, clinics, medical centers, healthcare providers',
-      icon: '🏥',
-      modules: ['patients', 'doctors', 'appointments', 'medical_records', 'prescriptions', 'departments', 'billing']
     },
     {
       value: 'finance',
@@ -634,13 +588,12 @@ app.get('/api/master-erp/stats/overview', (req, res) => {
     mostPopularIndustry: 'software_house',
     industryBreakdown: {
       software_house: 8,
-      education: 4,
-      healthcare: 3,
+      legacy: 4,
       finance: 2
     },
     recentActivity: [
       { action: 'Template Created', industry: 'software_house', timestamp: new Date().toISOString() },
-      { action: 'Tenant Created', industry: 'education', timestamp: new Date(Date.now() - 86400000).toISOString() }
+      { action: 'Tenant Created', industry: 'legacy', timestamp: new Date(Date.now() - 86400000).toISOString() }
     ]
   };
   
@@ -680,24 +633,14 @@ app.post('/api/master-erp/:id/create-tenant', async (req, res) => {
           clientPortalEnabled: true
         }
       },
-      education: {
-        industry: 'education',
+      legacy: {
+        industry: 'legacy',
         erpModules: ['employees', 'finance', 'reports', 'students', 'teachers', 'classes', 'grades', 'courses', 'exams', 'admissions'],
         settings: {
           academicYearStart: 'september',
           gradingSystem: 'percentage',
           attendanceTracking: true,
           parentPortalEnabled: true
-        }
-      },
-      healthcare: {
-        industry: 'healthcare',
-        erpModules: ['employees', 'finance', 'reports', 'patients', 'doctors', 'appointments', 'medical_records', 'prescriptions', 'departments'],
-        settings: {
-          appointmentDuration: 30,
-          medicalRecordsRetention: 7,
-          prescriptionTracking: true,
-          insuranceIntegration: true
         }
       },
       finance: {

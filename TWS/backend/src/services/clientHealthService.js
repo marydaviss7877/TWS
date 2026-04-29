@@ -1,7 +1,7 @@
-const ClientHealth = require('../models/ClientHealth');
-const ClientTouchpoint = require('../models/ClientTouchpoint');
-const Client = require('../models/Client');
-const { Invoice: ProjectInvoice } = require('../models/Finance');
+const ClientHealth = require('../models/analytics/ClientHealth');
+const ClientTouchpoint = require('../models/analytics/ClientTouchpoint');
+const Client = require('../models/industry/Client');
+const { Invoice: ProjectInvoice } = require('../models/finance/Finance');
 const projectApi = require('./module-api/project-api.service');
 
 class ClientHealthService {

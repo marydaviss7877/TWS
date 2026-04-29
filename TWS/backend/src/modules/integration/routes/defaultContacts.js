@@ -3,12 +3,12 @@ const router = express.Router();
 const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
 const { requireSupraAdminAccess } = require('../../../middleware/auth/rbac');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const DefaultContact = require('../../../models/DefaultContact');
-const Tenant = require('../../../models/Tenant');
+const DefaultContact = require('../../../models/org/DefaultContact');
+const Tenant = require('../../../models/tenant/Tenant');
 // Chat and Message models removed - messaging features have been removed
 // const Chat = require('../../../models/Chat');
 // const Message = require('../../../models/Message');
-const User = require('../../../models/User');
+const User = require('../../../models/users-auth/User');
 
 // Get all default contacts
 router.get('/', authenticateToken, requireSupraAdminAccess, ErrorHandler.asyncHandler(async (req, res) => {

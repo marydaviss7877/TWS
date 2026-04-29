@@ -1,5 +1,5 @@
-const Department = require('../../../models/Department');
-const Team = require('../../../models/Team');
+const Department = require('../../../models/org/Department');
+const Team = require('../../../models/org/Team');
 
 /**
  * Create default departments and teams

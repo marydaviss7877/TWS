@@ -265,7 +265,7 @@ router.post('/bulk/operations', [
 
 // Helper functions for bulk operations
 async function bulkApproveAttendance(attendanceIds, approvedBy) {
-  const Attendance = require('../../../models/Attendance');
+  const Attendance = require('../../../models/hr-payroll/Attendance');
   
   const result = await Attendance.updateMany(
     { _id: { $in: attendanceIds } },
@@ -286,7 +286,7 @@ async function bulkApproveAttendance(attendanceIds, approvedBy) {
 }
 
 async function bulkRejectAttendance(attendanceIds, rejectedBy, reason) {
-  const Attendance = require('../../../models/Attendance');
+  const Attendance = require('../../../models/hr-payroll/Attendance');
   
   const result = await Attendance.updateMany(
     { _id: { $in: attendanceIds } },
@@ -309,7 +309,7 @@ async function bulkRejectAttendance(attendanceIds, rejectedBy, reason) {
 }
 
 async function bulkExportAttendance(attendanceIds, format = 'json') {
-  const Attendance = require('../../../models/Attendance');
+  const Attendance = require('../../../models/hr-payroll/Attendance');
   
   const attendanceRecords = await Attendance.find({ _id: { $in: attendanceIds } })
     .populate('userId', 'fullName email department');
@@ -323,7 +323,7 @@ async function bulkExportAttendance(attendanceIds, format = 'json') {
 }
 
 async function bulkSyncAttendance(attendanceIds, systemType) {
-  const Attendance = require('../../../models/Attendance');
+  const Attendance = require('../../../models/hr-payroll/Attendance');
   
   const attendanceRecords = await Attendance.find({ _id: { $in: attendanceIds } })
     .populate('userId', 'fullName email department');

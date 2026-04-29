@@ -11,7 +11,7 @@ const masterERPSchema = new mongoose.Schema({
   },
   industry: {
     type: String,
-    enum: ['software_house', 'education', 'healthcare', 'finance'],
+    enum: ['software_house', 'finance'],
     required: true,
     unique: true
   },
@@ -40,10 +40,6 @@ const masterERPSchema = new mongoose.Schema({
     industryModules: [{
       type: String,
       enum: [
-        // Education specific
-        'students', 'teachers', 'classes', 'grades', 'courses', 'academic_year', 'exams', 'admissions',
-        // Healthcare specific
-        'patients', 'doctors', 'appointments', 'medical_records', 'prescriptions', 'departments', 'billing',
         // Software house specific
         'development_methodology', 'tech_stack', 'project_types', 'time_tracking', 'code_quality', 'client_portal'
       ]
@@ -80,42 +76,6 @@ const masterERPSchema = new mongoose.Schema({
     
     // Industry-specific configurations
     industryConfig: {
-      // Education specific
-      education: {
-        academicYear: {
-          startMonth: { type: String, default: 'September' },
-          endMonth: { type: String, default: 'June' },
-          semesters: { type: Number, default: 2 }
-        },
-        gradingSystem: {
-          type: { type: String, enum: ['percentage', 'letter', 'gpa'], default: 'percentage' },
-          scale: { type: Number, default: 100 }
-        },
-        classManagement: {
-          maxStudentsPerClass: { type: Number, default: 30 },
-          allowMultipleSections: { type: Boolean, default: true }
-        }
-      },
-      
-      // Healthcare specific
-      healthcare: {
-        appointmentSystem: {
-          slotDuration: { type: Number, default: 30 }, // minutes
-          advanceBookingDays: { type: Number, default: 30 },
-          allowOnlineBooking: { type: Boolean, default: true }
-        },
-        patientManagement: {
-          requireInsurance: { type: Boolean, default: true },
-          allowWalkIns: { type: Boolean, default: true },
-          maxPatientsPerDay: { type: Number, default: 50 }
-        },
-        medicalRecords: {
-          encryptionRequired: { type: Boolean, default: true },
-          retentionYears: { type: Number, default: 7 },
-          allowPatientAccess: { type: Boolean, default: true }
-        }
-      },
-      
       // Software house specific (current TWS)
       softwareHouse: {
         developmentMethodology: {

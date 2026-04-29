@@ -1,5 +1,5 @@
-const Employee = require('../../../models/Employee');
-const Payroll = require('../../../models/Payroll');
+const Employee = require('../../../models/hr-payroll/Employee');
+const Payroll = require('../../../models/hr-payroll/Payroll');
 
 /**
  * Create sample employees and payroll setup

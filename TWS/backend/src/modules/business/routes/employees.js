@@ -6,8 +6,8 @@ const employeesRead = requireErpAccess({ module: 'employees', action: 'read', ch
 const employeesWrite = requireErpAccess({ module: 'employees', action: 'write', checkRevocation: false });
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
-const Employee = require('../../../models/Employee');
-const User = require('../../../models/User');
+const Employee = require('../../../models/hr-payroll/Employee');
+const User = require('../../../models/users-auth/User');
 // ✅ IDOR Fix: Resource access validation
 const { validateResourceAccess } = require('../../../middleware/security/resourceAccessCheck');
 
@@ -165,7 +165,7 @@ router.post('/', [
   let orgId = req.user.orgId;
   if (!orgId) {
     // Fallback: Find the wolfstack organization
-    const Organization = require('../../../models/Organization');
+    const Organization = require('../../../models/org/Organization');
     const wolfstackOrg = await Organization.findOne({ slug: 'wolfstack' });
     if (wolfstackOrg) {
       orgId = wolfstackOrg._id;
@@ -259,7 +259,7 @@ router.post('/', [
   await employee.save();
 
   // F4: Provision TenantUser so the new hire has ERP access via UPR
-  const TenantUser = require('../../../models/TenantUser');
+  const TenantUser = require('../../../models/tenant/TenantUser');
   const tenantId = req.tenant?._id || req.user?.tenantId;
   if (tenantId) {
     try {
@@ -939,7 +939,7 @@ router.post('/invite', [
   // Resolve org
   let orgId = req.user.orgId;
   if (!orgId) {
-    const Organization = require('../../../models/Organization');
+    const Organization = require('../../../models/org/Organization');
     const org = await Organization.findOne({ slug: 'wolfstack' });
     if (!org) return res.status(500).json({ success: false, message: 'Organization not found' });
     orgId = org._id;
@@ -998,7 +998,7 @@ router.post('/invite', [
   const inviteLink = `${frontendUrl}/invite/accept?token=${tenantUser.invitation.invitationToken}`;
 
   // Resolve org name for the email
-  const Organization = require('../../../models/Organization');
+  const Organization = require('../../../models/org/Organization');
   const org = await Organization.findById(orgId).select('name').lean();
 
   // Get inviter name

@@ -278,10 +278,6 @@ const portalSubscriptionSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
-    hipaaCompliant: {
-      type: Boolean,
-      default: false
-    },
     dataEncryption: {
       type: Boolean,
       default: true

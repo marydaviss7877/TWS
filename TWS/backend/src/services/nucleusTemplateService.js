@@ -1,8 +1,8 @@
-const Project = require('../models/Project');
-const Deliverable = require('../models/Deliverable');
-const Task = require('../models/Task');
-const Approval = require('../models/Approval');
-const Workspace = require('../models/Workspace');
+const Project = require('../models/project-delivery/Project');
+const Deliverable = require('../models/project-delivery/Deliverable');
+const Task = require('../models/project-delivery/Task');
+const Approval = require('../models/core/Approval');
+const Workspace = require('../models/org/Workspace');
 
 /**
  * Nucleus Template Service

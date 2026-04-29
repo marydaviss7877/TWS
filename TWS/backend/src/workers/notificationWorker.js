@@ -4,7 +4,7 @@
  * Digest scheduling uses node-cron.
  */
 const cron = require('node-cron');
-const NotificationQueue    = require('../models/NotificationQueue');
+const NotificationQueue    = require('../models/notifications/NotificationQueue');
 const pushNotificationService = require('../services/notifications/push-notification.service');
 const emailService         = require('../services/integrations/email.service');
 
@@ -117,8 +117,8 @@ class NotificationQueueManager {
 // Daily digest — 9 AM every day
 cron.schedule('0 9 * * *', async () => {
   try {
-    const User = require('../models/User');
-    const NotificationPreference = require('../models/NotificationPreference');
+    const User = require('../models/users-auth/User');
+    const NotificationPreference = require('../models/notifications/NotificationPreference');
     const users = await User.find({}).select('_id orgId');
     for (const user of users) {
       const prefs = await NotificationPreference.getOrCreate(user._id, user.orgId);
@@ -134,8 +134,8 @@ cron.schedule('0 9 * * *', async () => {
 // Weekly digest — 9 AM every Monday
 cron.schedule('0 9 * * 1', async () => {
   try {
-    const User = require('../models/User');
-    const NotificationPreference = require('../models/NotificationPreference');
+    const User = require('../models/users-auth/User');
+    const NotificationPreference = require('../models/notifications/NotificationPreference');
     const users = await User.find({}).select('_id orgId');
     for (const user of users) {
       const prefs = await NotificationPreference.getOrCreate(user._id, user.orgId);

@@ -5,8 +5,8 @@ const { body, validationResult } = require('express-validator');
 
 // Import services
 const tenantSwitchingService = require('../../../services/tenant/tenant-switching.service');
-const TenantUser = require('../../../models/TenantUser');
-const Tenant = require('../../../models/Tenant');
+const TenantUser = require('../../../models/tenant/TenantUser');
+const Tenant = require('../../../models/tenant/Tenant');
 
 // Middleware to check if user is authenticated
 const requireAuth = async (req, res, next) => {

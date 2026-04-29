@@ -55,16 +55,13 @@ const validateTenantCreation = [
 //       modules: ['development_methodology', 'tech_stack', 'project_types', 'time_tracking', 'code_quality', 'client_portal']
 //     },
 //     {
-//       value: 'education',
+//       value: 'legacy',
 //       label: 'Education',
-//       description: 'Schools, colleges, universities, educational institutions',
+//       description: 'Schools, colleges, universities, legacyal institutions',
 //       icon: '🎓',
 //       modules: ['students', 'teachers', 'classes', 'grades', 'courses', 'academic_year', 'exams', 'admissions']
 //     },
 //     {
-//       value: 'healthcare',
-//       label: 'Healthcare',
-//       description: 'Hospitals, clinics, medical centers, healthcare providers',
 //       icon: '🏥',
 //       modules: ['patients', 'doctors', 'appointments', 'medical_records', 'prescriptions', 'departments', 'billing']
 //     },
@@ -178,15 +175,15 @@ router.get('/industry/:industry', masterErpAdmin, ErrorHandler.asyncHandler(asyn
 //   ];
 //   
 //   const industryModules = {
-//     education: [
-//       { value: 'students', label: 'Student Management', description: 'Student records, enrollment, academic progress' },
+//     legacy: [
+//       { value: 'people', label: 'People Management', description: 'People records and lifecycle management' },
 //       { value: 'teachers', label: 'Teacher Management', description: 'Teacher profiles, schedules, performance' },
 //       { value: 'classes', label: 'Class Management', description: 'Class schedules, assignments, grades' },
 //       { value: 'courses', label: 'Course Management', description: 'Course catalog, curriculum, prerequisites' },
 //       { value: 'exams', label: 'Exam Management', description: 'Exam scheduling, grading, results' },
 //       { value: 'admissions', label: 'Admissions', description: 'Application process, enrollment, documentation' }
 //     ],
-//     healthcare: [
+//     legacy: [
 //       { value: 'patients', label: 'Patient Management', description: 'Patient records, medical history, appointments' },
 //       { value: 'doctors', label: 'Doctor Management', description: 'Doctor profiles, specializations, schedules' },
 //       { value: 'appointments', label: 'Appointment Management', description: 'Scheduling, reminders, cancellations' },

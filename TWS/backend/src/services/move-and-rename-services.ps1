@@ -42,18 +42,9 @@ $serviceMappings = @{
     "selfServeSignupService.js" = @{folder="tenant"; name="self-serve-signup.service.js"}
     "platformAdminAccessService.js" = @{folder="tenant"; name="platform-admin-access.service.js"}
     
-    # Healthcare Services
-    "clinicalDecisionSupport.js" = @{folder="healthcare"; name="clinical-decision-support.service.js"}
-    "hl7Service.js" = @{folder="healthcare"; name="hl7.service.js"}
-    "patientPortalService.js" = @{folder="healthcare"; name="patient-portal.service.js"}
-    "healthcareAnalyticsService.js" = @{folder="healthcare"; name="healthcare-analytics.service.js"}
-    "healthcareDashboardService.js" = @{folder="healthcare"; name="healthcare-dashboard.service.js"}
-    "healthcareNotificationService.js" = @{folder="healthcare"; name="healthcare-notification.service.js"}
-    "healthcareOnboardingService.js" = @{folder="healthcare"; name="healthcare-onboarding.service.js"}
-    "claimsService.js" = @{folder="healthcare"; name="claims.service.js"}
     
     # Education Services
-    "gradeCalculationService.js" = @{folder="education"; name="grade-calculation.service.js"}
+    "gradeCalculationService.js" = @{folder="legacy"; name="grade-calculation.service.js"}
     
     # Integration Services
     "calendarIntegration.js" = @{folder="integrations"; name="calendar-integration.service.js"}
@@ -90,9 +81,6 @@ $serviceMappings = @{
     "auditService.js" = @{folder="compliance"; name="audit.service.js"}
     "auditLogService.js" = @{folder="compliance"; name="audit-log.service.js"}
     "complianceService.js" = @{folder="compliance"; name="compliance.service.js"}
-    "ferpaComplianceService.js" = @{folder="compliance"; name="ferpa-compliance.service.js"}
-    "gdprDataDeletionService.js" = @{folder="compliance"; name="gdpr-data-deletion.service.js"}
-    "gdprDataExportService.js" = @{folder="compliance"; name="gdpr-data-export.service.js"}
     "retentionService.js" = @{folder="compliance"; name="retention.service.js"}
 }
 

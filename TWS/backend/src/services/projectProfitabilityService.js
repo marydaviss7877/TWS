@@ -1,6 +1,6 @@
-const Project = require('../models/Project');
-const Attendance = require('../models/Attendance');
-const Employee = require('../models/Employee');
+const Project = require('../models/project-delivery/Project');
+const Attendance = require('../models/hr-payroll/Attendance');
+const Employee = require('../models/hr-payroll/Employee');
 // const ProjectInvoice = require('../models/ProjectInvoice'); // Model not yet implemented
 
 class ProjectProfitabilityService {

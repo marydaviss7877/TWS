@@ -5,11 +5,11 @@
  * Steps: 1) Tenant context 2) User active 3) Revocation list (if checkRevocation)
  *       4) Department access 5) Role/permission 6) Project membership 7) Audit
  */
-const User = require('../../models/User');
-const TenantDepartmentAccess = require('../../models/TenantDepartmentAccess');
-const Workspace = require('../../models/Workspace');
-const Project = require('../../models/Project');
-const Employee = require('../../models/Employee');
+const User = require('../../models/users-auth/User');
+const TenantDepartmentAccess = require('../../models/tenant/TenantDepartmentAccess');
+const Workspace = require('../../models/org/Workspace');
+const Project = require('../../models/project-delivery/Project');
+const Employee = require('../../models/hr-payroll/Employee');
 const permissionCache = require('../../services/tenant/permissionCache.service');
 const { getResolvedPermissions, hasPermission, hasAnyPermission } = require('../../services/tenant/permissionResolver.service');
 
@@ -44,7 +44,7 @@ function requireErpAccess(options = {}) {
       let tenantId = req.tenant?._id || req.tenantContext?.tenantId || req.user?.tenantId;
       if (!tenantId && req.user?._id && req.user?.orgId) {
         try {
-          const Organization = require('../../models/Organization');
+          const Organization = require('../../models/org/Organization');
           const org = await Organization.findById(req.user.orgId).select('tenantId').lean();
           tenantId = org?.tenantId;
         } catch (_) {
@@ -156,7 +156,7 @@ function requireErpAccess(options = {}) {
       // Step 7: Audit if sensitive
       if (sensitive && tenantId && orgId) {
         try {
-          const TenantAuditLog = require('../../models/TenantAuditLog');
+          const TenantAuditLog = require('../../models/tenant/TenantAuditLog');
           await TenantAuditLog.logEvent({
             tenantId,
             orgId,

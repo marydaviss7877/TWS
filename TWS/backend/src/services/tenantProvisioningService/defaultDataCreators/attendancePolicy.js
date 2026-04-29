@@ -1,4 +1,4 @@
-const AttendancePolicy = require('../../../models/AttendancePolicy');
+const AttendancePolicy = require('../../../models/hr-payroll/AttendancePolicy');
 
 /**
  * Create default attendance policy

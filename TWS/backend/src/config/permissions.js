@@ -1,9 +1,9 @@
 /**
- * Permission Matrix for Education ERP
+ * Permission Matrix for tenant ERP
  * Defines what actions each role can perform on each resource
  */
 const PERMISSIONS = {
-  education: {
+  tenant: {
     students: {
       view: ['principal', 'admin', 'teacher', 'counselor', 'academic_coordinator', 'lab_instructor', 'assistant_teacher', 'librarian', 'sports_coach', 'admin_staff', 'student'],
       create: ['principal', 'admin'],
@@ -130,7 +130,7 @@ const PERMISSIONS = {
  * @returns {boolean} - True if role has permission
  */
 const hasPermission = (resource, action, role) => {
-  const permissions = PERMISSIONS.education[resource];
+  const permissions = PERMISSIONS.tenant[resource];
   if (!permissions) {
     return false;
   }
@@ -151,7 +151,7 @@ const hasPermission = (resource, action, role) => {
 const getRolePermissions = (role) => {
   const rolePermissions = {};
   
-  for (const [resource, actions] of Object.entries(PERMISSIONS.education)) {
+  for (const [resource, actions] of Object.entries(PERMISSIONS.tenant)) {
     rolePermissions[resource] = [];
     for (const [action, allowedRoles] of Object.entries(actions)) {
       if (allowedRoles.includes(role)) {

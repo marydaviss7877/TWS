@@ -143,71 +143,71 @@
         "features/tenant/pages/tenant/org/dashboard/DashboardAnalytics.js",
         "features/tenant/pages/tenant/org/dashboard/DashboardOverview.js",
         "features/tenant/pages/tenant/org/dashboard/DynamicDashboard.js",
-        "features/tenant/pages/tenant/org/education/AcademicYear.js",
-        "features/tenant/pages/tenant/org/education/Admissions.js",
-        "features/tenant/pages/tenant/org/education/attendance/AttendanceMarking.js",
-        "features/tenant/pages/tenant/org/education/attendance/AttendanceReports.js",
-        "features/tenant/pages/tenant/org/education/attendance/LeaveManagement.js",
-        "features/tenant/pages/tenant/org/education/Classes.js",
-        "features/tenant/pages/tenant/org/education/communication/Announcements.js",
-        "features/tenant/pages/tenant/org/education/communication/Messaging.js",
-        "features/tenant/pages/tenant/org/education/communication/NotificationPreferences.js",
-        "features/tenant/pages/tenant/org/education/Courses.js",
-        "features/tenant/pages/tenant/org/education/dashboard/AnalyticsDashboard.js",
-        "features/tenant/pages/tenant/org/education/Exams.js",
-        "features/tenant/pages/tenant/org/education/fees/FeeCollection.js",
-        "features/tenant/pages/tenant/org/education/fees/FeeReports.js",
-        "features/tenant/pages/tenant/org/education/fees/FeeStructure.js",
-        "features/tenant/pages/tenant/org/education/grades/GradeEntry.js",
-        "features/tenant/pages/tenant/org/education/grades/ReportCard.js",
-        "features/tenant/pages/tenant/org/education/Grades.js",
-        "features/tenant/pages/tenant/org/education/hostel/HostelManagement.js",
-        "features/tenant/pages/tenant/org/education/hostel/RoomManagement.js",
-        "features/tenant/pages/tenant/org/education/hostel/StudentHostelAllocation.js",
-        "features/tenant/pages/tenant/org/education/library/LibraryManagement.js",
-        "features/tenant/pages/tenant/org/education/principal/PrincipalDashboard.js",
-        "features/tenant/pages/tenant/org/education/principal/PrincipalLayout.js",
-        "features/tenant/pages/tenant/org/education/reports/AcademicReports.js",
-        "features/tenant/pages/tenant/org/education/reports/CustomReportBuilder.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentAnnouncements.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentAttendance.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentDashboard.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentFees.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentGrades.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentHomework.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentLayout.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentProfile.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentTimetable.js",
-        "features/tenant/pages/tenant/org/education/students/StudentEdit.js",
-        "features/tenant/pages/tenant/org/education/students/StudentProfile.js",
-        "features/tenant/pages/tenant/org/education/students/StudentPromotion.js",
-        "features/tenant/pages/tenant/org/education/students/StudentRegistration.js",
-        "features/tenant/pages/tenant/org/education/Students.js",
-        "features/tenant/pages/tenant/org/education/Subjects.js",
-        "features/tenant/pages/tenant/org/education/Syllabus.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherAssignment.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherAttendance.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherBehaviour.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherClasses.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherClassTests.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherDashboard.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherExams.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherHomework.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherLayout.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherLiveClass.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherLogin.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherMessaging.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherQuestionPaper.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherReports.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherSettings.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherTimetable.js",
-        "features/tenant/pages/tenant/org/education/Teachers.js",
-        "features/tenant/pages/tenant/org/education/timetable/RoomManagement.js",
-        "features/tenant/pages/tenant/org/education/timetable/TimetableBuilder.js",
-        "features/tenant/pages/tenant/org/education/timetable/TimetableView.js",
-        "features/tenant/pages/tenant/org/education/transportation/RouteManagement.js",
-        "features/tenant/pages/tenant/org/education/transportation/StudentTransportAllocation.js",
-        "features/tenant/pages/tenant/org/education/transportation/VehicleManagement.js",
+        "features/tenant/pages/tenant/org/legacy/AcademicYear.js",
+        "features/tenant/pages/tenant/org/legacy/Admissions.js",
+        "features/tenant/pages/tenant/org/legacy/attendance/AttendanceMarking.js",
+        "features/tenant/pages/tenant/org/legacy/attendance/AttendanceReports.js",
+        "features/tenant/pages/tenant/org/legacy/attendance/LeaveManagement.js",
+        "features/tenant/pages/tenant/org/legacy/Classes.js",
+        "features/tenant/pages/tenant/org/legacy/communication/Announcements.js",
+        "features/tenant/pages/tenant/org/legacy/communication/Messaging.js",
+        "features/tenant/pages/tenant/org/legacy/communication/NotificationPreferences.js",
+        "features/tenant/pages/tenant/org/legacy/Courses.js",
+        "features/tenant/pages/tenant/org/legacy/dashboard/AnalyticsDashboard.js",
+        "features/tenant/pages/tenant/org/legacy/Exams.js",
+        "features/tenant/pages/tenant/org/legacy/fees/FeeCollection.js",
+        "features/tenant/pages/tenant/org/legacy/fees/FeeReports.js",
+        "features/tenant/pages/tenant/org/legacy/fees/FeeStructure.js",
+        "features/tenant/pages/tenant/org/legacy/grades/GradeEntry.js",
+        "features/tenant/pages/tenant/org/legacy/grades/ReportCard.js",
+        "features/tenant/pages/tenant/org/legacy/Grades.js",
+        "features/tenant/pages/tenant/org/legacy/hostel/HostelManagement.js",
+        "features/tenant/pages/tenant/org/legacy/hostel/RoomManagement.js",
+        "features/tenant/pages/tenant/org/legacy/hostel/StudentHostelAllocation.js",
+        "features/tenant/pages/tenant/org/legacy/library/LibraryManagement.js",
+        "features/tenant/pages/tenant/org/legacy/principal/PrincipalDashboard.js",
+        "features/tenant/pages/tenant/org/legacy/principal/PrincipalLayout.js",
+        "features/tenant/pages/tenant/org/legacy/reports/AcademicReports.js",
+        "features/tenant/pages/tenant/org/legacy/reports/CustomReportBuilder.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentAnnouncements.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentAttendance.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentDashboard.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentFees.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentGrades.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentHomework.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentLayout.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentProfile.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentTimetable.js",
+        "features/tenant/pages/tenant/org/legacy/students/StudentEdit.js",
+        "features/tenant/pages/tenant/org/legacy/students/StudentProfile.js",
+        "features/tenant/pages/tenant/org/legacy/students/StudentPromotion.js",
+        "features/tenant/pages/tenant/org/legacy/students/StudentRegistration.js",
+        "features/tenant/pages/tenant/org/legacy/Students.js",
+        "features/tenant/pages/tenant/org/legacy/Subjects.js",
+        "features/tenant/pages/tenant/org/legacy/Syllabus.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherAssignment.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherAttendance.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherBehaviour.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherClasses.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherClassTests.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherDashboard.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherExams.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherHomework.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherLayout.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherLiveClass.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherLogin.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherMessaging.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherQuestionPaper.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherReports.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherSettings.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherTimetable.js",
+        "features/tenant/pages/tenant/org/legacy/Teachers.js",
+        "features/tenant/pages/tenant/org/legacy/timetable/RoomManagement.js",
+        "features/tenant/pages/tenant/org/legacy/timetable/TimetableBuilder.js",
+        "features/tenant/pages/tenant/org/legacy/timetable/TimetableView.js",
+        "features/tenant/pages/tenant/org/legacy/transportation/RouteManagement.js",
+        "features/tenant/pages/tenant/org/legacy/transportation/StudentTransportAllocation.js",
+        "features/tenant/pages/tenant/org/legacy/transportation/VehicleManagement.js",
         "features/tenant/pages/tenant/org/finance/AccountsPayable.js",
         "features/tenant/pages/tenant/org/finance/AccountsReceivable.js",
         "features/tenant/pages/tenant/org/finance/BankingManagement.js",
@@ -456,7 +456,7 @@
         "shared/services/equityService.js",
         "shared/services/formManagementService.js",
         "shared/services/industry/config/apiConfig.js",
-        "shared/services/industry/educationApi.js",
+        "shared/services/industry/legacyApi.js",
         "shared/services/industry/healthcareApi.js",
         "shared/services/industry/index.js",
         "shared/services/industry/softwareHouseApi.js",
@@ -592,8 +592,8 @@
         "modules/monitoring/routes/standalone.js",
         "modules/monitoring/routes/system.js",
         "modules/tenant/routes/dashboard.js",
-        "modules/tenant/routes/education.js",
-        "modules/tenant/routes/education_crud_complete.js",
+        "modules/tenant/routes/legacy.js",
+        "modules/tenant/routes/legacy_crud_complete.js",
         "modules/tenant/routes/healthcare.js",
         "modules/tenant/routes/index.js",
         "modules/tenant/routes/management.js",
@@ -613,7 +613,7 @@
         "routes/compliance.js",
         "routes/defaultContacts.js",
         "routes/developmentMetrics.js",
-        "routes/educationSignup.js",
+        "routes/legacySignup.js",
         "routes/emailValidation.js",
         "routes/employee.js",
         "routes/employees.js",
@@ -841,7 +841,7 @@
         "services/tenantProvisioningService/index.js",
         "services/tenantProvisioningService/onboarding.js",
         "services/tenantProvisioningService/seeders/defaultSeeder.js",
-        "services/tenantProvisioningService/seeders/educationSeeder.js",
+        "services/tenantProvisioningService/seeders/legacySeeder.js",
         "services/tenantProvisioningService/seeders/healthcareSeeder.js",
         "services/tenantProvisioningService/seeders/index.js",
         "services/tenantProvisioningService/seeders/softwareHouseSeeder.js",
@@ -2924,12 +2924,12 @@
       "dependencies": [
         "app/providers/TenantAuthContext.js",
         "features/tenant/pages/tenant/org/dashboard/DashboardOverview.js",
-        "features/tenant/pages/tenant/org/education/principal/PrincipalDashboard.js",
+        "features/tenant/pages/tenant/org/legacy/principal/PrincipalDashboard.js",
         "features/dashboard/pages/SoftwareHouseDashboard.js"
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/AcademicYear.js",
+      "path": "features/tenant/pages/tenant/org/legacy/AcademicYear.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -2937,7 +2937,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/Admissions.js",
+      "path": "features/tenant/pages/tenant/org/legacy/Admissions.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -2945,7 +2945,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/attendance/AttendanceMarking.js",
+      "path": "features/tenant/pages/tenant/org/legacy/attendance/AttendanceMarking.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -2953,7 +2953,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/attendance/AttendanceReports.js",
+      "path": "features/tenant/pages/tenant/org/legacy/attendance/AttendanceReports.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -2961,7 +2961,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/attendance/LeaveManagement.js",
+      "path": "features/tenant/pages/tenant/org/legacy/attendance/LeaveManagement.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -2969,38 +2969,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/Classes.js",
-      "category": "pages",
-      "type": "frontend",
-      "dependencies": [
-        "features/tenant/components/common/EntityManagerPage.js",
-        "shared/services/industry/index.js"
-      ]
-    },
-    {
-      "path": "features/tenant/pages/tenant/org/education/communication/Announcements.js",
-      "category": "pages",
-      "type": "frontend",
-      "dependencies": [
-        "shared/services/industry/index.js"
-      ]
-    },
-    {
-      "path": "features/tenant/pages/tenant/org/education/communication/Messaging.js",
-      "category": "pages",
-      "type": "frontend",
-      "dependencies": [
-        "shared/services/industry/index.js"
-      ]
-    },
-    {
-      "path": "features/tenant/pages/tenant/org/education/communication/NotificationPreferences.js",
-      "category": "pages",
-      "type": "frontend",
-      "dependencies": []
-    },
-    {
-      "path": "features/tenant/pages/tenant/org/education/Courses.js",
+      "path": "features/tenant/pages/tenant/org/legacy/Classes.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3009,7 +2978,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/dashboard/AnalyticsDashboard.js",
+      "path": "features/tenant/pages/tenant/org/legacy/communication/Announcements.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3017,7 +2986,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/Exams.js",
+      "path": "features/tenant/pages/tenant/org/legacy/communication/Messaging.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3025,53 +2994,22 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/fees/FeeCollection.js",
-      "category": "pages",
-      "type": "frontend",
-      "dependencies": [
-        "shared/services/industry/index.js"
-      ]
-    },
-    {
-      "path": "features/tenant/pages/tenant/org/education/fees/FeeReports.js",
-      "category": "pages",
-      "type": "frontend",
-      "dependencies": [
-        "shared/services/industry/index.js"
-      ]
-    },
-    {
-      "path": "features/tenant/pages/tenant/org/education/fees/FeeStructure.js",
-      "category": "pages",
-      "type": "frontend",
-      "dependencies": [
-        "shared/services/industry/index.js"
-      ]
-    },
-    {
-      "path": "features/tenant/pages/tenant/org/education/grades/GradeEntry.js",
-      "category": "pages",
-      "type": "frontend",
-      "dependencies": [
-        "shared/services/industry/index.js"
-      ]
-    },
-    {
-      "path": "features/tenant/pages/tenant/org/education/grades/ReportCard.js",
-      "category": "pages",
-      "type": "frontend",
-      "dependencies": [
-        "shared/services/industry/index.js"
-      ]
-    },
-    {
-      "path": "features/tenant/pages/tenant/org/education/Grades.js",
+      "path": "features/tenant/pages/tenant/org/legacy/communication/NotificationPreferences.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": []
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/hostel/HostelManagement.js",
+      "path": "features/tenant/pages/tenant/org/legacy/Courses.js",
+      "category": "pages",
+      "type": "frontend",
+      "dependencies": [
+        "features/tenant/components/common/EntityManagerPage.js",
+        "shared/services/industry/index.js"
+      ]
+    },
+    {
+      "path": "features/tenant/pages/tenant/org/legacy/dashboard/AnalyticsDashboard.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3079,7 +3017,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/hostel/RoomManagement.js",
+      "path": "features/tenant/pages/tenant/org/legacy/Exams.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3087,7 +3025,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/hostel/StudentHostelAllocation.js",
+      "path": "features/tenant/pages/tenant/org/legacy/fees/FeeCollection.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3095,7 +3033,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/library/LibraryManagement.js",
+      "path": "features/tenant/pages/tenant/org/legacy/fees/FeeReports.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3103,7 +3041,69 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/principal/PrincipalDashboard.js",
+      "path": "features/tenant/pages/tenant/org/legacy/fees/FeeStructure.js",
+      "category": "pages",
+      "type": "frontend",
+      "dependencies": [
+        "shared/services/industry/index.js"
+      ]
+    },
+    {
+      "path": "features/tenant/pages/tenant/org/legacy/grades/GradeEntry.js",
+      "category": "pages",
+      "type": "frontend",
+      "dependencies": [
+        "shared/services/industry/index.js"
+      ]
+    },
+    {
+      "path": "features/tenant/pages/tenant/org/legacy/grades/ReportCard.js",
+      "category": "pages",
+      "type": "frontend",
+      "dependencies": [
+        "shared/services/industry/index.js"
+      ]
+    },
+    {
+      "path": "features/tenant/pages/tenant/org/legacy/Grades.js",
+      "category": "pages",
+      "type": "frontend",
+      "dependencies": []
+    },
+    {
+      "path": "features/tenant/pages/tenant/org/legacy/hostel/HostelManagement.js",
+      "category": "pages",
+      "type": "frontend",
+      "dependencies": [
+        "shared/services/industry/index.js"
+      ]
+    },
+    {
+      "path": "features/tenant/pages/tenant/org/legacy/hostel/RoomManagement.js",
+      "category": "pages",
+      "type": "frontend",
+      "dependencies": [
+        "shared/services/industry/index.js"
+      ]
+    },
+    {
+      "path": "features/tenant/pages/tenant/org/legacy/hostel/StudentHostelAllocation.js",
+      "category": "pages",
+      "type": "frontend",
+      "dependencies": [
+        "shared/services/industry/index.js"
+      ]
+    },
+    {
+      "path": "features/tenant/pages/tenant/org/legacy/library/LibraryManagement.js",
+      "category": "pages",
+      "type": "frontend",
+      "dependencies": [
+        "shared/services/industry/index.js"
+      ]
+    },
+    {
+      "path": "features/tenant/pages/tenant/org/legacy/principal/PrincipalDashboard.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3112,7 +3112,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/principal/PrincipalLayout.js",
+      "path": "features/tenant/pages/tenant/org/legacy/principal/PrincipalLayout.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3120,7 +3120,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/reports/AcademicReports.js",
+      "path": "features/tenant/pages/tenant/org/legacy/reports/AcademicReports.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3128,7 +3128,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/reports/CustomReportBuilder.js",
+      "path": "features/tenant/pages/tenant/org/legacy/reports/CustomReportBuilder.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3136,7 +3136,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/portal/StudentAnnouncements.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/portal/StudentAnnouncements.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3144,7 +3144,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/portal/StudentAttendance.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/portal/StudentAttendance.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3152,7 +3152,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/portal/StudentDashboard.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/portal/StudentDashboard.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3160,7 +3160,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/portal/StudentFees.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/portal/StudentFees.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3168,7 +3168,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/portal/StudentGrades.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/portal/StudentGrades.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3176,7 +3176,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/portal/StudentHomework.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/portal/StudentHomework.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3184,7 +3184,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/portal/StudentLayout.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/portal/StudentLayout.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3192,7 +3192,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/portal/StudentProfile.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/portal/StudentProfile.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3200,7 +3200,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/portal/StudentTimetable.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/portal/StudentTimetable.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3208,7 +3208,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/StudentEdit.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/StudentEdit.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3216,7 +3216,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/StudentProfile.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/StudentProfile.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3224,7 +3224,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/StudentPromotion.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/StudentPromotion.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3232,7 +3232,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/students/StudentRegistration.js",
+      "path": "features/tenant/pages/tenant/org/legacy/students/StudentRegistration.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3240,7 +3240,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/Students.js",
+      "path": "features/tenant/pages/tenant/org/legacy/Students.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3249,7 +3249,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/Subjects.js",
+      "path": "features/tenant/pages/tenant/org/legacy/Subjects.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3257,7 +3257,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/Syllabus.js",
+      "path": "features/tenant/pages/tenant/org/legacy/Syllabus.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3265,7 +3265,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherAssignment.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherAssignment.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3273,19 +3273,19 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherAttendance.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherAttendance.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": []
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherBehaviour.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherBehaviour.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": []
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherClasses.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherClasses.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3293,13 +3293,13 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherClassTests.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherClassTests.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": []
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherDashboard.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherDashboard.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3307,31 +3307,31 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherExams.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherExams.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": []
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherHomework.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherHomework.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": []
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherLayout.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherLayout.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": []
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherLiveClass.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherLiveClass.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": []
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherLogin.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherLogin.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3339,31 +3339,31 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherMessaging.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherMessaging.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": []
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherQuestionPaper.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherQuestionPaper.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": []
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherReports.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherReports.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": []
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherSettings.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherSettings.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": []
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/teachers/TeacherTimetable.js",
+      "path": "features/tenant/pages/tenant/org/legacy/teachers/TeacherTimetable.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3371,7 +3371,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/Teachers.js",
+      "path": "features/tenant/pages/tenant/org/legacy/Teachers.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3380,7 +3380,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/timetable/RoomManagement.js",
+      "path": "features/tenant/pages/tenant/org/legacy/timetable/RoomManagement.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3388,7 +3388,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/timetable/TimetableBuilder.js",
+      "path": "features/tenant/pages/tenant/org/legacy/timetable/TimetableBuilder.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3396,7 +3396,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/timetable/TimetableView.js",
+      "path": "features/tenant/pages/tenant/org/legacy/timetable/TimetableView.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3404,7 +3404,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/transportation/RouteManagement.js",
+      "path": "features/tenant/pages/tenant/org/legacy/transportation/RouteManagement.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3412,7 +3412,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/transportation/StudentTransportAllocation.js",
+      "path": "features/tenant/pages/tenant/org/legacy/transportation/StudentTransportAllocation.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -3420,7 +3420,7 @@
       ]
     },
     {
-      "path": "features/tenant/pages/tenant/org/education/transportation/VehicleManagement.js",
+      "path": "features/tenant/pages/tenant/org/legacy/transportation/VehicleManagement.js",
       "category": "pages",
       "type": "frontend",
       "dependencies": [
@@ -4013,71 +4013,71 @@
         "features/tenant/pages/tenant/org/healthcare/Prescriptions.js",
         "features/tenant/pages/tenant/org/healthcare/Departments.js",
         "features/tenant/pages/tenant/org/healthcare/Billing.js",
-        "features/tenant/pages/tenant/org/education/Students.js",
-        "features/tenant/pages/tenant/org/education/students/StudentProfile.js",
-        "features/tenant/pages/tenant/org/education/students/StudentRegistration.js",
-        "features/tenant/pages/tenant/org/education/students/StudentEdit.js",
-        "features/tenant/pages/tenant/org/education/students/StudentPromotion.js",
-        "features/tenant/pages/tenant/org/education/Classes.js",
-        "features/tenant/pages/tenant/org/education/Teachers.js",
-        "features/tenant/pages/tenant/org/education/Grades.js",
-        "features/tenant/pages/tenant/org/education/Courses.js",
-        "features/tenant/pages/tenant/org/education/Exams.js",
-        "features/tenant/pages/tenant/org/education/Admissions.js",
-        "features/tenant/pages/tenant/org/education/AcademicYear.js",
-        "features/tenant/pages/tenant/org/education/Subjects.js",
-        "features/tenant/pages/tenant/org/education/Syllabus.js",
-        "features/tenant/pages/tenant/org/education/attendance/AttendanceMarking.js",
-        "features/tenant/pages/tenant/org/education/attendance/AttendanceReports.js",
-        "features/tenant/pages/tenant/org/education/attendance/LeaveManagement.js",
-        "features/tenant/pages/tenant/org/education/grades/GradeEntry.js",
-        "features/tenant/pages/tenant/org/education/grades/ReportCard.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherAssignment.js",
-        "features/tenant/pages/tenant/org/education/fees/FeeStructure.js",
-        "features/tenant/pages/tenant/org/education/fees/FeeCollection.js",
-        "features/tenant/pages/tenant/org/education/fees/FeeReports.js",
-        "features/tenant/pages/tenant/org/education/timetable/TimetableBuilder.js",
-        "features/tenant/pages/tenant/org/education/timetable/TimetableView.js",
-        "features/tenant/pages/tenant/org/education/timetable/RoomManagement.js",
-        "features/tenant/pages/tenant/org/education/library/LibraryManagement.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentLayout.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentDashboard.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentGrades.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentAttendance.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentHomework.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentTimetable.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentFees.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentAnnouncements.js",
-        "features/tenant/pages/tenant/org/education/students/portal/StudentProfile.js",
-        "features/tenant/pages/tenant/org/education/principal/PrincipalLayout.js",
-        "features/tenant/pages/tenant/org/education/principal/PrincipalDashboard.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherLayout.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherLogin.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherDashboard.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherClasses.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherAttendance.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherHomework.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherTimetable.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherBehaviour.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherMessaging.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherLiveClass.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherQuestionPaper.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherExams.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherClassTests.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherReports.js",
-        "features/tenant/pages/tenant/org/education/teachers/TeacherSettings.js",
-        "features/tenant/pages/tenant/org/education/communication/Announcements.js",
-        "features/tenant/pages/tenant/org/education/communication/Messaging.js",
-        "features/tenant/pages/tenant/org/education/communication/NotificationPreferences.js",
-        "features/tenant/pages/tenant/org/education/reports/AcademicReports.js",
-        "features/tenant/pages/tenant/org/education/reports/CustomReportBuilder.js",
-        "features/tenant/pages/tenant/org/education/dashboard/AnalyticsDashboard.js",
-        "features/tenant/pages/tenant/org/education/transportation/VehicleManagement.js",
-        "features/tenant/pages/tenant/org/education/transportation/RouteManagement.js",
-        "features/tenant/pages/tenant/org/education/transportation/StudentTransportAllocation.js",
-        "features/tenant/pages/tenant/org/education/hostel/HostelManagement.js",
-        "features/tenant/pages/tenant/org/education/hostel/RoomManagement.js",
-        "features/tenant/pages/tenant/org/education/hostel/StudentHostelAllocation.js",
+        "features/tenant/pages/tenant/org/legacy/Students.js",
+        "features/tenant/pages/tenant/org/legacy/students/StudentProfile.js",
+        "features/tenant/pages/tenant/org/legacy/students/StudentRegistration.js",
+        "features/tenant/pages/tenant/org/legacy/students/StudentEdit.js",
+        "features/tenant/pages/tenant/org/legacy/students/StudentPromotion.js",
+        "features/tenant/pages/tenant/org/legacy/Classes.js",
+        "features/tenant/pages/tenant/org/legacy/Teachers.js",
+        "features/tenant/pages/tenant/org/legacy/Grades.js",
+        "features/tenant/pages/tenant/org/legacy/Courses.js",
+        "features/tenant/pages/tenant/org/legacy/Exams.js",
+        "features/tenant/pages/tenant/org/legacy/Admissions.js",
+        "features/tenant/pages/tenant/org/legacy/AcademicYear.js",
+        "features/tenant/pages/tenant/org/legacy/Subjects.js",
+        "features/tenant/pages/tenant/org/legacy/Syllabus.js",
+        "features/tenant/pages/tenant/org/legacy/attendance/AttendanceMarking.js",
+        "features/tenant/pages/tenant/org/legacy/attendance/AttendanceReports.js",
+        "features/tenant/pages/tenant/org/legacy/attendance/LeaveManagement.js",
+        "features/tenant/pages/tenant/org/legacy/grades/GradeEntry.js",
+        "features/tenant/pages/tenant/org/legacy/grades/ReportCard.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherAssignment.js",
+        "features/tenant/pages/tenant/org/legacy/fees/FeeStructure.js",
+        "features/tenant/pages/tenant/org/legacy/fees/FeeCollection.js",
+        "features/tenant/pages/tenant/org/legacy/fees/FeeReports.js",
+        "features/tenant/pages/tenant/org/legacy/timetable/TimetableBuilder.js",
+        "features/tenant/pages/tenant/org/legacy/timetable/TimetableView.js",
+        "features/tenant/pages/tenant/org/legacy/timetable/RoomManagement.js",
+        "features/tenant/pages/tenant/org/legacy/library/LibraryManagement.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentLayout.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentDashboard.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentGrades.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentAttendance.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentHomework.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentTimetable.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentFees.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentAnnouncements.js",
+        "features/tenant/pages/tenant/org/legacy/students/portal/StudentProfile.js",
+        "features/tenant/pages/tenant/org/legacy/principal/PrincipalLayout.js",
+        "features/tenant/pages/tenant/org/legacy/principal/PrincipalDashboard.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherLayout.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherLogin.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherDashboard.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherClasses.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherAttendance.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherHomework.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherTimetable.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherBehaviour.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherMessaging.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherLiveClass.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherQuestionPaper.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherExams.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherClassTests.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherReports.js",
+        "features/tenant/pages/tenant/org/legacy/teachers/TeacherSettings.js",
+        "features/tenant/pages/tenant/org/legacy/communication/Announcements.js",
+        "features/tenant/pages/tenant/org/legacy/communication/Messaging.js",
+        "features/tenant/pages/tenant/org/legacy/communication/NotificationPreferences.js",
+        "features/tenant/pages/tenant/org/legacy/reports/AcademicReports.js",
+        "features/tenant/pages/tenant/org/legacy/reports/CustomReportBuilder.js",
+        "features/tenant/pages/tenant/org/legacy/dashboard/AnalyticsDashboard.js",
+        "features/tenant/pages/tenant/org/legacy/transportation/VehicleManagement.js",
+        "features/tenant/pages/tenant/org/legacy/transportation/RouteManagement.js",
+        "features/tenant/pages/tenant/org/legacy/transportation/StudentTransportAllocation.js",
+        "features/tenant/pages/tenant/org/legacy/hostel/HostelManagement.js",
+        "features/tenant/pages/tenant/org/legacy/hostel/RoomManagement.js",
+        "features/tenant/pages/tenant/org/legacy/hostel/StudentHostelAllocation.js",
         "features/tenant/pages/tenant/org/software-house/TechStack.js",
         "features/tenant/pages/tenant/org/software-house/Development.js",
         "features/tenant/pages/tenant/org/software-house/TimeTracking.js",
@@ -4860,7 +4860,7 @@
       "dependencies": []
     },
     {
-      "path": "shared/services/industry/educationApi.js",
+      "path": "shared/services/industry/legacyApi.js",
       "category": "services",
       "type": "frontend",
       "dependencies": [
@@ -4885,7 +4885,7 @@
       "type": "frontend",
       "dependencies": [
         "shared/services/industry/healthcareApi.js",
-        "shared/services/industry/educationApi.js",
+        "shared/services/industry/legacyApi.js",
         "shared/services/industry/softwareHouseApi.js"
       ]
     },
@@ -5044,7 +5044,7 @@
       "type": "backend",
       "dependencies": [
         "modules/index.js",
-        "routes/educationSignup.js",
+        "routes/legacySignup.js",
         "routes/selfServeSignup.js",
         "routes/emailValidation.js",
         "modules/admin/routes/messagingCompatibility.js",
@@ -6819,7 +6819,7 @@
       ]
     },
     {
-      "path": "modules/tenant/routes/education.js",
+      "path": "modules/tenant/routes/legacy.js",
       "category": "routes",
       "type": "backend",
       "dependencies": [
@@ -6829,7 +6829,7 @@
       ]
     },
     {
-      "path": "modules/tenant/routes/education_crud_complete.js",
+      "path": "modules/tenant/routes/legacy_crud_complete.js",
       "category": "routes",
       "type": "backend",
       "dependencies": []
@@ -6854,7 +6854,7 @@
         "modules/tenant/routes/organization.js",
         "modules/tenant/routes/softwareHouse.js",
         "modules/tenant/routes/healthcare.js",
-        "modules/tenant/routes/education.js"
+        "modules/tenant/routes/legacy.js"
       ]
     },
     {
@@ -7099,7 +7099,7 @@
       ]
     },
     {
-      "path": "routes/educationSignup.js",
+      "path": "routes/legacySignup.js",
       "category": "routes",
       "type": "backend",
       "dependencies": [
@@ -9024,7 +9024,7 @@
       ]
     },
     {
-      "path": "services/tenantProvisioningService/seeders/educationSeeder.js",
+      "path": "services/tenantProvisioningService/seeders/legacySeeder.js",
       "category": "services",
       "type": "backend",
       "dependencies": [
@@ -9046,7 +9046,7 @@
       "type": "backend",
       "dependencies": [
         "models/MasterERP.js",
-        "services/tenantProvisioningService/seeders/educationSeeder.js",
+        "services/tenantProvisioningService/seeders/legacySeeder.js",
         "services/tenantProvisioningService/seeders/healthcareSeeder.js",
         "services/tenantProvisioningService/seeders/softwareHouseSeeder.js",
         "services/tenantProvisioningService/seeders/defaultSeeder.js"

@@ -1,5 +1,5 @@
-const OnboardingChecklist = require('../models/OnboardingChecklist');
-const Tenant = require('../models/Tenant');
+const OnboardingChecklist = require('../models/admin-platform/OnboardingChecklist');
+const Tenant = require('../models/tenant/Tenant');
 
 // Default checklist items
 const DEFAULT_CHECKLIST_ITEMS = [

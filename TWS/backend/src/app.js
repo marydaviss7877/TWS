@@ -63,7 +63,7 @@ app.get('/metrics', (req, res) => {
   });
 });
 
-// TLS verification for HIPAA compliance
+// TLS verification middleware
 const { verifyTLS, checkTLSConfiguration } = require('./middleware/security/tlsVerification');
 app.use(verifyTLS);
 checkTLSConfiguration();
@@ -218,7 +218,7 @@ io.on('connection', async (socket) => {
   try {
     // If orgId not in token, fetch from User model
     if (!socket.user.orgId) {
-      const User = require('./models/User');
+      const User = require('./models/users-auth/User');
       const user = await User.findById(socket.user.userId).select('orgId').lean();
       if (user?.orgId) socket.user.orgId = user.orgId.toString();
     }
@@ -238,15 +238,24 @@ io.on('connection', async (socket) => {
 // Load routes progressively using new modular structure
 async function loadRoutes() {
   console.log('📦 Loading routes...');
-
-  // modules is required once — if this fails the server cannot serve any routes
-  const modules = require('./modules');
+  const loadModule = (modulePath, label) => {
+    try {
+      return require(modulePath);
+    } catch (error) {
+      console.error(`❌ ${label} failed to load:`, error.message);
+      return null;
+    }
+  };
 
   // ── Auth Module ──────────────────────────────────────────────────────────────
   try {
     console.log('📦 Loading Auth Module...');
-    app.use('/api/auth', modules.auth.authentication);
-    app.use('/api/users', modules.auth.users);
+    const authRoutes = loadModule('./modules/auth/routes', 'Auth module');
+    if (!authRoutes) {
+      throw new Error('Auth routes unavailable');
+    }
+    app.use('/api/auth', authRoutes.authentication);
+    app.use('/api/users', authRoutes.users);
 
     const selfServeSignup = require('./routes/selfServeSignup');
     app.use('/api/signup', selfServeSignup);
@@ -254,8 +263,8 @@ async function loadRoutes() {
     const emailValidation = require('./routes/emailValidation');
     app.use('/api/email', emailValidation);
 
-    app.use('/api/sessions', modules.auth.sessions);
-    app.use('/api/tenant-auth', modules.auth.tenantAuth);
+    app.use('/api/sessions', authRoutes.sessions);
+    app.use('/api/tenant-auth', authRoutes.tenantAuth);
     console.log('✅ Auth module routes loaded');
   } catch (error) {
     console.error('❌ Auth module failed to load:', error.message);
@@ -264,12 +273,14 @@ async function loadRoutes() {
   // ── Admin Module ─────────────────────────────────────────────────────────────
   try {
     console.log('📦 Loading Admin Module...');
-    app.use('/api/admin', modules.admin.admin);
-    app.use('/api/supra-admin', modules.admin.supraAdmin);
-    app.use('/api/admin/moderation', modules.admin.moderation);
-    app.use('/api/admin/attendance-panel', modules.admin.attendancePanel);
-    app.use('/api/supra-admin/sessions', modules.admin.supraSessions);
-    app.use('/api/supra-admin/tenant-erp', modules.admin.supraTenantERP);
+    const adminRoutes = loadModule('./modules/admin/routes', 'Admin module');
+    if (!adminRoutes) throw new Error('Admin routes unavailable');
+    app.use('/api/admin', adminRoutes.admin);
+    app.use('/api/supra-admin', adminRoutes.supraAdmin);
+    app.use('/api/admin/moderation', adminRoutes.moderation);
+    app.use('/api/admin/attendance-panel', adminRoutes.attendancePanel);
+    app.use('/api/supra-admin/sessions', adminRoutes.supraSessions);
+    app.use('/api/supra-admin/tenant-erp', adminRoutes.supraTenantERP);
     console.log('✅ Admin module routes loaded');
   } catch (error) {
     console.error('❌ Admin module failed to load:', error.message);
@@ -278,6 +289,8 @@ async function loadRoutes() {
   // ── Tenant Module ────────────────────────────────────────────────────────────
   try {
     console.log('📦 Loading Tenant Module...');
+    const tenantRoutes = loadModule('./modules/tenant/routes', 'Tenant module');
+    if (!tenantRoutes) throw new Error('Tenant routes unavailable');
 
     // Helper: skip routes that failed to load instead of crashing
     const safeUse = (path, handler) => {
@@ -288,21 +301,21 @@ async function loadRoutes() {
       app.use(path, handler);
     };
 
-    safeUse('/api/tenant/management', modules.tenant.management);
-    safeUse('/api/tenant/:tenantSlug/dashboard', modules.tenant.dashboard);
-    safeUse('/api/tenant/switching', modules.tenant.switching);
+    safeUse('/api/tenant/management', tenantRoutes.management);
+    safeUse('/api/tenant/:tenantSlug/dashboard', tenantRoutes.dashboard);
+    safeUse('/api/tenant/switching', tenantRoutes.switching);
 
     // Tenant info route (must come before organization for route precedence)
-    const Tenant = require('./models/Tenant');
+    const Tenant = require('./models/tenant/Tenant');
     const { authenticateToken } = require('./middleware/auth/auth');
     app.get('/api/tenant/:tenantSlug/info', authenticateToken, async (req, res) => {
       try {
         const { tenantSlug } = req.params;
         let tenant = await Tenant.findOne({ slug: tenantSlug })
-          .select('name slug erpCategory erpModules educationConfig status subscription.plan');
+          .select('name slug erpCategory erpModules status subscription.plan');
         if (!tenant && /^[0-9a-f]{24}$/i.test(tenantSlug)) {
           tenant = await Tenant.findById(tenantSlug)
-            .select('name slug erpCategory erpModules educationConfig status subscription.plan');
+            .select('name slug erpCategory erpModules status subscription.plan');
         }
         if (!tenant) {
           return res.status(404).json({ success: false, message: 'Tenant not found' });
@@ -315,7 +328,6 @@ async function loadRoutes() {
             slug: tenant.slug,
             erpCategory: tenant.erpCategory,
             erpModules: tenant.erpModules,
-            educationConfig: tenant.educationConfig || null,
             status: tenant.status,
             plan: tenant.subscription?.plan
           }
@@ -326,13 +338,13 @@ async function loadRoutes() {
       }
     });
 
-    safeUse('/api/tenant/:tenantSlug/organization', modules.tenant.organization);
-    safeUse('/api/tenant/:tenantSlug/software-house', modules.tenant.softwareHouse);
-    safeUse('/api/tenant/:tenantSlug/permissions', modules.tenant.permissions);
-    safeUse('/api/tenant/:tenantSlug/roles', modules.tenant.roles);
-    safeUse('/api/tenant/:tenantSlug/departments', modules.tenant.departments);
-    safeUse('/api/tenant/:tenantSlug/department-access', modules.tenant.departmentAccess);
-    safeUse('/api/tenant/:tenantSlug/audit', modules.tenant.audit);
+    safeUse('/api/tenant/:tenantSlug/organization', tenantRoutes.organization);
+    safeUse('/api/tenant/:tenantSlug/software-house', tenantRoutes.softwareHouse);
+    safeUse('/api/tenant/:tenantSlug/permissions', tenantRoutes.permissions);
+    safeUse('/api/tenant/:tenantSlug/roles', tenantRoutes.roles);
+    safeUse('/api/tenant/:tenantSlug/departments', tenantRoutes.departments);
+    safeUse('/api/tenant/:tenantSlug/department-access', tenantRoutes.departmentAccess);
+    safeUse('/api/tenant/:tenantSlug/audit', tenantRoutes.audit);
     console.log('✅ Tenant module routes loaded');
   } catch (error) {
     console.error('❌ Tenant module failed to load:', error.message);
@@ -341,14 +353,16 @@ async function loadRoutes() {
   // ── Core Module ──────────────────────────────────────────────────────────────
   try {
     console.log('📦 Loading Core Module...');
-    app.use('/api/health', modules.core.health);
-    app.use('/api/metrics', modules.core.metrics);
-    app.use('/api/logs', modules.core.logs);
-    app.use('/api/security', modules.core.security);
-    app.use('/api/compliance', modules.core.compliance);
-    app.use('/api/files', modules.core.files);
-    app.use('/api/notifications', modules.core.notifications);
-    app.use('/api/webhooks', modules.core.webhooks);
+    const coreRoutes = loadModule('./modules/core/routes', 'Core module');
+    if (!coreRoutes) throw new Error('Core routes unavailable');
+    app.use('/api/health', coreRoutes.health);
+    app.use('/api/metrics', coreRoutes.metrics);
+    app.use('/api/logs', coreRoutes.logs);
+    app.use('/api/security', coreRoutes.security);
+    app.use('/api/compliance', coreRoutes.compliance);
+    app.use('/api/files', coreRoutes.files);
+    app.use('/api/notifications', coreRoutes.notifications);
+    app.use('/api/webhooks', coreRoutes.webhooks);
     console.log('✅ Core module routes loaded');
   } catch (error) {
     console.error('❌ Core module failed to load:', error.message);
@@ -357,6 +371,8 @@ async function loadRoutes() {
   // ── Business Module ──────────────────────────────────────────────────────────
   try {
     console.log('📦 Loading Business Module...');
+    const businessRoutes = loadModule('./modules/business/routes', 'Business module');
+    if (!businessRoutes) throw new Error('Business routes unavailable');
 
     // Helper: skip routes that failed to load instead of crashing
     const safeBizUse = (path, handler) => {
@@ -368,56 +384,56 @@ async function loadRoutes() {
     };
 
     // Employee Management
-    safeBizUse('/api/employees', modules.business.employees);
+    safeBizUse('/api/employees', businessRoutes.employees);
 
     // Attendance Management — single canonical endpoint
-    safeBizUse('/api/attendance', modules.business.attendance);
-    safeBizUse('/api/attendance-integration', modules.business.attendanceIntegration);
+    safeBizUse('/api/attendance', businessRoutes.attendance);
+    safeBizUse('/api/attendance-integration', businessRoutes.attendanceIntegration);
 
     // Financial Management
-    safeBizUse('/api/payroll', modules.business.payroll);
-    safeBizUse('/api/finance', modules.business.finance);
-    safeBizUse('/api/billing', modules.business.billing);
+    safeBizUse('/api/payroll', businessRoutes.payroll);
+    safeBizUse('/api/finance', businessRoutes.finance);
+    safeBizUse('/api/billing', businessRoutes.billing);
 
     // Project Management
-    safeBizUse('/api/projects', modules.business.projects);
-    safeBizUse('/api/project-access', modules.business.projectAccess);
-    safeBizUse('/api/tasks', modules.business.tasks);
-    safeBizUse('/api/teams', modules.business.teams);
-    safeBizUse('/api/time-tracking', modules.business.timeTracking);
-    safeBizUse('/api/sprints', modules.business.sprints);
-    safeBizUse('/api/development-metrics', modules.business.developmentMetrics);
+    safeBizUse('/api/projects', businessRoutes.projects);
+    safeBizUse('/api/project-access', businessRoutes.projectAccess);
+    safeBizUse('/api/tasks', businessRoutes.tasks);
+    safeBizUse('/api/teams', businessRoutes.teams);
+    safeBizUse('/api/time-tracking', businessRoutes.timeTracking);
+    safeBizUse('/api/sprints', businessRoutes.sprints);
+    safeBizUse('/api/development-metrics', businessRoutes.developmentMetrics);
 
     // Client Management
-    safeBizUse('/api/clients', modules.business.clients);
-    safeBizUse('/api/client-portal', modules.business.clientPortal);
+    safeBizUse('/api/clients', businessRoutes.clients);
+    safeBizUse('/api/client-portal', businessRoutes.clientPortal);
 
     // Nucleus
-    safeBizUse('/api/nucleus-templates', modules.business.nucleusTemplates);
-    safeBizUse('/api/nucleus-pm', modules.business.nucleusPM);
-    safeBizUse('/api/nucleus-analytics', modules.business.nucleusAnalytics);
-    safeBizUse('/api/nucleus-batch', modules.business.nucleusBatch);
+    safeBizUse('/api/nucleus-templates', businessRoutes.nucleusTemplates);
+    safeBizUse('/api/nucleus-pm', businessRoutes.nucleusPM);
+    safeBizUse('/api/nucleus-analytics', businessRoutes.nucleusAnalytics);
+    safeBizUse('/api/nucleus-batch', businessRoutes.nucleusBatch);
 
     // Workspace Management
-    safeBizUse('/api/boards', modules.business.boards);
-    safeBizUse('/api/cards', modules.business.cards);
-    safeBizUse('/api/lists', modules.business.lists);
-    safeBizUse('/api/workspaces', modules.business.workspaces);
-    safeBizUse('/api/templates', modules.business.templates);
+    safeBizUse('/api/boards', businessRoutes.boards);
+    safeBizUse('/api/cards', businessRoutes.cards);
+    safeBizUse('/api/lists', businessRoutes.lists);
+    safeBizUse('/api/workspaces', businessRoutes.workspaces);
+    safeBizUse('/api/templates', businessRoutes.templates);
 
     // ERP Management
-    safeBizUse('/api/erp-management', modules.business.erpManagement);
-    safeBizUse('/api/erp-templates', modules.business.erpTemplates);
-    safeBizUse('/api/master-erp', modules.business.masterERP);
+    safeBizUse('/api/erp-management', businessRoutes.erpManagement);
+    safeBizUse('/api/erp-templates', businessRoutes.erpTemplates);
+    safeBizUse('/api/master-erp', businessRoutes.masterERP);
 
     // Form & Resource Management
-    safeBizUse('/api/form-management', modules.business.formManagement);
-    safeBizUse('/api/resources', modules.business.resources);
-    safeBizUse('/api/sales', modules.business.sales);
-    safeBizUse('/api/partners', modules.business.partners);
+    safeBizUse('/api/form-management', businessRoutes.formManagement);
+    safeBizUse('/api/resources', businessRoutes.resources);
+    safeBizUse('/api/sales', businessRoutes.sales);
+    safeBizUse('/api/partners', businessRoutes.partners);
 
     // Software House Specific
-    safeBizUse('/api/software-house-roles', modules.business.softwareHouseRoles);
+    safeBizUse('/api/software-house-roles', businessRoutes.softwareHouseRoles);
     console.log('✅ Business module routes loaded');
   } catch (error) {
     console.error('❌ Business module failed to load:', error.message);
@@ -426,8 +442,10 @@ async function loadRoutes() {
   // ── Monitoring Module ────────────────────────────────────────────────────────
   try {
     console.log('📦 Loading Monitoring Module...');
-    app.use('/api/system-monitoring', modules.monitoring.system);
-    app.use('/api/standalone-monitoring', modules.monitoring.standalone);
+    const monitoringRoutes = loadModule('./modules/monitoring/routes', 'Monitoring module');
+    if (!monitoringRoutes) throw new Error('Monitoring routes unavailable');
+    app.use('/api/system-monitoring', monitoringRoutes.system);
+    app.use('/api/standalone-monitoring', monitoringRoutes.standalone);
     console.log('✅ Monitoring module routes loaded');
   } catch (error) {
     console.error('❌ Monitoring module failed to load:', error.message);
@@ -436,9 +454,11 @@ async function loadRoutes() {
   // ── Integration Module ───────────────────────────────────────────────────────
   try {
     console.log('📦 Loading Integration Module...');
-    app.use('/api/integrations', modules.integration.integrations);
-    app.use('/api/timezone', modules.integration.timezone);
-    app.use('/api/default-contacts', modules.integration.defaultContacts);
+    const integrationRoutes = loadModule('./modules/integration/routes', 'Integration module');
+    if (!integrationRoutes) throw new Error('Integration routes unavailable');
+    app.use('/api/integrations', integrationRoutes.integrations);
+    app.use('/api/timezone', integrationRoutes.timezone);
+    app.use('/api/default-contacts', integrationRoutes.defaultContacts);
     console.log('✅ Integration module routes loaded');
   } catch (error) {
     console.error('❌ Integration module failed to load:', error.message);
@@ -532,7 +552,7 @@ async function startServer() {
       // Routes + error middleware + 404 — must not depend on MongoDB being up
       await loadRoutes();
       await loadMiddleware();
-
+      // Keep explicit JSON 404 handler even if some modules fail to load.
       app.use('*', (req, res) => {
         res.status(404).json({
           error: 'Not Found',

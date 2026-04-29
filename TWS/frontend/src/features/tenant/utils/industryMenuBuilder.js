@@ -43,7 +43,7 @@ import {
  * Filters modules based on ERP category restrictions
  */
 export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug, tenantConfig = {}) => {
-  const effectiveCategory = (erpCategory === 'education' || erpCategory === 'healthcare') ? 'software_house' : erpCategory;
+  const effectiveCategory = (erpCategory === 'healthcare') ? 'software_house' : erpCategory;
   // Common modules that all industries get
   const commonModules = [
     {

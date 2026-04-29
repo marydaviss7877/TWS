@@ -1,6 +1,6 @@
-const Project = require('../../models/Project');
-const Task = require('../../models/Task');
-const Department = require('../../models/Department');
+const Project = require('../../models/project-delivery/Project');
+const Task = require('../../models/project-delivery/Task');
+const Department = require('../../models/org/Department');
 
 /**
  * Department Dashboard Service

@@ -1,8 +1,8 @@
-const User = require('../../models/User');
-const Tenant = require('../../models/Tenant');
-const TenantRole = require('../../models/TenantRole');
-const TenantUser = require('../../models/TenantUser');
-const Organization = require('../../models/Organization');
+const User = require('../../models/users-auth/User');
+const Tenant = require('../../models/tenant/Tenant');
+const TenantRole = require('../../models/tenant/TenantRole');
+const TenantUser = require('../../models/tenant/TenantUser');
+const Organization = require('../../models/org/Organization');
 const emailVerificationService = require('../integrations/email-verification.service');
 const tenantProvisioningService = require('../tenantProvisioningService');
 const emailService = require('../integrations/email.service');
@@ -262,17 +262,6 @@ class SelfServeSignupService {
         trialEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days free trial
       }
     };
-
-    // Add industry-specific configurations
-    if (industry === 'education' && metadata.schoolType) {
-      tenantData.educationConfig = {
-        institutionType: metadata.schoolType === 'school' ? 'school' :
-          metadata.schoolType === 'college' ? 'college' : 'university'
-      };
-      if (metadata.schoolEmail) {
-        tenantData.contactInfo.email = metadata.schoolEmail;
-      }
-    }
 
     // Always set softwareHouseConfig for software_house industry
     if (industry === 'software_house') {

@@ -1,4 +1,4 @@
-const { TimeEntry } = require('../../models/Finance');
+const { TimeEntry } = require('../../models/finance/Finance');
 
 const DEFAULT_WEEKLY_HOURS = 40;
 const OVERTIME_MULTIPLIER = 1.5;

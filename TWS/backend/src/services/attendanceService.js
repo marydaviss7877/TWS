@@ -1,8 +1,8 @@
-const Attendance = require('../models/Attendance');
-const AttendancePolicy = require('../models/AttendancePolicy');
-const AttendanceShift = require('../models/AttendanceShift');
-const AttendanceAudit = require('../models/AttendanceAudit');
-const Employee = require('../models/Employee');
+const Attendance = require('../models/hr-payroll/Attendance');
+const AttendancePolicy = require('../models/hr-payroll/AttendancePolicy');
+const AttendanceShift = require('../models/hr-payroll/AttendanceShift');
+const AttendanceAudit = require('../models/hr-payroll/AttendanceAudit');
+const Employee = require('../models/hr-payroll/Employee');
 const BiometricService = require('./biometricService');
 const crypto = require('crypto');
 

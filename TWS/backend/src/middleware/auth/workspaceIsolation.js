@@ -1,6 +1,6 @@
-const Workspace = require('../../models/Workspace');
-const Project = require('../../models/Project');
-const Deliverable = require('../../models/Deliverable');
+const Workspace = require('../../models/org/Workspace');
+const Project = require('../../models/project-delivery/Project');
+const Deliverable = require('../../models/project-delivery/Deliverable');
 
 /**
  * Nucleus Workspace Isolation Middleware

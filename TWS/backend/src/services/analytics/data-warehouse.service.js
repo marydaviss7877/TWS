@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 // const TenantAnalyticsSummary = require('../../models/TenantAnalyticsSummary'); // Model not yet implemented
-const EmployeeMetrics = require('../../models/EmployeeMetrics');
-const Project = require('../../models/Project');
-const Attendance = require('../../models/Attendance');
-const Employee = require('../../models/Employee');
-const Client = require('../../models/Client');
+const EmployeeMetrics = require('../../models/hr-payroll/EmployeeMetrics');
+const Project = require('../../models/project-delivery/Project');
+const Attendance = require('../../models/hr-payroll/Attendance');
+const Employee = require('../../models/hr-payroll/Employee');
+const Client = require('../../models/industry/Client');
 const logger = require('../../utils/logger');
 
 /**

@@ -86,16 +86,6 @@ module.exports = {
       immutableAuditTrails: true,
       accessControls: true,
       dataRetention: true
-    },
-    hipaa: {
-      enabled: process.env.HIPAA_COMPLIANCE === 'true',
-      encryptionAtRest: process.env.ENCRYPTION_AT_REST === 'true' || process.env.HIPAA_COMPLIANCE === 'true',
-      encryptionInTransit: process.env.ENCRYPTION_IN_TRANSIT === 'true' || process.env.HIPAA_COMPLIANCE === 'true',
-      accessLogging: process.env.ACCESS_LOGGING === 'true' || process.env.HIPAA_COMPLIANCE === 'true',
-      // HIPAA enforcement flags
-      enforceMinimumNecessary: process.env.HIPAA_COMPLIANCE === 'true',
-      requireAuditLogging: process.env.HIPAA_COMPLIANCE === 'true',
-      requireFieldLevelEncryption: process.env.HIPAA_COMPLIANCE === 'true'
     }
   },
 

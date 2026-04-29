@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const Deliverable = require('../../../models/Deliverable');
-const Milestone = require('../../../models/Milestone');
-const Project = require('../../../models/Project');
-const Task = require('../../../models/Task');
+const Deliverable = require('../../../models/project-delivery/Deliverable');
+const Milestone = require('../../../models/project-delivery/Milestone');
+const Project = require('../../../models/project-delivery/Project');
+const Task = require('../../../models/project-delivery/Task');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const { requireRole } = require('../../../middleware/auth/rbac');
 // Use standardized orgId helper utility

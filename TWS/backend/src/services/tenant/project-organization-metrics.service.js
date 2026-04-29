@@ -3,8 +3,8 @@
  * Used by GET /organization/projects/metrics and software-house dashboard so counts stay aligned.
  */
 
-const Project = require('../../models/Project');
-const ProjectMember = require('../../models/ProjectMember');
+const Project = require('../../models/project-delivery/Project');
+const ProjectMember = require('../../models/project-delivery/ProjectMember');
 const { getUserDepartmentIds, shouldFilterByDepartment } = require('./userDepartmentsService');
 
 async function resolveOrgIdForProjects(req) {

@@ -1,6 +1,6 @@
-const { TimeEntry } = require('../../models/Finance');
-const Project = require('../../models/Project');
-const Task = require('../../models/Task');
+const { TimeEntry } = require('../../models/finance/Finance');
+const Project = require('../../models/project-delivery/Project');
+const Task = require('../../models/project-delivery/Task');
 
 class TimeTrackingService {
   /**

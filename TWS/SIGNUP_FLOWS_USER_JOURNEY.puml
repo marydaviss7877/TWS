@@ -21,7 +21,7 @@ on landing page;
 note right
   URL patterns:
   - /healthcare → healthcare
-  - /education → education
+  - /legacy → legacy
   - /software-house → software_house
   - /warehouse → warehouse
   - default → business
@@ -30,7 +30,7 @@ end note
 |#LightGreen|**Step 1: Account Creation**|
 :User fills registration form;
 note right
-  **Education Flow:**
+  **Legacy Flow:**
   - First Name
   - Last Name
   - Email
@@ -100,7 +100,7 @@ endif
 
 |#LightCoral|**Step 3: Industry-Specific Information**|
 
-partition "Education Flow (5 steps)" {
+partition "Legacy Flow (5 steps)" {
   :User enters school information;
   note right
     Fields:

@@ -3,8 +3,8 @@
  * Permission codes are intersected with existing Permission documents in scope (import permissions catalog first).
  */
 
-const Role = require('../../models/Role');
-const Permission = require('../../models/Permission');
+const Role = require('../../models/core/Role');
+const Permission = require('../../models/core/Permission');
 const { buildRoleCatalog } = require('./roleCatalog.service');
 
 const MAX_DESCRIPTION = 1000;

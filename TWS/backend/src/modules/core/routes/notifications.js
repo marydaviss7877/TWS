@@ -3,8 +3,8 @@ const router = express.Router();
 const { authenticateToken } = require('../../../middleware/auth/auth');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const { body, validationResult } = require('express-validator');
-const DeviceToken = require('../../../models/DeviceToken');
-const NotificationPreference = require('../../../models/NotificationPreference');
+const DeviceToken = require('../../../models/users-auth/DeviceToken');
+const NotificationPreference = require('../../../models/notifications/NotificationPreference');
 const pushNotificationService = require('../../../services/notifications/push-notification.service');
 const emailService = require('../../../services/integrations/email.service');
 
@@ -322,7 +322,7 @@ router.post('/test/email', authenticateToken, [
 // SIMPLIFIED: Get notification statistics (use Notification model instead of queue)
 router.get('/stats', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
   try {
-    const Notification = require('../../../models/Notification');
+    const Notification = require('../../../models/notifications/Notification');
     
     // Get stats from Notification model instead of queue
     const [unreadCount, totalCount] = await Promise.all([
@@ -357,7 +357,7 @@ router.delete('/cleanup', authenticateToken, ErrorHandler.asyncHandler(async (re
   }
 
   try {
-    const Notification = require('../../../models/Notification');
+    const Notification = require('../../../models/notifications/Notification');
     const daysOld = parseInt(req.query.days) || 7;
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);

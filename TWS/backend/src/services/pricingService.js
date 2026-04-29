@@ -1,5 +1,5 @@
-const SubscriptionPlan = require('../models/SubscriptionPlan');
-const Tenant = require('../models/Tenant');
+const SubscriptionPlan = require('../models/finance/SubscriptionPlan');
+const Tenant = require('../models/tenant/Tenant');
 const usageTrackerService = require('./usageTrackerService');
 const logger = require('../utils/logger');
 

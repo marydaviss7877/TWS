@@ -66,7 +66,7 @@
     --color-border-light: #f1f5f9;  /* Slate 100 */
     
     /* Industry-Specific Accents */
-    --color-education: #4338ca;      /* Indigo 700 */
+    --color-legacy: #4338ca;      /* Indigo 700 */
     --color-healthcare: #0369a1;     /* Sky 700 */
     --color-software: #7c3aed;       /* Violet 600 */
     
@@ -525,7 +525,7 @@ section {
 
 .layer-industry:nth-child(2) {
     margin-left: var(--space-4);
-    border-left: 3px solid var(--color-education);
+    border-left: 3px solid var(--color-legacy);
 }
 
 .layer-industry:nth-child(3) {

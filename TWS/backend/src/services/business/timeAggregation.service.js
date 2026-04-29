@@ -1,4 +1,4 @@
-const { TimeEntry } = require('../../models/Finance');
+const { TimeEntry } = require('../../models/finance/Finance');
 
 const buildDateFilter = (from, to) => {
   if (!from && !to) return null;

@@ -42,7 +42,6 @@ class SignupModalV2 {
   getIndustryFromURL() {
     const path = window.location.pathname;
     if (path.includes('healthcare')) return 'healthcare';
-    if (path.includes('education')) return 'education';
     if (path.includes('software-house')) return 'software_house';
     if (path.includes('warehouse')) return 'warehouse';
     return 'business';
@@ -340,7 +339,7 @@ class SignupModalV2 {
     let registrationData = {};
     let emailToValidate = '';
     
-    if (this.industry === 'education') {
+    if (this.industry === 'legacy') {
       emailToValidate = data.adminEmail;
       registrationData = {
         email: data.adminEmail,
@@ -361,8 +360,8 @@ class SignupModalV2 {
     }
 
     // Validate passwords match
-    const passwordField = this.industry === 'education' ? 'adminPassword' : 'password';
-    const confirmPasswordField = this.industry === 'education' ? 'confirmPassword' : 'confirmPassword';
+    const passwordField = this.industry === 'legacy' ? 'adminPassword' : 'password';
+    const confirmPasswordField = this.industry === 'legacy' ? 'confirmPassword' : 'confirmPassword';
     
     if (data[passwordField] !== data[confirmPasswordField]) {
       throw new Error('Passwords do not match');
@@ -405,7 +404,7 @@ class SignupModalV2 {
   }
 
   async handleEmailVerification(data) {
-    const email = this.industry === 'education' ? this.userData.adminEmail : this.userData.email;
+    const email = this.industry === 'legacy' ? this.userData.adminEmail : this.userData.email;
 
     const response = await fetch(`${this.apiBaseUrl}/signup/verify-email`, {
       method: 'POST',
@@ -434,7 +433,7 @@ class SignupModalV2 {
     };
 
     // Map industry-specific fields
-    if (this.industry === 'education') {
+    if (this.industry === 'legacy') {
       tenantData.organizationName = data.schoolName;
       tenantData.slug = data.slug;
       tenantData.metadata = {
@@ -545,7 +544,7 @@ class SignupModalV2 {
   }
 
   async resendOTP() {
-    const email = this.industry === 'education' ? this.userData.adminEmail : this.userData.email;
+    const email = this.industry === 'legacy' ? this.userData.adminEmail : this.userData.email;
 
     try {
       const response = await fetch(`${this.apiBaseUrl}/signup/resend-otp`, {
@@ -962,7 +961,7 @@ function initializeSignupModal() {
   let industry = 'business'; // default
   
   if (path.includes('healthcare')) industry = 'healthcare';
-  else if (path.includes('education')) industry = 'education';
+  else if (path.includes('legacy')) industry = 'legacy';
   else if (path.includes('software-house')) industry = 'software_house';
   else if (path.includes('warehouse')) industry = 'warehouse';
   
@@ -1024,7 +1023,7 @@ window.openSignupModal = function() {
             const path = window.location.pathname;
             let industry = 'business';
             if (path.includes('healthcare')) industry = 'healthcare';
-            else if (path.includes('education')) industry = 'education';
+            else if (path.includes('legacy')) industry = 'legacy';
             
             window.signupModal = new SignupModalV2(industry);
             window.signupModal.open();

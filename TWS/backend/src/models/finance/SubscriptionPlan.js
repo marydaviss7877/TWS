@@ -322,10 +322,6 @@ const subscriptionPlanSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
-    hipaaCompliant: {
-      type: Boolean,
-      default: false
-    },
     iso27001: {
       type: Boolean,
       default: false
@@ -397,7 +393,7 @@ const subscriptionPlanSchema = new mongoose.Schema({
     category: String,
     industry: [{
       type: String,
-      enum: ['software_house', 'education', 'healthcare', 'finance', 'general']
+      enum: ['software_house', 'finance', 'general']
     }],
     targetAudience: [{
       type: String,

@@ -1,4 +1,4 @@
-const { Invoice, Client, JournalEntry, ChartOfAccounts } = require('../../models/Finance');
+const { Invoice, Client, JournalEntry, ChartOfAccounts } = require('../../models/finance/Finance');
 
 class AccountsReceivableService {
   /**

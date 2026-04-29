@@ -1,38 +1,31 @@
-const Tenant = require('../../models/Tenant');
-const User = require('../../models/User');
-const Organization = require('../../models/Organization');
-const { Student, Teacher, Class, Grade, Course, AcademicYear, Exam } = require('../../models/industry/Education');
+const Tenant = require('../../models/tenant/Tenant');
+const User = require('../../models/users-auth/User');
+const Organization = require('../../models/org/Organization');
 const tokenBlacklistService = require('../auth/token-blacklist.service');
-const AuditLog = require('../../models/AuditLog');
+const AuditLog = require('../../models/core/AuditLog');
 const mongoose = require('mongoose');
 
 // Additional models for full cascade delete (lazy load to avoid circular deps)
 let Billing, Session, TenantSettings, TenantUser, TenantRole, DefaultContact, OnboardingChecklist;
 let Department, DepartmentAccess, Role, Permission, Project, Deliverable;
 let ChangeRequest, ChangeRequestAudit, Approval, Analytics;
-let HPatient, HDoctor, HAppointment, HMedicalRecord, HPrescription, HcDepartment;
-try { Billing = require('../../models/Billing'); } catch (_) {}
-try { Session = require('../../models/Session'); } catch (_) {}
-try { TenantSettings = require('../../models/TenantSettings'); } catch (_) {}
-try { TenantUser = require('../../models/TenantUser'); } catch (_) {}
-try { TenantRole = require('../../models/TenantRole'); } catch (_) {}
-try { DefaultContact = require('../../models/DefaultContact'); } catch (_) {}
-try { OnboardingChecklist = require('../../models/OnboardingChecklist'); } catch (_) {}
-try { Department = require('../../models/Department'); } catch (_) {}
-try { DepartmentAccess = require('../../models/DepartmentAccess'); } catch (_) {}
-try { Role = require('../../models/Role'); } catch (_) {}
-try { Permission = require('../../models/Permission'); } catch (_) {}
-try { Project = require('../../models/Project'); } catch (_) {}
-try { Deliverable = require('../../models/Deliverable'); } catch (_) {}
-try { ChangeRequest = require('../../models/ChangeRequest'); } catch (_) {}
-try { ChangeRequestAudit = require('../../models/ChangeRequestAudit'); } catch (_) {}
-try { Approval = require('../../models/Approval'); } catch (_) {}
-try { Analytics = require('../../models/Analytics'); } catch (_) {}
-try {
-  const H = require('../../models/industry/Healthcare');
-  HPatient = H.Patient; HDoctor = H.Doctor; HAppointment = H.Appointment;
-  HMedicalRecord = H.MedicalRecord; HPrescription = H.Prescription; HcDepartment = H.Department;
-} catch (_) {}
+try { Billing = require('../../models/finance/Billing'); } catch (_) {}
+try { Session = require('../../models/core/Session'); } catch (_) {}
+try { TenantSettings = require('../../models/tenant/TenantSettings'); } catch (_) {}
+try { TenantUser = require('../../models/tenant/TenantUser'); } catch (_) {}
+try { TenantRole = require('../../models/tenant/TenantRole'); } catch (_) {}
+try { DefaultContact = require('../../models/org/DefaultContact'); } catch (_) {}
+try { OnboardingChecklist = require('../../models/admin-platform/OnboardingChecklist'); } catch (_) {}
+try { Department = require('../../models/org/Department'); } catch (_) {}
+try { DepartmentAccess = require('../../models/org/DepartmentAccess'); } catch (_) {}
+try { Role = require('../../models/core/Role'); } catch (_) {}
+try { Permission = require('../../models/core/Permission'); } catch (_) {}
+try { Project = require('../../models/project-delivery/Project'); } catch (_) {}
+try { Deliverable = require('../../models/project-delivery/Deliverable'); } catch (_) {}
+try { ChangeRequest = require('../../models/project-delivery/ChangeRequest'); } catch (_) {}
+try { ChangeRequestAudit = require('../../models/project-delivery/ChangeRequestAudit'); } catch (_) {}
+try { Approval = require('../../models/core/Approval'); } catch (_) {}
+try { Analytics = require('../../models/analytics/Analytics'); } catch (_) {}
 
 /**
  * Tenant Lifecycle Service
@@ -215,7 +208,7 @@ class TenantLifecycleService {
   /**
    * Cascade delete all tenant data (hard delete)
    * Removes: users, organizations, sessions, billing, roles, permissions, departments,
-   * projects, deliverables, education & healthcare data, analytics, audit logs, etc.
+   * projects, deliverables, analytics, audit logs, etc.
    */
   async cascadeDeleteTenantData(tenant) {
     try {
@@ -278,30 +271,10 @@ class TenantLifecycleService {
       await run(ChangeRequestAudit, tenantOnlyFilter, 'ChangeRequestAudit');
       await run(Approval, tenantOnlyFilter, 'Approval');
 
-      // 6) Education data
-      const eduFilter = orgIds.length
-        ? { $or: [tenantOnlyFilter.$or, { orgId: { $in: orgIds } }] }
-        : tenantOnlyFilter;
-      await run(Student, eduFilter, 'Student');
-      await run(Teacher, eduFilter, 'Teacher');
-      await run(Class, eduFilter, 'Class');
-      await run(Grade, eduFilter, 'Grade');
-      await run(Course, eduFilter, 'Course');
-      await run(AcademicYear, eduFilter, 'AcademicYear');
-      await run(Exam, eduFilter, 'Exam');
-
-      // 7) Healthcare data
-      await run(HPatient, tenantOrOrgFilter, 'Patient');
-      await run(HDoctor, tenantOrOrgFilter, 'Doctor');
-      await run(HAppointment, tenantOrOrgFilter, 'Appointment');
-      await run(HMedicalRecord, tenantOrOrgFilter, 'MedicalRecord');
-      await run(HPrescription, tenantOrOrgFilter, 'Prescription');
-      await run(HcDepartment, tenantOrOrgFilter, 'Healthcare.Department');
-
-      // 8) Users (by orgId or tenantId)
+      // 6) Users (by orgId or tenantId)
       await User.deleteMany(tenantOrOrgFilter);
 
-      // 9) Organizations for this tenant
+      // 7) Organizations for this tenant
       await Organization.deleteMany({ tenantId: tenantObjId });
 
       console.log(`✅ Cascade deleted all data for tenant: ${tenantSlug}`);
@@ -317,32 +290,6 @@ class TenantLifecycleService {
   async softDeleteTenantData(tenantSlug, tenantId, orgId) {
     try {
       const tenantIdString = tenantSlug || tenantId.toString();
-
-      // Soft delete education data
-      await Student.updateMany(
-        { tenantId: tenantIdString, orgId },
-        { isActive: false, isDeleted: true, deletedAt: new Date() }
-      );
-      await Teacher.updateMany(
-        { tenantId: tenantIdString, orgId },
-        { isActive: false, isDeleted: true, deletedAt: new Date() }
-      );
-      await Class.updateMany(
-        { tenantId: tenantIdString, orgId },
-        { isActive: false, isDeleted: true, deletedAt: new Date() }
-      );
-      await Grade.updateMany(
-        { tenantId: tenantIdString, orgId },
-        { isActive: false, isDeleted: true, deletedAt: new Date() }
-      );
-      await Course.updateMany(
-        { tenantId: tenantIdString, orgId },
-        { isActive: false, isDeleted: true, deletedAt: new Date() }
-      );
-      await AcademicYear.updateMany(
-        { tenantId: tenantIdString, orgId },
-        { isActive: false, isDeleted: true, deletedAt: new Date() }
-      );
 
       // Soft delete users
       await User.updateMany(

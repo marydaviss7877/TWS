@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
-const Task = require('../../../models/Task');
-const Project = require('../../../models/Project');
-const ProjectMember = require('../../../models/ProjectMember');
-const Activity = require('../../../models/Activity');
+const Task = require('../../../models/project-delivery/Task');
+const Project = require('../../../models/project-delivery/Project');
+const ProjectMember = require('../../../models/project-delivery/ProjectMember');
+const Activity = require('../../../models/analytics/Activity');
 const autoCalculationService = require('../../../services/nucleusAutoCalculationService');
 router.use(verifyERPToken);
 

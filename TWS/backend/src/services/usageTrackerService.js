@@ -6,12 +6,12 @@
  */
 
 const mongoose = require('mongoose');
-const Organization = require('../models/Organization');
-const TenantUser = require('../models/TenantUser');
-const Project = require('../models/Project');
-const Workspace = require('../models/Workspace');
-const Client = require('../models/Client');
-const OrgDocument = require('../models/OrgDocument');
+const Organization = require('../models/org/Organization');
+const TenantUser = require('../models/tenant/TenantUser');
+const Project = require('../models/project-delivery/Project');
+const Workspace = require('../models/org/Workspace');
+const Client = require('../models/industry/Client');
+const OrgDocument = require('../models/documents/OrgDocument');
 
 class UsageTrackerService {
   constructor() {

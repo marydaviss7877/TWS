@@ -8,7 +8,7 @@
  * - Works for both main auth and tenant auth
  * 
  * Multi-ERP, Multi-Tenant Support:
- * - Supports main auth (education users)
+ * - Supports main auth (legacy users)
  * - Supports tenant auth (tenant owners)
  * - Automatically detects which endpoint to use based on cookies
  */

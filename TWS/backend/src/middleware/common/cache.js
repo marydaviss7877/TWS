@@ -1,7 +1,7 @@
 const cacheService = require('../../services/core/cache.service');
 
 /**
- * Caching Middleware for Education Routes
+ * Caching Middleware for Tenant Routes
  * Caches API responses to improve performance
  */
 
@@ -27,7 +27,7 @@ const cache = (ttl = 1800, keyGenerator = null) => {
       // Generate cache key
       const cacheKey = keyGenerator 
         ? keyGenerator(req)
-        : `cache:education:${req.path}:${JSON.stringify(req.query)}:${req.tenantContext?.tenantSlug || ''}`;
+        : `cache:tenant:${req.path}:${JSON.stringify(req.query)}:${req.tenantContext?.tenantSlug || ''}`;
 
       // Try to get from cache
       const cached = await cacheService.get(cacheKey);
@@ -76,12 +76,12 @@ const invalidateCache = async (pattern) => {
  */
 const invalidateStudentCache = async (tenantSlug, studentId = null) => {
   const patterns = [
-    `cache:education:*students*:${tenantSlug}*`,
-    `cache:education:*student*:${tenantSlug}*`
+    `cache:tenant:*students*:${tenantSlug}*`,
+    `cache:tenant:*student*:${tenantSlug}*`
   ];
   
   if (studentId) {
-    patterns.push(`cache:education:*student*${studentId}*:${tenantSlug}*`);
+    patterns.push(`cache:tenant:*student*${studentId}*:${tenantSlug}*`);
   }
   
   for (const pattern of patterns) {
@@ -94,12 +94,12 @@ const invalidateStudentCache = async (tenantSlug, studentId = null) => {
  */
 const invalidateGradeCache = async (tenantSlug, studentId = null) => {
   const patterns = [
-    `cache:education:*grades*:${tenantSlug}*`,
-    `cache:education:*transcript*:${tenantSlug}*`
+    `cache:tenant:*grades*:${tenantSlug}*`,
+    `cache:tenant:*transcript*:${tenantSlug}*`
   ];
   
   if (studentId) {
-    patterns.push(`cache:education:*grades*${studentId}*:${tenantSlug}*`);
+    patterns.push(`cache:tenant:*grades*${studentId}*:${tenantSlug}*`);
   }
   
   for (const pattern of patterns) {

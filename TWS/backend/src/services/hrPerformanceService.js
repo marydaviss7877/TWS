@@ -1,5 +1,5 @@
-const Employee = require('../models/Employee');
-const Attendance = require('../models/Attendance');
+const Employee = require('../models/hr-payroll/Employee');
+const Attendance = require('../models/hr-payroll/Attendance');
 const projectApi = require('./module-api/project-api.service');
 
 class HRPerformanceService {

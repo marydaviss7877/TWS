@@ -1,5 +1,5 @@
-const Client = require('../../../models/Client');
-const { Vendor } = require('../../../models/Finance');
+const Client = require('../../../models/industry/Client');
+const { Vendor } = require('../../../models/finance/Finance');
 
 /**
  * Create sample clients and vendors

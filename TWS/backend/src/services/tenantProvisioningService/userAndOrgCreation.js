@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
-const User = require('../../models/User');
-const Organization = require('../../models/Organization');
-const Tenant = require('../../models/Tenant');
+const User = require('../../models/users-auth/User');
+const Organization = require('../../models/org/Organization');
+const Tenant = require('../../models/tenant/Tenant');
 
 /**
  * Create default admin user
