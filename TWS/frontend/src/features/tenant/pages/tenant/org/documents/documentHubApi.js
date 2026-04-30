@@ -1,10 +1,9 @@
 /**
  * Document Hub – API client for org documents
- * Uses software-house base so Document Hub works for Software House ERP tenants.
- * Backend mounts same routes at both /organization/documents and /software-house/documents.
+ * Backend mounts document routes under /organization/documents.
  */
 
-const base = (tenantSlug) => `/api/tenant/${tenantSlug}/software-house/documents`;
+const base = (tenantSlug) => `/api/tenant/${tenantSlug}/organization/documents`;
 
 function getOptions(method, body = null) {
   const opts = { method, credentials: 'include', headers: {} };
