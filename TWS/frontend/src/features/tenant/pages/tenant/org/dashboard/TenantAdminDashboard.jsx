@@ -285,7 +285,7 @@ export default function TenantAdminDashboard() {
   const { tenantSlug } = useParams();
   const navigate = useNavigate();
   const { user, tenant } = useTenantAuth();
-  const { hasModulePermission } = useTenantPermissions();
+  const { userPermissions, hasModulePermission } = useTenantPermissions();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
