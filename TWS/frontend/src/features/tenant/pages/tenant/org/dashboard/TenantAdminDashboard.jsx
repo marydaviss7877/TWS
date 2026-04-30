@@ -433,17 +433,25 @@ export default function TenantAdminDashboard() {
 
   const showSparkline = sparkBundle.values.length >= 2 && sparkBundle.values.some((v) => v > 0);
 
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
+
+  // userPermissions === null means still being fetched — wait before deciding access
+  if (userPermissions === null) {
+    return <DashboardSkeleton />;
+  }
+
+  const adminRoles = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner'];
+  const isAdminByRole = adminRoles.includes(String(user?.role || '').toLowerCase());
   const canViewAdminDashboard =
+    isAdminByRole ||
     hasModulePermission?.('users', 'admin') ||
     hasModulePermission?.('projects', 'admin') ||
     hasModulePermission?.('finance', 'admin') ||
     hasModulePermission?.('payroll', 'admin');
   if (!canViewAdminDashboard) {
     return <Navigate to="../home" replace />;
-  }
-
-  if (loading) {
-    return <DashboardSkeleton />;
   }
 
   return (
