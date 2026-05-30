@@ -79,7 +79,7 @@ const handleValidationErrors = (req, res, next) => {
 router.post('/register',
   signupLimiter,
   [
-    body('email').isEmail().normalizeEmail(),
+    body('email').isEmail().normalizeEmail({ gmail_remove_dots: false }),
     body('password').isLength({ min: 6 }),
     body('fullName').notEmpty().trim(),
     handleValidationErrors
@@ -183,7 +183,7 @@ router.post('/register',
 router.post('/verify-email',
   apiLimiter,
   [
-    body('email').isEmail().normalizeEmail(),
+    body('email').isEmail().normalizeEmail({ gmail_remove_dots: false }),
     body('otp').isLength({ min: 6, max: 6 }),
     handleValidationErrors
   ],
@@ -209,7 +209,7 @@ router.post('/verify-email',
 router.post('/resend-otp',
   apiLimiter,
   [
-    body('email').isEmail().normalizeEmail(),
+    body('email').isEmail().normalizeEmail({ gmail_remove_dots: false }),
     handleValidationErrors
   ],
   ErrorHandler.asyncHandler(async (req, res) => {
@@ -565,7 +565,7 @@ router.get('/onboarding/:tenantId/progress',
  */
 router.post('/software-house/complete',
   [
-    body('email').isEmail().normalizeEmail(),
+    body('email').isEmail().normalizeEmail({ gmail_remove_dots: false }),
     body('password').isLength({ min: 6 }),
     body('fullName').notEmpty().trim().isLength({ min: 2, max: 255 }),
     body('organizationName').notEmpty().trim().isLength({ min: 2, max: 255 }),
