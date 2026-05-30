@@ -1,4 +1,4 @@
-import {
+﻿import {
   HomeIcon,
   UserIcon,
   UsersIcon,
@@ -50,61 +50,61 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
       key: 'dashboard',
       icon: HomeIcon,
       label: 'Dashboard',
-      path: `/${tenantSlug}/org/dashboard`
+      path: `/dashboard`
     },
     {
       key: 'my-work',
       icon: BriefcaseIcon,
       label: 'My Work',
-      path: `/${tenantSlug}/org/my-work`
+      path: `/my-work`
     },
     {
       key: 'analytics',
       icon: ChartBarIcon,
       label: 'Analytics',
-      path: `/${tenantSlug}/org/analytics`
+      path: `/analytics`
     },
     {
       key: 'users',
       icon: UserIcon,
       label: 'Users',
-      path: `/${tenantSlug}/org/users`
+      path: `/users`
     },
     {
       key: 'finance',
       icon: CurrencyDollarIcon,
       label: 'Finance',
-      path: `/${tenantSlug}/org/finance`,
+      path: `/finance`,
       children: [
         {
           key: 'finance-dashboard',
           label: 'Dashboard',
-          path: `/${tenantSlug}/org/finance`
+          path: `/finance`
         },
         {
           key: 'finance-accounts-payable',
           label: 'Accounts Payable',
-          path: `/${tenantSlug}/org/finance/accounts-payable`
+          path: `/finance/accounts-payable`
         },
         {
           key: 'finance-accounts-receivable',
           label: 'Accounts Receivable',
-          path: `/${tenantSlug}/org/finance/accounts-receivable`
+          path: `/finance/accounts-receivable`
         },
         {
           key: 'finance-budgeting',
           label: 'Budgeting',
-          path: `/${tenantSlug}/org/finance/budgeting`
+          path: `/finance/budgeting`
         },
         {
           key: 'finance-expense-management',
           label: 'Expense Management',
-          path: `/${tenantSlug}/org/finance/time-expenses`
+          path: `/finance/time-expenses`
         },
         {
           key: 'finance-financial-reports',
           label: 'Financial Reports',
-          path: `/${tenantSlug}/org/finance/reporting`
+          path: `/finance/reporting`
         }
       ]
     },
@@ -112,73 +112,73 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
       key: 'projects',
       icon: ClipboardDocumentListIcon,
       label: 'Projects',
-      path: `/${tenantSlug}/org/projects`,
+      path: `/projects`,
       children: [
         {
           key: 'projects-overview',
           label: 'Overview',
-          path: `/${tenantSlug}/org/projects`
+          path: `/projects`
         },
         {
           key: 'projects-list',
           label: 'All Projects',
-          path: `/${tenantSlug}/org/projects/list`
+          path: `/projects/list`
         },
         {
           key: 'projects-tasks',
           label: 'Tasks',
-          path: `/${tenantSlug}/org/projects/tasks`
+          path: `/projects/tasks`
         },
         {
           key: 'projects-gantt',
           label: 'Gantt Chart',
-          path: `/${tenantSlug}/org/projects/gantt`
+          path: `/projects/gantt`
         },
         {
           key: 'projects-milestones',
           label: 'Milestones',
-          path: `/${tenantSlug}/org/projects/milestones`
+          path: `/projects/milestones`
         },
         {
           key: 'projects-resources',
           label: 'Resources',
-          path: `/${tenantSlug}/org/projects/resources`
+          path: `/projects/resources`
         },
         {
           key: 'projects-timesheets',
           label: 'Timesheets',
-          path: `/${tenantSlug}/org/projects/timesheets`
+          path: `/projects/timesheets`
         },
         {
           key: 'projects-sprints',
           label: 'Sprints',
-          path: `/${tenantSlug}/org/projects/sprints`
+          path: `/projects/sprints`
         },
         {
           key: 'projects-deliverables',
           label: 'Deliverables',
-          path: `/${tenantSlug}/org/projects/deliverables`,
+          path: `/projects/deliverables`,
           icon: FlagIcon,
           description: 'Nucleus Project OS - Deliverable Management'
         },
         {
           key: 'projects-approvals',
           label: 'Approval Queue',
-          path: `/${tenantSlug}/org/projects/approvals`,
+          path: `/projects/approvals`,
           icon: ClipboardDocumentCheckIcon,
           description: 'Nucleus Project OS - Pending your approval'
         },
         {
           key: 'projects-change-requests',
           label: 'Change Requests',
-          path: `/${tenantSlug}/org/projects/change-requests`,
+          path: `/projects/change-requests`,
           icon: ExclamationCircleIcon,
           description: 'Nucleus Project OS - Scope Change Management'
         },
         {
           key: 'projects-analytics',
           label: 'Nucleus Analytics',
-          path: `/${tenantSlug}/org/projects/analytics`,
+          path: `/projects/analytics`,
           icon: ChartBarIcon,
           description: 'Workspace stats, at-risk deliverables, status summary'
         }
@@ -188,24 +188,24 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
       key: 'documents',
       icon: PencilSquareIcon,
       label: 'Documents',
-      path: `/${tenantSlug}/org/documents`,
-      description: 'Built-in word processor – write, save, and download documents',
+      path: `/documents`,
+      description: 'Built-in word processor â€“ write, save, and download documents',
       children: [
         {
           key: 'documents-list',
           label: 'Documents',
-          path: `/${tenantSlug}/org/documents`
+          path: `/documents`
         },
         {
           key: 'documents-approvals',
           label: 'Approvals',
-          path: `/${tenantSlug}/org/documents/approval-queue`,
+          path: `/documents/approval-queue`,
           icon: ClockIcon
         },
         {
           key: 'documents-audit',
           label: 'Audit Log',
-          path: `/${tenantSlug}/org/documents/audit`,
+          path: `/documents/audit`,
           icon: ClipboardDocumentListIcon
         }
       ]
@@ -215,23 +215,23 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
       key: 'audit',
       icon: ClipboardDocumentListIcon,
       label: 'Audit Log',
-      path: `/${tenantSlug}/org/audit`
+      path: `/audit`
     },
     {
       key: 'rulebook',
       icon: BookOpenIcon,
       label: 'Org rule book',
-      path: `/${tenantSlug}/org/rulebook`,
+      path: `/rulebook`,
       description: 'Session, security, and acceptable use for this workspace'
     },
     {
       key: 'settings',
       icon: CogIcon,
       label: 'Settings',
-      path: `/${tenantSlug}/org/settings`,
+      path: `/settings`,
       children: [
-        { key: 'settings-org',      label: 'Org Profile',  path: `/${tenantSlug}/org/settings/organization` },
-        { key: 'settings-general',  label: 'General',      path: `/${tenantSlug}/org/settings` },
+        { key: 'settings-org',      label: 'Org Profile',  path: `/settings/organization` },
+        { key: 'settings-general',  label: 'General',      path: `/settings` },
       ]
     }
   ];
@@ -243,17 +243,17 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         key: 'permissions',
         icon: ShieldCheckIcon,
         label: 'Permissions',
-        path: `/${tenantSlug}/org/permissions`,
+        path: `/permissions`,
         children: [
           {
             key: 'permissions-list',
             label: 'Permissions',
-            path: `/${tenantSlug}/org/permissions`
+            path: `/permissions`
           },
           {
             key: 'permissions-create',
             label: 'Create Permission',
-            path: `/${tenantSlug}/org/permissions/create`
+            path: `/permissions/create`
           }
         ]
       },
@@ -261,17 +261,17 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         key: 'roles',
         icon: UserGroupIcon,
         label: 'Roles',
-        path: `/${tenantSlug}/org/roles`,
+        path: `/roles`,
         children: [
           {
             key: 'roles-list',
             label: 'Roles',
-            path: `/${tenantSlug}/org/roles`
+            path: `/roles`
           },
           {
             key: 'roles-create',
             label: 'Create Role',
-            path: `/${tenantSlug}/org/roles/create`
+            path: `/roles/create`
           }
         ]
       },
@@ -279,22 +279,22 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         key: 'departments',
         icon: BuildingOfficeIcon,
         label: 'Department',
-        path: `/${tenantSlug}/org/departments`,
+        path: `/departments`,
         children: [
           {
             key: 'departments-list',
             label: 'Departments',
-            path: `/${tenantSlug}/org/departments`
+            path: `/departments`
           },
           {
             key: 'departments-create',
             label: 'Create Department',
-            path: `/${tenantSlug}/org/departments/create`
+            path: `/departments/create`
           },
           {
             key: 'departments-access',
             label: 'Manage Access',
-            path: `/${tenantSlug}/org/departments/access`
+            path: `/departments/access`
           }
         ]
       },
@@ -302,52 +302,52 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         key: 'hr',
         icon: UsersIcon,
         label: 'HR',
-        path: `/${tenantSlug}/org/software-house/hr`,
+        path: `/software-house/hr`,
         children: [
           {
             key: 'hr-overview',
             label: 'Overview',
-            path: `/${tenantSlug}/org/software-house/hr`
+            path: `/software-house/hr`
           },
           {
             key: 'hr-employees',
             label: 'Employees',
-            path: `/${tenantSlug}/org/software-house/hr/employees`
+            path: `/software-house/hr/employees`
           },
           {
             key: 'hr-payroll',
             label: 'Payroll',
-            path: `/${tenantSlug}/org/software-house/hr/payroll`
+            path: `/software-house/hr/payroll`
           },
           {
             key: 'hr-attendance',
             label: 'Attendance',
-            path: `/${tenantSlug}/org/software-house/hr/attendance`
+            path: `/software-house/hr/attendance`
           },
           {
             key: 'hr-leave-requests',
             label: 'Leave Requests',
-            path: `/${tenantSlug}/org/software-house/hr/leave-requests`
+            path: `/software-house/hr/leave-requests`
           },
           {
             key: 'hr-performance',
             label: 'Performance',
-            path: `/${tenantSlug}/org/software-house/hr/performance`
+            path: `/software-house/hr/performance`
           },
           {
             key: 'hr-recruitment',
             label: 'Recruitment',
-            path: `/${tenantSlug}/org/software-house/hr/recruitment`
+            path: `/software-house/hr/recruitment`
           },
           {
             key: 'hr-onboarding',
             label: 'Onboarding',
-            path: `/${tenantSlug}/org/software-house/hr/onboarding`
+            path: `/software-house/hr/onboarding`
           },
           {
             key: 'hr-training',
             label: 'Training',
-            path: `/${tenantSlug}/org/software-house/hr/training`
+            path: `/software-house/hr/training`
           }
         ]
       },
@@ -355,33 +355,33 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         key: 'time-tracking',
         icon: ClockIcon,
         label: 'Time Tracking',
-        path: `/${tenantSlug}/org/software-house/time-tracking`
+        path: `/software-house/time-tracking`
       },
       {
         key: 'clients',
         icon: BuildingOfficeIcon,
         label: 'Clients',
-        path: `/${tenantSlug}/org/clients`,
+        path: `/clients`,
         children: [
           {
             key: 'clients-list',
             label: 'Client List',
-            path: `/${tenantSlug}/org/clients`
+            path: `/clients`
           },
           {
             key: 'clients-contracts',
             label: 'Contracts',
-            path: `/${tenantSlug}/org/clients/contracts`
+            path: `/clients/contracts`
           },
           {
             key: 'clients-communications',
             label: 'Communication Logs',
-            path: `/${tenantSlug}/org/clients/communications`
+            path: `/clients/communications`
           },
           {
             key: 'clients-billing',
             label: 'Billing',
-            path: `/${tenantSlug}/org/clients/billing`
+            path: `/clients/billing`
           }
         ]
       },
@@ -389,7 +389,7 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         key: 'operations',
         icon: WrenchScrewdriverIcon,
         label: 'Operations',
-        path: `/${tenantSlug}/org/operations`
+        path: `/operations`
       }
     ],
     business: [
@@ -397,13 +397,13 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         key: 'operations',
         icon: WrenchScrewdriverIcon,
         label: 'Operations',
-        path: `/${tenantSlug}/org/operations`
+        path: `/operations`
       },
       {
         key: 'clients',
         icon: BuildingOfficeIcon,
         label: 'Clients',
-        path: `/${tenantSlug}/org/clients`
+        path: `/clients`
       }
     ]
   };
@@ -430,23 +430,23 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         key: 'dashboard',
         icon: HomeIcon,
         label: 'Dashboard',
-        path: `/${tenantSlug}/org/dashboard`
+        path: `/dashboard`
       },
       {
         key: 'rulebook',
         icon: BookOpenIcon,
         label: 'Org rule book',
-        path: `/${tenantSlug}/org/rulebook`,
+        path: `/rulebook`,
         description: 'Session, security, and acceptable use for this workspace'
       },
       {
         key: 'settings',
         icon: CogIcon,
         label: 'Settings',
-        path: `/${tenantSlug}/org/settings`,
+        path: `/settings`,
         children: [
-          { key: 'settings-org',     label: 'Org Profile', path: `/${tenantSlug}/org/settings/organization` },
-          { key: 'settings-general', label: 'General',     path: `/${tenantSlug}/org/settings` },
+          { key: 'settings-org',     label: 'Org Profile', path: `/settings/organization` },
+          { key: 'settings-general', label: 'General',     path: `/settings` },
         ]
       }
     ];

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TenantOrgLayout — Odoo-style shell for the tenant org portal.
  *
  * Navigation surface:
@@ -11,8 +11,9 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { useTenantSlug } from '../../../shared/hooks/useTenantSlug';
 import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 
 import { useTenantAuth } from '../../../app/providers/TenantAuthContext';
@@ -33,7 +34,7 @@ import SidebarNav from '../../../shared/components/navigation/SidebarNav';
 import Breadcrumbs from '../../../shared/components/navigation/Breadcrumbs';
 import IdleSessionGuard from './IdleSessionGuard';
 import { TenantPermissionsProvider } from '../contexts/TenantPermissionsContext';
-import { Sheet, SheetContent } from '../../../components/ui/sheet';
+import { Sheet, SheetContent } from '../../../components/ui/Sheet/Sheet';
 import axiosInstance from '../../../shared/utils/axiosInstance';
 import './TenantOrgLayout.css';
 import '../styles/tenant-theme.css';
@@ -41,10 +42,11 @@ import '../styles/tenant-tokens.css';
 
 const TenantOrgLayout = ({ children }) => {
     // ── Router ────────────────────────────────────────────────────────────────
-    const { tenantSlug } = useParams();
-    const navigate       = useNavigate();
-    const location       = useLocation();
-    const isHomeRoute    = location.pathname === `/${tenantSlug}/org/home`;
+    const tenantSlug = useTenantSlug();
+    const navigate   = useNavigate();
+    const location   = useLocation();
+    // Works for both clean URLs (/home) and legacy path-based (/slug/org/home)
+    const isHomeRoute = location.pathname === '/home' || location.pathname === `/${tenantSlug}/org/home`;
 
     // ── Auth / Theme ──────────────────────────────────────────────────────────
     const { user, logout, tenant, isAuthenticated, loading: authLoading } = useTenantAuth();
