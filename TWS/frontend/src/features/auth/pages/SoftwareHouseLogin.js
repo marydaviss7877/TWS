@@ -14,6 +14,7 @@ import {
     ShieldCheckIcon,
     CpuChipIcon,
 } from '@heroicons/react/24/outline';
+import { getTenantWorkspaceUrl, navigateTo } from '../../../shared/utils/subdomain';
 
 const SoftwareHouseLogin = () => {
     const { login, logout } = useAuth();
@@ -133,13 +134,10 @@ const SoftwareHouseLogin = () => {
                     orgId: result.user?.orgId,
                 }));
 
-                if (employeeRoles.includes(userRole)) {
-                    navigate(`/${tenantSlug}/org/home`);
-                } else if (clientRoles.includes(userRole)) {
-                    navigate(`/${tenantSlug}/org/client-portal`);
-                } else {
-                    navigate(`/${tenantSlug}/org/home`);
-                }
+                const destPath = clientRoles.includes(userRole)
+                    ? getTenantWorkspaceUrl(tenantSlug, 'org', 'client-portal')
+                    : getTenantWorkspaceUrl(tenantSlug, 'org', 'home');
+                navigateTo(destPath, navigate);
             } else {
                 const rawError = String(result.error || '').trim();
                 const safeError = /invalid email or password|invalid credentials/i.test(rawError)

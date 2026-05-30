@@ -10,15 +10,19 @@
 const getSecureCookieOptions = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   const isHTTPS = process.env.FORCE_HTTPS === 'true' || process.env.HTTPS_ENABLED === 'true';
-  
+  const baseDomain = process.env.BASE_DOMAIN || 'tws.enterprises';
+
   return {
-    httpOnly: true, // Prevent JavaScript access (XSS protection)
-    secure: isProduction || isHTTPS, // Only send over HTTPS in production
-    // 'none' required for cross-origin requests (frontend/backend on different Railway subdomains).
-    // 'strict' blocks all cross-origin cookies even on HTTPS.
-    sameSite: isProduction ? 'none' : 'lax',
-    maxAge: 15 * 60 * 1000, // 15 minutes for access tokens
+    httpOnly: true,
+    secure: isProduction || isHTTPS,
+    // 'lax' is fine — all tenant subdomains share the same eTLD+1 (tws.enterprises)
+    // so every request is same-site from the browser's perspective.
+    sameSite: 'lax',
+    maxAge: 15 * 60 * 1000,
     path: '/',
+    // Share cookie across all *.tws.enterprises subdomains so a user who
+    // logs in on tws.enterprises is still authenticated on acme.tws.enterprises.
+    ...(isProduction && { domain: `.${baseDomain}` }),
   };
 };
 
@@ -84,11 +88,13 @@ const setRefreshTokenCookie = (res, name, value, options = {}) => {
  */
 const clearSecureCookie = (res, name) => {
   const isProduction = process.env.NODE_ENV === 'production';
+  const baseDomain = process.env.BASE_DOMAIN || 'tws.enterprises';
   res.clearCookie(name, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax',
-    path: '/'
+    sameSite: 'lax',
+    path: '/',
+    ...(isProduction && { domain: `.${baseDomain}` }),
   });
 };
 

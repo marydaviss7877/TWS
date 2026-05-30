@@ -6,6 +6,7 @@ import { ThemeProvider } from './app/providers/ThemeContext';
 import { useRoleBasedUI } from './shared/hooks/useRoleBasedUI';
 import { setupGlobalErrorHandling } from './shared/utils/errorHandler';
 import { tenantPath } from './shared/utils/tenantRoutes';
+import { getTenantWorkspaceUrl } from './shared/utils/subdomain';
 
 // Import TWS Premium Design System
 import './assets/tws-premium-design-system.css';
@@ -46,6 +47,15 @@ import SystemIntegrations from './features/admin/pages/system-admin/SystemIntegr
 
 // SupraAdmin Pages
 import SupraAdmin from './features/admin/pages/SupraAdmin/SupraAdmin';
+
+// Hard-navigates the browser for cross-subdomain redirects.
+// Falls back to <Navigate> for relative paths (same origin).
+const ExternalRedirect = ({ to }) => {
+  useEffect(() => { window.location.href = to; }, [to]);
+  return <LoadingSpinner />;
+};
+const SmartRedirect = ({ to, replace }) =>
+  to.startsWith('http') ? <ExternalRedirect to={to} /> : <Navigate to={to} replace={replace} />;
 
 function ScrollToTopOnRouteChange() {
   const location = useLocation();
@@ -100,17 +110,12 @@ function App() {
                 const tenantSlug = tenantData?.slug ||
                   (typeof user.tenantId === 'string' && !user.tenantId?.match?.(/^[0-9a-f]{24}$/i) ? user.tenantId : null) ||
                   (typeof user.orgId === 'object' && user.orgId?.slug) ? user.orgId.slug : null;
-                const adminRoles = ['admin', 'owner', 'super_admin', 'org_manager'];
-                const employeeRoles = ['employee', 'staff', 'developer', 'engineer', 'programmer', 'project_manager', 'manager', 'ceo', 'cfo', 'finance', 'hr', 'department_lead', 'pmo', 'contributor', 'contractor'];
                 const clientRoles = ['client', 'customer'];
                 if (tenantSlug) {
-                  if (employeeRoles.includes(user?.role)) {
-                    return <Navigate to={tenantPath(tenantSlug, 'org', 'home')} replace />;
-                  }
-                  if (clientRoles.includes(user?.role)) {
-                    return <Navigate to={tenantPath(tenantSlug, 'org', 'client-portal')} replace />;
-                  }
-                  return <Navigate to={tenantPath(tenantSlug, 'org', 'home')} replace />;
+                  const dest = clientRoles.includes(user?.role)
+                    ? getTenantWorkspaceUrl(tenantSlug, 'org', 'client-portal')
+                    : getTenantWorkspaceUrl(tenantSlug, 'org', 'home');
+                  return <SmartRedirect to={dest} replace />;
                 }
               } catch (e) {
                 console.error('Error determining software house redirect:', e);
@@ -190,18 +195,22 @@ function App() {
 
           {user ? (
             ['admin', 'finance_manager', 'finance', 'project_manager', 'owner', 'org_manager', 'manager', 'ceo', 'cfo', 'hr', 'employee', 'staff', 'developer', 'engineer', 'programmer', 'department_lead', 'pmo', 'contributor', 'contractor', 'client', 'customer'].includes(user.role) ? (
-              <Route path="/" element={<Navigate to={tenantPath((() => {
+              <Route path="/" element={(() => {
+                let slug;
                 try {
                   const tenantData = JSON.parse(localStorage.getItem('tenantData'));
-                  return tenantData?.slug || (typeof user.tenantId === 'string' && !user.tenantId.match(/^[0-9a-f]{24}$/i)) ? user.tenantId :
+                  slug = tenantData?.slug || (typeof user.tenantId === 'string' && !user.tenantId.match(/^[0-9a-f]{24}$/i)) ? user.tenantId :
                     (typeof user.orgId === 'object' && user.orgId?.slug) ? user.orgId.slug :
                       (typeof user.orgId === 'string') ? user.orgId : 'demo';
                 } catch {
-                  return (typeof user.tenantId === 'string' && !user.tenantId.match(/^[0-9a-f]{24}$/i)) ? user.tenantId :
+                  slug = (typeof user.tenantId === 'string' && !user.tenantId.match(/^[0-9a-f]{24}$/i)) ? user.tenantId :
                     (typeof user.orgId === 'object' && user.orgId?.slug) ? user.orgId.slug :
                       (typeof user.orgId === 'string') ? user.orgId : 'demo';
                 }
-              })(), 'org', (['client', 'customer'].includes(user.role) ? 'client-portal' : 'home'))} replace />} />
+                const subPath = ['client', 'customer'].includes(user.role) ? 'client-portal' : 'home';
+                const dest = getTenantWorkspaceUrl(slug, 'org', subPath);
+                return <SmartRedirect to={dest} replace />;
+              })()} />
             ) : (
               <>
                 <Route path="/" element={<Navigate to="/software-house" replace />} />
