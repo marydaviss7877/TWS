@@ -14,6 +14,7 @@ import {
     ShieldCheckIcon,
     CpuChipIcon,
 } from '@heroicons/react/24/outline';
+import { getTenantWorkspaceUrl, navigateTo } from '../../../shared/utils/subdomain';
 
 const SoftwareHouseLogin = () => {
     const { login, logout } = useAuth();
@@ -134,11 +135,11 @@ const SoftwareHouseLogin = () => {
                 }));
 
                 if (employeeRoles.includes(userRole)) {
-                    navigate(`/${tenantSlug}/org/home`);
+                    navigateTo(getTenantWorkspaceUrl(tenantSlug, 'org', 'home'), navigate);
                 } else if (clientRoles.includes(userRole)) {
-                    navigate(`/${tenantSlug}/org/client-portal`);
+                    navigateTo(getTenantWorkspaceUrl(tenantSlug, 'org', 'client-portal'), navigate);
                 } else {
-                    navigate(`/${tenantSlug}/org/home`);
+                    navigateTo(getTenantWorkspaceUrl(tenantSlug, 'org', 'home'), navigate);
                 }
             } else {
                 const rawError = String(result.error || '').trim();
