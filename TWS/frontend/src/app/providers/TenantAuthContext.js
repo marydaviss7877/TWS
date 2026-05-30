@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { getSubdomainSlug } from '../../shared/utils/subdomain';
 
 const TenantAuthContext = createContext();
 
@@ -30,7 +31,8 @@ export const TenantAuthProvider = ({ children }) => {
   const secondSegment = pathParts[1];
   // Tenant workspace routes: /:slug/org/... or /:slug/dashboard
   const isTenantPath = secondSegment === 'org' || secondSegment === 'dashboard';
-  let tenantSlug = isTenantPath && firstSegment ? firstSegment : null;
+  // In subdomain mode (acme.tws.enterprises) the path is /home, /users, etc. — no slug in URL
+  let tenantSlug = (isTenantPath && firstSegment ? firstSegment : null) || getSubdomainSlug();
   
   // Check if tenantSlug is an ObjectId (24 hex characters) - if so, we need to get the actual slug
   const isObjectId = tenantSlug && /^[0-9a-f]{24}$/i.test(tenantSlug);
