@@ -28,22 +28,36 @@ export function isSubdomainContext() {
 }
 
 /**
- * Build a URL for the tenant workspace (paths that include the slug as first
- * path segment, e.g. /acme/org/home).
+ * Build a URL for the tenant workspace using CLEAN paths (no slug or /org/ in
+ * the path — the slug lives only in the subdomain).
  *
- * - On localhost or when already on the tenant subdomain: returns a relative
- *   path so React Router stays in-page.
- * - On the root domain (tws.enterprises): returns a full cross-domain URL so
- *   the browser hard-navigates to the subdomain.
+ * Callers pass the legacy parts (slug, 'org', 'home') — this function strips
+ * the slug and 'org' so the resulting path is just '/home'.
  *
  * Usage: getTenantWorkspaceUrl('acme', 'org', 'home')
- *   → '/acme/org/home'           (dev / already on subdomain)
- *   → 'https://acme.tws.enterprises/acme/org/home'  (root domain in prod)
+ *   prod root domain  → 'https://acme.tws.enterprises/home'
+ *   prod on subdomain → '/home'
+ *   dev (localhost)   → '/acme/org/home'   (keeps legacy path for dev)
  */
 export function getTenantWorkspaceUrl(slug, ...pathParts) {
-  const relPath = `/${[slug, ...pathParts].filter(Boolean).join('/')}`;
-  if (isDev() || isSubdomainContext()) return relPath;
-  return `${window.location.protocol}//${slug}.${BASE_DOMAIN}${relPath}`;
+  if (isDev()) {
+    // Dev has no subdomains — keep the old path-based format
+    const devPath = `/${[slug, ...pathParts].filter(Boolean).join('/')}`;
+    return devPath;
+  }
+
+  // Production: strip the slug and any leading 'org' segment so the path
+  // is just the page name, e.g. 'home', 'users', 'projects'
+  const cleanParts = pathParts.filter(p => p && p !== 'org');
+  const cleanPath = cleanParts.length ? `/${cleanParts.join('/')}` : '/home';
+
+  if (isSubdomainContext()) {
+    // Already on the right subdomain — relative path is fine
+    return cleanPath;
+  }
+
+  // Root domain → full cross-subdomain URL
+  return `${window.location.protocol}//${slug}.${BASE_DOMAIN}${cleanPath}`;
 }
 
 /**
