@@ -12,6 +12,11 @@ function verifyTLS(req, res, next) {
     return next();
   }
 
+  // Allow Railway's internal healthcheck through without TLS enforcement
+  if (req.path === '/health') {
+    return next();
+  }
+
   // In production, check if request is over HTTPS
   if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
     return next();
