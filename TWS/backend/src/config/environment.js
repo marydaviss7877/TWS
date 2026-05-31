@@ -227,6 +227,15 @@ class BackendConfig {
     return !!this.config.FIREBASE_API_KEY;
   }
 
+  getJWTConfig() {
+    return {
+      secret: this.config.JWT_SECRET,
+      refreshSecret: this.config.JWT_REFRESH_SECRET,
+      expiresIn: this.config.JWT_EXPIRES_IN,
+      refreshExpiresIn: this.config.JWT_REFRESH_EXPIRES_IN
+    };
+  }
+
   getRedisConfig() {
     return {
       host: this.config.REDIS_HOST,
