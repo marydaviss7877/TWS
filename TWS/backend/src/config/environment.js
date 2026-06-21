@@ -59,10 +59,10 @@ class BackendConfig {
       // Encryption Configuration
       ENCRYPTION_MASTER_KEY: process.env.ENCRYPTION_MASTER_KEY || this.generateSecureSecret(),
       
-      // CORS / Domain Configuration
-      BASE_DOMAIN: process.env.BASE_DOMAIN || 'tws.enterprises',
-      CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
-      SOCKET_CORS_ORIGIN: process.env.SOCKET_CORS_ORIGIN || 'http://localhost:3000',
+      // CORS / Domain Configuration — trim to handle Railway env var trailing newlines
+      BASE_DOMAIN: (process.env.BASE_DOMAIN || 'tws.enterprises').trim(),
+      CORS_ORIGIN: (process.env.CORS_ORIGIN || 'http://localhost:3000').trim(),
+      SOCKET_CORS_ORIGIN: (process.env.SOCKET_CORS_ORIGIN || 'http://localhost:3000').trim(),
       
       // Rate Limiting
       RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || 900000, // 15 minutes

@@ -10,9 +10,9 @@
 const getSecureCookieOptions = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   const isHTTPS = process.env.FORCE_HTTPS === 'true' || process.env.HTTPS_ENABLED === 'true';
-  // Strip protocol and trailing slash so we get a bare hostname (e.g. tws.up.railway.app)
+  // Strip protocol, trailing slashes, and any whitespace (Railway env vars can have trailing \n)
   const rawDomain = process.env.BASE_DOMAIN || 'tws.enterprises';
-  const baseDomain = rawDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const baseDomain = rawDomain.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '').trim();
 
   // Only set a domain cookie when the host has real subdomains (not on *.railway.app).
   // On Railway the app lives at the root of a single hostname with no tenant subdomains,
@@ -93,7 +93,7 @@ const setRefreshTokenCookie = (res, name, value, options = {}) => {
 const clearSecureCookie = (res, name) => {
   const isProduction = process.env.NODE_ENV === 'production';
   const rawDomain = process.env.BASE_DOMAIN || 'tws.up.railway.app';
-  const baseDomain = rawDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const baseDomain = rawDomain.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '').trim();
   const usesDomainCookie = isProduction && !baseDomain.endsWith('.railway.app');
   res.clearCookie(name, {
     httpOnly: true,

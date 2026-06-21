@@ -48,9 +48,17 @@ app.use(verifyTLS);
 checkTLSConfiguration();
 
 // CORS configuration — allow root domain + all tenant subdomains
-// Strip protocol and trailing slash from BASE_DOMAIN so it can be used as a bare hostname
-const rawBaseDomain = config.get('BASE_DOMAIN') || 'tws.enterprises';
-const baseDomain = rawBaseDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+// Read env vars with .trim() so Railway trailing newlines/spaces don't break comparisons.
+// Also strip protocol and trailing slashes so BASE_DOMAIN can be used as a bare hostname.
+const baseDomain = (process.env.BASE_DOMAIN || 'tws.enterprises')
+  .trim()
+  .replace(/^https?:\/\//, '')
+  .replace(/\/+$/, '')
+  .trim();
+const explicitOrigin = (process.env.CORS_ORIGIN || '')
+  .trim()
+  .replace(/\/+$/, '')
+  .trim();
 const allowOrigin = (origin, callback) => {
   if (!origin) return callback(null, true); // server-to-server / health checks
   if (
@@ -62,9 +70,7 @@ const allowOrigin = (origin, callback) => {
     return callback(null, true);
   }
   // Fall back to explicit CORS_ORIGIN if set (e.g. a custom staging domain)
-  // Normalize: strip trailing slash before comparing
-  const explicit = (config.get('CORS_ORIGIN') || '').replace(/\/$/, '');
-  if (explicit && origin === explicit) return callback(null, true);
+  if (explicitOrigin && origin === explicitOrigin) return callback(null, true);
   return callback(new Error(`CORS: origin ${origin} not allowed`));
 };
 app.use(cors({ origin: allowOrigin, credentials: true }));
