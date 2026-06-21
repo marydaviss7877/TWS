@@ -92,13 +92,15 @@ const setRefreshTokenCookie = (res, name, value, options = {}) => {
  */
 const clearSecureCookie = (res, name) => {
   const isProduction = process.env.NODE_ENV === 'production';
-  const baseDomain = process.env.BASE_DOMAIN || 'tws.enterprises';
+  const rawDomain = process.env.BASE_DOMAIN || 'tws.up.railway.app';
+  const baseDomain = rawDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const usesDomainCookie = isProduction && !baseDomain.endsWith('.railway.app');
   res.clearCookie(name, {
     httpOnly: true,
     secure: isProduction,
     sameSite: 'lax',
     path: '/',
-    ...(isProduction && { domain: `.${baseDomain}` }),
+    ...(usesDomainCookie && { domain: `.${baseDomain}` }),
   });
 };
 
