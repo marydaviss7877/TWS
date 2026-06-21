@@ -10,19 +10,23 @@
 const getSecureCookieOptions = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   const isHTTPS = process.env.FORCE_HTTPS === 'true' || process.env.HTTPS_ENABLED === 'true';
-  const baseDomain = process.env.BASE_DOMAIN || 'tws.enterprises';
+  // Strip protocol and trailing slash so we get a bare hostname (e.g. tws.up.railway.app)
+  const rawDomain = process.env.BASE_DOMAIN || 'tws.enterprises';
+  const baseDomain = rawDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+  // Only set a domain cookie when the host has real subdomains (not on *.railway.app).
+  // On Railway the app lives at the root of a single hostname with no tenant subdomains,
+  // so setting domain=.tws.up.railway.app is harmless but setting an invalid domain
+  // (e.g. the full URL) would cause the cookie serializer to throw a 500.
+  const usesDomainCookie = isProduction && !baseDomain.endsWith('.railway.app');
 
   return {
     httpOnly: true,
     secure: isProduction || isHTTPS,
-    // 'lax' is fine — all tenant subdomains share the same eTLD+1 (tws.enterprises)
-    // so every request is same-site from the browser's perspective.
     sameSite: 'lax',
     maxAge: 15 * 60 * 1000,
     path: '/',
-    // Share cookie across all *.tws.enterprises subdomains so a user who
-    // logs in on tws.enterprises is still authenticated on acme.tws.enterprises.
-    ...(isProduction && { domain: `.${baseDomain}` }),
+    ...(usesDomainCookie && { domain: `.${baseDomain}` }),
   };
 };
 
