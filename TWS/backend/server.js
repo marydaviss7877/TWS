@@ -23,6 +23,10 @@ const config = require('./src/config/environment');
 const app = express();
 const server = createServer(app);
 
+// Trust Railway's reverse proxy so express-rate-limit reads the real client IP
+// from X-Forwarded-For instead of throwing ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+app.set('trust proxy', 1);
+
 // SECURITY FIX: Reduce request size limit for better DoS protection
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
@@ -44,18 +48,22 @@ app.use(verifyTLS);
 checkTLSConfiguration();
 
 // CORS configuration — allow root domain + all tenant subdomains
-const baseDomain = config.get('BASE_DOMAIN') || 'tws.enterprises';
+// Strip protocol and trailing slash from BASE_DOMAIN so it can be used as a bare hostname
+const rawBaseDomain = config.get('BASE_DOMAIN') || 'tws.enterprises';
+const baseDomain = rawBaseDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 const allowOrigin = (origin, callback) => {
   if (!origin) return callback(null, true); // server-to-server / health checks
   if (
     origin === 'http://localhost:3000' ||
     origin === `https://${baseDomain}` ||
+    origin === `http://${baseDomain}` ||
     origin.endsWith(`.${baseDomain}`)
   ) {
     return callback(null, true);
   }
   // Fall back to explicit CORS_ORIGIN if set (e.g. a custom staging domain)
-  const explicit = config.get('CORS_ORIGIN');
+  // Normalize: strip trailing slash before comparing
+  const explicit = (config.get('CORS_ORIGIN') || '').replace(/\/$/, '');
   if (explicit && origin === explicit) return callback(null, true);
   return callback(new Error(`CORS: origin ${origin} not allowed`));
 };
