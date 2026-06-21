@@ -1,4 +1,4 @@
-/**
+﻿/**
  * OdooTopBar — Odoo-style top navigation bar.
  *
  * Layout (left → right):
@@ -26,12 +26,12 @@ import {
   Bars3Icon,
   HomeIcon,
 } from '@heroicons/react/24/outline';
-import { Button } from '../../../components/ui/button';
+import { Button } from '../../../components/ui/Button/Button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '../../../components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar';
+} from '../../../components/ui/DropdownMenu/DropdownMenu';
+import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/Avatar/Avatar';
 import { APP_METADATA } from '../../../constants/navigationConstants';
 import { cn } from '../../../lib/utils';
 

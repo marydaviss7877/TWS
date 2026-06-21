@@ -1,0 +1,1209 @@
+/project-root
+├── .gitignore
+├── .tmp-smoke-cookies.txt
+├── API_USAGE_DEVELOPER_DETAILED.md
+├── API_USAGE_DOCUMENTATION.md
+├── API_USAGE_TABLE_REPORT.md
+├── apple-touch-icon.png
+├── backend
+│   ├── .env
+│   ├── .env.template
+│   ├── .eslintrc.json
+│   ├── ATTENDANCE_DEPRECATION_CUTOFF_CHECKLIST.md
+│   ├── auto-fix-imports.js
+│   ├── check-admin-credentials.js
+│   ├── config
+│   │   ├── alerting-config.json
+│   │   ├── ecosystem.config.js
+│   │   ├── environment.js
+│   │   ├── health-check-config.json
+│   │   ├── logging-config.json
+│   │   ├── monitoring-config.json
+│   │   ├── prometheus-config.json
+│   │   └── supra-admin-backend.service
+│   ├── controllers
+│   │   └── tenantController.js
+│   ├── debug-auth-routes.js
+│   ├── debug-routes.js
+│   ├── diagnose-server-issue.js
+│   ├── env.production.template
+│   ├── find-all-import-errors.js
+│   ├── fix-all-imports.js
+│   ├── fix-config-imports.js
+│   ├── fix-imports-comprehensive.js
+│   ├── fix-middleware-paths.js
+│   ├── fix-remaining-middleware.js
+│   ├── grafana-dashboard.json
+│   ├── healthcheck.js
+│   ├── jsconfig.json
+│   ├── package.json
+│   ├── PERMISSION_MIGRATION_MAP.md
+│   ├── postman
+│   │   └── Supra-Admin-API.postman_collection.json
+│   ├── railway.toml
+│   ├── Redis-old.msi
+│   ├── route-audit-report.json
+│   ├── seed.js
+│   ├── server.js
+│   ├── services
+│   │   ├── databaseProvisioningService.js
+│   │   └── emailNotificationService.js
+│   ├── set-redis-disabled.ps1
+│   ├── simple-route-analysis.json
+│   ├── src
+│   │   ├── app.js
+│   │   ├── config
+│   │   │   ├── authTokenStrategy.js
+│   │   │   ├── billingConfig.js
+│   │   │   ├── environment.js
+│   │   │   ├── firebase-admin.js
+│   │   │   ├── logging.js
+│   │   │   ├── permissions.js
+│   │   │   ├── projectManagementPermissions.js
+│   │   │   ├── redis.js
+│   │   │   ├── s3.js
+│   │   │   ├── security.js
+│   │   │   └── swagger.js
+│   │   ├── controllers
+│   │   │   └── tenant
+│   │   │       └── projectsController.js
+│   │   ├── examples
+│   │   │   ├── tenantDatabaseUsageExample.js
+│   │   │   └── webhookExample.js
+│   │   ├── jobs
+│   │   │   └── scheduler.js
+│   │   ├── middleware
+│   │   │   ├── audit
+│   │   │   │   ├── auditLog.js
+│   │   │   │   ├── auditLogger.js
+│   │   │   │   ├── metricsMiddleware.js
+│   │   │   │   └── observability.js
+│   │   │   ├── auth
+│   │   │   │   ├── auth.js
+│   │   │   │   ├── erpAccessControl.js
+│   │   │   │   ├── permissions.js
+│   │   │   │   ├── platformAdminAccessMiddleware.js
+│   │   │   │   ├── platformRBAC.js
+│   │   │   │   ├── portalAuth.js
+│   │   │   │   ├── projectManagementPermissions.js
+│   │   │   │   ├── rbac.js
+│   │   │   │   ├── requirePlatformAdminAccessReason.js
+│   │   │   │   ├── unifiedPermissionMiddleware.js
+│   │   │   │   ├── unifiedSoftwareHouseAuth.js
+│   │   │   │   ├── unifiedTenantAuth.js
+│   │   │   │   ├── verifyERPToken.js
+│   │   │   │   ├── verifyERPToken.secure.js
+│   │   │   │   ├── workspaceIsolation.js
+│   │   │   │   └── __tests__
+│   │   │   ├── common
+│   │   │   │   ├── cache.js
+│   │   │   │   ├── errorHandler.js
+│   │   │   │   ├── featureGate.js
+│   │   │   │   ├── idempotency.js
+│   │   │   │   ├── pagination.js
+│   │   │   │   └── sessionTimeout.js
+│   │   │   ├── compliance
+│   │   │   │   └── healthcareFileUpload.js
+│   │   │   ├── rateLimiting
+│   │   │   │   ├── rateLimiter.js
+│   │   │   │   └── uploadRateLimiter.js
+│   │   │   ├── security
+│   │   │   │   ├── cookieSecurity.js
+│   │   │   │   ├── csrfProtection.js
+│   │   │   │   ├── inputSanitization.js
+│   │   │   │   ├── queryFilterMiddleware.js
+│   │   │   │   ├── resourceAccessCheck.js
+│   │   │   │   ├── security.js
+│   │   │   │   ├── securityHeaders.js
+│   │   │   │   └── tlsVerification.js
+│   │   │   ├── tenant
+│   │   │   │   ├── tenantContext.js
+│   │   │   │   ├── tenantMiddleware.js
+│   │   │   │   └── tenantValidation.js
+│   │   │   ├── upload
+│   │   │   │   └── upload.js
+│   │   │   └── validation
+│   │   │       ├── formValidation.js
+│   │   │       ├── inputValidation.js
+│   │   │       ├── ownershipMiddleware.js
+│   │   │       ├── requestValidation.js
+│   │   │       ├── universalValidation.js
+│   │   │       └── validation.js
+│   │   ├── migrations
+│   │   │   ├── 001-migrate-message-attachments.js
+│   │   │   ├── 002-advanced-chat-features.js
+│   │   │   ├── 003-notification-system.js
+│   │   │   ├── 004-standardize-admin-naming.js
+│   │   │   ├── 005-project-department-configs.js
+│   │   │   ├── 006-department-module-key.js
+│   │   │   ├── 007-remove-healthcare-hipaa-fields.js
+│   │   │   └── migrate.js
+│   │   ├── models
+│   │   │   ├── admin-platform
+│   │   │   │   ├── OnboardingChecklist.js
+│   │   │   │   ├── PlatformAdminApproval.js
+│   │   │   │   ├── SoftwareHouseRole.js
+│   │   │   │   ├── SupraAdmin.js
+│   │   │   │   └── TWSAdmin.js
+│   │   │   ├── analytics
+│   │   │   │   ├── Activity.js
+│   │   │   │   ├── Analytics.js
+│   │   │   │   ├── ClientHealth.js
+│   │   │   │   ├── ClientTouchpoint.js
+│   │   │   │   ├── CodeQuality.js
+│   │   │   │   └── DevelopmentMetrics.js
+│   │   │   ├── core
+│   │   │   │   ├── Approval.js
+│   │   │   │   ├── AuditLog.js
+│   │   │   │   ├── Permission.js
+│   │   │   │   ├── Resource.js
+│   │   │   │   ├── Role.js
+│   │   │   │   ├── Session.js
+│   │   │   │   └── TenantAwareModel.js
+│   │   │   ├── documents
+│   │   │   │   ├── DocumentFolder.js
+│   │   │   │   ├── DocumentShare.js
+│   │   │   │   ├── DocumentTag.js
+│   │   │   │   ├── File.js
+│   │   │   │   ├── FormResponse.js
+│   │   │   │   ├── FormTemplate.js
+│   │   │   │   ├── OrgDocument.js
+│   │   │   │   ├── OrgDocumentAudit.js
+│   │   │   │   ├── OrgDocumentComment.js
+│   │   │   │   └── OrgDocumentVersion.js
+│   │   │   ├── finance
+│   │   │   │   ├── Billing.js
+│   │   │   │   ├── Equity.js
+│   │   │   │   ├── Expense.js
+│   │   │   │   ├── Finance.js
+│   │   │   │   ├── PortalSubscription.js
+│   │   │   │   └── SubscriptionPlan.js
+│   │   │   ├── hr-payroll
+│   │   │   │   ├── AIPayroll.js
+│   │   │   │   ├── Attendance.js
+│   │   │   │   ├── AttendanceAudit.js
+│   │   │   │   ├── AttendancePolicy.js
+│   │   │   │   ├── AttendanceShift.js
+│   │   │   │   ├── Employee.js
+│   │   │   │   ├── EmployeeMetrics.js
+│   │   │   │   ├── LeaveRequest.js
+│   │   │   │   └── Payroll.js
+│   │   │   ├── industry
+│   │   │   │   ├── Card.js
+│   │   │   │   └── Client.js
+│   │   │   ├── integrations
+│   │   │   │   ├── ERPTemplate.js
+│   │   │   │   ├── Integration.js
+│   │   │   │   ├── MasterERP.js
+│   │   │   │   └── Webhook.js
+│   │   │   ├── notifications
+│   │   │   │   ├── Notification.js
+│   │   │   │   ├── NotificationPreference.js
+│   │   │   │   └── NotificationQueue.js
+│   │   │   ├── org
+│   │   │   │   ├── DefaultContact.js
+│   │   │   │   ├── Department.js
+│   │   │   │   ├── DepartmentAccess.js
+│   │   │   │   ├── Organization.js
+│   │   │   │   ├── OrgLeavePolicy.js
+│   │   │   │   ├── Partner.js
+│   │   │   │   ├── Team.js
+│   │   │   │   └── Workspace.js
+│   │   │   ├── project-delivery
+│   │   │   │   ├── Board.js
+│   │   │   │   ├── ChangeRequest.js
+│   │   │   │   ├── ChangeRequestAudit.js
+│   │   │   │   ├── Deliverable.js
+│   │   │   │   ├── GanttSettings.js
+│   │   │   │   ├── List.js
+│   │   │   │   ├── Milestone.js
+│   │   │   │   ├── Project.js
+│   │   │   │   ├── ProjectAccess.js
+│   │   │   │   ├── ProjectMember.js
+│   │   │   │   ├── ProjectTemplate.js
+│   │   │   │   ├── ProjectTimeline.js
+│   │   │   │   ├── ProjectTypeSettings.js
+│   │   │   │   ├── Sprint.js
+│   │   │   │   ├── Task.js
+│   │   │   │   └── TaskDependency.js
+│   │   │   ├── tenant
+│   │   │   │   ├── Tenant.js
+│   │   │   │   ├── TenantAuditLog.js
+│   │   │   │   ├── TenantDepartmentAccess.js
+│   │   │   │   ├── TenantRole.js
+│   │   │   │   ├── TenantSettings.js
+│   │   │   │   └── TenantUser.js
+│   │   │   ├── Untitled-1.txt
+│   │   │   ├── Untitled-2.txt
+│   │   │   └── users-auth
+│   │   │       ├── DeviceToken.js
+│   │   │       ├── EmailVerification.js
+│   │   │       ├── PortalUser.js
+│   │   │       ├── Security.js
+│   │   │       ├── User.js
+│   │   │       └── UserBan.js
+│   │   ├── modules
+│   │   │   ├── admin
+│   │   │   │   └── routes
+│   │   │   │       ├── admin.js
+│   │   │   │       ├── attendancePanel.js
+│   │   │   │       ├── index.js
+│   │   │   │       ├── moderation.js
+│   │   │   │       ├── supra-admin
+│   │   │   │       │   ├── access.js
+│   │   │   │       │   ├── billing.js
+│   │   │   │       │   ├── dashboard.js
+│   │   │   │       │   ├── departments.js
+│   │   │   │       │   ├── index.js
+│   │   │   │       │   ├── masterErp.js
+│   │   │   │       │   ├── shared.js
+│   │   │   │       │   ├── system.js
+│   │   │   │       │   ├── tenants.js
+│   │   │   │       │   └── users.js
+│   │   │   │       ├── supraReports.js
+│   │   │   │       ├── supraSessions.js
+│   │   │   │       └── supraTenantERP.js
+│   │   │   ├── auth
+│   │   │   │   ├── routes
+│   │   │   │   │   ├── authentication.js
+│   │   │   │   │   ├── index.js
+│   │   │   │   │   ├── sessions.js
+│   │   │   │   │   ├── tenantAuth.js
+│   │   │   │   │   └── users.js
+│   │   │   │   └── __tests__
+│   │   │   │       ├── critical-workflow-access.integration.test.js
+│   │   │   │       ├── login.nosql-injection.security.test.js
+│   │   │   │       ├── role-aware-workflows.integration.test.js
+│   │   │   │       └── route-level-critical-workflows.integration.test.js
+│   │   │   ├── business
+│   │   │   │   ├── erp
+│   │   │   │   │   └── software-house
+│   │   │   │   │       ├── attendance.js
+│   │   │   │   │       ├── index.js
+│   │   │   │   │       ├── nucleusPM.js
+│   │   │   │   │       └── roles.js
+│   │   │   │   └── routes
+│   │   │   │       ├── attendance.js
+│   │   │   │       ├── attendanceIntegration.js
+│   │   │   │       ├── billing.js
+│   │   │   │       ├── boards.js
+│   │   │   │       ├── cards.js
+│   │   │   │       ├── clientPortal.js
+│   │   │   │       ├── clients.js
+│   │   │   │       ├── CLIENT_PORTAL_PM_API.md
+│   │   │   │       ├── developmentMetrics.js
+│   │   │   │       ├── employees.js
+│   │   │   │       ├── erpManagement.js
+│   │   │   │       ├── erpTemplates.js
+│   │   │   │       ├── finance.js
+│   │   │   │       ├── formManagement.js
+│   │   │   │       ├── index.js
+│   │   │   │       ├── lists.js
+│   │   │   │       ├── masterERP.js
+│   │   │   │       ├── nucleusAnalytics.js
+│   │   │   │       ├── nucleusBatch.js
+│   │   │   │       ├── nucleusTemplates.js
+│   │   │   │       ├── partners.js
+│   │   │   │       ├── payroll.js
+│   │   │   │       ├── projectAccess.js
+│   │   │   │       ├── projects.js
+│   │   │   │       ├── resources.js
+│   │   │   │       ├── sales.js
+│   │   │   │       ├── softwareHouseAttendance.js
+│   │   │   │       ├── softwareHouseRoles.js
+│   │   │   │       ├── sprints.js
+│   │   │   │       ├── tasks.js
+│   │   │   │       ├── teams.js
+│   │   │   │       ├── templates.js
+│   │   │   │       ├── timeTracking.js
+│   │   │   │       └── workspaces.js
+│   │   │   ├── core
+│   │   │   │   └── routes
+│   │   │   │       ├── compliance.js
+│   │   │   │       ├── files.js
+│   │   │   │       ├── health.js
+│   │   │   │       ├── index.js
+│   │   │   │       ├── logs.js
+│   │   │   │       ├── metrics.js
+│   │   │   │       ├── notifications.js
+│   │   │   │       ├── security.js
+│   │   │   │       └── webhooks.js
+│   │   │   ├── index.js
+│   │   │   ├── integration
+│   │   │   │   └── routes
+│   │   │   │       ├── defaultContacts.js
+│   │   │   │       ├── index.js
+│   │   │   │       ├── integrations.js
+│   │   │   │       └── timezone.js
+│   │   │   ├── monitoring
+│   │   │   │   └── routes
+│   │   │   │       ├── index.js
+│   │   │   │       ├── standalone.js
+│   │   │   │       └── system.js
+│   │   │   └── tenant
+│   │   │       ├── erp
+│   │   │       │   └── software-house
+│   │   │       │       ├── index.js
+│   │   │       │       └── softwareHouse.js
+│   │   │       ├── routes
+│   │   │       │   ├── approvals.js
+│   │   │       │   ├── audit.js
+│   │   │       │   ├── billing.js
+│   │   │       │   ├── changeRequests.js
+│   │   │       │   ├── dashboard.js
+│   │   │       │   ├── deliverables.js
+│   │   │       │   ├── departmentAccess.js
+│   │   │       │   ├── departments.js
+│   │   │       │   ├── documents.js
+│   │   │       │   ├── index.js
+│   │   │       │   ├── labResults.js
+│   │   │       │   ├── management.js
+│   │   │       │   ├── organization.js
+│   │   │       │   ├── permissions.js
+│   │   │       │   ├── projects.js
+│   │   │       │   ├── roles.js
+│   │   │       │   ├── softwareHouse.js
+│   │   │       │   ├── softwareHouseFinanceReads.js
+│   │   │       │   ├── softwareHouseFinanceWrites.js
+│   │   │       │   ├── switching.js
+│   │   │       │   └── __tests__
+│   │   │       └── __tests__
+│   │   │           ├── settings-access.middleware.test.js
+│   │   │           └── settings-general-route-access.integration.test.js
+│   │   ├── routes
+│   │   │   ├── emailValidation.js
+│   │   │   ├── selfServeSignup.js
+│   │   │   └── tenantRouter.js
+│   │   ├── services
+│   │   │   ├── aiPayrollService.js
+│   │   │   ├── analytics
+│   │   │   │   ├── ai-insights.service.js
+│   │   │   │   ├── analytics.service.js
+│   │   │   │   ├── data-warehouse.service.js
+│   │   │   │   ├── department-dashboard.service.js
+│   │   │   │   └── metrics.service.js
+│   │   │   ├── attendanceIntegrationService.js
+│   │   │   ├── attendanceService.js
+│   │   │   ├── attendanceSocketService.js
+│   │   │   ├── auth
+│   │   │   │   ├── jwt.service.js
+│   │   │   │   └── token-blacklist.service.js
+│   │   │   ├── billingService.js
+│   │   │   ├── biometricService.js
+│   │   │   ├── business
+│   │   │   │   └── timeAggregation.service.js
+│   │   │   ├── cachingService.js
+│   │   │   ├── clientHealthService.js
+│   │   │   ├── compliance
+│   │   │   │   ├── audit-log.service.js
+│   │   │   │   ├── audit.service.js
+│   │   │   │   ├── compliance.service.js
+│   │   │   │   └── retention.service.js
+│   │   │   ├── core
+│   │   │   │   ├── cache.service.js
+│   │   │   │   ├── connectionPool.service.js
+│   │   │   │   ├── databaseProvisioning.service.js
+│   │   │   │   ├── e2eEncryption.service.js
+│   │   │   │   ├── encryption.service.js
+│   │   │   │   ├── logger.service.js
+│   │   │   │   ├── redis.service.js
+│   │   │   │   └── socket-handler.service.js
+│   │   │   ├── documentHub
+│   │   │   │   ├── documentHub.service.js
+│   │   │   │   └── __tests__
+│   │   │   ├── exportService.js
+│   │   │   ├── file.service.js
+│   │   │   ├── fileValidationService.js
+│   │   │   ├── finance
+│   │   │   │   ├── accounts-payable.service.js
+│   │   │   │   ├── accounts-receivable.service.js
+│   │   │   │   ├── billing-engine.service.js
+│   │   │   │   ├── cash-flow.service.js
+│   │   │   │   ├── chart-of-accounts.service.js
+│   │   │   │   └── project-costing.service.js
+│   │   │   ├── financeDashboardService.js
+│   │   │   ├── financeExportService.js
+│   │   │   ├── financeRealtimeService.js
+│   │   │   ├── fix-renames.ps1
+│   │   │   ├── ganttChartService.js
+│   │   │   ├── hr
+│   │   │   │   ├── attendance.service.js
+│   │   │   │   ├── employee.service.js
+│   │   │   │   ├── payroll-time-sync.service.js
+│   │   │   │   ├── payroll.service.js
+│   │   │   │   ├── recruitment.service.js
+│   │   │   │   └── __tests__
+│   │   │   ├── hrPerformanceService.js
+│   │   │   ├── integrations
+│   │   │   │   ├── email-validation.service.js
+│   │   │   │   ├── email-verification.service.js
+│   │   │   │   ├── email.service.js
+│   │   │   │   ├── integration.service.js
+│   │   │   │   ├── payment.service.js
+│   │   │   │   ├── portal-erp-integration.service.js
+│   │   │   │   ├── project-integration.service.js
+│   │   │   │   └── timezone.service.js
+│   │   │   ├── masterERPService.js
+│   │   │   ├── module-api
+│   │   │   │   ├── finance-api.service.js
+│   │   │   │   ├── index.js
+│   │   │   │   └── project-api.service.js
+│   │   │   ├── MonitoringWebSocketService.js
+│   │   │   ├── move-and-rename-services.ps1
+│   │   │   ├── notifications
+│   │   │   │   ├── notification-batching.service.js
+│   │   │   │   ├── notification.service.js
+│   │   │   │   └── push-notification.service.js
+│   │   │   ├── nucleusAutoCalculationService.js
+│   │   │   ├── nucleusDateValidationService.js
+│   │   │   ├── nucleusOnboardingService.js
+│   │   │   ├── nucleusTemplateService.js
+│   │   │   ├── onboardingChecklistService.js
+│   │   │   ├── organize-services.ps1
+│   │   │   ├── partnerService.js
+│   │   │   ├── pricingService.js
+│   │   │   ├── projectProfitabilityService.js
+│   │   │   ├── sentryService.js
+│   │   │   ├── softwareHouse
+│   │   │   │   ├── code-quality.service.js
+│   │   │   │   └── time-tracking.service.js
+│   │   │   ├── StandaloneMonitoringService.js
+│   │   │   ├── SystemMonitoringService.js
+│   │   │   ├── tenant
+│   │   │   │   ├── departmentAssignmentSync.service.js
+│   │   │   │   ├── permissionCache.service.js
+│   │   │   │   ├── permissionCatalog.service.js
+│   │   │   │   ├── permissionCatalogSync.service.js
+│   │   │   │   ├── permissionProjection.service.js
+│   │   │   │   ├── permissionResolver.service.js
+│   │   │   │   ├── platform-admin-access.service.js
+│   │   │   │   ├── project-organization-metrics.service.js
+│   │   │   │   ├── roleCatalog.service.js
+│   │   │   │   ├── roleCatalogSync.service.js
+│   │   │   │   ├── self-serve-signup.service.js
+│   │   │   │   ├── tenant-connection-pool.service.js
+│   │   │   │   ├── tenant-data.service.js
+│   │   │   │   ├── tenant-lifecycle.service.js
+│   │   │   │   ├── tenant-model.service.js
+│   │   │   │   ├── tenant-org.service.js
+│   │   │   │   ├── tenant-switching.service.js
+│   │   │   │   ├── tenant.service.js
+│   │   │   │   ├── userDepartmentsService.js
+│   │   │   │   └── __tests__
+│   │   │   │       ├── permissionCatalog.service.test.js
+│   │   │   │       ├── permissionCatalogSync.service.test.js
+│   │   │   │       ├── permissionProjection.service.test.js
+│   │   │   │       ├── permissionResolver.overrides.test.js
+│   │   │   │       ├── permissionResolver.service.test.js
+│   │   │   │       ├── roleCatalog.service.test.js
+│   │   │   │       └── roleCatalogSync.service.test.js
+│   │   │   ├── tenantProvisioningService
+│   │   │   │   ├── defaultDataCreators
+│   │   │   │   │   ├── attendancePolicy.js
+│   │   │   │   │   ├── auditLogs.js
+│   │   │   │   │   ├── chartOfAccounts.js
+│   │   │   │   │   ├── clientsAndVendors.js
+│   │   │   │   │   ├── departmentsAndTeams.js
+│   │   │   │   │   ├── employeesAndPayroll.js
+│   │   │   │   │   ├── financeTransactions.js
+│   │   │   │   │   ├── notificationTemplates.js
+│   │   │   │   │   ├── projectTemplates.js
+│   │   │   │   │   └── sampleProject.js
+│   │   │   │   ├── emailService.js
+│   │   │   │   ├── index.js
+│   │   │   │   ├── onboarding.js
+│   │   │   │   ├── seeders
+│   │   │   │   │   ├── defaultSeeder.js
+│   │   │   │   │   ├── index.js
+│   │   │   │   │   └── softwareHouseSeeder.js
+│   │   │   │   ├── tenantCreation.js
+│   │   │   │   ├── tenantManagement.js
+│   │   │   │   ├── userAndOrgCreation.js
+│   │   │   │   └── utils.js
+│   │   │   ├── update-requires.ps1
+│   │   │   ├── usageTrackerService.js
+│   │   │   ├── webhookService.js
+│   │   │   ├── websocketRateLimitService.js
+│   │   │   └── __tests__
+│   │   ├── tests
+│   │   │   ├── setup.js
+│   │   │   └── teardown.js
+│   │   ├── types
+│   │   │   └── index.d.ts
+│   │   ├── utils
+│   │   │   ├── complianceTesting.js
+│   │   │   ├── errorHandler.js
+│   │   │   ├── logger.js
+│   │   │   ├── modelSchemaHelper.js
+│   │   │   ├── nucleusHelpers.js
+│   │   │   ├── orgIdHelper.js
+│   │   │   ├── pagination.js
+│   │   │   ├── projectDepartmentView.js
+│   │   │   └── tenantModelHelper.js
+│   │   ├── validators
+│   │   │   └── nucleusValidators.js
+│   │   └── workers
+│   │       ├── fileProcessor.js
+│   │       ├── fileProcessorQueue.js
+│   │       ├── notificationWorker.js
+│   │       └── retentionWorker.js
+│   ├── start-backend.bat
+│   ├── start-dev.bat
+│   ├── start-services.bat
+│   ├── start-services.sh
+│   ├── swagger.json
+│   ├── test-all-routes.js
+│   ├── test-server-startup.js
+│   ├── test-supraadmin-login.js
+│   └── test-tenant-creation.js
+├── check-deployment-status.js
+├── config
+│   ├── development.json
+│   ├── environment.js
+│   └── production.json
+├── delete_redundant_md_files.ps1
+├── DOC-20260409-WA0000.docx
+├── env.example
+├── erp-pages
+├── favicon.png
+├── frontend
+│   ├── .eslintrc.deprecation.js
+│   ├── craco.config.js
+│   ├── jsconfig.json
+│   ├── nginx.conf
+│   ├── package.json
+│   ├── postcss.config.js
+│   ├── public
+│   │   ├── favicon.png
+│   │   └── index.html
+│   ├── railway.toml
+│   ├── server.js
+│   ├── src
+│   │   ├── app
+│   │   │   ├── config
+│   │   │   │   ├── api.js
+│   │   │   │   └── firebase.js
+│   │   │   ├── lib
+│   │   │   │   └── html-docx-internal-browser.js
+│   │   │   └── providers
+│   │   │       ├── AuthContext.js
+│   │   │       ├── SocketContext.js
+│   │   │       ├── TenantAuthContext.js
+│   │   │       ├── TenantContext.js
+│   │   │       └── ThemeContext.js
+│   │   ├── App.js
+│   │   ├── assets
+│   │   │   ├── premium-design-system.css
+│   │   │   ├── software-house-premium.css
+│   │   │   └── tws-premium-design-system.css
+│   │   ├── components
+│   │   │   ├── finance
+│   │   │   │   └── RoleBasedAccessInfo.js
+│   │   │   └── ui
+│   │   │       ├── avatar.jsx
+│   │   │       ├── badge.jsx
+│   │   │       ├── button.jsx
+│   │   │       ├── command.jsx
+│   │   │       ├── dialog.jsx
+│   │   │       ├── dropdown-menu.jsx
+│   │   │       ├── input.jsx
+│   │   │       ├── scroll-area.jsx
+│   │   │       ├── separator.jsx
+│   │   │       ├── sheet.jsx
+│   │   │       └── tooltip.jsx
+│   │   ├── constants
+│   │   │   └── navigationConstants.js
+│   │   ├── features
+│   │   │   ├── admin
+│   │   │   │   ├── components
+│   │   │   │   │   ├── admin
+│   │   │   │   │   │   ├── AdminChatInterface.js
+│   │   │   │   │   │   ├── AdminDashboard.js
+│   │   │   │   │   │   └── AdminPageTemplate.js
+│   │   │   │   │   └── ai
+│   │   │   │   │       └── SupraAIInsights.js
+│   │   │   │   └── pages
+│   │   │   │       ├── admin
+│   │   │   │       │   ├── ModerationDashboard.js
+│   │   │   │       │   ├── ProjectManagement.js
+│   │   │   │       │   └── projects
+│   │   │   │       │       ├── Milestones.js
+│   │   │   │       │       ├── MyProjects.js
+│   │   │   │       │       ├── ProjectOverview.js
+│   │   │   │       │       ├── Resources.js
+│   │   │   │       │       ├── TaskBoard.js
+│   │   │   │       │       ├── Templates.js
+│   │   │   │       │       └── Timesheets.js
+│   │   │   │       ├── PartnerManagement.js
+│   │   │   │       ├── RoleManagement.js
+│   │   │   │       ├── SupraAdmin
+│   │   │   │       │   ├── analytics
+│   │   │   │       │   │   ├── Analytics.js
+│   │   │   │       │   │   └── SessionAnalytics.js
+│   │   │   │       │   ├── billing
+│   │   │   │       │   │   └── BillingManagement.js
+│   │   │   │       │   ├── dashboard
+│   │   │   │       │   │   ├── Dashboard.js
+│   │   │   │       │   │   └── SupraAdminDashboard.js
+│   │   │   │       │   ├── departments
+│   │   │   │       │   │   ├── DepartmentAccess.js
+│   │   │   │       │   │   ├── DepartmentManagement.js
+│   │   │   │       │   │   └── Departments.js
+│   │   │   │       │   ├── erp
+│   │   │   │       │   │   └── ERPManagement.js
+│   │   │   │       │   ├── infrastructure
+│   │   │   │       │   │   └── Infrastructure.js
+│   │   │   │       │   ├── monitoring
+│   │   │   │       │   │   ├── RealTimeMonitoring.js
+│   │   │   │       │   │   ├── RealTimeSystemMonitoring.js
+│   │   │   │       │   │   ├── SystemHealth.js
+│   │   │   │       │   │   └── SystemMonitoring.js
+│   │   │   │       │   ├── sessions
+│   │   │   │       │   │   └── SessionManagement.js
+│   │   │   │       │   ├── settings
+│   │   │   │       │   │   └── Settings.js
+│   │   │   │       │   ├── styles
+│   │   │   │       │   │   └── DepartmentManagement.css
+│   │   │   │       │   ├── SupraAdmin.js
+│   │   │   │       │   ├── tenants
+│   │   │   │       │   │   ├── TenantManagement.js
+│   │   │   │       │   │   └── TenantUsers.js
+│   │   │   │       │   ├── users
+│   │   │   │       │   │   └── Users.js
+│   │   │   │       │   └── Users.js
+│   │   │   │       ├── system-admin
+│   │   │   │       │   └── SystemIntegrations.js
+│   │   │   │       └── SystemAdmin.js
+│   │   │   ├── auth
+│   │   │   │   ├── components
+│   │   │   │   │   ├── LoginNavbar.js
+│   │   │   │   │   ├── RoleGuard.js
+│   │   │   │   │   ├── SoftwareHouseNavbar.css
+│   │   │   │   │   └── SoftwareHouseNavbar.js
+│   │   │   │   └── pages
+│   │   │   │       ├── FinanceSystemPage.js
+│   │   │   │       ├── HRMSystemPage.js
+│   │   │   │       ├── InviteAccept.js
+│   │   │   │       ├── Login.js
+│   │   │   │       ├── ProjectSystemPage.js
+│   │   │   │       ├── SoftwareHouseFinance.css
+│   │   │   │       ├── SoftwareHouseForgotPassword.css
+│   │   │   │       ├── SoftwareHouseForgotPassword.js
+│   │   │   │       ├── SoftwareHouseHRM.css
+│   │   │   │       ├── SoftwareHouseLanding.js
+│   │   │   │       ├── SoftwareHouseLogin.css
+│   │   │   │       ├── SoftwareHouseLogin.js
+│   │   │   │       ├── SoftwareHousePremium.css
+│   │   │   │       ├── SoftwareHouseProjects.css
+│   │   │   │       ├── SoftwareHouseSignup.css
+│   │   │   │       ├── SoftwareHouseSignup.js
+│   │   │   │       ├── SupraAdminLogin.css
+│   │   │   │       ├── SupraAdminLogin.js
+│   │   │   │       └── tws-finance-design.css
+│   │   │   ├── dashboard
+│   │   │   │   ├── components
+│   │   │   │   │   ├── analytics
+│   │   │   │   │   │   ├── ClientHealthWidget.js
+│   │   │   │   │   │   └── ProfitabilityDashboard.js
+│   │   │   │   │   └── WorkforceAnalyticsDashboard.js
+│   │   │   │   └── pages
+│   │   │   │       ├── Dashboard.js
+│   │   │   │       ├── ExecutiveDashboard.js
+│   │   │   │       ├── ProfitabilityDashboard.js
+│   │   │   │       └── SoftwareHouseDashboard.js
+│   │   │   ├── employees
+│   │   │   │   ├── components
+│   │   │   │   │   └── Attendance
+│   │   │   │   │       ├── AdminAttendanceDashboard.js
+│   │   │   │   │       ├── AdminAttendancePanel.js
+│   │   │   │   │       ├── AttendanceAnalytics.js
+│   │   │   │   │       ├── AttendanceApproval.js
+│   │   │   │   │       ├── AttendanceCalendar.js
+│   │   │   │   │       ├── AttendanceCheckInOut.js
+│   │   │   │   │       ├── AttendanceDashboard.js
+│   │   │   │   │       ├── AttendanceForecasting.js
+│   │   │   │   │       ├── AttendanceHeatmap.js
+│   │   │   │   │       ├── AttendanceInsights.js
+│   │   │   │   │       ├── AttendanceManagement.js
+│   │   │   │   │       ├── AttendanceReports.js
+│   │   │   │   │       ├── AttendanceSecurity.js
+│   │   │   │   │       ├── BiometricAuth.js
+│   │   │   │   │       ├── BiometricEnrollment.js
+│   │   │   │   │       ├── ComplianceAudit.js
+│   │   │   │   │       ├── EmployeeAttendanceList.js
+│   │   │   │   │       ├── EmployeeCheckInOut.js
+│   │   │   │   │       ├── EmployeeRecordsView.js
+│   │   │   │   │       ├── ModernAttendanceDashboard.js
+│   │   │   │   │       ├── ProductivityAnalytics.js
+│   │   │   │   │       ├── SimpleAdminCheckInOut.js
+│   │   │   │   │       ├── SoftwareHouseAttendance.js
+│   │   │   │   │       ├── TeamCollaboration.js
+│   │   │   │   │       └── TeamProductivity.js
+│   │   │   │   └── pages
+│   │   │   │       ├── Attendance.js
+│   │   │   │       ├── EmployeeProfile.js
+│   │   │   │       └── Employees.js
+│   │   │   ├── finance
+│   │   │   │   └── components
+│   │   │   │       └── Equity
+│   │   │   │           └── OptionPoolManagement.js
+│   │   │   ├── hr
+│   │   │   │   ├── components
+│   │   │   │   │   └── hr
+│   │   │   │   │       ├── FormBuilder.js
+│   │   │   │   │       └── FormTemplateManager.js
+│   │   │   │   └── pages
+│   │   │   │       └── hr
+│   │   │   │           ├── HRDashboard.js
+│   │   │   │           ├── HREmployees.js
+│   │   │   │           ├── HRLeaveRequests.js
+│   │   │   │           ├── HROnboarding.js
+│   │   │   │           ├── HRPayroll.js
+│   │   │   │           ├── HRPerformance.js
+│   │   │   │           ├── HRRecruitment.js
+│   │   │   │           ├── HRTraining.js
+│   │   │   │           ├── InterviewFormPortal.js
+│   │   │   │           ├── JobPostingSystem.js
+│   │   │   │           └── ResponseDashboard.js
+│   │   │   ├── projects
+│   │   │   │   ├── components
+│   │   │   │   │   ├── ConfirmDialog.js
+│   │   │   │   │   ├── ErrorBoundary.js
+│   │   │   │   │   └── ProjectPortal
+│   │   │   │   │       ├── AddCardButton.js
+│   │   │   │   │       ├── AddListButton.js
+│   │   │   │   │       ├── Board.js
+│   │   │   │   │       ├── Card.js
+│   │   │   │   │       ├── CardModal.js
+│   │   │   │   │       ├── CreateProjectModal.js
+│   │   │   │   │       ├── List.js
+│   │   │   │   │       ├── ProjectCard.js
+│   │   │   │   │       └── ProjectSidebar.js
+│   │   │   │   ├── constants
+│   │   │   │   │   └── projectConstants.js
+│   │   │   │   ├── pages
+│   │   │   │   │   ├── ProjectBoard.js
+│   │   │   │   │   ├── ProjectManagerCockpit.js
+│   │   │   │   │   ├── projects
+│   │   │   │   │   │   ├── DevelopmentAnalytics.js
+│   │   │   │   │   │   ├── MyProjects.js
+│   │   │   │   │   │   ├── ProjectMilestones.js
+│   │   │   │   │   │   ├── ProjectOverview.js
+│   │   │   │   │   │   ├── ProjectResources.js
+│   │   │   │   │   │   ├── ProjectTasks.js
+│   │   │   │   │   │   ├── ProjectTimesheets.js
+│   │   │   │   │   │   └── SprintManagement.js
+│   │   │   │   │   ├── Projects.js
+│   │   │   │   │   └── Templates.js
+│   │   │   │   ├── services
+│   │   │   │   │   ├── listApiService.js
+│   │   │   │   │   └── projectApiService.js
+│   │   │   │   └── utils
+│   │   │   │       ├── dateUtils.js
+│   │   │   │       ├── errorHandler.js
+│   │   │   │       └── validation.js
+│   │   │   └── tenant
+│   │   │       ├── components
+│   │   │       │   ├── AppGrid.jsx
+│   │   │       │   ├── BookmarkBar.jsx
+│   │   │       │   ├── ClientPortal
+│   │   │       │   │   ├── ClientDashboard.js
+│   │   │       │   │   ├── ClientOrganizationProfile.js
+│   │   │       │   │   ├── clientPortalApi.js
+│   │   │       │   │   ├── ClientProjectsView.js
+│   │   │       │   │   ├── ClientSettings.js
+│   │   │       │   │   └── ClientTimesheetsView.js
+│   │   │       │   ├── CommandPalette.js
+│   │   │       │   ├── common
+│   │   │       │   │   ├── EntityFormModal.js
+│   │   │       │   │   └── EntityManagerPage.js
+│   │   │       │   ├── IdleSessionGuard.jsx
+│   │   │       │   ├── launcher
+│   │   │       │   │   └── launcherUtils.js
+│   │   │       │   ├── OdooTopBar.jsx
+│   │   │       │   ├── ProjectWorkspaceLayout.js
+│   │   │       │   ├── RoleAssignment.js
+│   │   │       │   ├── TenantComponentWrapper.js
+│   │   │       │   ├── TenantOrgLayout.css
+│   │   │       │   ├── TenantOrgLayout.js
+│   │   │       │   ├── TenantSelection.js
+│   │   │       │   ├── TenantSwitching
+│   │   │       │   │   ├── TenantContext.js
+│   │   │       │   │   └── TenantSelector.js
+│   │   │       │   ├── TenantTopBar.jsx
+│   │   │       │   ├── ThemeSelector.js
+│   │   │       │   └── __tests__
+│   │   │       │       └── TenantOrgLayout.test.jsx
+│   │   │       ├── constants
+│   │   │       │   └── tenantSessionPolicy.js
+│   │   │       ├── contexts
+│   │   │       │   ├── TenantNavContext.js
+│   │   │       │   └── TenantPermissionsContext.js
+│   │   │       ├── hooks
+│   │   │       │   ├── useAppNavigation.js
+│   │   │       │   ├── useMenuFiltering.js
+│   │   │       │   ├── useTenantTheme.js
+│   │   │       │   └── __tests__
+│   │   │       │       └── useMenuFiltering.test.js
+│   │   │       ├── pages
+│   │   │       │   ├── clients
+│   │   │       │   │   ├── ClientsBilling.js
+│   │   │       │   │   ├── ClientsCommunications.js
+│   │   │       │   │   ├── ClientsContracts.js
+│   │   │       │   │   ├── ClientsDashboard.js
+│   │   │       │   │   ├── ClientsFeedback.js
+│   │   │       │   │   └── ClientsSupport.js
+│   │   │       │   ├── tenant
+│   │   │       │   │   └── org
+│   │   │       │   │       ├── analytics
+│   │   │       │   │       │   └── AnalyticsOverview.js
+│   │   │       │   │       ├── audit
+│   │   │       │   │       │   └── AuditLogPage.js
+│   │   │       │   │       ├── ClientBilling.js
+│   │   │       │   │       ├── ClientCommunications.js
+│   │   │       │   │       ├── ClientContracts.js
+│   │   │       │   │       ├── Clients.js
+│   │   │       │   │       ├── dashboard
+│   │   │       │   │       │   ├── AppHome.css
+│   │   │       │   │       │   ├── AppHome.jsx
+│   │   │       │   │       │   ├── DashboardAnalytics.js
+│   │   │       │   │       │   ├── DashboardOverview.js
+│   │   │       │   │       │   ├── DynamicDashboard.js
+│   │   │       │   │       │   ├── TenantAdminDashboard.css
+│   │   │       │   │       │   └── TenantAdminDashboard.jsx
+│   │   │       │   │       ├── departments
+│   │   │       │   │       │   ├── CreateDepartment.js
+│   │   │       │   │       │   ├── DepartmentAccessManagement.js
+│   │   │       │   │       │   ├── DepartmentDashboard.js
+│   │   │       │   │       │   └── DepartmentsList.js
+│   │   │       │   │       ├── documents
+│   │   │       │   │       │   ├── ApprovalQueue.js
+│   │   │       │   │       │   ├── DocumentAuditView.js
+│   │   │       │   │       │   ├── DocumentEditor.css
+│   │   │       │   │       │   ├── DocumentEditor.js
+│   │   │       │   │       │   ├── documentHubApi.js
+│   │   │       │   │       │   ├── DocumentsHub.js
+│   │   │       │   │       │   └── documentTemplates.js
+│   │   │       │   │       ├── finance
+│   │   │       │   │       │   ├── AccountsPayable.js
+│   │   │       │   │       │   ├── AccountsReceivable.js
+│   │   │       │   │       │   ├── BillingEngine.js
+│   │   │       │   │       │   ├── CashFlow.js
+│   │   │       │   │       │   ├── ChartOfAccounts.js
+│   │   │       │   │       │   ├── FinanceBudgeting.js
+│   │   │       │   │       │   ├── FinanceOverview.js
+│   │   │       │   │       │   ├── ProjectCosting.js
+│   │   │       │   │       │   ├── Reporting.js
+│   │   │       │   │       │   └── TimeExpenses.js
+│   │   │       │   │       ├── hr
+│   │   │       │   │       │   ├── AttendanceManagement.js
+│   │   │       │   │       │   ├── components
+│   │   │       │   │       │   │   └── hr
+│   │   │       │   │       │   │       ├── FormBuilder.js
+│   │   │       │   │       │   │       ├── FormTemplateManager.js
+│   │   │       │   │       │   │       ├── InterviewFormPortal.js
+│   │   │       │   │       │   │       ├── JobPostingSystem.js
+│   │   │       │   │       │   │       └── ResponseDashboard.js
+│   │   │       │   │       │   ├── EmployeeCreate.js
+│   │   │       │   │       │   ├── EmployeeList.js
+│   │   │       │   │       │   ├── HRLeaveRequests.js
+│   │   │       │   │       │   ├── HROnboarding.js
+│   │   │       │   │       │   ├── HROverview.js
+│   │   │       │   │       │   ├── HRPerformance.js
+│   │   │       │   │       │   ├── HRRecruitment.js
+│   │   │       │   │       │   ├── HRTraining.js
+│   │   │       │   │       │   └── PayrollManagement.js
+│   │   │       │   │       ├── my-work
+│   │   │       │   │       │   └── MyWork.js
+│   │   │       │   │       ├── operations
+│   │   │       │   │       │   └── OperationsOverview.js
+│   │   │       │   │       ├── permissions
+│   │   │       │   │       │   ├── CreatePermission.js
+│   │   │       │   │       │   └── PermissionsList.js
+│   │   │       │   │       ├── projects
+│   │   │       │   │       │   ├── ApprovalsQueuePage.js
+│   │   │       │   │       │   ├── ChangeRequestDetailPage.js
+│   │   │       │   │       │   ├── components
+│   │   │       │   │       │   │   ├── AddResourceModal.js
+│   │   │       │   │       │   │   ├── approvals
+│   │   │       │   │       │   │   │   ├── ApprovalChainSetup.js
+│   │   │       │   │       │   │   │   ├── ApprovalProgress.js
+│   │   │       │   │       │   │   │   ├── ApprovalProgressSkeleton.js
+│   │   │       │   │       │   │   │   ├── ApprovalStep.js
+│   │   │       │   │       │   │   │   ├── ClientApprovalView.js
+│   │   │       │   │       │   │   │   └── index.js
+│   │   │       │   │       │   │   ├── changeRequests
+│   │   │       │   │       │   │   │   ├── ChangeRequestAuditTrail.js
+│   │   │       │   │       │   │   │   ├── ChangeRequestCard.js
+│   │   │       │   │       │   │   │   ├── ChangeRequestDashboard.js
+│   │   │       │   │       │   │   │   ├── ChangeRequestEvaluationForm.js
+│   │   │       │   │       │   │   │   ├── ChangeRequestForm.js
+│   │   │       │   │       │   │   │   └── index.js
+│   │   │       │   │       │   │   ├── ConfirmDialog.js
+│   │   │       │   │       │   │   ├── CreateProjectModal.js
+│   │   │       │   │       │   │   ├── CreateSprintModal.js
+│   │   │       │   │       │   │   ├── CreateTaskModal.js
+│   │   │       │   │       │   │   ├── deliverables
+│   │   │       │   │       │   │   │   ├── AtRiskDeliverables.js
+│   │   │       │   │       │   │   │   ├── DateValidationAlerts.js
+│   │   │       │   │       │   │   │   ├── DateValidationForm.js
+│   │   │       │   │       │   │   │   ├── DeliverableCardSkeleton.js
+│   │   │       │   │       │   │   │   ├── DeliverableForm.js
+│   │   │       │   │       │   │   │   └── index.js
+│   │   │       │   │       │   │   ├── EmptyState.js
+│   │   │       │   │       │   │   ├── ErrorBoundary.js
+│   │   │       │   │       │   │   ├── gantt
+│   │   │       │   │       │   │   │   ├── GanttChart.js
+│   │   │       │   │       │   │   │   ├── GanttChartHeader.js
+│   │   │       │   │       │   │   │   ├── GanttDependencyLine.js
+│   │   │       │   │       │   │   │   ├── GanttLegend.js
+│   │   │       │   │       │   │   │   ├── GanttTaskBar.js
+│   │   │       │   │       │   │   │   ├── GanttTaskRow.js
+│   │   │       │   │       │   │   │   ├── GanttTimeline.js
+│   │   │       │   │       │   │   │   └── index.js
+│   │   │       │   │       │   │   ├── index.js
+│   │   │       │   │       │   │   ├── IntegrationStatus.js
+│   │   │       │   │       │   │   ├── LoadingSkeleton.js
+│   │   │       │   │       │   │   ├── ProjectCard.js
+│   │   │       │   │       │   │   ├── ProjectSelector.js
+│   │   │       │   │       │   │   ├── ProjectSettingsModal.js
+│   │   │       │   │       │   │   ├── PromptDialog.js
+│   │   │       │   │       │   │   └── QuickAddTask.js
+│   │   │       │   │       │   ├── constants
+│   │   │       │   │       │   │   └── projectConstants.js
+│   │   │       │   │       │   ├── DeliverableDetail.js
+│   │   │       │   │       │   ├── DeliverablesPage.js
+│   │   │       │   │       │   ├── hooks
+│   │   │       │   │       │   │   ├── index.js
+│   │   │       │   │       │   │   ├── useFilters.js
+│   │   │       │   │       │   │   └── useProjectData.js
+│   │   │       │   │       │   ├── NucleusAnalyticsPage.js
+│   │   │       │   │       │   ├── ProjectActivityView.js
+│   │   │       │   │       │   ├── ProjectBoardView.js
+│   │   │       │   │       │   ├── ProjectCalendarView.js
+│   │   │       │   │       │   ├── ProjectDashboard.js
+│   │   │       │   │       │   ├── ProjectGantt.js
+│   │   │       │   │       │   ├── ProjectGanttStandalone.js
+│   │   │       │   │       │   ├── ProjectListView.js
+│   │   │       │   │       │   ├── ProjectMilestones.js
+│   │   │       │   │       │   ├── ProjectResources.js
+│   │   │       │   │       │   ├── ProjectsList.js
+│   │   │       │   │       │   ├── ProjectsOverview.js
+│   │   │       │   │       │   ├── ProjectTableView.js
+│   │   │       │   │       │   ├── ProjectTasks.js
+│   │   │       │   │       │   ├── ProjectTimelineView.js
+│   │   │       │   │       │   ├── ProjectTimesheets.js
+│   │   │       │   │       │   ├── ProjectWorkloadView.js
+│   │   │       │   │       │   ├── services
+│   │   │       │   │       │   │   └── tenantProjectApiService.js
+│   │   │       │   │       │   ├── SprintManagement.js
+│   │   │       │   │       │   ├── useProjectDashboard.js
+│   │   │       │   │       │   └── utils
+│   │   │       │   │       │       ├── dateUtils.js
+│   │   │       │   │       │       ├── errorHandler.js
+│   │   │       │   │       │       ├── exportUtils.js
+│   │   │       │   │       │       ├── filters.js
+│   │   │       │   │       │       ├── formatters.js
+│   │   │       │   │       │       ├── index.js
+│   │   │       │   │       │       ├── toastNotifications.js
+│   │   │       │   │       │       └── validation.js
+│   │   │       │   │       ├── retail
+│   │   │       │   │       │   └── Products.js
+│   │   │       │   │       ├── roles
+│   │   │       │   │       │   ├── CreateRole.js
+│   │   │       │   │       │   └── RolesList.js
+│   │   │       │   │       ├── settings
+│   │   │       │   │       │   ├── OrgProfile.js
+│   │   │       │   │       │   ├── SettingsOverview.js
+│   │   │       │   │       │   └── WorkspaceSettingsPage.js
+│   │   │       │   │       ├── software-house
+│   │   │       │   │       │   ├── employee-portal
+│   │   │       │   │       │   │   ├── ContractorDashboard.js
+│   │   │       │   │       │   │   ├── EmployeeAttendanceView.js
+│   │   │       │   │       │   │   ├── EmployeeDocumentsView.js
+│   │   │       │   │       │   │   ├── EmployeeLeaveRequests.js
+│   │   │       │   │       │   │   ├── EmployeePayrollView.js
+│   │   │       │   │       │   │   ├── EmployeePerformanceView.js
+│   │   │       │   │       │   │   ├── EmployeePortal.js
+│   │   │       │   │       │   │   ├── employeePortalAccessLevels.js
+│   │   │       │   │       │   │   ├── EmployeeProfileView.js
+│   │   │       │   │       │   │   └── EmployeeWorkspacesView.js
+│   │   │       │   │       │   ├── hr
+│   │   │       │   │       │   │   ├── AttendanceManagement.js
+│   │   │       │   │       │   │   ├── components
+│   │   │       │   │       │   │   │   └── hr
+│   │   │       │   │       │   │   │       ├── FormBuilder.js
+│   │   │       │   │       │   │   │       ├── FormTemplateManager.js
+│   │   │       │   │       │   │   │       ├── InterviewFormPortal.js
+│   │   │       │   │       │   │   │       ├── JobPostingSystem.js
+│   │   │       │   │       │   │   │       └── ResponseDashboard.js
+│   │   │       │   │       │   │   ├── EmployeeCreate.js
+│   │   │       │   │       │   │   ├── EmployeeDetail.js
+│   │   │       │   │       │   │   ├── EmployeeList.js
+│   │   │       │   │       │   │   ├── HRLeaveRequests.js
+│   │   │       │   │       │   │   ├── HROnboarding.js
+│   │   │       │   │       │   │   ├── HROverview.js
+│   │   │       │   │       │   │   ├── HRPerformance.js
+│   │   │       │   │       │   │   ├── HRRecruitment.js
+│   │   │       │   │       │   │   ├── HRTraining.js
+│   │   │       │   │       │   │   └── PayrollManagement.js
+│   │   │       │   │       │   └── TimeTracking.js
+│   │   │       │   │       ├── TenantOrg.js
+│   │   │       │   │       ├── TenantOrgRulebook.js
+│   │   │       │   │       └── users
+│   │   │       │   │           ├── UserCreate.js
+│   │   │       │   │           ├── UserList.js
+│   │   │       │   │           └── UserProfile.js
+│   │   │       │   ├── TenantDashboard
+│   │   │       │   │   ├── TenantAccountsPayable.js
+│   │   │       │   │   ├── TenantFinanceDashboard.js
+│   │   │       │   │   ├── TenantHRDashboard.js
+│   │   │       │   │   ├── TenantPlaceholderComponent.js
+│   │   │       │   │   └── TenantProjectsDashboard.js
+│   │   │       │   ├── TenantDashboard.js
+│   │   │       │   └── TenantERP
+│   │   │       │       ├── TenantSoftwareHouseDashboard.js
+│   │   │       │       └── TenantSoftwareHouseSetup.js
+│   │   │       ├── providers
+│   │   │       │   └── TenantThemeProvider.js
+│   │   │       ├── styles
+│   │   │       │   ├── tenant-theme.css
+│   │   │       │   └── tenant-tokens.css
+│   │   │       └── utils
+│   │   │           ├── industryMenuBuilder.js
+│   │   │           ├── themeConfig.js
+│   │   │           ├── useThemeStyles.js
+│   │   │           └── useToken.js
+│   │   ├── hooks
+│   │   │   ├── useFullscreen.js
+│   │   │   └── useKeyboardShortcuts.js
+│   │   ├── index.css
+│   │   ├── index.js
+│   │   ├── layouts
+│   │   │   └── SupraAdminLayout.js
+│   │   ├── lib
+│   │   │   └── utils.js
+│   │   ├── modules
+│   │   │   ├── core
+│   │   │   │   └── dashboard
+│   │   │   │       └── Dashboard.js
+│   │   │   ├── dashboard
+│   │   │   │   └── components
+│   │   │   │       └── DashboardWidget.js
+│   │   │   ├── project-management
+│   │   │   │   └── projects
+│   │   │   │       └── ProjectManagement.js
+│   │   │   └── shared
+│   │   │       └── constants
+│   │   │           └── permissions.js
+│   │   ├── responsive.css
+│   │   ├── setupProxy.js
+│   │   ├── shared
+│   │   │   ├── components
+│   │   │   │   ├── ErrorBoundary.jsx
+│   │   │   │   ├── feedback
+│   │   │   │   │   ├── AccessDenied.js
+│   │   │   │   │   ├── EmptyState.js
+│   │   │   │   │   ├── ErrorState.js
+│   │   │   │   │   ├── FeatureUnavailable.js
+│   │   │   │   │   ├── LoadingSpinner.js
+│   │   │   │   │   └── SkeletonLoader.js
+│   │   │   │   ├── forms
+│   │   │   │   │   ├── EmployeeForm.js
+│   │   │   │   │   └── EmployeeFormTabs.js
+│   │   │   │   ├── monitoring
+│   │   │   │   │   ├── BackendHealthCheck.js
+│   │   │   │   │   ├── ConnectionStatusIndicator.js
+│   │   │   │   │   └── MonitoringSystemStatus.js
+│   │   │   │   ├── navigation
+│   │   │   │   │   ├── Breadcrumbs.jsx
+│   │   │   │   │   ├── SidebarNav.jsx
+│   │   │   │   │   └── __tests__
+│   │   │   │   │       └── Breadcrumbs.test.jsx
+│   │   │   │   ├── ui
+│   │   │   │   │   ├── SkeletonLoader.js
+│   │   │   │   │   └── ThemeToggle.js
+│   │   │   │   └── __tests__
+│   │   │   │       └── ErrorBoundary.test.jsx
+│   │   │   ├── hooks
+│   │   │   │   ├── useKeyboardShortcuts.js
+│   │   │   │   ├── useResponsive.js
+│   │   │   │   ├── useRoleBasedUI.js
+│   │   │   │   └── useSocket.js
+│   │   │   ├── pages
+│   │   │   │   └── PageNotFound.js
+│   │   │   ├── services
+│   │   │   │   ├── analytics
+│   │   │   │   │   ├── ai-insights.service.js
+│   │   │   │   │   └── analytics.service.js
+│   │   │   │   ├── auth
+│   │   │   │   │   └── token-refresh.service.js
+│   │   │   │   ├── business
+│   │   │   │   │   ├── billing.service.js
+│   │   │   │   │   ├── form-management.service.js
+│   │   │   │   │   ├── resource.service.js
+│   │   │   │   │   ├── task.service.js
+│   │   │   │   │   └── usage-tracking.service.js
+│   │   │   │   ├── index.js
+│   │   │   │   ├── industry
+│   │   │   │   │   ├── config
+│   │   │   │   │   │   └── apiConfig.js
+│   │   │   │   │   ├── index.js
+│   │   │   │   │   ├── softwareHouseApi.js
+│   │   │   │   │   └── utils
+│   │   │   │   │       ├── apiClientFactory.js
+│   │   │   │   │       └── tokenUtils.js
+│   │   │   │   ├── organize-frontend-services.ps1
+│   │   │   │   ├── tenant
+│   │   │   │   │   └── tenant-api.service.js
+│   │   │   │   └── update-frontend-imports.ps1
+│   │   │   ├── styles
+│   │   │   │   └── design-tokens.css
+│   │   │   └── utils
+│   │   │       ├── apiClient.js
+│   │   │       ├── auth.js
+│   │   │       ├── axiosInstance.js
+│   │   │       ├── debugExternalScripts.js
+│   │   │       ├── errorHandler.js
+│   │   │       ├── logger.js
+│   │   │       ├── setupMockAuth.js
+│   │   │       ├── statusUtils.js
+│   │   │       ├── tenantRoutes.js
+│   │   │       └── websocket.js
+│   │   └── types
+│   │       └── index.d.ts
+│   └── tailwind.config.js
+├── generate-env.js
+├── jsconfig.json
+├── manifest.json
+├── offline.html
+├── old_md_files.csv
+├── organize_docs.js
+├── package-lock.json
+├── package.json
+├── PROJECT_CREATION_COMPONENT_INTERACTION.mmd
+├── PROJECT_CREATION_DATA_FLOW.mmd
+├── PROJECT_CREATION_ERROR_FLOW.mmd
+├── PROJECT_CREATION_MERGED_DIAGRAM.mmd
+├── PROJECT_CREATION_SEQUENCE_DIAGRAM.mmd
+├── railway-deploy-signal.html
+├── RAILWAY_BRANCH.txt
+├── script.js
+├── SIGNUP_FLOWS_API_SEQUENCE.puml
+├── SIGNUP_FLOWS_DETAILED.puml
+├── SIGNUP_FLOWS_USER_JOURNEY.puml
+├── start-all-servers-fixed.bat
+├── start-all-servers.bat
+├── start-all-servers.sh
+├── start-portal.sh
+├── start-simple.bat
+├── start-unified.js
+├── start.bat
+├── start.js
+├── start.sh
+├── styles.css
+├── test-env-validation.js
+├── tree_dump.js
+├── typewriter.js
+├── verify-secure-deployment.js
+└── ~$C-20260409-WA0000.docx

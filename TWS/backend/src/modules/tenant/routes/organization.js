@@ -917,38 +917,7 @@ router.get('/hr/attendance/config', verifyERPToken, attendanceRead, async (req, 
 });
 
 // Check-in
-router.post('/hr/attendance/check-in', verifyERPToken, attendanceWrite, async (req, res) => {
-  try {
-    const tenantContext = req.tenantContext || await buildTenantContext(req);
-    const { employeeId, ...checkInData } = req.body;
-    if (!employeeId) {
-      return res.status(400).json({ success: false, message: 'employeeId is required' });
-    }
-    const attendance = await tenantOrgService.attendanceCheckIn(tenantContext, employeeId, checkInData);
-    res.json({ success: true, data: attendance });
-  } catch (error) {
-    console.error('Check-in error:', error);
-    const status = error.message && (error.message.includes('Already checked in') || error.message.includes('not found')) ? 400 : 500;
-    res.status(status).json({ success: false, message: error.message || 'Check-in failed', error: error.message });
-  }
-});
 
-// Check-out
-router.post('/hr/attendance/check-out', verifyERPToken, attendanceWrite, async (req, res) => {
-  try {
-    const tenantContext = req.tenantContext || await buildTenantContext(req);
-    const { employeeId, ...checkOutData } = req.body;
-    if (!employeeId) {
-      return res.status(400).json({ success: false, message: 'employeeId is required' });
-    }
-    const attendance = await tenantOrgService.attendanceCheckOut(tenantContext, employeeId, checkOutData);
-    res.json({ success: true, data: attendance });
-  } catch (error) {
-    console.error('Check-out error:', error);
-    const status = error.message && (error.message.includes('No check-in') || error.message.includes('Already checked out') || error.message.includes('not found')) ? 400 : 500;
-    res.status(status).json({ success: false, message: error.message || 'Check-out failed', error: error.message });
-  }
-});
 
 // HR-only manual punch adjustment (check-in/check-out times)
 router.patch('/hr/attendance/:id/punch', verifyERPToken, attendanceWrite, async (req, res) => {
@@ -3276,7 +3245,7 @@ router.patch('/users/password', verifyERPToken, strictLimiter, async (req, res) 
     }
 
     // Hash new password
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(12);
     user.password = await bcrypt.hash(newPassword, salt);
     await user.save();
 
@@ -3770,7 +3739,7 @@ router.get('/user-departments', verifyTenantOrgAccess, async (req, res) => {
 });
 
 // Projects routes - New comprehensive project management API
-const projectsRoutes = require('./projects');
+const projectsRoutes = require('../../../routes/projects.routes');
 // Rate limiting and ERP token verification (module access control removed per product decision)
 router.use('/projects', tokenVerificationLimiter, verifyERPToken, projectsRoutes);
 

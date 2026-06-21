@@ -7,7 +7,14 @@ const emailVerificationService = require('../integrations/email-verification.ser
 const tenantProvisioningService = require('../tenantProvisioningService');
 const emailService = require('../integrations/email.service');
 const masterERPService = require('../masterERPService');
-const envConfig = require('../../config/environment');
+const envConfig = require('../../config/environment-validator');
+const validator = require('validator');
+
+// Must match AUTH_EMAIL_NORMALIZE in authentication.js so stored email == login lookup email
+const SIGNUP_EMAIL_NORMALIZE = { gmail_remove_dots: false };
+const normalizeSignupEmail = (email) =>
+  validator.normalizeEmail(String(email || '').trim(), SIGNUP_EMAIL_NORMALIZE) ||
+  String(email || '').trim().toLowerCase();
 
 // Tenant provisioning runs synchronously (no queue needed)
 
@@ -16,8 +23,9 @@ class SelfServeSignupService {
    * Step 1: Register user with email and password
    */
   async registerUser(email, password, fullName, metadata = {}) {
+    const normalizedEmail = normalizeSignupEmail(email);
     // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       throw new Error('User with this email already exists');
     }
@@ -80,12 +88,12 @@ class SelfServeSignupService {
     // Create user account with temporary orgId (will be updated during tenant creation)
     // Email verification is skipped - mark as verified automatically
     try {
-      console.log('📝 Creating user with email:', email.toLowerCase());
+      console.log('📝 Creating user with email:', normalizedEmail);
       console.log('📝 User orgId:', tempOrg._id);
       console.log('📝 User fullName:', fullName);
 
       const user = new User({
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         password,
         fullName,
         emailVerified: true, // Skip email verification - mark as verified
@@ -461,18 +469,19 @@ class SelfServeSignupService {
   async completeSignup(email, password, fullName, organizationName, organizationSlug, metadata = {}) {
     const mongoose = require('mongoose');
     const session = await mongoose.startSession();
+    const normalizedEmail = normalizeSignupEmail(email);
 
     let user, tenant, organization, tenantRole;
 
     try {
       console.log('📝 Starting complete signup transaction...');
-      console.log('📝 Email:', email);
+      console.log('📝 Email:', normalizedEmail);
       console.log('📝 Organization:', organizationName);
       console.log('📝 Slug:', organizationSlug);
 
       const result = await session.withTransaction(async () => {
         // Step 1: Validate email doesn't exist
-        const existingUser = await User.findOne({ email: email.toLowerCase() }).session(session);
+        const existingUser = await User.findOne({ email: normalizedEmail }).session(session);
         if (existingUser) {
           throw new Error('User with this email already exists');
         }
@@ -504,7 +513,7 @@ class SelfServeSignupService {
         console.log('✅ Organization created:', organization._id);
 
         // Step 7: Prepare tenant data with ownerCredentials and createdBy
-        const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || 'owner';
+        const username = normalizedEmail.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || 'owner';
         const tenantData = {
           name: organizationName,
           companyName: organizationName,
@@ -515,12 +524,12 @@ class SelfServeSignupService {
           organizationId: organization._id,
           ownerCredentials: {
             username: username,
-            email: email.toLowerCase(),
+            email: normalizedEmail,
             password: password,
             fullName: fullName
           },
           contactInfo: {
-            email: email.toLowerCase(),
+            email: normalizedEmail,
             phone: metadata.contactPhone || null
           },
           businessInfo: {
@@ -574,7 +583,7 @@ class SelfServeSignupService {
         // Step 11: Create user with correct orgId
         console.log('📝 Step 11: Creating user...');
         user = await User.create([{
-          email: email.toLowerCase(),
+          email: normalizedEmail,
           password,
           fullName,
           orgId: organization._id,

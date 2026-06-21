@@ -1,3 +1,4 @@
+﻿import { API_BASE_URL } from '../../../../../constants/apiEndpoints';
 import React, { useState, useEffect } from 'react';
 import { 
   UserGroupIcon, 
@@ -45,7 +46,7 @@ const TenantUsers = () => {
     try {
       setLoading(true);
       // SECURITY FIX: Use credentials: 'include' instead of Authorization header
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tenant/switching/tenants/${id}/users`, {
+      const response = await fetch(`${API_BASE_URL}/api/tenant/switching/tenants/${id}/users`, {
         method: 'GET',
         credentials: 'include', // SECURITY FIX: Include cookies
         headers: {
@@ -69,7 +70,7 @@ const TenantUsers = () => {
   const fetchTenantStats = async (id) => {
     try {
       // SECURITY FIX: Use credentials: 'include' instead of Authorization header
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tenant/switching/tenants/${id}/stats`, {
+      const response = await fetch(`${API_BASE_URL}/api/tenant/switching/tenants/${id}/stats`, {
         method: 'GET',
         credentials: 'include', // SECURITY FIX: Include cookies
         headers: {
@@ -92,7 +93,7 @@ const TenantUsers = () => {
     e.preventDefault();
     try {
       // SECURITY FIX: Use credentials: 'include' instead of Authorization header
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tenant/switching/tenants/${tenantId}/invite`, {
+      const response = await fetch(`${API_BASE_URL}/api/tenant/switching/tenants/${tenantId}/invite`, {
         method: 'POST',
         credentials: 'include', // SECURITY FIX: Include cookies
         headers: {
@@ -117,7 +118,7 @@ const TenantUsers = () => {
   const handleUpdateUserRole = async (userId, newRole) => {
     try {
       // SECURITY FIX: Use credentials: 'include' instead of Authorization header
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tenant/switching/tenants/${tenantId}/users/${userId}/role`, {
+      const response = await fetch(`${API_BASE_URL}/api/tenant/switching/tenants/${tenantId}/users/${userId}/role`, {
         method: 'PUT',
         credentials: 'include', // SECURITY FIX: Include cookies
         headers: {
@@ -143,7 +144,7 @@ const TenantUsers = () => {
     
     try {
       // SECURITY FIX: Use credentials: 'include' instead of Authorization header
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tenant/switching/tenants/${tenantId}/users/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/tenant/switching/tenants/${tenantId}/users/${userId}`, {
         method: 'DELETE',
         credentials: 'include', // SECURITY FIX: Include cookies
         headers: {

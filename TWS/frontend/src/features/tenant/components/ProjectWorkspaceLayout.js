@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Project Workspace Layout – single dashboard for a project.
  * Renders project name top-left, view tabs, top-right actions, and Outlet for the active view.
  */
@@ -30,7 +30,7 @@ import {
 import { toast } from 'react-hot-toast';
 import tenantProjectApiService from '../pages/tenant/org/projects/services/tenantProjectApiService';
 import ProjectSettingsModal from '../pages/tenant/org/projects/components/ProjectSettingsModal';
-import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/Avatar/Avatar';
 import '../styles/tenant-theme.css';
 import '../styles/tenant-tokens.css';
 import './TenantOrgLayout.css';

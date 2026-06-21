@@ -1,3 +1,4 @@
+﻿import { API_BASE_URL } from '../../../../constants/apiEndpoints';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const TenantContext = createContext();
@@ -21,7 +22,7 @@ export const TenantProvider = ({ children }) => {
     // Load tenant context from API using cookies
     const checkAuth = async () => {
       try {
-        const authResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/auth/me`, {
+        const authResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
           credentials: 'include'
         });
         if (authResponse.ok) {
@@ -60,7 +61,7 @@ export const TenantProvider = ({ children }) => {
   const loadTenantContext = async (tenantId) => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tenant-switching/context/${tenantId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/tenant-switching/context/${tenantId}`, {
         credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
       });
       
@@ -83,7 +84,7 @@ export const TenantProvider = ({ children }) => {
   const switchTenant = async (tenantId) => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tenant-switching/switch/${tenantId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/tenant-switching/switch/${tenantId}`, {
         method: 'POST',
         credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
       });

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+﻿import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -6,8 +6,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '../../../components/ui/dialog';
-import { Button } from '../../../components/ui/button';
+} from '../../../components/ui/Dialog/Dialog';
+import { Button } from '../../../components/ui/Button/Button';
 import {
   IDLE_LIMIT_MS,
   IDLE_WARNING_THRESHOLD_MS,

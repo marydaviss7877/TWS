@@ -9,7 +9,7 @@
 process.env.REDIS_DISABLED = 'true';
 process.env.BULLMQ_DISABLED = 'true';
 
-const { app } = require('../src/app.js');
+const { app } = require('../server.js');
 
 console.log('🔍 Supra-Admin Backend Route Analysis');
 console.log('=====================================\n');

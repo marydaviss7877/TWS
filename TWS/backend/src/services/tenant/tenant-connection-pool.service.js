@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const config = require('../../config/environment');
+const config = require('../../config/environment-validator');
 const Tenant = require('../../models/tenant/Tenant');
 const logger = require('../../utils/logger');
 

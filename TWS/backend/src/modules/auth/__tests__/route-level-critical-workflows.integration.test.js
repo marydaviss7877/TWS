@@ -100,7 +100,7 @@ describe('route-level critical workflow checks', () => {
 
     const app = express();
     app.use(express.json());
-    const projectsRouter = require('../../business/routes/projects');
+    const projectsRouter = require('../../../routes/projects.routes');
     app.use('/api/projects', projectsRouter);
 
     const ownerRes = await request(app)

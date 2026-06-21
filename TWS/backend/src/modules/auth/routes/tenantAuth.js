@@ -157,7 +157,7 @@ router.post('/login',
     };
     
     const accessToken = jwt.sign(accessTokenPayload, jwtConfig.secret, {
-      expiresIn: jwtConfig.expiresIn || '24h',
+      expiresIn: jwtConfig.expiresIn || '15m',
       issuer: 'tws-backend',
       audience: 'tws-frontend'
     });
@@ -278,7 +278,7 @@ router.post('/refresh',
     };
     
     const accessToken = jwt.sign(accessTokenPayload, jwtConfig.secret, {
-      expiresIn: jwtConfig.expiresIn || '24h',
+      expiresIn: jwtConfig.expiresIn || '15m',
       issuer: 'tws-backend',
       audience: 'tws-frontend'
     });

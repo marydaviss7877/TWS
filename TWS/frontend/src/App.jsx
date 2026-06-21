@@ -191,6 +191,14 @@ function SubdomainOldPathRedirect() {
   return <Navigate to={`/${rest || ''}`} replace />;
 }
 
+// Handles redirects from School ERP's SlugRouter:
+// swh.tws.enterprises/org/beaconhouse → swh.tws.enterprises/beaconhouse/org
+function OrgPathRedirect() {
+  const { tenantSlug, '*': rest } = useParams();
+  const dest = `/${tenantSlug}/org${rest ? `/${rest}` : ''}`;
+  return <Navigate to={dest} replace />;
+}
+
 // Hard-navigate for cross-subdomain redirects; React Router Navigate otherwise.
 function SmartRedirect({ to, replace }) {
   useEffect(() => { if (to.startsWith('http')) window.location.href = to; }, [to]);
@@ -339,6 +347,11 @@ function App() {
             <Route path="infrastructure" element={<Infrastructure />} />
             <Route path="settings" element={<SupraSettings />} />
           </Route>
+
+          {/* ── /org/:slug — entry point from School ERP's SlugRouter redirect ── */}
+          {!isSubdomain && (
+            <Route path="/org/:tenantSlug/*" element={<OrgPathRedirect />} />
+          )}
 
           {/* ── Tenant dashboard (legacy) ─────────────────────────────────── */}
           <Route path="/:tenantSlug/dashboard" element={<TenantDashboard />} />

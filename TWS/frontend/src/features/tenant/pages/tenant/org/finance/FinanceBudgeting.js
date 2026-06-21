@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import AdminPageTemplate from '../../../../../../features/admin/components/admin/AdminPageTemplate';
+import AdminPageTemplate from '../../../../../../components/AdminPageTemplate/AdminPageTemplate';
 import {
   ChartPieIcon,
   CurrencyDollarIcon,

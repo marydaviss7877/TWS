@@ -53,7 +53,7 @@ class BackendConfig {
       // JWT Configuration
       JWT_SECRET: process.env.JWT_SECRET || this.generateSecureSecret(),
       JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || this.generateSecureSecret(),
-      JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
+      JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '15m',
       JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
       
       // Encryption Configuration

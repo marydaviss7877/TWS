@@ -1,3 +1,4 @@
+﻿import { API_BASE_URL } from '../../../../constants/apiEndpoints';
 import React, { useState, useEffect } from 'react';
 import { 
   BuildingOffice2Icon, 
@@ -21,7 +22,7 @@ const TenantSelector = ({ currentTenant, onTenantSwitch, onTenantCreate }) => {
   const fetchUserTenants = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tenant-switching/tenants', {
+      const response = await fetch(`${API_BASE_URL}/api/tenant-switching/tenants', {
         credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
       });
       
@@ -40,7 +41,7 @@ const TenantSelector = ({ currentTenant, onTenantSwitch, onTenantCreate }) => {
 
   const handleTenantSwitch = async (tenantId) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tenant-switching/switch/${tenantId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/tenant-switching/switch/${tenantId}`, {
         method: 'POST',
         credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
       });

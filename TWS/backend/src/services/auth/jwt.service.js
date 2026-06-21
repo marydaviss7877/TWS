@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const envConfig = require('../../config/environment');
+const envConfig = require('../../config/environment-validator');
 
 /**
  * Secure JWT Service

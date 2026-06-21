@@ -1,6 +1,6 @@
 export { default } from '../../../tenant/pages/tenant/org/software-house/hr/HRLeaveRequests';
 import React from 'react';
-import AdminPageTemplate from '../../../../features/admin/components/admin/AdminPageTemplate';
+import AdminPageTemplate from '../../../../components/AdminPageTemplate/AdminPageTemplate';
 import FeatureUnavailable from '../../../../shared/components/feedback/FeatureUnavailable';
 import { 
   ClockIcon, 

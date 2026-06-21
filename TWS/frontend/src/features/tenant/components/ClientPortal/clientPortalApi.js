@@ -1,7 +1,7 @@
-const baseUrl = process.env.REACT_APP_API_URL || '';
+﻿import { API_BASE_URL } from '../../../../constants/apiEndpoints';
 
 const request = async (path, options = {}) => {
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
@@ -12,13 +12,13 @@ import {
   CogIcon,
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
-import { Button } from '../../../components/ui/button';
+import { Button } from '../../../components/ui/Button/Button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '../../../components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar';
-import { Badge } from '../../../components/ui/badge';
+} from '../../../components/ui/DropdownMenu/DropdownMenu';
+import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/Avatar/Avatar';
+import { Badge } from '../../../components/ui/Badge/Badge';
 import { QUICK_ADD_ACTIONS } from '../../../constants/navigationConstants';
 
 /**

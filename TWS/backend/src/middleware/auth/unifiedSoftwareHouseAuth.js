@@ -165,7 +165,7 @@ const unifiedSoftwareHouseAuth = async (req, res, next) => {
 
       // Handle tenant_owner tokens
       if (tempDecoded.type === 'tenant_owner') {
-        const envConfig = require('../../config/environment');
+        const envConfig = require('../../config/environment-validator');
         const jwtConfig = envConfig.getJWTConfig();
         decoded = jwt.verify(token, jwtConfig.secret, {
           issuer: 'tws-backend',

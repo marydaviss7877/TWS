@@ -1,5 +1,5 @@
 const redisService = require('./core/redis.service');
-const envConfig = require('../config/environment');
+const envConfig = require('../config/environment-validator');
 
 /**
  * Comprehensive Caching Service

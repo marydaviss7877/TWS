@@ -334,7 +334,7 @@ const configs = [
 console.log('📁 Creating configuration files...');
 
 configs.forEach(({ name, data }) => {
-  const filePath = path.join(__dirname, '..', 'config', name);
+  const filePath = path.join(__dirname, '..', 'src', 'config', name);
   const dir = path.dirname(filePath);
   
   // Create directory if it doesn't exist
@@ -367,7 +367,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
-const config = require('../config/health-check-config.json');
+const config = require('../src/config/health-check-config.json');
 const baseUrl = process.env.BASE_URL || 'http://localhost:4000';
 
 class HealthMonitor {
@@ -431,7 +431,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
-const config = require('../config/prometheus-config.json');
+const config = require('../src/config/prometheus-config.json');
 const baseUrl = process.env.BASE_URL || 'http://localhost:4000';
 
 class MetricsCollector {

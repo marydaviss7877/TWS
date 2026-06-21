@@ -1275,7 +1275,7 @@ class TenantOrgService {
       };
 
       const fireEmployeeInviteEmail = async (tenantUserDoc) => {
-        const envConfig = require('../../config/environment');
+        const envConfig = require('../../config/environment-validator');
         const frontendUrl = envConfig.get('FRONTEND_URL') || process.env.FRONTEND_URL || '';
         const inviteLink = `${frontendUrl}/invite/accept?token=${tenantUserDoc.invitation.invitationToken}`;
         const Organization = require('../../models/org/Organization');

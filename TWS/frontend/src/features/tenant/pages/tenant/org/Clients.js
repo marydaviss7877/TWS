@@ -25,8 +25,8 @@ import {
 } from '@heroicons/react/24/outline';
 import tenantApiService from '../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../app/providers/TenantAuthContext';
-import ConfirmDialog from '../../../../../features/projects/components/ConfirmDialog';
-import ErrorBoundary from '../../../../../features/projects/components/ErrorBoundary';
+import ConfirmDialog from '../../../../../components/ConfirmDialog/ConfirmDialog';
+import ErrorBoundary from '../../../../../shared/components/ErrorBoundary';
 import toast from 'react-hot-toast';
 
 // Enhanced Client Metrics Component - Premium Wolfstack Style

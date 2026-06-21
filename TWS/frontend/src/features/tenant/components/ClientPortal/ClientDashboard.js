@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Squares2X2Icon,
   BriefcaseIcon,
@@ -7,11 +7,8 @@ import {
   DocumentTextIcon,
   UserCircleIcon,
   MagnifyingGlassIcon,
-  ClockIcon
+  ClockIcon,
 } from '@heroicons/react/24/outline';
-import ClientProjectsView from './ClientProjectsView';
-import ClientOrganizationProfile from './ClientOrganizationProfile';
-import ClientTimesheetsView from './ClientTimesheetsView';
 import { clientPortalApi } from './clientPortalApi';
 
 const APP_GRADIENTS = {
@@ -20,7 +17,7 @@ const APP_GRADIENTS = {
   documents: 'from-blue-500 to-cyan-600',
   contact: 'from-amber-500 to-orange-600',
   company: 'from-fuchsia-500 to-pink-600',
-  timesheets: 'from-sky-500 to-indigo-600'
+  timesheets: 'from-sky-500 to-indigo-600',
 };
 
 const AppCard = ({ to, icon: Icon, title, description, badge, gradient }) => (
@@ -45,7 +42,7 @@ const AppCard = ({ to, icon: Icon, title, description, badge, gradient }) => (
   </Link>
 );
 
-const ClientPortalLauncher = () => {
+export const ClientPortalLauncher = () => {
   const [projectCount, setProjectCount] = useState(0);
   const [search, setSearch] = useState('');
 
@@ -61,63 +58,68 @@ const ClientPortalLauncher = () => {
     load();
   }, []);
 
-  const apps = useMemo(() => ([
-    {
-      key: 'projects',
-      to: 'projects',
-      icon: BriefcaseIcon,
-      title: 'Project Overview',
-      description: 'Track project completion and active sprint deliverables.',
-      badge: `${projectCount} project${projectCount === 1 ? '' : 's'}`
-    },
-    {
-      key: 'timesheets',
-      to: 'timesheets',
-      icon: ClockIcon,
-      title: 'Timesheets',
-      description: 'View read-only timesheet summaries for your projects.',
-      badge: 'Read only'
-    },
-    {
-      key: 'invoices',
-      to: 'invoices',
-      icon: CurrencyDollarIcon,
-      title: 'Invoices',
-      description: 'View invoice status and download links shared by your vendor.',
-      badge: 'Read only'
-    },
-    {
-      key: 'documents',
-      to: 'documents',
-      icon: DocumentTextIcon,
-      title: 'Documents',
-      description: 'Access shared/approved deliverable documents.',
-      badge: 'Read only'
-    },
-    {
-      key: 'contact',
-      to: 'contact',
-      icon: UserCircleIcon,
-      title: 'Contact',
-      description: 'Organization profile and project contact information.',
-      badge: 'View only'
-    },
-    {
-      key: 'company',
-      to: '../settings/organization',
-      icon: Squares2X2Icon,
-      title: 'Company',
-      description: 'LinkedIn-style company profile of the organization you work with.',
-      badge: null
-    }
-  ]), [projectCount]);
+  const apps = useMemo(
+    () => [
+      {
+        key: 'projects',
+        to: 'projects',
+        icon: BriefcaseIcon,
+        title: 'Project Overview',
+        description: 'Track project completion and active sprint deliverables.',
+        badge: `${projectCount} project${projectCount === 1 ? '' : 's'}`,
+      },
+      {
+        key: 'timesheets',
+        to: 'timesheets',
+        icon: ClockIcon,
+        title: 'Timesheets',
+        description: 'View read-only timesheet summaries for your projects.',
+        badge: 'Read only',
+      },
+      {
+        key: 'invoices',
+        to: 'invoices',
+        icon: CurrencyDollarIcon,
+        title: 'Invoices',
+        description: 'View invoice status and download links shared by your vendor.',
+        badge: 'Read only',
+      },
+      {
+        key: 'documents',
+        to: 'documents',
+        icon: DocumentTextIcon,
+        title: 'Documents',
+        description: 'Access shared/approved deliverable documents.',
+        badge: 'Read only',
+      },
+      {
+        key: 'contact',
+        to: 'contact',
+        icon: UserCircleIcon,
+        title: 'Contact',
+        description: 'Organization profile and project contact information.',
+        badge: 'View only',
+      },
+      {
+        key: 'company',
+        to: '../settings/organization',
+        icon: Squares2X2Icon,
+        title: 'Company',
+        description: 'LinkedIn-style company profile of the organization you work with.',
+        badge: null,
+      },
+    ],
+    [projectCount],
+  );
 
   const q = search.trim().toLowerCase();
   const visibleApps = q
-    ? apps.filter((a) =>
-      a.title.toLowerCase().includes(q) ||
-      a.description.toLowerCase().includes(q) ||
-      a.key.toLowerCase().includes(q))
+    ? apps.filter(
+        (a) =>
+          a.title.toLowerCase().includes(q) ||
+          a.description.toLowerCase().includes(q) ||
+          a.key.toLowerCase().includes(q),
+      )
     : apps;
 
   return (
@@ -127,7 +129,10 @@ const ClientPortalLauncher = () => {
           Client Workspace
         </p>
         <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
-          Welcome to <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">Client Portal</span>
+          Welcome to{' '}
+          <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+            Client Portal
+          </span>
         </h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
           Read-only workspace to track progress, deliverables, invoices, shared documents, and company contact.
@@ -141,7 +146,7 @@ const ClientPortalLauncher = () => {
           placeholder="Search client apps…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/70 backdrop-blur-sm py-3.5 pl-13 pr-4 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm outline-none transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:shadow-lg"
+          className="w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/70 backdrop-blur-sm py-3.5 pr-4 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm outline-none transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:shadow-lg"
           style={{ paddingLeft: '3.25rem' }}
         />
       </div>
@@ -163,11 +168,7 @@ const ClientPortalLauncher = () => {
   );
 };
 
-const ClientInvoicesView = () => (
-  <ClientInvoicesViewImpl />
-);
-
-const ClientInvoicesViewImpl = () => {
+export const ClientInvoicesView = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [invoices, setInvoices] = useState([]);
@@ -213,7 +214,9 @@ const ClientInvoicesViewImpl = () => {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Invoices</h2>
         <Link to="../" className="text-sm text-blue-600 hover:text-blue-800">Back to Apps</Link>
       </div>
-      {error ? <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
+      {error ? (
+        <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+      ) : null}
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-4">
         <select
           value={selectedProjectId}
@@ -225,19 +228,26 @@ const ClientInvoicesViewImpl = () => {
           ))}
         </select>
         {loading ? <p className="text-sm text-gray-500">Loading invoices...</p> : null}
-        {!loading && !invoices.length ? <p className="text-sm text-gray-500">No invoices available for this project.</p> : null}
+        {!loading && !invoices.length ? (
+          <p className="text-sm text-gray-500">No invoices available for this project.</p>
+        ) : null}
         {!loading && invoices.length ? (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {invoices.map((invoice) => (
               <div key={invoice._id} className="py-3 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{invoice.invoiceNumber || 'Invoice'}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    {invoice.invoiceNumber || 'Invoice'}
+                  </p>
                   <p className="text-xs text-gray-500">
-                    Issued: {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString() : '-'} | Due: {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : '-'}
+                    Issued: {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString() : '-'} | Due:{' '}
+                    {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : '-'}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{invoice.currency || 'USD'} {Number(invoice.total || 0).toFixed(2)}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {invoice.currency || 'USD'} {Number(invoice.total || 0).toFixed(2)}
+                  </p>
                   <p className="text-xs text-gray-500 capitalize">{invoice.status || 'draft'}</p>
                 </div>
               </div>
@@ -249,9 +259,7 @@ const ClientInvoicesViewImpl = () => {
   );
 };
 
-const ClientDocumentsView = () => <ClientDocumentsViewImpl />;
-
-const ClientDocumentsViewImpl = () => {
+export const ClientDocumentsView = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [documents, setDocuments] = useState([]);
@@ -297,7 +305,9 @@ const ClientDocumentsViewImpl = () => {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Documents</h2>
         <Link to="../" className="text-sm text-blue-600 hover:text-blue-800">Back to Apps</Link>
       </div>
-      {error ? <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
+      {error ? (
+        <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+      ) : null}
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-4">
         <select
           value={selectedProjectId}
@@ -309,7 +319,9 @@ const ClientDocumentsViewImpl = () => {
           ))}
         </select>
         {loading ? <p className="text-sm text-gray-500">Loading documents...</p> : null}
-        {!loading && !documents.length ? <p className="text-sm text-gray-500">No shared documents available for this project.</p> : null}
+        {!loading && !documents.length ? (
+          <p className="text-sm text-gray-500">No shared documents available for this project.</p>
+        ) : null}
         {!loading && documents.length ? (
           <div className="space-y-2">
             {documents.map((doc) => (
@@ -331,9 +343,7 @@ const ClientDocumentsViewImpl = () => {
   );
 };
 
-const ClientContactView = () => <ClientContactViewImpl />;
-
-const ClientContactViewImpl = () => {
+export const ClientContactView = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -361,7 +371,9 @@ const ClientContactViewImpl = () => {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Contact</h2>
         <Link to="../" className="text-sm text-blue-600 hover:text-blue-800">Back to Apps</Link>
       </div>
-      {error ? <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
+      {error ? (
+        <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+      ) : null}
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-4">
         {loading ? <p className="text-sm text-gray-500">Loading contact details...</p> : null}
         {!loading ? (
@@ -369,18 +381,28 @@ const ClientContactViewImpl = () => {
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide">Organization</p>
               <p className="text-base font-semibold text-gray-900 dark:text-white">{org.name || '-'}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">{org.email || '-'} {org.phone ? `| ${org.phone}` : ''}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                {org.email || '-'} {org.phone ? `| ${org.phone}` : ''}
+              </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="rounded border border-gray-200 dark:border-gray-700 p-3">
                 <p className="text-xs text-gray-500">Primary Contact</p>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">{client.primaryContact?.name || '-'}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-300">{client.primaryContact?.email || '-'}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {client.primaryContact?.name || '-'}
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-300">
+                  {client.primaryContact?.email || '-'}
+                </p>
               </div>
               <div className="rounded border border-gray-200 dark:border-gray-700 p-3">
                 <p className="text-xs text-gray-500">Billing Contact</p>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">{client.billingContact?.name || '-'}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-300">{client.billingContact?.email || '-'}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {client.billingContact?.name || '-'}
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-300">
+                  {client.billingContact?.email || '-'}
+                </p>
               </div>
             </div>
             <Link to="../settings/organization" className="inline-block text-sm text-blue-600 hover:text-blue-800">
@@ -392,22 +414,3 @@ const ClientContactViewImpl = () => {
     </div>
   );
 };
-
-const ClientDashboard = ({ clientId }) => {
-  const safeClientId = useMemo(() => clientId, [clientId]);
-  return (
-    <Routes>
-      <Route index element={<ClientPortalLauncher />} />
-      <Route path="projects" element={<ClientProjectsView clientId={safeClientId} />} />
-      <Route path="projects/:projectId" element={<ClientProjectsView clientId={safeClientId} />} />
-      <Route path="projects/:projectId/deliverables/:deliverableId" element={<ClientProjectsView clientId={safeClientId} />} />
-      <Route path="timesheets" element={<ClientTimesheetsView />} />
-      <Route path="invoices" element={<ClientInvoicesView />} />
-      <Route path="documents" element={<ClientDocumentsView />} />
-      <Route path="contact" element={<ClientContactView />} />
-      <Route path="company" element={<ClientOrganizationProfile />} />
-    </Routes>
-  );
-};
-
-export default ClientDashboard;

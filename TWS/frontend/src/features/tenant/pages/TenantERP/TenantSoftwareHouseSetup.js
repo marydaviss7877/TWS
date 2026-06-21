@@ -1,3 +1,4 @@
+﻿import { API_BASE_URL } from '../../../../constants/apiEndpoints';
 import React, { useState } from 'react';
 import { 
   CogIcon, 
@@ -101,7 +102,7 @@ const TenantSoftwareHouseSetup = () => {
     setIsLoading(true);
     try {
       // API call to initialize tenant as software house
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tenant/software-house/initialize', {
+      const response = await fetch(`${API_BASE_URL}/api/tenant/software-house/initialize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -96,7 +96,7 @@ const verifyERPToken = async (req, res, next) => {
     } catch (jwtServiceError) {
       // Fallback to direct JWT verification (for tenant_owner tokens)
       try {
-        const envConfig = require('../../config/environment');
+        const envConfig = require('../../config/environment-validator');
         const jwtConfig = envConfig.getJWTConfig();
         decoded = jwt.verify(token, jwtConfig.secret, {
           issuer: 'tws-backend',

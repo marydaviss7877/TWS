@@ -190,7 +190,7 @@ ENABLE_AWS=false
     return new Promise((resolve) => {
       const testScript = `
         try {
-          const { app, server } = require('./src/app.js');
+          const { app, server } = require('./server.js');
           console.log('✅ Server app loaded successfully');
           process.exit(0);
         } catch (error) {

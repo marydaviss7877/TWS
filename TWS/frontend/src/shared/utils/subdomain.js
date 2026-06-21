@@ -18,7 +18,7 @@ export function getSubdomainSlug() {
   if (parts.length <= baseParts) return null;
   const sub = parts[0];
   // These are infrastructure subdomains, not tenant slugs
-  if (['www', 'api', 'admin', 'mail', 'smtp', 'app'].includes(sub)) return null;
+  if (['www', 'api', 'admin', 'mail', 'smtp', 'app', 'swh', 'edu'].includes(sub)) return null;
   return sub;
 }
 

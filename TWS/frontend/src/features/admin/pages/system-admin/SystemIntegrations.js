@@ -1,5 +1,5 @@
 import React from 'react';
-import AdminPageTemplate from '../../../../features/admin/components/admin/AdminPageTemplate';
+import AdminPageTemplate from '../../../../components/AdminPageTemplate/AdminPageTemplate';
 import { PuzzlePieceIcon } from '@heroicons/react/24/outline';
 
 const SystemIntegrations = () => {

@@ -16,7 +16,7 @@ const finance = require('./finance');
 const billing = require('./billing');
 
 // Project Management
-const projects = require('./projects');
+const projects = require('../../../routes/projects.routes');
 const projectAccess = require('./projectAccess');
 const tasks = require('./tasks');
 const teams = require('./teams');
@@ -64,8 +64,8 @@ const resources = require('./resources');
 const sales = require('./sales');
 const partners = require('./partners');
 
-// Software House Specific (moved to erp/software-house/)
-const softwareHouseERP = require('../erp/software-house');
+// Software House Specific (moved to src/routes/)
+const softwareHouseRolesCanonical = require('../../../routes/softwareHouseRoles.routes');
 
 module.exports = {
   // Employee Management
@@ -74,7 +74,7 @@ module.exports = {
   // Attendance Management
   attendance,
   attendanceIntegration,
-  softwareHouseAttendance: softwareHouseERP.attendance, // From erp/software-house
+  softwareHouseAttendance: require('../erp/software-house').attendance, // From erp/software-house
   
   // Financial Management
   payroll,
@@ -98,7 +98,7 @@ module.exports = {
   nucleusTemplates,
   
   // Nucleus PM & Internal Team Routes
-  nucleusPM: softwareHouseERP.nucleusPM, // From erp/software-house
+  nucleusPM: require('../erp/software-house').nucleusPM, // From erp/software-house
   
   // Nucleus Analytics
   nucleusAnalytics,
@@ -131,5 +131,5 @@ module.exports = {
   partners,
   
   // Software House Specific
-  softwareHouseRoles: softwareHouseERP.roles // From erp/software-house
+  softwareHouseRoles: softwareHouseRolesCanonical // Canonical — src/routes/softwareHouseRoles.routes.js
 };

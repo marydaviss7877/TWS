@@ -1,8 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
-import { ScrollArea } from '../../../components/ui/scroll-area';
-import { Separator } from '../../../components/ui/separator';
+import { ScrollArea } from '../../../components/ui/ScrollArea/ScrollArea';
+import { Separator } from '../../../components/ui/Separator/Separator';
 import { cn } from '../../../lib/utils';
 import { SIDEBAR_SECTIONS } from '../../../constants/navigationConstants';
 

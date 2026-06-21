@@ -1,5 +1,6 @@
+﻿import { API_BASE_URL } from '../../../../constants/apiEndpoints';
 import React, { useState, useEffect } from 'react';
-import AdminPageTemplate from '../../../../features/admin/components/admin/AdminPageTemplate';
+import AdminPageTemplate from '../../../../components/AdminPageTemplate/AdminPageTemplate';
 import { 
   CurrencyDollarIcon,
   PlusIcon,
@@ -114,7 +115,7 @@ const ClientsBilling = () => {
 
   const fetchClients = async () => {
     try {
-      const response = await fetch((process.env.REACT_APP_API_URL || 'http://localhost:5000') + '/api/clients', {
+      const response = await fetch((API_BASE_URL) + '/api/clients', {
         credentials: 'include' // SECURITY FIX: Use cookies instead of localStorage token
       });
       

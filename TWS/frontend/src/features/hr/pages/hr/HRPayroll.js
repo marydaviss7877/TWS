@@ -1,6 +1,6 @@
 export { default } from '../../../tenant/pages/tenant/org/software-house/hr/PayrollManagement';
 import React from 'react';
-import AdminPageTemplate from '../../../../features/admin/components/admin/AdminPageTemplate';
+import AdminPageTemplate from '../../../../components/AdminPageTemplate/AdminPageTemplate';
 import FeatureUnavailable from '../../../../shared/components/feedback/FeatureUnavailable';
 import { 
   CurrencyDollarIcon, 

@@ -31,7 +31,7 @@ const Settings = () => {
     try {
       setLoading(true);
       // SECURITY FIX: Use credentials: 'include' to send HttpOnly cookies
-      const response = await fetch('http://localhost:5000/api/gts-admin/settings', {
+      const response = await fetch('/api/supra-admin/settings', {
         method: 'GET',
         credentials: 'include', // SECURITY FIX: Include cookies (HttpOnly tokens)
         headers: {
@@ -86,7 +86,7 @@ const Settings = () => {
     try {
       setSaving(true);
       // SECURITY FIX: Use credentials: 'include' to send HttpOnly cookies
-      const response = await fetch('http://localhost:5000/api/gts-admin/settings', {
+      const response = await fetch('/api/supra-admin/settings', {
         method: 'PUT',
         credentials: 'include', // SECURITY FIX: Include cookies
         headers: {

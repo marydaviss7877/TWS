@@ -53,17 +53,7 @@ router.get('/users', adminDashAccess, async (req, res) => {
   }
 });
 
-// Get tenant projects with real-time data
-router.get('/projects', async (req, res) => {
-  try {
-    const { page = 1, limit = 20, status, department } = req.query;
-    const result = await TenantDataService.getProjects(req.tenantId, { page, limit, status, department });
-    res.json({ success: true, data: result });
-  } catch (error) {
-    console.error('Projects error:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch projects' });
-  }
-});
+
 
 // Get recent activity
 router.get('/activity', adminDashAccess, async (req, res) => {

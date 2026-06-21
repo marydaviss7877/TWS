@@ -8,7 +8,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
-const config = require('../config/health-check-config.json');
+const config = require('../src/config/health-check-config.json');
 const baseUrl = process.env.BASE_URL || 'http://localhost:4000';
 
 class HealthMonitor {

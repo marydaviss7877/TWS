@@ -1,3 +1,4 @@
+﻿import { API_BASE_URL } from '../../constants/apiEndpoints';
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 
@@ -8,7 +9,7 @@ const useSocket = () => {
     // SECURITY FIX: Socket.io authentication should use cookies or a different method
     // For now, we'll connect without token in auth - backend should verify via cookies
     // Note: Socket.io may need backend changes to support cookie-based auth
-    const socketUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    const socketUrl = API_BASE_URL;
     const newSocket = io(socketUrl, {
       withCredentials: true, // SECURITY FIX: Include cookies
       // SECURITY FIX: Removed token from auth - backend should verify via cookies

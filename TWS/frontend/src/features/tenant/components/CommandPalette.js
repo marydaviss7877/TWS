@@ -1,9 +1,9 @@
-import React, { useMemo, useState, useEffect } from 'react';
+﻿import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CommandDialog, CommandInput, CommandList,
   CommandEmpty, CommandGroup, CommandItem, CommandShortcut, CommandSeparator,
-} from '../../../components/ui/command';
+} from '../../../components/ui/Command/Command';
 import { DialogDescription } from '@radix-ui/react-dialog';
 import { getNavigationActions } from '../../../constants/navigationConstants';
 import { useTenantAuth } from '../../../app/providers/TenantAuthContext';

@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const envConfig = require('../../config/environment');
+const envConfig = require('../../config/environment-validator');
 
 /**
  * Email Service for Education System

@@ -1,4 +1,4 @@
-const envConfig = require('../config/environment');
+const envConfig = require('../config/environment-validator');
 const auditService = require('./compliance/audit.service');
 
 // In-memory rate-limit counters replacing Redis

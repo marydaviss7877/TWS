@@ -15,7 +15,6 @@ const API_CONFIG = {
       LOGOUT: '/api/auth/logout',
       REFRESH: '/api/auth/refresh',
       ME: '/api/auth/me',
-      GTS_ADMIN_LOGIN: '/api/auth/gts-admin/login',
       SUPRA_ADMIN_LOGIN: '/api/auth/supra-admin/login'
     },
     
@@ -25,14 +24,6 @@ const API_CONFIG = {
       TENANTS: '/api/supra-admin/tenants',
       USERS: '/api/supra-admin/users',
       ANALYTICS: '/api/supra-admin/analytics'
-    },
-    
-    // GTS Admin
-    GTS_ADMIN: {
-      DASHBOARD: '/api/gts-admin/dashboard',
-      TENANTS: '/api/gts-admin/tenants',
-      BILLING: '/api/gts-admin/billing',
-      ANALYTICS: '/api/gts-admin/analytics'
     },
     
     // Master ERP

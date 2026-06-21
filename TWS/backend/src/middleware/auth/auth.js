@@ -139,7 +139,7 @@ const authenticateToken = async (req, res, next) => {
     
     // If it's a tenant_owner token, verify directly with jwt
     if (tempDecoded.type === 'tenant_owner') {
-      const envConfig = require('../../config/environment');
+      const envConfig = require('../../config/environment-validator');
       const jwtConfig = envConfig.getJWTConfig();
       try {
         decoded = jwt.verify(token, jwtConfig.secret, {

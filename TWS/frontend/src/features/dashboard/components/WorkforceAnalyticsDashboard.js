@@ -9,35 +9,25 @@ import {
   ArrowTrendingDownIcon,
   ClockIcon,
   BuildingOfficeIcon,
-  AcademicCapIcon,
   ShieldCheckIcon,
-  DocumentChartBarIcon,
-  ExclamationTriangleIcon,
   CheckCircleIcon,
-  ArrowPathIcon,
-  CalendarIcon,
-  MapPinIcon,
   StarIcon,
-  LightBulbIcon,
   CpuChipIcon,
-  BoltIcon,
   RocketLaunchIcon,
-  FireIcon,
   EyeIcon,
   ArrowDownTrayIcon,
-  PrinterIcon,
-  ShareIcon,
-  FunnelIcon,
-  AdjustmentsHorizontalIcon
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
-import { Line, Bar, Doughnut, Radar, Scatter, Bubble } from 'react-chartjs-2';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Button } from '../../../components/ui/button';
+import { cn } from '../../../lib/utils';
 
 const WorkforceAnalyticsDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [workforceMetrics, setWorkforceMetrics] = useState(null);
-  const [predictiveInsights, setPredictiveInsights] = useState(null);
   const [activeView, setActiveView] = useState('overview');
   const [selectedPeriod, setSelectedPeriod] = useState('quarter');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
@@ -49,190 +39,157 @@ const WorkforceAnalyticsDashboard = () => {
   const fetchWorkforceAnalytics = async () => {
     try {
       setLoading(true);
-      
-      // Fetch workforce intelligence data
+      setError(null);
       const response = await axios.get('/api/payroll/ai/optimize');
       setAnalyticsData(response.data.data);
       setWorkforceMetrics(response.data.data.currentCosts);
-      setPredictiveInsights(response.data.data.projectedSavings);
-    } catch (error) {
-      console.error('Error fetching workforce analytics:', error);
-      // Mock data for development
-      setAnalyticsData({
-        currentCosts: {
-          headcount: {
-            total: 125,
-            byDepartment: {
-              Engineering: 45,
-              Sales: 25,
-              Marketing: 20,
-              Operations: 15,
-              Support: 20
-            },
-            byRole: {
-              Senior: 35,
-              Mid: 55,
-              Junior: 35
-            },
-            byLocation: {
-              'San Francisco': 60,
-              'New York': 40,
-              'Remote': 25
-            }
-          },
-          compensation: {
-            totalPayroll: 1250000,
-            averageSalary: 95000,
-            medianSalary: 85000,
-            payrollGrowth: 12.5,
-            costPerEmployee: 10000
-          },
-          productivity: {
-            billableHours: 8500,
-            revenuePerEmployee: 185000,
-            utilizationRate: 0.78,
-            efficiencyScore: 85
-          },
-          retention: {
-            turnoverRate: 8.5,
-            retentionRate: 91.5,
-            averageTenure: 3.2,
-            timeToFill: 45
-          }
-        },
-        optimizationOpportunities: [
-          {
-            category: 'Workforce Allocation',
-            description: 'Optimize team distribution across projects',
-            estimatedSavings: 125000,
-            implementationEffort: 'medium'
-          },
-          {
-            category: 'Skill Utilization',
-            description: 'Better match skills to project requirements',
-            estimatedSavings: 85000,
-            implementationEffort: 'low'
-          },
-          {
-            category: 'Remote Work Optimization',
-            description: 'Reduce office overhead costs',
-            estimatedSavings: 200000,
-            implementationEffort: 'high'
-          }
-        ],
-        projectedSavings: 410000
-      });
-      setWorkforceMetrics({
-        headcount: { total: 125 },
-        compensation: { totalPayroll: 1250000, averageSalary: 95000 },
-        productivity: { utilizationRate: 0.78, efficiencyScore: 85 },
-        retention: { turnoverRate: 8.5, retentionRate: 91.5 }
-      });
+    } catch (err) {
+      setError('Unable to load workforce data. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(amount || 0);
+
+  const formatPercentage = (value) => `${(value * 100).toFixed(1)}%`;
+
+  // Metric card icon background variants — static classes so Tailwind includes them
+  const iconBgVariants = {
+    blue: 'bg-primary-500',
+    green: 'bg-success',
+    purple: 'bg-accent',
+    neutral: 'bg-muted',
   };
 
-  const formatPercentage = (value) => {
-    return `${(value * 100).toFixed(1)}%`;
+  // Change indicator colors
+  const changeColors = {
+    increase: 'text-green-700',
+    decrease: 'text-destructive',
+    neutral: 'text-muted-foreground',
   };
 
-  const MetricCard = ({ title, value, change, changeType, icon: Icon, color = 'blue', subtitle, trend, onClick }) => (
-    <div 
-      className={`bg-white overflow-hidden shadow-lg rounded-2xl border border-gray-200 hover:shadow-xl transition-all duration-300 ${onClick ? 'cursor-pointer transform hover:scale-105' : ''}`}
-      onClick={onClick}
-    >
-      <div className="p-6">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className={`w-14 h-14 bg-gradient-to-br from-${color}-500 to-${color}-600 rounded-2xl flex items-center justify-center shadow-lg`}>
-              <Icon className="h-7 w-7 text-white" />
-            </div>
+  const MetricCard = ({ title, value, change, changeType = 'neutral', icon: Icon, iconVariant = 'blue', subtitle, trend }) => (
+    <div className="bg-white rounded-xl border border-border shadow-sm p-6">
+      <div className="flex items-start gap-4">
+        <div className={cn('w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0', iconBgVariants[iconVariant] ?? 'bg-muted')}>
+          <Icon className="h-6 w-6 text-white" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-muted-foreground font-medium truncate">{title}</p>
+          <p className="text-2xl font-semibold text-foreground mt-0.5">{value}</p>
+          {change && (
+            <p className={cn('text-xs font-medium mt-0.5 flex items-center gap-1', changeColors[changeType])}>
+              {changeType === 'increase' && <ArrowTrendingUpIcon className="h-3.5 w-3.5" />}
+              {changeType === 'decrease' && <ArrowTrendingDownIcon className="h-3.5 w-3.5" />}
+              {change}
+            </p>
+          )}
+          {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+        </div>
+      </div>
+      {trend !== undefined && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-muted-foreground">Trend</span>
+            <span className={cn('text-xs font-medium', trend > 0 ? 'text-green-700' : 'text-destructive')}>
+              {trend > 0 ? '+' : ''}{trend}%
+            </span>
           </div>
-          <div className="ml-5 w-0 flex-1">
-            <dl>
-              <dt className="text-sm font-medium text-gray-500 truncate">{title}</dt>
-              <dd className="flex items-baseline">
-                <div className="text-2xl font-bold text-gray-900">{value}</div>
-                {change && (
-                  <div className={`ml-2 flex items-baseline text-sm font-semibold ${
-                    changeType === 'increase' ? 'text-green-600' : 
-                    changeType === 'decrease' ? 'text-red-600' : 'text-gray-600'
-                  }`}>
-                    {changeType === 'increase' && <ArrowTrendingUpIcon className="h-4 w-4 mr-1" />}
-                    {changeType === 'decrease' && <ArrowTrendingDownIcon className="h-4 w-4 mr-1" />}
-                    {change}
-                  </div>
-                )}
-              </dd>
-              {subtitle && (
-                <dd className="text-sm text-gray-600 mt-1">{subtitle}</dd>
-              )}
-            </dl>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className={cn('h-full rounded-full transition-all', trend > 0 ? 'bg-green-500' : 'bg-destructive')}
+              style={{ width: `${Math.min(Math.abs(trend), 100)}%` }}
+            />
           </div>
         </div>
-        {trend && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <span>Trend</span>
-              <span className={`${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {trend > 0 ? '↗' : '↘'} {Math.abs(trend)}%
-              </span>
-            </div>
-            <div className="mt-1 h-2 bg-gray-200 rounded-full">
-              <div 
-                className={`h-2 rounded-full ${trend > 0 ? 'bg-green-400' : 'bg-red-400'}`}
-                style={{ width: `${Math.min(Math.abs(trend), 100)}%` }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 
-  const ViewTab = ({ id, label, icon: Icon, active, onClick, count }) => (
-    <button
-      onClick={() => onClick(id)}
-      className={`flex items-center px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${
-        active
-          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-      }`}
-    >
-      <Icon className="h-5 w-5 mr-2" />
-      {label}
-      {count && (
-        <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
-          active ? 'bg-white bg-opacity-20 text-white' : 'bg-gray-200 text-gray-600'
-        }`}>
-          {count}
-        </span>
-      )}
-    </button>
-  );
+  const TABS = [
+    { id: 'overview',      label: 'Overview',      icon: ChartBarIcon },
+    { id: 'productivity',  label: 'Productivity',  icon: ArrowTrendingUpIcon },
+    { id: 'compensation',  label: 'Compensation',  icon: CurrencyDollarIcon },
+    { id: 'retention',     label: 'Retention',     icon: ShieldCheckIcon },
+    { id: 'predictions',   label: 'AI Predictions', icon: CpuChipIcon },
+    { id: 'optimization',  label: 'Optimization',  icon: RocketLaunchIcon },
+  ];
 
+  // Activity type config — static so Tailwind keeps these classes
+  const activityConfig = {
+    hire:        { label: (name, dept) => `${name} joined ${dept}`,         iconClass: 'text-green-700 bg-green-50',  Icon: UsersIcon },
+    promotion:   { label: (name, dept) => `${name} was promoted in ${dept}`, iconClass: 'text-primary-600 bg-primary-50', Icon: ArrowTrendingUpIcon },
+    resignation: { label: (name, dept) => `${name} left ${dept}`,           iconClass: 'text-destructive bg-red-50',  Icon: ArrowTrendingDownIcon },
+    performance: { label: (name, dept) => `${name} received a performance review`, iconClass: 'text-amber-700 bg-amber-50', Icon: StarIcon },
+  };
+
+  const recentActivities = [
+    { type: 'hire',        name: 'Sarah Johnson',  department: 'Engineering', time: '2 hours ago' },
+    { type: 'promotion',   name: 'Michael Chen',   department: 'Sales',       time: '1 day ago'   },
+    { type: 'resignation', name: 'Alex Rodriguez', department: 'Marketing',   time: '3 days ago'  },
+    { type: 'performance', name: 'Emma Davis',     department: 'Operations',  time: '1 week ago'  },
+  ];
+
+  // Chart color palette tied to brand tokens (hex equivalents of CSS vars for Chart.js)
+  const chartColors = {
+    primary:  'rgba(30, 64, 175, 0.8)',     // --primary
+    success:  'rgba(22, 163, 74, 0.8)',     // --success
+    accent:   'rgba(59, 130, 246, 0.8)',    // --accent
+    warning:  'rgba(217, 119, 6, 0.8)',     // --warning
+    neutral:  'rgba(107, 114, 128, 0.8)',   // gray-500
+    destructive: 'rgba(220, 38, 38, 0.8)', // --destructive
+  };
+
+  // --- Loading ---
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col items-center justify-center h-96">
-            <div className="relative">
-              <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200"></div>
-              <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent absolute top-0 left-0"></div>
-            </div>
-            <CpuChipIcon className="h-8 w-8 text-blue-600 mt-4 animate-pulse" />
-            <h3 className="mt-4 text-lg font-semibold text-gray-900">Analyzing Workforce Data...</h3>
-            <p className="mt-2 text-sm text-gray-600">Generating AI-powered insights and predictions</p>
+      <div className="min-h-screen bg-muted flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="relative mx-auto w-12 h-12">
+            <div className="absolute inset-0 rounded-full border-4 border-border" />
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground">Analyzing workforce data</p>
+            <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Error ---
+  if (error) {
+    return (
+      <div className="min-h-screen bg-muted flex items-center justify-center">
+        <div className="bg-white rounded-xl border border-border shadow-sm p-8 max-w-md text-center space-y-4">
+          <ExclamationTriangleIcon className="h-10 w-10 text-destructive mx-auto" />
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Failed to load data</h2>
+            <p className="text-sm text-muted-foreground mt-1">{error}</p>
+          </div>
+          <Button onClick={fetchWorkforceAnalytics}>Try again</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Empty ---
+  if (!analyticsData) {
+    return (
+      <div className="min-h-screen bg-muted flex items-center justify-center">
+        <div className="bg-white rounded-xl border border-border shadow-sm p-8 max-w-md text-center space-y-4">
+          <ChartBarIcon className="h-10 w-10 text-muted-foreground mx-auto" />
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">No workforce data</h2>
+            <p className="text-sm text-muted-foreground mt-1">Data will appear here once your workforce is set up.</p>
           </div>
         </div>
       </div>
@@ -240,200 +197,185 @@ const WorkforceAnalyticsDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-muted p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-border shadow-sm p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Workforce Intelligence
-              </h1>
-              <p className="mt-2 text-lg text-gray-600">
-                AI-powered analytics for workforce optimization and strategic planning
+              <h1 className="text-2xl font-semibold text-foreground">Workforce Intelligence</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Analytics for workforce optimization and strategic planning
               </p>
-              <div className="mt-4 flex items-center space-x-6">
-                <div className="flex items-center text-sm text-gray-500">
-                  <UsersIcon className="w-4 h-4 mr-2" />
-                  {workforceMetrics?.headcount?.total || 0} Employees
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <CurrencyDollarIcon className="w-4 h-4 mr-2" />
-                  {formatCurrency(workforceMetrics?.compensation?.totalPayroll)} Total Payroll
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <ArrowTrendingUpIcon className="w-4 h-4 mr-2" />
-                  {formatPercentage(workforceMetrics?.productivity?.utilizationRate)} Utilization
-                </div>
+              <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <UsersIcon className="h-4 w-4" />
+                  {workforceMetrics?.headcount?.total ?? 0} employees
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CurrencyDollarIcon className="h-4 w-4" />
+                  {formatCurrency(workforceMetrics?.compensation?.totalPayroll)} total payroll
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <ArrowTrendingUpIcon className="h-4 w-4" />
+                  {formatPercentage(workforceMetrics?.productivity?.utilizationRate ?? 0)} utilization
+                </span>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-2">
               <select
                 value={selectedPeriod}
                 onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 shadow-sm"
+                className="h-9 rounded-md border border-border bg-white px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
               >
-                <option value="month">This Month</option>
-                <option value="quarter">This Quarter</option>
-                <option value="year">This Year</option>
-                <option value="ytd">Year to Date</option>
+                <option value="month">This month</option>
+                <option value="quarter">This quarter</option>
+                <option value="year">This year</option>
+                <option value="ytd">Year to date</option>
               </select>
               <select
                 value={selectedDepartment}
                 onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 shadow-sm"
+                className="h-9 rounded-md border border-border bg-white px-3 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
               >
-                <option value="all">All Departments</option>
+                <option value="all">All departments</option>
                 <option value="engineering">Engineering</option>
                 <option value="sales">Sales</option>
                 <option value="marketing">Marketing</option>
                 <option value="operations">Operations</option>
                 <option value="support">Support</option>
               </select>
-              <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+              <Button variant="outline" size="sm">
                 <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
                 Export
-              </button>
+              </Button>
             </div>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-2">
-          <div className="flex space-x-2">
-            <ViewTab id="overview" label="Overview" icon={ChartBarIcon} active={activeView === 'overview'} onClick={setActiveView} />
-            <ViewTab id="productivity" label="Productivity" icon={ArrowTrendingUpIcon} active={activeView === 'productivity'} onClick={setActiveView} />
-            <ViewTab id="compensation" label="Compensation" icon={CurrencyDollarIcon} active={activeView === 'compensation'} onClick={setActiveView} />
-            <ViewTab id="retention" label="Retention" icon={ShieldCheckIcon} active={activeView === 'retention'} onClick={setActiveView} />
-            <ViewTab id="predictions" label="AI Predictions" icon={CpuChipIcon} active={activeView === 'predictions'} onClick={setActiveView} />
-            <ViewTab id="optimization" label="Optimization" icon={RocketLaunchIcon} active={activeView === 'optimization'} onClick={setActiveView} />
-          </div>
+        <div className="bg-white rounded-xl border border-border shadow-sm p-1.5 flex flex-wrap gap-1">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveView(id)}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+                activeView === id
+                  ? 'bg-primary-500 text-white shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Overview Tab */}
+        {/* Overview */}
         {activeView === 'overview' && (
-          <div className="space-y-8">
-            {/* Key Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard
-                title="Total Employees"
-                value={workforceMetrics?.headcount?.total || 0}
-                change="+5"
+                title="Total employees"
+                value={workforceMetrics?.headcount?.total ?? 0}
+                change="+5 this quarter"
                 changeType="increase"
                 icon={UsersIcon}
-                color="blue"
+                iconVariant="blue"
                 subtitle="Active workforce"
                 trend={8.2}
               />
               <MetricCard
-                title="Avg Salary"
+                title="Average salary"
                 value={formatCurrency(workforceMetrics?.compensation?.averageSalary)}
-                change="+12%"
+                change="+12% YoY"
                 changeType="increase"
                 icon={CurrencyDollarIcon}
-                color="green"
+                iconVariant="green"
                 subtitle="Market competitive"
                 trend={12.5}
               />
               <MetricCard
-                title="Utilization Rate"
-                value={formatPercentage(workforceMetrics?.productivity?.utilizationRate)}
-                change="+3.2%"
+                title="Utilization rate"
+                value={formatPercentage(workforceMetrics?.productivity?.utilizationRate ?? 0)}
+                change="+3.2 pts"
                 changeType="increase"
                 icon={ChartBarIcon}
-                color="purple"
+                iconVariant="purple"
                 subtitle="Billable efficiency"
                 trend={3.2}
               />
               <MetricCard
-                title="Retention Rate"
-                value={formatPercentage(workforceMetrics?.retention?.retentionRate / 100)}
-                change="-1.5%"
+                title="Retention rate"
+                value={`${workforceMetrics?.retention?.retentionRate?.toFixed(1) ?? 0}%`}
+                change="-1.5 pts"
                 changeType="decrease"
                 icon={ShieldCheckIcon}
-                color="orange"
+                iconVariant="neutral"
                 subtitle="Employee satisfaction"
                 trend={-1.5}
               />
             </div>
 
-            {/* Department Breakdown */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Headcount by Department */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-                  <BuildingOfficeIcon className="h-5 w-5 mr-2 text-blue-600" />
-                  Headcount by Department
-                </h3>
-                <div className="h-64">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl border border-border shadow-sm p-6">
+                <h2 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <BuildingOfficeIcon className="h-5 w-5 text-muted-foreground" />
+                  Headcount by department
+                </h2>
+                <div className="h-60">
                   <Bar
                     data={{
                       labels: ['Engineering', 'Sales', 'Marketing', 'Operations', 'Support'],
-                      datasets: [
-                        {
-                          label: 'Current',
-                          data: [45, 25, 20, 15, 20],
-                          backgroundColor: [
-                            'rgba(59, 130, 246, 0.8)',
-                            'rgba(16, 185, 129, 0.8)',
-                            'rgba(249, 115, 22, 0.8)',
-                            'rgba(139, 92, 246, 0.8)',
-                            'rgba(236, 72, 153, 0.8)'
-                          ],
-                          borderColor: [
-                            'rgb(59, 130, 246)',
-                            'rgb(16, 185, 129)',
-                            'rgb(249, 115, 22)',
-                            'rgb(139, 92, 246)',
-                            'rgb(236, 72, 153)'
-                          ],
-                          borderWidth: 2
-                        }
-                      ]
+                      datasets: [{
+                        label: 'Headcount',
+                        data: [45, 25, 20, 15, 20],
+                        backgroundColor: [
+                          chartColors.primary,
+                          chartColors.success,
+                          chartColors.warning,
+                          chartColors.accent,
+                          chartColors.neutral,
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 4,
+                      }],
                     }}
                     options={{
                       responsive: true,
                       maintainAspectRatio: false,
-                      plugins: {
-                        legend: { display: false }
-                      },
+                      plugins: { legend: { display: false } },
                       scales: {
-                        y: {
-                          beginAtZero: true,
-                          ticks: {
-                            stepSize: 10
-                          }
-                        }
-                      }
+                        y: { beginAtZero: true, ticks: { stepSize: 10 } },
+                      },
                     }}
                   />
                 </div>
               </div>
 
-              {/* Performance Distribution */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-                  <StarIcon className="h-5 w-5 mr-2 text-yellow-500" />
-                  Performance Distribution
-                </h3>
-                <div className="h-64">
+              <div className="bg-white rounded-xl border border-border shadow-sm p-6">
+                <h2 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <StarIcon className="h-5 w-5 text-muted-foreground" />
+                  Performance distribution
+                </h2>
+                <div className="h-60">
                   <Doughnut
                     data={{
-                      labels: ['Top Performers', 'High Performers', 'Average', 'Below Average', 'Needs Improvement'],
-                      datasets: [
-                        {
-                          data: [15, 35, 35, 12, 3],
-                          backgroundColor: [
-                            'rgba(34, 197, 94, 0.8)',
-                            'rgba(59, 130, 246, 0.8)',
-                            'rgba(249, 115, 22, 0.8)',
-                            'rgba(239, 68, 68, 0.8)',
-                            'rgba(107, 114, 128, 0.8)'
-                          ],
-                          borderWidth: 2,
-                          borderColor: '#ffffff'
-                        }
-                      ]
+                      labels: ['Top', 'High', 'Average', 'Below average', 'Needs improvement'],
+                      datasets: [{
+                        data: [15, 35, 35, 12, 3],
+                        backgroundColor: [
+                          chartColors.success,
+                          chartColors.primary,
+                          chartColors.accent,
+                          chartColors.warning,
+                          chartColors.neutral,
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                      }],
                     }}
                     options={{
                       responsive: true,
@@ -441,149 +383,129 @@ const WorkforceAnalyticsDashboard = () => {
                       plugins: {
                         legend: {
                           position: 'bottom',
-                          labels: {
-                            padding: 20,
-                            usePointStyle: true
-                          }
-                        }
-                      }
+                          labels: { padding: 16, usePointStyle: true, font: { size: 12 } },
+                        },
+                      },
                     }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Recent Activity Feed */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-                <ClockIcon className="h-5 w-5 mr-2 text-green-600" />
-                Recent Workforce Activities
-              </h3>
-              <div className="space-y-4">
-                {[
-                  { type: 'hire', name: 'Sarah Johnson', department: 'Engineering', time: '2 hours ago', icon: UsersIcon, color: 'green' },
-                  { type: 'promotion', name: 'Michael Chen', department: 'Sales', time: '1 day ago', icon: ArrowTrendingUpIcon, color: 'blue' },
-                  { type: 'resignation', name: 'Alex Rodriguez', department: 'Marketing', time: '3 days ago', icon: ArrowTrendingDownIcon, color: 'red' },
-                  { type: 'performance', name: 'Emma Davis', department: 'Operations', time: '1 week ago', icon: StarIcon, color: 'yellow' }
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-center p-4 bg-gray-50 rounded-xl">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-${activity.color}-100`}>
-                      <activity.icon className={`h-5 w-5 text-${activity.color}-600`} />
-                    </div>
-                    <div className="ml-4 flex-1">
-                      <p className="text-sm font-medium text-gray-900">
-                        {activity.type === 'hire' && `${activity.name} joined ${activity.department}`}
-                        {activity.type === 'promotion' && `${activity.name} was promoted in ${activity.department}`}
-                        {activity.type === 'resignation' && `${activity.name} left ${activity.department}`}
-                        {activity.type === 'performance' && `${activity.name} received performance review`}
-                      </p>
-                      <p className="text-xs text-gray-500">{activity.time}</p>
-                    </div>
-                    <button className="p-2 text-gray-400 hover:text-gray-600">
-                      <EyeIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+            <div className="bg-white rounded-xl border border-border shadow-sm p-6">
+              <h2 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
+                <ClockIcon className="h-5 w-5 text-muted-foreground" />
+                Recent workforce activity
+              </h2>
+              {recentActivities.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No recent activity</p>
+              ) : (
+                <ul className="space-y-2">
+                  {recentActivities.map((activity, index) => {
+                    const cfg = activityConfig[activity.type];
+                    if (!cfg) return null;
+                    return (
+                      <li key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                        <div className={cn('w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0', cfg.iconClass)}>
+                          <cfg.Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-foreground">{cfg.label(activity.name, activity.department)}</p>
+                          <p className="text-xs text-muted-foreground">{activity.time}</p>
+                        </div>
+                        <button
+                          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                          aria-label={`View details for ${activity.name}`}
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           </div>
         )}
 
-        {/* Productivity Tab */}
+        {/* Productivity */}
         {activeView === 'productivity' && (
-          <div className="space-y-8">
-            {/* Productivity Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard
-                title="Billable Hours"
+                title="Billable hours"
                 value="8,500"
-                change="+320"
+                change="+320 vs last month"
                 changeType="increase"
                 icon={ClockIcon}
-                color="blue"
+                iconVariant="blue"
                 subtitle="This month"
               />
               <MetricCard
-                title="Revenue/Employee"
+                title="Revenue / employee"
                 value={formatCurrency(185000)}
-                change="+8%"
+                change="+8% YoY"
                 changeType="increase"
                 icon={CurrencyDollarIcon}
-                color="green"
+                iconVariant="green"
                 subtitle="Annual rate"
               />
               <MetricCard
-                title="Efficiency Score"
+                title="Efficiency score"
                 value="85%"
-                change="+5%"
+                change="+5 pts"
                 changeType="increase"
                 icon={ArrowTrendingUpIcon}
-                color="purple"
+                iconVariant="purple"
                 subtitle="Above target"
               />
               <MetricCard
-                title="Project Delivery"
+                title="On-time delivery"
                 value="96%"
-                change="+2%"
+                change="+2 pts"
                 changeType="increase"
                 icon={CheckCircleIcon}
-                color="orange"
-                subtitle="On-time rate"
+                iconVariant="neutral"
+                subtitle="Project completion"
               />
             </div>
 
-            {/* Productivity Trends */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Productivity Trends</h3>
-              <div className="h-80">
+            <div className="bg-white rounded-xl border border-border shadow-sm p-6">
+              <h2 className="text-base font-semibold text-foreground mb-4">Productivity trends</h2>
+              <div className="h-72">
                 <Line
                   data={{
                     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
                     datasets: [
                       {
-                        label: 'Billable Hours',
+                        label: 'Billable hours',
                         data: [7800, 8100, 8300, 8200, 8400, 8500],
-                        borderColor: 'rgb(59, 130, 246)',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: 'rgb(30, 64, 175)',
+                        backgroundColor: 'rgba(30, 64, 175, 0.08)',
                         fill: true,
                         tension: 0.4,
-                        yAxisID: 'y'
+                        yAxisID: 'y',
                       },
                       {
-                        label: 'Efficiency Score',
+                        label: 'Efficiency score',
                         data: [78, 82, 85, 83, 87, 85],
-                        borderColor: 'rgb(16, 185, 129)',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderColor: 'rgb(22, 163, 74)',
+                        backgroundColor: 'rgba(22, 163, 74, 0.08)',
                         fill: true,
                         tension: 0.4,
-                        yAxisID: 'y1'
-                      }
-                    ]
+                        yAxisID: 'y1',
+                      },
+                    ],
                   }}
                   options={{
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                      mode: 'index',
-                      intersect: false
-                    },
-                    plugins: {
-                      legend: { position: 'top' }
-                    },
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { position: 'top' } },
                     scales: {
-                      x: { display: true },
-                      y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left'
-                      },
-                      y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        grid: { drawOnChartArea: false }
-                      }
-                    }
+                      y:  { type: 'linear', display: true, position: 'left' },
+                      y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } },
+                    },
                   }}
                 />
               </div>
@@ -591,8 +513,15 @@ const WorkforceAnalyticsDashboard = () => {
           </div>
         )}
 
-        {/* Other tabs would be implemented similarly... */}
-        {/* This is a comprehensive foundation for the workforce analytics dashboard */}
+        {/* Placeholder for remaining tabs */}
+        {['compensation', 'retention', 'predictions', 'optimization'].includes(activeView) && (
+          <div className="bg-white rounded-xl border border-border shadow-sm p-12 text-center">
+            <ChartBarIcon className="h-10 w-10 text-muted-foreground mx-auto" />
+            <h2 className="text-base font-semibold text-foreground mt-4 capitalize">{activeView}</h2>
+            <p className="text-sm text-muted-foreground mt-1">This section is coming soon.</p>
+          </div>
+        )}
+
       </div>
     </div>
   );
