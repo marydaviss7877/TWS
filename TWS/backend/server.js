@@ -50,7 +50,7 @@ checkTLSConfiguration();
 // CORS configuration — allow root domain + all tenant subdomains
 // Read env vars with .trim() so Railway trailing newlines/spaces don't break comparisons.
 // Also strip protocol and trailing slashes so BASE_DOMAIN can be used as a bare hostname.
-const baseDomain = (process.env.BASE_DOMAIN || 'tws.enterprises')
+const baseDomain = (process.env.BASE_DOMAIN || 'tws.up.railway.app')
   .trim()
   .replace(/^https?:\/\//, '')
   .replace(/\/+$/, '')

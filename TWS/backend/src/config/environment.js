@@ -60,7 +60,7 @@ class BackendConfig {
       ENCRYPTION_MASTER_KEY: process.env.ENCRYPTION_MASTER_KEY || this.generateSecureSecret(),
       
       // CORS / Domain Configuration — trim to handle Railway env var trailing newlines
-      BASE_DOMAIN: (process.env.BASE_DOMAIN || 'tws.enterprises').trim(),
+      BASE_DOMAIN: (process.env.BASE_DOMAIN || 'tws.up.railway.app').trim(),
       CORS_ORIGIN: (process.env.CORS_ORIGIN || 'http://localhost:3000').trim(),
       SOCKET_CORS_ORIGIN: (process.env.SOCKET_CORS_ORIGIN || 'http://localhost:3000').trim(),
       
