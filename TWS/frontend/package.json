@@ -102,6 +102,9 @@
     ]
   },
   "overrides": {
-    "prosemirror-view": "1.33.11"
+    "prosemirror-view": "1.33.11",
+    "ajv-keywords": {
+      "ajv": "^8.0.0"
+    }
   }
 }
