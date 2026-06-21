@@ -103,8 +103,8 @@
   },
   "overrides": {
     "prosemirror-view": "1.33.11",
-    "ajv-keywords": {
-      "ajv": "^8.0.0"
+    "terser-webpack-plugin": {
+      "schema-utils": "^3.0.0"
     }
   }
 }
