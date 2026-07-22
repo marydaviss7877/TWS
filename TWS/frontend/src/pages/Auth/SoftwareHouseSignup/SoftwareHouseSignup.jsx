@@ -19,7 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { getTenantSubdomainUrl, navigateTo } from '../../../shared/utils/subdomain';
+import { getTenantSubdomainUrl, navigateTo, BASE_DOMAIN } from '../../../shared/utils/subdomain';
 
 const ModuleMockup = ({ moduleKey }) => {
   const renderMockup = () => {
@@ -411,7 +411,7 @@ const SoftwareHouseSignup = () => {
               <label className="sh-signup-label">Workspace URL *</label>
               <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
                 <input ref={orgSlugInputRef} name="organizationSlug" value={formData.organizationSlug} onChange={handleSlugChange} required placeholder="acme" className="sh-signup-input" style={{ flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0 }} aria-invalid={Boolean(fieldErrors.organizationSlug)} aria-describedby={[fieldErrors.organizationSlug ? 'sh-signup-org-slug-error' : '', error ? 'sh-signup-form-error' : ''].filter(Boolean).join(' ') || undefined} />
-                <div className="sh-signup-input-suffix">.tws.enterprises</div>
+                <div className="sh-signup-input-suffix">.{BASE_DOMAIN}</div>
               </div>
               {fieldErrors.organizationSlug && <div id="sh-signup-org-slug-error" className="sh-signup-field-error">{fieldErrors.organizationSlug}</div>}
               <div style={{ fontSize: '0.75rem', minHeight: 20, marginBottom: '1rem' }}>

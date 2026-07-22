@@ -8,7 +8,8 @@ const emailService = require('../integrations/email.service');
  */
 async function sendWelcomeEmail(tenant, adminUser) {
   try {
-    const subdomain = `${tenant.slug}.${process.env.BASE_DOMAIN || 'tws.example.com'}`;
+    const baseDomain = (process.env.BASE_DOMAIN || 'thewolfstack.up.railway.app').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+    const subdomain = `${tenant.slug}.${baseDomain}`;
     
     // Use the main email service
     await emailService.sendTenantWelcomeEmail(adminUser, tenant, subdomain);
