@@ -37,10 +37,10 @@ const SessionAnalytics = () => {
       
       // Fetch real analytics data from API
       const [sessionsResponse, departmentResponse] = await Promise.all([
-        get(`/api/supra-admin/session-management/analytics/sessions?timeRange=${selectedPeriod}`, {
+        get(`/api/supra-admin/sessions/analytics/sessions?timeRange=${selectedPeriod}`, {
           signal: abortControllerRef.current.signal
         }),
-        get(`/api/supra-admin/session-management/analytics/department-access?timeRange=${selectedPeriod}`, {
+        get(`/api/supra-admin/sessions/analytics/department-access?timeRange=${selectedPeriod}`, {
           signal: abortControllerRef.current.signal
         })
       ]);

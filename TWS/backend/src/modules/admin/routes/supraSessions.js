@@ -1,11 +1,66 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const { authenticateToken } = require('../../../middleware/auth/auth');
 const { requirePlatformPermission, PLATFORM_PERMISSIONS } = require('../../../middleware/auth/platformRBAC');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
+const Session = require('../../../models/core/Session');
+const Department = require('../../../models/org/Department');
+const DepartmentAccess = require('../../../models/org/DepartmentAccess');
 
 // Apply authentication middleware (authorization is handled per-route with granular permissions)
 router.use(authenticateToken);
+
+const RANGE_MS = {
+  '24h': 24 * 60 * 60 * 1000,
+  '7d': 7 * 24 * 60 * 60 * 1000,
+  '30d': 30 * 24 * 60 * 60 * 1000,
+  '90d': 90 * 24 * 60 * 60 * 1000
+};
+
+// Resolve a timeRange query param into the current window plus the
+// immediately preceding window of equal length (used for growth %).
+function resolveRange(timeRange) {
+  const span = RANGE_MS[timeRange] || RANGE_MS['7d'];
+  const now = new Date();
+  const since = new Date(now.getTime() - span);
+  const prevSince = new Date(since.getTime() - span);
+  return { now, since, prevSince };
+}
+
+function growthPct(current, previous) {
+  if (!previous) return current > 0 ? 100 : 0;
+  return Math.round(((current - previous) / previous) * 1000) / 10;
+}
+
+// Max number of sessions concurrently open, via a sweep over start/end events.
+function peakConcurrency(sessions, now) {
+  const events = [];
+  for (const s of sessions) {
+    const start = new Date(s.loginTime).getTime();
+    const end = new Date(s.logoutTime || (s.status === 'active' ? now : s.expiresAt) || now).getTime();
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) continue;
+    events.push([start, 1], [end, -1]);
+  }
+  events.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  let concurrent = 0;
+  let peak = 0;
+  for (const [, delta] of events) {
+    concurrent += delta;
+    if (concurrent > peak) peak = concurrent;
+  }
+  return peak;
+}
+
+function averageDurationMinutes(sessions, now) {
+  if (!sessions.length) return 0;
+  const totalMs = sessions.reduce((sum, s) => {
+    const end = new Date(s.logoutTime || (s.status === 'active' ? now : s.expiresAt) || now).getTime();
+    const start = new Date(s.loginTime).getTime();
+    return sum + Math.max(0, end - start);
+  }, 0);
+  return Math.round(totalMs / sessions.length / 60000);
+}
 
 // Get all active sessions
 router.get('/sessions', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
@@ -241,40 +296,93 @@ router.get('/departments', async (req, res) => {
 router.get('/analytics/sessions', async (req, res) => {
   try {
     const { timeRange = '7d', tenantId } = req.query;
-    
-    // Mock session analytics data
+    const { now, since, prevSince } = resolveRange(timeRange);
+
+    const tenantFilter = {};
+    if (tenantId && mongoose.Types.ObjectId.isValid(tenantId)) tenantFilter.tenantId = tenantId;
+
+    const [currentSessions, previousSessions, activeSessions] = await Promise.all([
+      Session.find({ ...tenantFilter, loginTime: { $gte: since } })
+        .select('tenantId userId loginTime logoutTime expiresAt status deviceInfo')
+        .populate('tenantId', 'name')
+        .lean(),
+      Session.find({ ...tenantFilter, loginTime: { $gte: prevSince, $lt: since } })
+        .select('tenantId loginTime logoutTime expiresAt status')
+        .lean(),
+      Session.countDocuments({ ...tenantFilter, status: 'active', expiresAt: { $gt: now } })
+    ]);
+
+    const totalSessions = currentSessions.length;
+    const averageSessionDuration = averageDurationMinutes(currentSessions, now);
+    const prevAverageDuration = averageDurationMinutes(previousSessions, now);
+
+    // Daily trends
+    const dayBuckets = new Map();
+    for (const s of currentSessions) {
+      const day = new Date(s.loginTime).toISOString().slice(0, 10);
+      if (!dayBuckets.has(day)) dayBuckets.set(day, { sessions: 0, users: new Set() });
+      const bucket = dayBuckets.get(day);
+      bucket.sessions += 1;
+      bucket.users.add(String(s.userId));
+    }
+    const sessionTrends = [...dayBuckets.entries()]
+      .sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([date, b]) => ({ date, sessions: b.sessions, activeUsers: b.users.size }));
+
+    // Device / browser breakdown (percentage of sessions in range)
+    const deviceCounts = {};
+    const browserCounts = {};
+    for (const s of currentSessions) {
+      const device = s.deviceInfo?.device || 'Unknown';
+      const browser = s.deviceInfo?.browser || 'Unknown';
+      deviceCounts[device] = (deviceCounts[device] || 0) + 1;
+      browserCounts[browser] = (browserCounts[browser] || 0) + 1;
+    }
+    const toPercent = (counts) => Object.fromEntries(
+      Object.entries(counts).map(([k, v]) => [k, totalSessions ? Math.round((v / totalSessions) * 1000) / 10 : 0])
+    );
+
+    // Per-tenant leaderboard
+    const tenantBuckets = new Map();
+    for (const s of currentSessions) {
+      const tid = s.tenantId?._id ? String(s.tenantId._id) : String(s.tenantId);
+      if (!tenantBuckets.has(tid)) {
+        tenantBuckets.set(tid, { tenantName: s.tenantId?.name || 'Unknown', sessions: [] });
+      }
+      tenantBuckets.get(tid).sessions.push(s);
+    }
+    const prevTenantCounts = new Map();
+    for (const s of previousSessions) {
+      const tid = String(s.tenantId);
+      prevTenantCounts.set(tid, (prevTenantCounts.get(tid) || 0) + 1);
+    }
+    const topTenants = [...tenantBuckets.entries()]
+      .map(([tid, { tenantName, sessions }]) => ({
+        tenantId: tid,
+        tenantName,
+        totalSessions: sessions.length,
+        activeSessions: sessions.filter((s) => s.status === 'active' && new Date(s.expiresAt) > now).length,
+        averageDuration: averageDurationMinutes(sessions, now),
+        peakUsers: peakConcurrency(sessions, now),
+        growth: growthPct(sessions.length, prevTenantCounts.get(tid) || 0)
+      }))
+      .sort((a, b) => b.totalSessions - a.totalSessions)
+      .slice(0, 5);
+
     const analytics = {
       timeRange,
-      totalSessions: 1250,
-      activeSessions: 45,
-      averageSessionDuration: '2h 15m',
-      peakConcurrentUsers: 89,
-      sessionTrends: [
-        { date: '2024-01-01', sessions: 120, activeUsers: 45 },
-        { date: '2024-01-02', sessions: 135, activeUsers: 52 },
-        { date: '2024-01-03', sessions: 98, activeUsers: 38 },
-        { date: '2024-01-04', sessions: 156, activeUsers: 67 },
-        { date: '2024-01-05', sessions: 142, activeUsers: 58 },
-        { date: '2024-01-06', sessions: 89, activeUsers: 34 },
-        { date: '2024-01-07', sessions: 134, activeUsers: 51 }
-      ],
-      deviceBreakdown: {
-        desktop: 65,
-        mobile: 25,
-        tablet: 10
-      },
-      browserBreakdown: {
-        chrome: 45,
-        safari: 25,
-        firefox: 15,
-        edge: 10,
-        other: 5
-      },
-      topTenants: [
-        { tenantId: 'tenant_001', name: 'TechCorp Solutions', sessions: 450 },
-        { tenantId: 'tenant_002', name: 'StartupXYZ', sessions: 320 },
-        { tenantId: 'tenant_003', name: 'Global Enterprises', sessions: 280 }
-      ]
+      totalSessions,
+      activeSessions,
+      averageSessionDuration,
+      peakConcurrentUsers: peakConcurrency(currentSessions, now),
+      sessionGrowth: growthPct(totalSessions, previousSessions.length),
+      durationGrowth: growthPct(averageSessionDuration, prevAverageDuration),
+      sessionTrends,
+      hourlyDistribution: [],
+      deviceBreakdown: toPercent(deviceCounts),
+      browserBreakdown: toPercent(browserCounts),
+      topTenants,
+      insights: []
     };
 
     res.json({
@@ -283,9 +391,9 @@ router.get('/analytics/sessions', async (req, res) => {
     });
   } catch (error) {
     console.error('Get session analytics error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Failed to fetch session analytics' 
+      message: 'Failed to fetch session analytics'
     });
   }
 });
@@ -294,39 +402,90 @@ router.get('/analytics/sessions', async (req, res) => {
 router.get('/analytics/department-access', async (req, res) => {
   try {
     const { timeRange = '7d', tenantId } = req.query;
-    
-    // Mock department access analytics data
+    const { now, since, prevSince } = resolveRange(timeRange);
+
+    const tenantFilter = {};
+    if (tenantId && mongoose.Types.ObjectId.isValid(tenantId)) tenantFilter.tenantId = tenantId;
+
+    const [totalDepartments, activeDepartments, currentSessions, previousSessions, accessGrants] = await Promise.all([
+      Department.countDocuments(tenantFilter),
+      Department.countDocuments({ ...tenantFilter, status: 'active' }),
+      Session.find({ ...tenantFilter, loginTime: { $gte: since } })
+        .select('userId loginTime logoutTime expiresAt status departmentAccess')
+        .lean(),
+      Session.find({ ...tenantFilter, loginTime: { $gte: prevSince, $lt: since } })
+        .select('loginTime logoutTime expiresAt status departmentAccess')
+        .lean(),
+      DepartmentAccess.find({ ...tenantFilter, status: 'active' }).select('userId accessLevel').lean()
+    ]);
+
+    const totalUsers = new Set(accessGrants.map((a) => String(a.userId))).size;
+
+    const permissionBreakdown = {};
+    for (const grant of accessGrants) {
+      const level = grant.accessLevel || 'viewer';
+      permissionBreakdown[level] = (permissionBreakdown[level] || 0) + 1;
+    }
+
+    // A session can carry access to multiple departments; explode into one row per department
+    const explode = (sessions) => {
+      const rows = [];
+      for (const s of sessions) {
+        for (const d of (s.departmentAccess || [])) {
+          if (d.isActive === false) continue;
+          rows.push({ department: d.department, session: s });
+        }
+      }
+      return rows;
+    };
+    const currentRows = explode(currentSessions);
+    const previousRows = explode(previousSessions);
+
+    // Daily trends: distinct departments and distinct users touched per day
+    const dayBuckets = new Map();
+    for (const { department, session } of currentRows) {
+      const day = new Date(session.loginTime).toISOString().slice(0, 10);
+      if (!dayBuckets.has(day)) dayBuckets.set(day, { departments: new Set(), users: new Set() });
+      const bucket = dayBuckets.get(day);
+      bucket.departments.add(department);
+      bucket.users.add(String(session.userId));
+    }
+    const accessTrends = [...dayBuckets.entries()]
+      .sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([date, b]) => ({ date, departments: b.departments.size, users: b.users.size }));
+
+    // Per-department leaderboard (mirrors the byTenant shape the UI table expects)
+    const deptBuckets = new Map();
+    for (const { department, session } of currentRows) {
+      if (!deptBuckets.has(department)) deptBuckets.set(department, []);
+      deptBuckets.get(department).push(session);
+    }
+    const prevDeptCounts = new Map();
+    for (const { department } of previousRows) {
+      prevDeptCounts.set(department, (prevDeptCounts.get(department) || 0) + 1);
+    }
+    const topDepartments = [...deptBuckets.entries()]
+      .map(([department, sessions]) => ({
+        departmentId: department,
+        departmentName: department,
+        totalSessions: sessions.length,
+        activeSessions: sessions.filter((s) => s.status === 'active' && new Date(s.expiresAt) > now).length,
+        averageDuration: averageDurationMinutes(sessions, now),
+        peakUsers: peakConcurrency(sessions, now),
+        growth: growthPct(sessions.length, prevDeptCounts.get(department) || 0)
+      }))
+      .sort((a, b) => b.totalSessions - a.totalSessions)
+      .slice(0, 5);
+
     const analytics = {
       timeRange,
-      totalDepartments: 15,
-      activeDepartments: 12,
-      totalUsers: 450,
-      activeUsers: 380,
-      accessTrends: [
-        { date: '2024-01-01', departments: 12, users: 380 },
-        { date: '2024-01-02', departments: 12, users: 385 },
-        { date: '2024-01-03', departments: 11, users: 375 },
-        { date: '2024-01-04', departments: 13, users: 395 },
-        { date: '2024-01-05', departments: 12, users: 390 },
-        { date: '2024-01-06', departments: 10, users: 365 },
-        { date: '2024-01-07', departments: 12, users: 380 }
-      ],
-      permissionBreakdown: {
-        full: 5,
-        limited: 7,
-        readonly: 3
-      },
-      moduleAccess: {
-        hr: 12,
-        finance: 10,
-        projects: 8,
-        operations: 6
-      },
-      topDepartments: [
-        { name: 'Engineering', users: 25, accessLevel: 'full' },
-        { name: 'Human Resources', users: 8, accessLevel: 'limited' },
-        { name: 'Marketing', users: 12, accessLevel: 'readonly' }
-      ]
+      totalDepartments,
+      activeDepartments,
+      totalUsers,
+      activeUsers: totalUsers,
+      accessTrends,
+      permissionBreakdown,
+      topDepartments
     };
 
     res.json({
@@ -335,9 +494,9 @@ router.get('/analytics/department-access', async (req, res) => {
     });
   } catch (error) {
     console.error('Get department access analytics error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Failed to fetch department access analytics' 
+      message: 'Failed to fetch department access analytics'
     });
   }
 });

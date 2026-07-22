@@ -219,23 +219,26 @@ class TenantLifecycleService {
       // Resolve all organizations for this tenant (Organization.tenantId = Tenant._id)
       const orgs = await Organization.find({ tenantId: tenantObjId });
       const orgIds = orgs.map((o) => o._id);
-      const tenantOrOrgFilter = {
-        $or: [
-          { tenantId: { $in: tenantIdVariants } },
-          { tenantId: tenantObjId },
-          ...(orgIds.length ? [{ orgId: { $in: orgIds } }] : [])
-        ]
-      };
-      const tenantOnlyFilter = {
-        $or: [
-          { tenantId: { $in: tenantIdVariants } },
-          { tenantId: tenantObjId }
-        ]
+
+      // tenantId is typed ObjectId on some models and String (slug) on others.
+      // Mixing string slugs into an $in against an ObjectId path throws a CastError
+      // for the WHOLE query (not just that clause), silently skipping the delete.
+      // Build the filter per-model based on its actual schema type instead.
+      const buildFilter = (model, includeOrg = false) => {
+        const path = model.schema.path('tenantId');
+        const isObjectIdField = path && path.instance === 'ObjectId';
+        const tenantClause = isObjectIdField
+          ? { tenantId: tenantObjId }
+          : { tenantId: { $in: tenantIdVariants } };
+        const orClauses = [tenantClause];
+        if (includeOrg && orgIds.length) orClauses.push({ orgId: { $in: orgIds } });
+        return orClauses.length > 1 ? { $or: orClauses } : tenantClause;
       };
 
-      const run = async (model, filter, label) => {
+      const run = async (model, label, includeOrg = false) => {
         if (!model) return;
         try {
+          const filter = buildFilter(model, includeOrg);
           const r = await model.deleteMany(filter);
           if (r.deletedCount > 0) console.log(`   - ${label}: ${r.deletedCount}`);
         } catch (e) {
@@ -244,35 +247,35 @@ class TenantLifecycleService {
       };
 
       // 1) Sessions, billing, analytics, audit
-      await run(Session, tenantOnlyFilter, 'Session');
-      await run(Billing, tenantOnlyFilter, 'Billing');
-      await run(Analytics, tenantOnlyFilter, 'Analytics');
-      await AuditLog.deleteMany(tenantOnlyFilter);
+      await run(Session, 'Session');
+      await run(Billing, 'Billing');
+      await run(Analytics, 'Analytics');
+      await run(AuditLog, 'AuditLog');
 
       // 2) Tenant-scoped settings and associations
-      await run(TenantSettings, tenantOnlyFilter, 'TenantSettings');
-      await run(TenantUser, tenantOnlyFilter, 'TenantUser');
-      await run(TenantRole, tenantOnlyFilter, 'TenantRole');
-      await run(DefaultContact, tenantOnlyFilter, 'DefaultContact');
-      await run(OnboardingChecklist, tenantOnlyFilter, 'OnboardingChecklist');
+      await run(TenantSettings, 'TenantSettings');
+      await run(TenantUser, 'TenantUser');
+      await run(TenantRole, 'TenantRole');
+      await run(DefaultContact, 'DefaultContact');
+      await run(OnboardingChecklist, 'OnboardingChecklist');
 
       // 3) Department access and departments
-      await run(DepartmentAccess, tenantOrOrgFilter, 'DepartmentAccess');
-      await run(Department, tenantOnlyFilter, 'Department');
+      await run(DepartmentAccess, 'DepartmentAccess', true);
+      await run(Department, 'Department');
 
       // 4) Roles and permissions
-      await run(Role, tenantOnlyFilter, 'Role');
-      await run(Permission, tenantOnlyFilter, 'Permission');
+      await run(Role, 'Role');
+      await run(Permission, 'Permission');
 
       // 5) Projects, deliverables, change requests, approvals
-      await run(Project, tenantOnlyFilter, 'Project');
-      await run(Deliverable, tenantOnlyFilter, 'Deliverable');
-      await run(ChangeRequest, tenantOnlyFilter, 'ChangeRequest');
-      await run(ChangeRequestAudit, tenantOnlyFilter, 'ChangeRequestAudit');
-      await run(Approval, tenantOnlyFilter, 'Approval');
+      await run(Project, 'Project');
+      await run(Deliverable, 'Deliverable');
+      await run(ChangeRequest, 'ChangeRequest');
+      await run(ChangeRequestAudit, 'ChangeRequestAudit');
+      await run(Approval, 'Approval');
 
       // 6) Users (by orgId or tenantId)
-      await User.deleteMany(tenantOrOrgFilter);
+      await run(User, 'User', true);
 
       // 7) Organizations for this tenant
       await Organization.deleteMany({ tenantId: tenantObjId });

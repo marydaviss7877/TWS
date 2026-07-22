@@ -27,20 +27,8 @@ import {
   ApiOutlined,
   SafetyCertificateOutlined,
   ThunderboltOutlined,
-  MonitorOutlined,
   InfoCircleOutlined
 } from '@ant-design/icons';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
-  ResponsiveContainer,
-  AreaChart,
-  Area
-} from 'recharts';
 import moment from 'moment';
 import { get } from '../../../../../shared/utils/apiClient';
 import { createLogger } from '../../../../../shared/utils/logger';
@@ -55,7 +43,6 @@ const SystemHealth = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [healthData, setHealthData] = useState(null);
-  const [metricsData, setMetricsData] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
   const intervalRef = useRef(null);
   const abortControllerRef = useRef(null);
@@ -87,20 +74,6 @@ const SystemHealth = () => {
         setHealthData(healthResponse.data);
       } else {
         throw new Error(healthResponse.message || 'Failed to fetch health data');
-      }
-
-      // Try to fetch metrics (optional - endpoint may not exist)
-      try {
-        const metricsResponse = await get('/api/supra-admin/system-health/metrics', {
-          signal: abortControllerRef.current.signal
-        });
-        if (metricsResponse.success && metricsResponse.data) {
-          setMetricsData(metricsResponse.data);
-        }
-      } catch (metricsError) {
-        // Metrics endpoint doesn't exist - that's okay, just log it
-        logger.warn('Metrics endpoint not available, skipping metrics data');
-        setMetricsData(null);
       }
 
       setLastUpdate(new Date());
@@ -352,50 +325,6 @@ const SystemHealth = () => {
             <Text type="secondary" style={{ fontSize: '12px' }}>
               {healthData.system?.network ? `In: ${formatBytes(healthData.system.network.bytesIn)} | Out: ${formatBytes(healthData.system.network.bytesOut)}` : 'N/A'}
             </Text>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Performance Metrics */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} lg={12}>
-          <Card title="System Performance (24h)" extra={<MonitorOutlined />}>
-            {metricsData?.timeline && metricsData.timeline.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={metricsData.timeline}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis />
-                  <RechartsTooltip />
-                  <Line type="monotone" dataKey="cpu" stroke="#8884d8" name="CPU %" />
-                  <Line type="monotone" dataKey="memory" stroke="#82ca9d" name="Memory %" />
-                  <Line type="monotone" dataKey="disk" stroke="#ffc658" name="Disk %" />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '50px' }}>
-                <Text type="secondary">No metrics data available</Text>
-              </div>
-            )}
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card title="Response Time (24h)" extra={<ThunderboltOutlined />}>
-            {metricsData?.timeline && metricsData.timeline.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={metricsData.timeline}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis />
-                  <RechartsTooltip />
-                  <Area type="monotone" dataKey="responseTime" stroke="#ff7300" fill="#ff7300" fillOpacity={0.6} name="Response Time (ms)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '50px' }}>
-                <Text type="secondary">No metrics data available</Text>
-              </div>
-            )}
           </Card>
         </Col>
       </Row>

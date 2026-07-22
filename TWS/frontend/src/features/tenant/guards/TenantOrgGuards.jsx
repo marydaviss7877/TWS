@@ -36,7 +36,10 @@ export const ClientAccessGate = ({ children }) => {
   const isAllowed = normalizedPath === '/' || allowedPrefixes.some((p) => normalizedPath.startsWith(p));
 
   if (!isAllowed) {
-    return <Navigate to={`/${tenantSlug}/org/client-portal`} replace />;
+    // No leading "../" — ClientAccessGate renders inside the org Route's own
+    // element (above the Outlet), so its route context IS the org base already.
+    // A relative "../" here would try to go a level above the org route itself.
+    return <Navigate to="client-portal" replace />;
   }
   return children;
 };
@@ -73,14 +76,13 @@ export const EmployeeOnlyRoute = ({ children }) => {
 
 export const HROnlyRoute = ({ children }) => {
   const { hasModulePermission } = useTenantPermissions();
-  const tenantSlug = useTenantSlug();
   const canReadHr =
     hasModulePermission?.('employees', 'read') ||
     hasModulePermission?.('employees', 'read_own') ||
     hasModulePermission?.('payroll', 'read') ||
     hasModulePermission?.('payroll', 'read_own');
   if (!canReadHr) {
-    return <Navigate to={`/${tenantSlug}/org/home`} replace />;
+    return <Navigate to="../home" replace />;
   }
   return children;
 };
@@ -97,7 +99,6 @@ export const OrganizationProfileRoute = () => {
 export const OrganizationProfileAccessRoute = ({ children }) => {
   const { user } = useTenantAuth();
   const { hasModulePermission } = useTenantPermissions();
-  const tenantSlug = useTenantSlug();
   const normalizedRole = String(user?.role || '').toLowerCase();
   if (['client', 'customer'].includes(normalizedRole)) {
     return children;
@@ -106,7 +107,7 @@ export const OrganizationProfileAccessRoute = ({ children }) => {
     hasModulePermission?.('settings', 'admin') || hasModulePermission?.('users', 'admin');
   const hasElevatedRole = ELEVATED_ADMIN_ROLES.includes(normalizedRole);
   if (!canAdminSettings && !hasElevatedRole) {
-    return <Navigate to={`/${tenantSlug}/org/home`} replace />;
+    return <Navigate to="../home" replace />;
   }
   return children;
 };
@@ -123,13 +124,12 @@ export const SettingsRoute = () => {
 export const AdminOnlySettingsRoute = ({ children }) => {
   const { user } = useTenantAuth();
   const { hasModulePermission } = useTenantPermissions();
-  const tenantSlug = useTenantSlug();
   const normalizedRole = String(user?.role || '').toLowerCase();
   const canAdminSettings =
     hasModulePermission?.('settings', 'admin') || hasModulePermission?.('users', 'admin');
   const hasElevatedRole = ELEVATED_ADMIN_ROLES.includes(normalizedRole);
   if (!canAdminSettings && !hasElevatedRole) {
-    return <Navigate to={`/${tenantSlug}/org/home`} replace />;
+    return <Navigate to="../home" replace />;
   }
   return children;
 };
@@ -137,7 +137,6 @@ export const AdminOnlySettingsRoute = ({ children }) => {
 export const AuditAccessRoute = ({ children }) => {
   const { user } = useTenantAuth();
   const { hasModulePermission } = useTenantPermissions();
-  const tenantSlug = useTenantSlug();
   const normalizedRole = String(user?.role || '').toLowerCase();
   const canAdminSettings =
     hasModulePermission?.('settings', 'admin') || hasModulePermission?.('users', 'admin');
@@ -146,7 +145,7 @@ export const AuditAccessRoute = ({ children }) => {
     'org_manager', 'org_admin', 'tenant_owner',
   ].includes(normalizedRole);
   if (!canAdminSettings && !hasAuditRole) {
-    return <Navigate to={`/${tenantSlug}/org/home`} replace />;
+    return <Navigate to="../home" replace />;
   }
   return children;
 };

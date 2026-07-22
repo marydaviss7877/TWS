@@ -1,27 +1,55 @@
 const cron = require('node-cron');
-const mongoose = require('mongoose');
 const Tenant = require('../models/tenant/Tenant');
-// const TenantAnalyticsSummary = require('../models/TenantAnalyticsSummary'); // Model not yet implemented
+const Organization = require('../models/org/Organization');
 const EmployeeMetrics = require('../models/hr-payroll/EmployeeMetrics');
+const Employee = require('../models/hr-payroll/Employee');
 const Project = require('../models/project-delivery/Project');
 const Client = require('../models/industry/Client');
-const Attendance = require('../models/hr-payroll/Attendance');
 const usageTrackerService = require('../services/usageTrackerService');
 const projectProfitabilityService = require('../services/projectProfitabilityService');
 const hrPerformanceService = require('../services/hrPerformanceService');
 const clientHealthService = require('../services/clientHealthService');
-const aiInsightsService = require('../services/analytics/ai-insights.service');
-const tenantProvisioningService = require('../services/tenantProvisioningService');
+const billingEngineService = require('../services/finance/billing-engine.service');
 const emailService = require('../services/integrations/email.service');
 const logger = require('../utils/logger');
 const { Invoice } = require('../models/finance/Finance');
 const NotificationService = require('../services/notifications/notification.service');
 const documentHubService = require('../services/documentHub/documentHub.service');
 
+/**
+ * Resolve the Organization ObjectIds that belong to a tenant.
+ * Tenant.tenantId is a string slug, NOT the FK other collections use —
+ * every tenant-scoped collection's orgId points at Organization._id, and
+ * Organization.tenantId points at Tenant._id. Never filter orgId by tenant.tenantId directly.
+ */
+async function resolveOrgIdsForTenant(tenant) {
+  return Organization.find({ tenantId: tenant._id }).distinct('_id');
+}
+
 class JobScheduler {
   constructor() {
     this.jobs = new Map();
     this.isRunning = false;
+    this.runningJobNames = new Set();
+  }
+
+  /**
+   * Wrap a job body so a slow-running execution can't overlap with its own next tick.
+   * In-process only: Redis is a stubbed in-memory mock in this codebase (src/config/redis.js),
+   * so this does not protect against multiple replicas. Fine today (single Railway instance);
+   * revisit with a real distributed lock before scaling out.
+   */
+  async runExclusive(jobName, fn) {
+    if (this.runningJobNames.has(jobName)) {
+      logger.warn(`Skipping ${jobName}: previous run still in progress`);
+      return;
+    }
+    this.runningJobNames.add(jobName);
+    try {
+      await fn();
+    } finally {
+      this.runningJobNames.delete(jobName);
+    }
   }
 
   /**
@@ -36,17 +64,21 @@ class JobScheduler {
     this.isRunning = true;
     logger.info('Starting job scheduler...');
 
-    // Schedule all jobs
-    this.scheduleUsageAggregation();
-    this.scheduleAnalyticsRollups();
+    // Usage aggregation, analytics rollups, AI insights generation, and backup jobs
+    // were removed here (not just disabled) — each called into a feature that was
+    // never actually built:
+    //   - usage aggregation: no persisted usage-rollup model exists anywhere
+    //   - analytics rollups: wrote to a TenantAnalyticsSummary model that was never created
+    //   - AI insights: no real LLM integration exists; the "real" method returned hardcoded mock text
+    //   - backups: handler was a log line, no backup routine of any kind
+    // Re-add them once the underlying feature (persisted usage/analytics model, real
+    // AI integration, real backup target) actually exists.
     this.scheduleInvoiceGeneration();
     this.scheduleProfitabilityCalculations();
     this.scheduleHRPerformanceUpdates();
     this.scheduleClientHealthUpdates();
-    this.scheduleAIInsightsGeneration();
     this.scheduleTenantHealthChecks();
     this.scheduleDataCleanup();
-    this.scheduleBackupJobs();
     this.scheduleNotificationJobs();
     this.scheduleDocumentReviewTimeout();
     this.scheduleReadOnlyEnforcement();
@@ -65,7 +97,7 @@ class JobScheduler {
     }
 
     this.isRunning = false;
-    
+
     // Stop all scheduled jobs
     this.jobs.forEach((job, name) => {
       job.destroy();
@@ -77,61 +109,23 @@ class JobScheduler {
   }
 
   /**
-   * Schedule usage aggregation job (runs every hour)
-   */
-  scheduleUsageAggregation() {
-    const job = cron.schedule('0 * * * *', async () => {
-      try {
-        logger.info('Starting usage aggregation job...');
-        await this.runUsageAggregation();
-        logger.info('Usage aggregation job completed successfully');
-      } catch (error) {
-        logger.error('Usage aggregation job failed:', error);
-      }
-    }, {
-      scheduled: false,
-      timezone: 'UTC'
-    });
-
-    this.jobs.set('usageAggregation', job);
-    job.start();
-    logger.info('Scheduled usage aggregation job (hourly)');
-  }
-
-  /**
-   * Schedule analytics rollups job (runs daily at 2 AM)
-   */
-  scheduleAnalyticsRollups() {
-    const job = cron.schedule('0 2 * * *', async () => {
-      try {
-        logger.info('Starting analytics rollups job...');
-        await this.runAnalyticsRollups();
-        logger.info('Analytics rollups job completed successfully');
-      } catch (error) {
-        logger.error('Analytics rollups job failed:', error);
-      }
-    }, {
-      scheduled: false,
-      timezone: 'UTC'
-    });
-
-    this.jobs.set('analyticsRollups', job);
-    job.start();
-    logger.info('Scheduled analytics rollups job (daily at 2 AM)');
-  }
-
-  /**
    * Schedule invoice generation job (runs daily at 9 AM)
    */
   scheduleInvoiceGeneration() {
     const job = cron.schedule('0 9 * * *', async () => {
-      try {
-        logger.info('Starting invoice generation job...');
-        await this.runInvoiceGeneration();
-        logger.info('Invoice generation job completed successfully');
-      } catch (error) {
-        logger.error('Invoice generation job failed:', error);
+      if (process.env.JOBS_INVOICE_GENERATION_ENABLED === 'false') {
+        logger.debug('Invoice generation job skipped (JOBS_INVOICE_GENERATION_ENABLED=false)');
+        return;
       }
+      await this.runExclusive('invoiceGeneration', async () => {
+        try {
+          logger.info('Starting invoice generation job...');
+          await this.runInvoiceGeneration();
+          logger.info('Invoice generation job completed successfully');
+        } catch (error) {
+          logger.error('Invoice generation job failed:', error);
+        }
+      });
     }, {
       scheduled: false,
       timezone: 'UTC'
@@ -147,13 +141,15 @@ class JobScheduler {
    */
   scheduleProfitabilityCalculations() {
     const job = cron.schedule('0 */6 * * *', async () => {
-      try {
-        logger.info('Starting profitability calculations job...');
-        await this.runProfitabilityCalculations();
-        logger.info('Profitability calculations job completed successfully');
-      } catch (error) {
-        logger.error('Profitability calculations job failed:', error);
-      }
+      await this.runExclusive('profitabilityCalculations', async () => {
+        try {
+          logger.info('Starting profitability calculations job...');
+          await this.runProfitabilityCalculations();
+          logger.info('Profitability calculations job completed successfully');
+        } catch (error) {
+          logger.error('Profitability calculations job failed:', error);
+        }
+      });
     }, {
       scheduled: false,
       timezone: 'UTC'
@@ -169,13 +165,15 @@ class JobScheduler {
    */
   scheduleHRPerformanceUpdates() {
     const job = cron.schedule('0 1 * * *', async () => {
-      try {
-        logger.info('Starting HR performance updates job...');
-        await this.runHRPerformanceUpdates();
-        logger.info('HR performance updates job completed successfully');
-      } catch (error) {
-        logger.error('HR performance updates job failed:', error);
-      }
+      await this.runExclusive('hrPerformanceUpdates', async () => {
+        try {
+          logger.info('Starting HR performance updates job...');
+          await this.runHRPerformanceUpdates();
+          logger.info('HR performance updates job completed successfully');
+        } catch (error) {
+          logger.error('HR performance updates job failed:', error);
+        }
+      });
     }, {
       scheduled: false,
       timezone: 'UTC'
@@ -191,13 +189,15 @@ class JobScheduler {
    */
   scheduleClientHealthUpdates() {
     const job = cron.schedule('0 */4 * * *', async () => {
-      try {
-        logger.info('Starting client health updates job...');
-        await this.runClientHealthUpdates();
-        logger.info('Client health updates job completed successfully');
-      } catch (error) {
-        logger.error('Client health updates job failed:', error);
-      }
+      await this.runExclusive('clientHealthUpdates', async () => {
+        try {
+          logger.info('Starting client health updates job...');
+          await this.runClientHealthUpdates();
+          logger.info('Client health updates job completed successfully');
+        } catch (error) {
+          logger.error('Client health updates job failed:', error);
+        }
+      });
     }, {
       scheduled: false,
       timezone: 'UTC'
@@ -209,39 +209,19 @@ class JobScheduler {
   }
 
   /**
-   * Schedule AI insights generation job (runs daily at 3 AM)
-   */
-  scheduleAIInsightsGeneration() {
-    const job = cron.schedule('0 3 * * *', async () => {
-      try {
-        logger.info('Starting AI insights generation job...');
-        await this.runAIInsightsGeneration();
-        logger.info('AI insights generation job completed successfully');
-      } catch (error) {
-        logger.error('AI insights generation job failed:', error);
-      }
-    }, {
-      scheduled: false,
-      timezone: 'UTC'
-    });
-
-    this.jobs.set('aiInsightsGeneration', job);
-    job.start();
-    logger.info('Scheduled AI insights generation job (daily at 3 AM)');
-  }
-
-  /**
    * Schedule tenant health checks job (runs every 30 minutes)
    */
   scheduleTenantHealthChecks() {
     const job = cron.schedule('*/30 * * * *', async () => {
-      try {
-        logger.info('Starting tenant health checks job...');
-        await this.runTenantHealthChecks();
-        logger.info('Tenant health checks job completed successfully');
-      } catch (error) {
-        logger.error('Tenant health checks job failed:', error);
-      }
+      await this.runExclusive('tenantHealthChecks', async () => {
+        try {
+          logger.info('Starting tenant health checks job...');
+          await this.runTenantHealthChecks();
+          logger.info('Tenant health checks job completed successfully');
+        } catch (error) {
+          logger.error('Tenant health checks job failed:', error);
+        }
+      });
     }, {
       scheduled: false,
       timezone: 'UTC'
@@ -257,13 +237,15 @@ class JobScheduler {
    */
   scheduleDataCleanup() {
     const job = cron.schedule('0 4 * * 0', async () => {
-      try {
-        logger.info('Starting data cleanup job...');
-        await this.runDataCleanup();
-        logger.info('Data cleanup job completed successfully');
-      } catch (error) {
-        logger.error('Data cleanup job failed:', error);
-      }
+      await this.runExclusive('dataCleanup', async () => {
+        try {
+          logger.info('Starting data cleanup job...');
+          await this.runDataCleanup();
+          logger.info('Data cleanup job completed successfully');
+        } catch (error) {
+          logger.error('Data cleanup job failed:', error);
+        }
+      });
     }, {
       scheduled: false,
       timezone: 'UTC'
@@ -275,39 +257,19 @@ class JobScheduler {
   }
 
   /**
-   * Schedule backup jobs (runs daily at 5 AM)
-   */
-  scheduleBackupJobs() {
-    const job = cron.schedule('0 5 * * *', async () => {
-      try {
-        logger.info('Starting backup job...');
-        await this.runBackupJobs();
-        logger.info('Backup job completed successfully');
-      } catch (error) {
-        logger.error('Backup job failed:', error);
-      }
-    }, {
-      scheduled: false,
-      timezone: 'UTC'
-    });
-
-    this.jobs.set('backupJobs', job);
-    job.start();
-    logger.info('Scheduled backup job (daily at 5 AM)');
-  }
-
-  /**
    * Schedule notification jobs (runs every 15 minutes)
    */
   scheduleNotificationJobs() {
     const job = cron.schedule('*/15 * * * *', async () => {
-      try {
-        logger.info('Starting notification job...');
-        await this.runNotificationJobs();
-        logger.info('Notification job completed successfully');
-      } catch (error) {
-        logger.error('Notification job failed:', error);
-      }
+      await this.runExclusive('notificationJobs', async () => {
+        try {
+          logger.info('Starting notification job...');
+          await this.runNotificationJobs();
+          logger.info('Notification job completed successfully');
+        } catch (error) {
+          logger.error('Notification job failed:', error);
+        }
+      });
     }, {
       scheduled: false,
       timezone: 'UTC'
@@ -323,13 +285,15 @@ class JobScheduler {
    */
   scheduleDocumentReviewTimeout() {
     const job = cron.schedule('0 8 * * *', async () => {
-      try {
-        logger.info('Starting document review timeout job...');
-        await documentHubService.runDocumentReviewTimeoutJob();
-        logger.info('Document review timeout job completed');
-      } catch (error) {
-        logger.error('Document review timeout job failed:', error);
-      }
+      await this.runExclusive('documentReviewTimeout', async () => {
+        try {
+          logger.info('Starting document review timeout job...');
+          await documentHubService.runDocumentReviewTimeoutJob();
+          logger.info('Document review timeout job completed');
+        } catch (error) {
+          logger.error('Document review timeout job failed:', error);
+        }
+      });
     }, { scheduled: false, timezone: 'UTC' });
     this.jobs.set('documentReviewTimeout', job);
     job.start();
@@ -341,11 +305,13 @@ class JobScheduler {
    */
   scheduleReadOnlyEnforcement() {
     const job = cron.schedule('0 */6 * * *', async () => {
-      try {
-        await this.runReadOnlyEnforcement();
-      } catch (error) {
-        logger.error('Read-only enforcement job failed:', error);
-      }
+      await this.runExclusive('readOnlyEnforcement', async () => {
+        try {
+          await this.runReadOnlyEnforcement();
+        } catch (error) {
+          logger.error('Read-only enforcement job failed:', error);
+        }
+      });
     }, { scheduled: false, timezone: 'UTC' });
     this.jobs.set('readOnlyEnforcement', job);
     job.start();
@@ -358,11 +324,13 @@ class JobScheduler {
    */
   scheduleContractorAccessExpiry() {
     const job = cron.schedule('*/10 * * * *', async () => {
-      try {
-        await this.runContractorAccessExpiry();
-      } catch (error) {
-        logger.error('Contractor access expiry job failed:', error);
-      }
+      await this.runExclusive('contractorAccessExpiry', async () => {
+        try {
+          await this.runContractorAccessExpiry();
+        } catch (error) {
+          logger.error('Contractor access expiry job failed:', error);
+        }
+      });
     }, { scheduled: false, timezone: 'UTC' });
     this.jobs.set('contractorAccessExpiry', job);
     job.start();
@@ -417,263 +385,40 @@ class JobScheduler {
   }
 
   /**
-   * Run usage aggregation for all tenants
-   */
-  async runUsageAggregation() {
-    const tenants = await Tenant.find({ status: 'active' });
-    
-    for (const tenant of tenants) {
-      try {
-        await usageTrackerService.aggregateUsage(tenant.tenantId);
-        logger.debug(`Usage aggregated for tenant: ${tenant.tenantId}`);
-      } catch (error) {
-        logger.error(`Failed to aggregate usage for tenant ${tenant.tenantId}:`, error);
-      }
-    }
-  }
-
-  /**
-   * Run analytics rollups for all tenants
-   */
-  async runAnalyticsRollups() {
-    const tenants = await Tenant.find({ status: 'active' });
-    
-    for (const tenant of tenants) {
-      try {
-        // Generate daily analytics summary
-        await this.generateAnalyticsSummary(tenant.tenantId, 'daily');
-        
-        // Generate weekly summary if it's Sunday
-        if (new Date().getDay() === 0) {
-          await this.generateAnalyticsSummary(tenant.tenantId, 'weekly');
-        }
-        
-        // Generate monthly summary if it's the first day of the month
-        if (new Date().getDate() === 1) {
-          await this.generateAnalyticsSummary(tenant.tenantId, 'monthly');
-        }
-        
-        logger.debug(`Analytics rollups completed for tenant: ${tenant.tenantId}`);
-      } catch (error) {
-        logger.error(`Failed to run analytics rollups for tenant ${tenant.tenantId}:`, error);
-      }
-    }
-  }
-
-  /**
-   * Generate analytics summary for a tenant
-   */
-  async generateAnalyticsSummary(tenantId, periodType) {
-    const TenantAnalyticsSummary = mongoose.models.TenantAnalyticsSummary;
-    if (!TenantAnalyticsSummary) {
-      logger.debug('TenantAnalyticsSummary model unavailable; skipping analytics summary generation');
-      return null;
-    }
-
-    const now = new Date();
-    let startDate, endDate;
-    
-    switch (periodType) {
-      case 'daily':
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
-        break;
-      case 'weekly': {
-        const dayOfWeek = now.getDay();
-        startDate = new Date(now.getTime() - dayOfWeek * 24 * 60 * 60 * 1000);
-        endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-        break;
-      }
-      case 'monthly':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        break;
-    }
-
-    // Get usage data
-    const usage = await usageTrackerService.getAllCurrentUsage(tenantId);
-    
-    // Get project data
-    const projects = await Project.find({ orgId: tenantId });
-    
-    // Get attendance data
-    const attendance = await Attendance.find({ 
-      orgId: tenantId,
-      date: { $gte: startDate, $lt: endDate }
-    });
-
-    // Create analytics summary
-    const summary = new TenantAnalyticsSummary({
-      tenantId,
-      period: {
-        type: periodType,
-        startDate,
-        endDate,
-        year: now.getFullYear(),
-        month: now.getMonth() + 1,
-        week: Math.ceil(now.getDate() / 7),
-        day: now.getDate()
-      },
-      users: {
-        total: usage.users || 0,
-        active: usage.activeUsers || 0,
-        new: 0, // Calculate based on user creation dates
-        churned: 0, // Calculate based on user deactivation
-        dailyActiveUsers: usage.dailyActiveUsers || 0,
-        weeklyActiveUsers: usage.weeklyActiveUsers || 0,
-        monthlyActiveUsers: usage.monthlyActiveUsers || 0
-      },
-      projects: {
-        total: projects.length,
-        active: projects.filter(p => p.status === 'active').length,
-        completed: projects.filter(p => p.status === 'completed').length,
-        cancelled: projects.filter(p => p.status === 'cancelled').length
-      },
-      systemUsage: {
-        apiCalls: {
-          total: usage.apiCalls || 0,
-          successful: Math.floor((usage.apiCalls || 0) * 0.95), // Assume 95% success rate
-          failed: Math.floor((usage.apiCalls || 0) * 0.05)
-        },
-        storage: {
-          totalUsed: usage.storage || 0
-        }
-      }
-    });
-
-    await summary.save();
-  }
-
-  /**
-   * Run invoice generation for all tenants
+   * Run invoice generation for all active tenants' orgs, via the existing
+   * (previously unused) billing engine — it builds schema-valid invoices,
+   * unlike the hand-rolled version this replaced.
    */
   async runInvoiceGeneration() {
-    const tenants = await Tenant.find({ 
+    const tenants = await Tenant.find({
       status: 'active',
       'subscription.status': { $in: ['active', 'trialing'] }
     });
-    
+
     for (const tenant of tenants) {
       try {
-        const nextBillingDate = new Date(tenant.subscription.nextBillingDate);
-        const today = new Date();
-        
-        // Check if it's time to generate invoice
-        if (today >= nextBillingDate) {
-          await this.generateInvoice(tenant);
-          logger.debug(`Invoice generated for tenant: ${tenant.tenantId}`);
+        const orgIds = await resolveOrgIdsForTenant(tenant);
+        for (const orgId of orgIds) {
+          const generated = await billingEngineService.processRecurringInvoices(orgId);
+          if (generated?.length) {
+            logger.debug(`Generated ${generated.length} invoice(s) for org ${orgId} (tenant ${tenant.tenantId})`);
+          }
         }
       } catch (error) {
-        logger.error(`Failed to generate invoice for tenant ${tenant.tenantId}:`, error);
+        logger.error(`Failed to generate invoices for tenant ${tenant.tenantId}:`, error);
       }
     }
   }
 
   /**
-   * Generate invoice for a tenant
-   */
-  async generateInvoice(tenant) {
-    const usage = await usageTrackerService.getAllCurrentUsage(tenant.tenantId);
-    const subscriptionPlan = await require('../models/finance/SubscriptionPlan').findOne({ 
-      slug: tenant.subscription.plan 
-    });
-    
-    if (!subscriptionPlan) {
-      throw new Error(`Subscription plan not found: ${tenant.subscription.plan}`);
-    }
-
-    // Calculate base plan cost
-    const baseAmount = subscriptionPlan.pricing[tenant.subscription.billingCycle];
-    
-    // Calculate overage costs
-    let overageAmount = 0;
-    const overageItems = [];
-    
-    if (subscriptionPlan.usagePricing.enabled) {
-      const overageRates = subscriptionPlan.usagePricing.overageRates;
-      
-      // Check each usage metric for overage
-      Object.entries(usage).forEach(([metric, value]) => {
-        const limit = subscriptionPlan.getUsageLimit(metric);
-        if (limit !== -1 && value > limit) {
-          const overage = value - limit;
-          const rate = overageRates[metric] || 0;
-          const cost = overage * rate;
-          
-          overageAmount += cost;
-          overageItems.push({
-            description: `Overage - ${metric} (${overage} ${metric})`,
-            amount: rate,
-            quantity: overage,
-            total: cost
-          });
-        }
-      });
-    }
-
-    const totalAmount = baseAmount + overageAmount;
-
-    // Create invoice
-    const invoice = new Invoice({
-      tenantId: tenant.tenantId,
-      number: `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`,
-      amount: totalAmount,
-      currency: 'USD',
-      status: 'pending',
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      period: {
-        start: tenant.subscription.currentPeriodStart,
-        end: tenant.subscription.nextBillingDate
-      },
-      items: [
-        {
-          description: `${subscriptionPlan.name} Plan - ${tenant.subscription.billingCycle}`,
-          amount: baseAmount,
-          quantity: 1
-        },
-        ...overageItems
-      ],
-      subtotal: totalAmount,
-      tax: 0, // Calculate tax if applicable
-      total: totalAmount
-    });
-
-    await invoice.save();
-
-    // Update tenant subscription dates
-    tenant.subscription.currentPeriodStart = tenant.subscription.nextBillingDate;
-    
-    // Calculate next billing date
-    const nextBilling = new Date(tenant.subscription.nextBillingDate);
-    switch (tenant.subscription.billingCycle) {
-      case 'monthly':
-        nextBilling.setMonth(nextBilling.getMonth() + 1);
-        break;
-      case 'quarterly':
-        nextBilling.setMonth(nextBilling.getMonth() + 3);
-        break;
-      case 'yearly':
-        nextBilling.setFullYear(nextBilling.getFullYear() + 1);
-        break;
-    }
-    tenant.subscription.nextBillingDate = nextBilling;
-    
-    await tenant.save();
-
-    // Send invoice email
-    try {
-      await emailService.sendInvoiceEmail(tenant, invoice);
-    } catch (emailError) {
-      logger.error(`Failed to send invoice email for tenant ${tenant.tenantId}:`, emailError);
-    }
-  }
-
-  /**
-   * Run profitability calculations for all projects
+   * Run profitability calculations for active projects belonging to active tenants
    */
   async runProfitabilityCalculations() {
-    const projects = await Project.find({ status: 'active' });
-    
+    const tenants = await Tenant.find({ status: 'active' });
+    const orgIdLists = await Promise.all(tenants.map(t => resolveOrgIdsForTenant(t)));
+    const orgIds = orgIdLists.flat();
+    const projects = await Project.find({ status: 'active', orgId: { $in: orgIds } });
+
     for (const project of projects) {
       try {
         await projectProfitabilityService.calculateProjectProfitability(project._id);
@@ -685,15 +430,28 @@ class JobScheduler {
   }
 
   /**
-   * Run HR performance updates
+   * Run HR performance updates: compute each active tenant's employees' metrics
+   * and upsert a daily EmployeeMetrics snapshot (previously computed but never persisted).
    */
   async runHRPerformanceUpdates() {
     const tenants = await Tenant.find({ status: 'active' });
-    
+
     for (const tenant of tenants) {
       try {
-        await hrPerformanceService.calculateEmployeeMetrics(tenant.tenantId);
-        logger.debug(`HR performance updated for tenant: ${tenant.tenantId}`);
+        const orgIds = await resolveOrgIdsForTenant(tenant);
+        const employees = await Employee.find({ orgId: { $in: orgIds }, userId: { $exists: true } })
+          .populate('userId', 'fullName email');
+
+        for (const employee of employees) {
+          const metrics = await hrPerformanceService.calculateEmployeeMetrics(employee, employee.orgId);
+          if (metrics.error) {
+            logger.warn(`Skipping metrics persist for employee ${employee.employeeId}: ${metrics.error}`);
+            continue;
+          }
+          await this.persistEmployeeMetrics(employee, metrics);
+        }
+
+        logger.debug(`HR performance updated for tenant: ${tenant.tenantId} (${employees.length} employee(s))`);
       } catch (error) {
         logger.error(`Failed to update HR performance for tenant ${tenant.tenantId}:`, error);
       }
@@ -701,19 +459,65 @@ class JobScheduler {
   }
 
   /**
-   * Run client health updates
+   * Upsert a daily EmployeeMetrics snapshot from hrPerformanceService's computed metrics.
+   */
+  async persistEmployeeMetrics(employee, metrics) {
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
+
+    await EmployeeMetrics.findOneAndUpdate(
+      { employeeId: employee.employeeId, 'period.type': 'daily', 'period.startDate': startDate },
+      {
+        employeeId: employee.employeeId,
+        userId: employee.userId._id,
+        orgId: employee.orgId,
+        period: {
+          type: 'daily',
+          startDate,
+          endDate,
+          year: now.getFullYear(),
+          month: now.getMonth() + 1,
+          day: now.getDate()
+        },
+        attendance: {
+          totalHoursWorked: metrics.totalHours
+        },
+        productivity: {
+          overallScore: metrics.productivityScore,
+          billableUtilization: metrics.billableUtilization,
+          billableHours: metrics.billableHours
+        },
+        projectPerformance: {
+          activeProjects: metrics.activeProjects,
+          completedProjects: metrics.completedProjects
+        },
+        financial: {
+          revenueGenerated: metrics.revenueGenerated,
+          costToCompany: metrics.totalCost,
+          costPerHour: metrics.costPerHour
+        },
+        calculatedAt: now
+      },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
+  }
+
+  /**
+   * Run client health updates for active tenants' clients
    */
   async runClientHealthUpdates() {
     const tenants = await Tenant.find({ status: 'active' });
-    
+
     for (const tenant of tenants) {
       try {
-        const clients = await Client.find({ orgId: tenant.tenantId, status: { $ne: 'inactive' } }).select('_id orgId');
+        const orgIds = await resolveOrgIdsForTenant(tenant);
+        const clients = await Client.find({ orgId: { $in: orgIds }, status: { $ne: 'inactive' } }).select('_id orgId');
         for (const client of clients) {
-          const clientHealth = await clientHealthService.getOrCreateClientHealth(client._id, tenant.tenantId);
+          const clientHealth = await clientHealthService.getOrCreateClientHealth(client._id, client.orgId);
           await clientHealthService.updateClientHealthMetrics(clientHealth);
         }
-        logger.debug(`Client health updated for tenant: ${tenant.tenantId}`);
+        logger.debug(`Client health updated for tenant: ${tenant.tenantId} (${clients.length} client(s))`);
       } catch (error) {
         logger.error(`Failed to update client health for tenant ${tenant.tenantId}:`, error);
       }
@@ -721,52 +525,40 @@ class JobScheduler {
   }
 
   /**
-   * Run AI insights generation
-   */
-  async runAIInsightsGeneration() {
-    const tenants = await Tenant.find({ status: 'active' });
-    
-    for (const tenant of tenants) {
-      try {
-        await aiInsightsService.generateInsights(tenant.tenantId);
-        logger.debug(`AI insights generated for tenant: ${tenant.tenantId}`);
-      } catch (error) {
-        logger.error(`Failed to generate AI insights for tenant ${tenant.tenantId}:`, error);
-      }
-    }
-  }
-
-  /**
-   * Run tenant health checks
+   * Run tenant health checks. Suspension on trial expiry always runs; the
+   * notification emails are gated by JOBS_TENANT_HEALTH_EMAILS_ENABLED (default on)
+   * so they can be killed instantly without touching the state-change logic.
    */
   async runTenantHealthChecks() {
     const tenants = await Tenant.find({ status: 'active' });
-    
+    const emailsEnabled = process.env.JOBS_TENANT_HEALTH_EMAILS_ENABLED !== 'false';
+
     for (const tenant of tenants) {
       try {
         // Check subscription status
-        if (tenant.subscription.status === 'past_due') {
-          // Send payment reminder
+        if (tenant.subscription.status === 'past_due' && emailsEnabled) {
           await emailService.sendPaymentReminder(tenant);
         }
-        
+
         // Check trial expiration
         if (tenant.subscription.status === 'trialing') {
           const trialEndDate = new Date(tenant.subscription.trialEndDate);
           const now = new Date();
-          
+
           if (now > trialEndDate) {
             // Trial expired, suspend tenant
             tenant.subscription.status = 'suspended';
             await tenant.save();
-            
-            await emailService.sendTrialExpiredNotification(tenant);
-          } else if (trialEndDate.getTime() - now.getTime() < 24 * 60 * 60 * 1000) {
+
+            if (emailsEnabled) {
+              await emailService.sendTrialExpiredNotification(tenant);
+            }
+          } else if (trialEndDate.getTime() - now.getTime() < 24 * 60 * 60 * 1000 && emailsEnabled) {
             // Trial expires in 24 hours
             await emailService.sendTrialExpiringNotification(tenant);
           }
         }
-        
+
         logger.debug(`Health check completed for tenant: ${tenant.tenantId}`);
       } catch (error) {
         logger.error(`Failed to run health check for tenant ${tenant.tenantId}:`, error);
@@ -775,38 +567,17 @@ class JobScheduler {
   }
 
   /**
-   * Run data cleanup
+   * Run data cleanup: purge old EmployeeMetrics snapshots (keep last 1 year)
    */
   async runDataCleanup() {
     try {
-      const TenantAnalyticsSummary = mongoose.models.TenantAnalyticsSummary;
-      // Clean up old analytics summaries (keep last 2 years)
-      const twoYearsAgo = new Date();
-      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-      
-      if (TenantAnalyticsSummary) {
-        await TenantAnalyticsSummary.deleteMany({
-          'period.startDate': { $lt: twoYearsAgo }
-        });
-      }
-      
-      // Clean up old employee metrics (keep last 1 year)
       const oneYearAgo = new Date();
       oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-      
+
       await EmployeeMetrics.deleteMany({
         'period.startDate': { $lt: oneYearAgo }
       });
-      
-      // Clean up old audit logs (keep last 6 months)
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      
-      // Assuming there's an AuditLog model
-      // await AuditLog.deleteMany({
-      //   createdAt: { $lt: sixMonthsAgo }
-      // });
-      
+
       logger.info('Data cleanup completed successfully');
     } catch (error) {
       logger.error('Data cleanup failed:', error);
@@ -814,24 +585,12 @@ class JobScheduler {
   }
 
   /**
-   * Run backup jobs
-   */
-  async runBackupJobs() {
-    try {
-      // This would typically involve backing up databases, files, etc.
-      // For now, we'll just log that the backup job ran
-      logger.info('Backup job completed successfully');
-    } catch (error) {
-      logger.error('Backup job failed:', error);
-    }
-  }
-
-  /**
-   * Run notification jobs
+   * Run notification jobs. Each concern gets its own try/catch so a failure in
+   * one (e.g. a malformed record) can't silently cancel the other two for this cycle.
    */
   async runNotificationJobs() {
+    // Overdue invoices: use Finance Invoice (orgId); notify via service + email to tenant
     try {
-      // Overdue invoices: use Finance Invoice (orgId); notify via service + email to tenant
       const overdueInvoices = await Invoice.find({
         status: { $in: ['sent', 'overdue'] },
         dueDate: { $lt: new Date() }
@@ -844,8 +603,12 @@ class JobScheduler {
         }
         await NotificationService.notifyInvoiceOverdue(invoice);
       }
+    } catch (error) {
+      logger.error('Notification job (overdue invoices) failed:', error);
+    }
 
-      // Budget 80% warning (FR18): notify PM, Finance, CEO
+    // Budget 80% warning (FR18): notify PM, Finance, CEO
+    try {
       const projects = await Project.find({
         'budget.total': { $gt: 0 },
         status: { $in: ['active', 'in_progress'] }
@@ -857,8 +620,12 @@ class JobScheduler {
           await NotificationService.notifyBudget80Warning(project, project.orgId);
         }
       }
+    } catch (error) {
+      logger.error('Notification job (budget warnings) failed:', error);
+    }
 
-      // Usage alerts
+    // Usage alerts
+    try {
       const tenants = await Tenant.find({ status: 'active' });
       for (const tenant of tenants) {
         const usage = await usageTrackerService.getAllCurrentUsage(tenant._id);
@@ -874,11 +641,11 @@ class JobScheduler {
           }
         }
       }
-
-      logger.debug('Notification job completed successfully');
     } catch (error) {
-      logger.error('Notification job failed:', error);
+      logger.error('Notification job (usage alerts) failed:', error);
     }
+
+    logger.debug('Notification job completed');
   }
 
   /**
@@ -900,15 +667,7 @@ class JobScheduler {
       throw new Error(`Job not found: ${jobName}`);
     }
 
-    const job = this.jobs.get(jobName);
-    
     switch (jobName) {
-      case 'usageAggregation':
-        await this.runUsageAggregation();
-        break;
-      case 'analyticsRollups':
-        await this.runAnalyticsRollups();
-        break;
       case 'invoiceGeneration':
         await this.runInvoiceGeneration();
         break;
@@ -921,20 +680,23 @@ class JobScheduler {
       case 'clientHealthUpdates':
         await this.runClientHealthUpdates();
         break;
-      case 'aiInsightsGeneration':
-        await this.runAIInsightsGeneration();
-        break;
       case 'tenantHealthChecks':
         await this.runTenantHealthChecks();
         break;
       case 'dataCleanup':
         await this.runDataCleanup();
         break;
-      case 'backupJobs':
-        await this.runBackupJobs();
-        break;
       case 'notificationJobs':
         await this.runNotificationJobs();
+        break;
+      case 'documentReviewTimeout':
+        await documentHubService.runDocumentReviewTimeoutJob();
+        break;
+      case 'readOnlyEnforcement':
+        await this.runReadOnlyEnforcement();
+        break;
+      case 'contractorAccessExpiry':
+        await this.runContractorAccessExpiry();
         break;
       default:
         throw new Error(`Unknown job: ${jobName}`);

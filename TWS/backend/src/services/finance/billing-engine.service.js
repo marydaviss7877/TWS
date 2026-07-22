@@ -335,7 +335,7 @@ class BillingEngineService {
 
       // Generate secure payment link (this would integrate with payment gateway)
       const paymentToken = require('crypto').randomBytes(32).toString('hex');
-      const paymentLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pay/${paymentToken}`;
+      const paymentLink = `${process.env.FRONTEND_URL || 'http://localhost:4000'}/pay/${paymentToken}`;
 
       invoice.paymentLink = paymentLink;
       invoice.paymentToken = paymentToken;

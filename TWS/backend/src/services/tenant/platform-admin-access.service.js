@@ -88,7 +88,7 @@ class PlatformAdminAccessService {
   }) {
     try {
       const auditLog = await auditService.logEvent({
-        action: 'PLATFORM_ADMIN_TENANT_ACCESS',
+        action: 'CUSTOM',
         performedBy: platformAdminId,
         userId: platformAdminId,
         userEmail: platformAdminEmail,

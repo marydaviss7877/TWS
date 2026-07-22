@@ -43,13 +43,11 @@ import SessionManagement from './features/admin/pages/SupraAdmin/sessions/Sessio
 import DepartmentAccess from './features/admin/pages/SupraAdmin/departments/DepartmentAccess';
 import Departments from './features/admin/pages/SupraAdmin/departments/Departments';
 import SessionAnalytics from './features/admin/pages/SupraAdmin/analytics/SessionAnalytics';
-import SystemMonitoring from './features/admin/pages/SupraAdmin/monitoring/SystemMonitoring';
 import SystemHealth from './features/admin/pages/SupraAdmin/monitoring/SystemHealth';
 import Infrastructure from './features/admin/pages/SupraAdmin/infrastructure/Infrastructure';
 import SupraSettings from './features/admin/pages/SupraAdmin/settings/Settings';
 import DepartmentManagement from './features/admin/pages/SupraAdmin/departments/DepartmentManagement';
 import ERPManagement from './features/admin/pages/SupraAdmin/erp/ERPManagement';
-import RealTimeMonitoring from './features/admin/pages/SupraAdmin/monitoring/RealTimeMonitoring';
 
 // ── Tenant Org — Dashboard ────────────────────────────────────────────────────
 import DashboardAnalytics from './features/tenant/pages/tenant/org/dashboard/DashboardAnalytics';
@@ -341,9 +339,7 @@ function App() {
             <Route path="department-management" element={<DepartmentManagement />} />
             <Route path="erp-management" element={<ERPManagement />} />
             <Route path="erp-management/:category" element={<ERPManagement />} />
-            <Route path="system-monitoring" element={<SystemMonitoring />} />
             <Route path="system-health" element={<SystemHealth />} />
-            <Route path="real-time-monitoring" element={<RealTimeMonitoring />} />
             <Route path="infrastructure" element={<Infrastructure />} />
             <Route path="settings" element={<SupraSettings />} />
           </Route>

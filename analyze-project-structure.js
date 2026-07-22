@@ -339,6 +339,7 @@ function generateMermaidDiagram() {
 function generateJSONReport() {
   const report = {
     summary: {
+      generatedAt: new Date().toISOString(),
       totalFiles: fileIndex.size,
       frontendFiles: Array.from(fileIndex.values()).filter(f => f.type === 'frontend').length,
       backendFiles: Array.from(fileIndex.values()).filter(f => f.type === 'backend').length,

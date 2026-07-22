@@ -10,7 +10,6 @@ import {
   Modal,
   Form,
   message,
-  Popconfirm,
   Tooltip,
   Typography,
 } from 'antd';
@@ -25,7 +24,7 @@ import moment from 'moment';
 
 const { Option } = Select;
 const { Text } = Typography;
-const { Search } = Input;
+const { Search, TextArea } = Input;
 
 const TenantManagement = () => {
   const [loading, setLoading] = useState(true);
@@ -41,6 +40,42 @@ const TenantManagement = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ visible: false, mode: null, id: null });
+  const [justification, setJustification] = useState('');
+  const [accessReason, setAccessReason] = useState(undefined);
+
+  const DELETE_JUSTIFICATION_MIN = { single: 30, bulk: 50 };
+
+  // Must exactly match LEGITIMATE_ACCESS_REASONS in
+  // backend/src/services/tenant/platform-admin-access.service.js
+  const ACCESS_REASONS = [
+    { value: 'support_troubleshooting', label: 'Support / Troubleshooting' },
+    { value: 'billing_dispute', label: 'Billing Dispute' },
+    { value: 'security_incident', label: 'Security Incident' },
+    { value: 'data_migration', label: 'Data Migration' },
+    { value: 'compliance_audit', label: 'Compliance Audit' },
+    { value: 'legal_request', label: 'Legal Request' },
+    { value: 'system_maintenance', label: 'System Maintenance' },
+    { value: 'onboarding_assistance', label: 'Onboarding Assistance' },
+  ];
+
+  const openDeleteModal = (id) => {
+    setJustification('');
+    setAccessReason(undefined);
+    setDeleteModal({ visible: true, mode: 'single', id });
+  };
+
+  const openBulkDeleteModal = () => {
+    setJustification('');
+    setAccessReason(undefined);
+    setDeleteModal({ visible: true, mode: 'bulk', id: null });
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModal({ visible: false, mode: null, id: null });
+    setJustification('');
+    setAccessReason(undefined);
+  };
 
   const fetchTenants = async () => {
     try {
@@ -115,7 +150,12 @@ const TenantManagement = () => {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: values.name, slug: values.slug, email: values.email }),
+        body: JSON.stringify({
+          name: values.name,
+          slug: values.slug,
+          email: values.email,
+          accessReason: 'system_maintenance',
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
@@ -129,13 +169,14 @@ const TenantManagement = () => {
     }
   };
 
-  const handleDeleteTenant = async (id) => {
+  const handleDeleteTenant = async (id, deleteJustification, deleteAccessReason) => {
     try {
       setDeletingId(id);
       const res = await fetch(`/api/supra-admin/tenants/${id}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ justification: deleteJustification, accessReason: deleteAccessReason }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
@@ -150,7 +191,7 @@ const TenantManagement = () => {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = async (deleteJustification, deleteAccessReason) => {
     if (!selectedRowKeys.length) return;
     try {
       setBulkDeleting(true);
@@ -158,7 +199,7 @@ const TenantManagement = () => {
         method: 'DELETE',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: selectedRowKeys }),
+        body: JSON.stringify({ ids: selectedRowKeys, justification: deleteJustification, accessReason: deleteAccessReason }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
@@ -179,13 +220,23 @@ const TenantManagement = () => {
     }
   };
 
+  const handleConfirmDelete = async () => {
+    const { mode, id } = deleteModal;
+    if (mode === 'single') {
+      await handleDeleteTenant(id, justification, accessReason);
+    } else if (mode === 'bulk') {
+      await handleBulkDelete(justification, accessReason);
+    }
+    closeDeleteModal();
+  };
+
   const handleStatusChange = async (id, status) => {
     try {
       const res = await fetch(`/api/supra-admin/tenants/${id}/status`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, accessReason: 'system_maintenance' }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
@@ -279,17 +330,17 @@ const TenantManagement = () => {
           <Tooltip title="Edit">
             <Button type="text" size="small" icon={<EditOutlined />} onClick={() => { setSelectedTenant(r); setEditModalVisible(true); }} />
           </Tooltip>
-          <Popconfirm
-            title="Permanently delete this tenant and all associated data? This cannot be undone."
-            onConfirm={() => handleDeleteTenant(r._id)}
-            okText="Delete"
-            cancelText="Cancel"
-            okButtonProps={{ danger: true, loading: deletingId === r._id }}
-          >
-            <Tooltip title="Delete">
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} loading={deletingId === r._id} disabled={!!deletingId} />
-            </Tooltip>
-          </Popconfirm>
+          <Tooltip title="Delete">
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              loading={deletingId === r._id}
+              disabled={!!deletingId}
+              onClick={() => openDeleteModal(r._id)}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -300,15 +351,16 @@ const TenantManagement = () => {
       <Space>
         <Text type="secondary">{selectedRowKeys.length} selected</Text>
         <Button size="small" onClick={() => setSelectedRowKeys([])} disabled={bulkDeleting}>Clear</Button>
-        <Popconfirm
-          title={`Permanently delete ${selectedRowKeys.length} tenant(s) and all their data? This cannot be undone.`}
-          onConfirm={handleBulkDelete}
-          okText="Delete all"
-          cancelText="Cancel"
-          okButtonProps={{ danger: true, loading: bulkDeleting }}
+        <Button
+          size="small"
+          danger
+          icon={<DeleteOutlined />}
+          loading={bulkDeleting}
+          disabled={bulkDeleting}
+          onClick={openBulkDeleteModal}
         >
-          <Button size="small" danger icon={<DeleteOutlined />} loading={bulkDeleting} disabled={bulkDeleting}>Bulk delete</Button>
-        </Popconfirm>
+          Bulk delete
+        </Button>
       </Space>
     ) : null;
 
@@ -374,6 +426,53 @@ const TenantManagement = () => {
           scroll={{ x: 900 }}
         />
       </Card>
+
+      <Modal
+        title={
+          deleteModal.mode === 'bulk'
+            ? `Permanently delete ${selectedRowKeys.length} tenant(s)?`
+            : 'Permanently delete this tenant?'
+        }
+        open={deleteModal.visible}
+        onCancel={closeDeleteModal}
+        onOk={handleConfirmDelete}
+        okText="Delete"
+        okButtonProps={{
+          danger: true,
+          loading: deleteModal.mode === 'bulk' ? bulkDeleting : deletingId === deleteModal.id,
+          disabled:
+            !accessReason ||
+            justification.trim().length < DELETE_JUSTIFICATION_MIN[deleteModal.mode || 'single'],
+        }}
+        destroyOnClose
+      >
+        <Text type="danger">This cannot be undone. All associated data will be permanently deleted.</Text>
+        <div style={{ marginTop: 16 }}>
+          <Text strong>Access reason (required)</Text>
+          <Select
+            style={{ width: '100%', marginTop: 8 }}
+            placeholder="Select a reason"
+            value={accessReason}
+            onChange={setAccessReason}
+            options={ACCESS_REASONS}
+          />
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <Text strong>
+            Justification (minimum {DELETE_JUSTIFICATION_MIN[deleteModal.mode || 'single']} characters, required for the audit log)
+          </Text>
+          <TextArea
+            rows={3}
+            style={{ marginTop: 8 }}
+            value={justification}
+            onChange={(e) => setJustification(e.target.value)}
+            placeholder="Explain why this tenant is being deleted..."
+          />
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {justification.trim().length} / {DELETE_JUSTIFICATION_MIN[deleteModal.mode || 'single']}
+          </Text>
+        </div>
+      </Modal>
 
       <Modal
         title={`Edit: ${selectedTenant?.name}`}

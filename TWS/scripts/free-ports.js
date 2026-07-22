@@ -2,7 +2,7 @@
 
 const { execSync } = require('child_process');
 
-const PORTS = [3000, 5000];
+const PORTS = [4000, 5000];
 
 function unique(values) {
   return [...new Set(values)];

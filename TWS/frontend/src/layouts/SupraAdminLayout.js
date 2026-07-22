@@ -24,7 +24,6 @@ import {
   ShieldCheckIcon,
   BuildingOfficeIcon,
   ChartPieIcon,
-  BoltIcon,
   CircleStackIcon,
   MagnifyingGlassIcon,
   UserCircleIcon,
@@ -80,13 +79,11 @@ const SupraAdminLayout = ({ children }) => {
     },
     
     // System
-    { 
-      name: 'System', 
-      icon: ServerIcon, 
+    {
+      name: 'System',
+      icon: ServerIcon,
       children: [
-        { name: 'System Monitoring', href: '/supra-admin/system-monitoring', icon: ServerIcon },
         { name: 'System Health', href: '/supra-admin/system-health', icon: ShieldCheckIcon },
-        { name: 'Real-Time Monitoring', href: '/supra-admin/real-time-monitoring', icon: BoltIcon },
         { name: 'Session Management', href: '/supra-admin/session-management', icon: ClockIcon },
         { name: 'Session Analytics', href: '/supra-admin/session-analytics', icon: ChartPieIcon }
       ]

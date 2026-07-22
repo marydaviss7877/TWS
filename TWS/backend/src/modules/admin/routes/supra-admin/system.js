@@ -31,42 +31,6 @@ router.get('/system-health', requirePlatformPermission(PLATFORM_PERMISSIONS.ANAL
   }
 }));
 
-router.get('/monitoring/alerts', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
-  try {
-    const alerts = [{ id: 1, type: 'warning', service: 'database', message: 'High connection count detected', timestamp: new Date(Date.now() - 5 * 60 * 1000), severity: 'medium' }, { id: 2, type: 'info', service: 'api', message: 'Scheduled maintenance completed', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), severity: 'low' }];
-    res.json({ success: true, alerts: alerts.slice(0, parseInt(req.query.limit || 20)), total: alerts.length });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch monitoring alerts' });
-  }
-});
-
-router.get('/monitoring/logs', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.LOGS), async (req, res) => {
-  try {
-    const logs = [{ id: 1, level: 'info', message: 'User login successful', service: 'auth', timestamp: new Date(Date.now() - 1 * 60 * 1000), userId: 'user123' }, { id: 2, level: 'warning', message: 'API rate limit exceeded', service: 'api', timestamp: new Date(Date.now() - 3 * 60 * 1000), ip: '192.168.1.100' }];
-    res.json({ success: true, logs: logs.slice(0, parseInt(req.query.limit || 50)), total: logs.length });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch system logs' });
-  }
-});
-
-router.get('/monitoring/metrics', requirePlatformPermission(PLATFORM_PERMISSIONS.ANALYTICS.READ), async (req, res) => {
-  try {
-    const metrics = { cpu: { usage: 45.2, cores: 8, load: [1.2, 1.5, 1.3] }, memory: { used: 62.5, total: 16384, available: 6144 }, disk: { used: 65.8, total: 1000, available: 342 }, network: { in: 125.5, out: 89.3, connections: 245 }, timestamp: new Date().toISOString() };
-    res.json({ success: true, data: metrics });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch monitoring metrics' });
-  }
-});
-
-router.get('/monitoring/threats', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
-  try {
-    const threats = [{ id: 1, type: 'suspicious_login', severity: 'high', source: '192.168.1.100', description: 'Multiple failed login attempts detected', timestamp: new Date(Date.now() - 5 * 60 * 1000), status: 'active' }, { id: 2, type: 'unusual_activity', severity: 'medium', source: '192.168.1.101', description: 'Unusual API access pattern detected', timestamp: new Date(Date.now() - 15 * 60 * 1000), status: 'investigating' }];
-    res.json({ success: true, threats: threats.slice(0, parseInt(req.query.limit || 10)), total: threats.length });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch security threats' });
-  }
-});
-
 router.get('/settings', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
   try {
     const settings = { systemName: 'TWS - The Wolf Stack', version: '1.0.0', maintenanceMode: false, registrationEnabled: true, defaultTrialDays: 14, maxTenantsPerAdmin: 100, backupSettings: { frequency: 'daily', retention: 30 }, emailSettings: { enabled: true, smtpHost: 'smtp.gmail.com', smtpPort: 587, fromEmail: 'noreply@tws.com' }, securitySettings: { passwordMinLength: 8, sessionTimeout: 24, ipWhitelist: [] }, notificationSettings: { emailNotifications: true, systemAlerts: true, maintenanceAlerts: true, securityAlerts: true } };

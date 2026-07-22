@@ -1,10 +1,13 @@
 /**
  * Secure Logging Service for Backend
- * Replaces console.log with secure, production-safe logging
+ * Sanitizes error output, then delegates to the real Winston logger
+ * (src/services/core/logger.service.js) and Sentry (src/services/sentryService.js).
  */
 
+const Sentry = require('@sentry/node');
+const { loggerService } = require('../services/core/logger.service');
+
 const isDevelopment = process.env.NODE_ENV === 'development';
-const isProduction = process.env.NODE_ENV === 'production';
 
 /**
  * Sanitize error object to remove sensitive information
@@ -44,22 +47,15 @@ const sanitizeError = (error) => {
  */
 const logError = (message, error = null, context = {}) => {
   const sanitizedError = error ? sanitizeError(error) : null;
-  const logData = {
-    level: 'error',
-    message,
-    error: sanitizedError,
-    context,
-    timestamp: new Date().toISOString(),
-  };
 
   if (isDevelopment) {
     console.error(`[ERROR] ${message}`, sanitizedError || '', context);
   }
 
-  // In production, send to logging service
-  if (isProduction) {
-    // TODO: Send to logging service (e.g., Winston, Bunyan, CloudWatch, etc.)
-    // loggerService.error(logData);
+  loggerService.error(message, error, context);
+
+  if (error instanceof Error) {
+    Sentry.captureException(error, { extra: { message, ...context } });
   }
 };
 
@@ -67,51 +63,32 @@ const logError = (message, error = null, context = {}) => {
  * Log warning message
  */
 const logWarn = (message, context = {}) => {
-  const logData = {
-    level: 'warn',
-    message,
-    context,
-    timestamp: new Date().toISOString(),
-  };
-
   if (isDevelopment) {
     console.warn(`[WARN] ${message}`, context);
   }
 
-  if (isProduction) {
-    // TODO: Send to logging service
-  }
+  loggerService.warn(message, context);
 };
 
 /**
  * Log info message
  */
 const logInfo = (message, context = {}) => {
-  const logData = {
-    level: 'info',
-    message,
-    context,
-    timestamp: new Date().toISOString(),
-  };
-
   if (isDevelopment) {
     console.log(`[INFO] ${message}`, context);
   }
 
-  if (isProduction) {
-    // Only log important info in production
-    // TODO: Send to logging service for important messages
-  }
+  loggerService.info(message, context);
 };
 
 /**
- * Log debug message (only in development)
+ * Log debug message
  */
 const logDebug = (message, context = {}) => {
   if (isDevelopment) {
     console.debug(`[DEBUG] ${message}`, context);
   }
-  // Never log debug in production
+  loggerService.debug(message, context);
 };
 
 module.exports = {

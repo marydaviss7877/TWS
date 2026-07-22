@@ -61,8 +61,8 @@ class BackendConfig {
       
       // CORS / Domain Configuration — trim to handle Railway env var trailing newlines
       BASE_DOMAIN: (process.env.BASE_DOMAIN || 'tws.up.railway.app').trim(),
-      CORS_ORIGIN: (process.env.CORS_ORIGIN || 'http://localhost:3000').trim(),
-      SOCKET_CORS_ORIGIN: (process.env.SOCKET_CORS_ORIGIN || 'http://localhost:3000').trim(),
+      CORS_ORIGIN: (process.env.CORS_ORIGIN || 'http://localhost:4000').trim(),
+      SOCKET_CORS_ORIGIN: (process.env.SOCKET_CORS_ORIGIN || 'http://localhost:4000').trim(),
       
       // Rate Limiting
       RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS || 900000, // 15 minutes

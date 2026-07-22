@@ -473,6 +473,79 @@ class EmailService {
     `;
     return await this.sendEmail(to, subject, html);
   }
+
+  /**
+   * Payment reminder – tenant subscription past due (scheduler)
+   */
+  async sendPaymentReminder(tenant) {
+    const to = tenant.contactInfo?.email || tenant.contactInfo?.contactEmail;
+    if (!to) {
+      console.warn('Cannot send payment reminder: no tenant contact email');
+      return { success: false, error: 'No tenant email' };
+    }
+    const subject = 'Payment Reminder: Your subscription is past due';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #dc2626; padding: 16px; text-align: center;">
+          <h2 style="color: white; margin: 0;">Payment Past Due</h2>
+        </div>
+        <div style="padding: 24px; background: #f9fafb;">
+          <p style="font-size: 14px; color: #374151;">Your subscription payment is past due. Please update your billing details to avoid service interruption.</p>
+          <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">TWS ERP – ${tenant.name || 'Tenant'}</p>
+        </div>
+      </div>
+    `;
+    return await this.sendEmail(to, subject, html);
+  }
+
+  /**
+   * Trial expired – tenant suspended (scheduler)
+   */
+  async sendTrialExpiredNotification(tenant) {
+    const to = tenant.contactInfo?.email || tenant.contactInfo?.contactEmail;
+    if (!to) {
+      console.warn('Cannot send trial-expired notification: no tenant contact email');
+      return { success: false, error: 'No tenant email' };
+    }
+    const subject = 'Your trial has expired';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #dc2626; padding: 16px; text-align: center;">
+          <h2 style="color: white; margin: 0;">Trial Expired</h2>
+        </div>
+        <div style="padding: 24px; background: #f9fafb;">
+          <p style="font-size: 14px; color: #374151;">Your trial period has ended and your account has been suspended. Subscribe to a plan to restore access.</p>
+          <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">TWS ERP – ${tenant.name || 'Tenant'}</p>
+        </div>
+      </div>
+    `;
+    return await this.sendEmail(to, subject, html);
+  }
+
+  /**
+   * Trial expiring within 24 hours (scheduler)
+   */
+  async sendTrialExpiringNotification(tenant) {
+    const to = tenant.contactInfo?.email || tenant.contactInfo?.contactEmail;
+    if (!to) {
+      console.warn('Cannot send trial-expiring notification: no tenant contact email');
+      return { success: false, error: 'No tenant email' };
+    }
+    const subject = 'Your trial expires in 24 hours';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #f59e0b; padding: 16px; text-align: center;">
+          <h2 style="color: white; margin: 0;">Trial Ending Soon</h2>
+        </div>
+        <div style="padding: 24px; background: #f9fafb;">
+          <p style="font-size: 14px; color: #374151;">Your trial period ends in less than 24 hours. Subscribe to a plan now to avoid losing access.</p>
+          <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">TWS ERP – ${tenant.name || 'Tenant'}</p>
+        </div>
+      </div>
+    `;
+    return await this.sendEmail(to, subject, html);
+  }
+
   /**
    * Employee portal invite email
    * @param {{ fullName: string, email: string }} invitee

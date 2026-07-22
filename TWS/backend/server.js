@@ -62,7 +62,7 @@ const explicitOrigin = (process.env.CORS_ORIGIN || '')
 const allowOrigin = (origin, callback) => {
   if (!origin) return callback(null, true); // server-to-server / health checks
   if (
-    origin === 'http://localhost:3000' ||
+    origin === 'http://localhost:4000' ||
     origin === `https://${baseDomain}` ||
     origin === `http://${baseDomain}` ||
     origin.endsWith(`.${baseDomain}`)
