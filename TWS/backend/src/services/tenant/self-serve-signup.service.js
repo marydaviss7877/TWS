@@ -7,7 +7,6 @@ const emailVerificationService = require('../integrations/email-verification.ser
 const tenantProvisioningService = require('../tenantProvisioningService');
 const emailService = require('../integrations/email.service');
 const masterERPService = require('../masterERPService');
-const envConfig = require('../../config/environment-validator');
 const validator = require('validator');
 
 // Must match AUTH_EMAIL_NORMALIZE in authentication.js so stored email == login lookup email
@@ -312,98 +311,58 @@ class SelfServeSignupService {
       }
     }
 
-    // Create tenant using provisioning service (async via queue if available)
-    if (tenantProvisioningQueue) {
-      // Add to queue for async processing
-      const job = await tenantProvisioningQueue.add('provision-tenant', {
-        tenantData,
-        userId: userId.toString(),
-        masterERPId: masterERPId ? masterERPId.toString() : null,
-        metadata
-      }, {
-        priority: 1
-      });
+    // Create tenant using provisioning service (synchronous)
+    try {
+      console.log('📝 Starting synchronous tenant provisioning...');
+      console.log('📝 Tenant data:', JSON.stringify(tenantData, null, 2));
 
-      // Create tenant record immediately (status: pending_setup)
-      const tenant = new Tenant({
-        ...tenantData,
-        createdBy: null // Self-serve, no SupraAdmin
-      });
-      await tenant.save();
+      const result = await tenantProvisioningService.provisionTenant(
+        tenantData,
+        masterERPId, // Use master ERP ID if found
+        null  // createdBy (self-serve)
+      );
+
+      console.log('✅ Tenant provisioned successfully:', result.tenant?._id);
 
       // Create tenant role assignment
       const tenantRole = new TenantRole({
-        tenantId: tenant._id,
+        tenantId: result.tenant._id,
         userId: user._id,
         role: 'TENANT_ADMIN',
         assignedBy: 'SYSTEM'
       });
       await tenantRole.save();
+      console.log('✅ Tenant role assigned');
 
-      // Send welcome email (will be sent after provisioning completes)
-      // The welcome email will be sent by the provisioning job worker
+      // Update tenant status to active
+      result.tenant.status = 'active';
+      result.tenant.activatedAt = new Date();
+      await result.tenant.save();
+      console.log('✅ Tenant status updated to active');
+
+      // Send welcome email
+      try {
+        const baseDomain = (process.env.BASE_DOMAIN || 'thewolfstack.up.railway.app').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+        const subdomain = `${slug}.${baseDomain}`;
+        await emailService.sendTenantWelcomeEmail(user, result.tenant, subdomain);
+        console.log('✅ Welcome email sent');
+      } catch (emailError) {
+        console.error('⚠️ Error sending welcome email (non-critical):', emailError);
+        // Continue even if email fails
+      }
 
       return {
-        tenant: tenant.toJSON(),
-        jobId: job.id,
-        status: 'provisioning',
-        message: 'Tenant creation initiated. Provisioning in progress...',
+        tenant: result.tenant.toJSON(),
+        adminUser: result.adminUser,
+        organization: result.organization,
+        status: 'active',
+        message: 'Tenant created and provisioned successfully',
         masterERPId: masterERPId
       };
-    } else {
-      // Synchronous provisioning (fallback)
-      try {
-        console.log('📝 Starting synchronous tenant provisioning...');
-        console.log('📝 Tenant data:', JSON.stringify(tenantData, null, 2));
-
-        const result = await tenantProvisioningService.provisionTenant(
-          tenantData,
-          masterERPId, // Use master ERP ID if found
-          null  // createdBy (self-serve)
-        );
-
-        console.log('✅ Tenant provisioned successfully:', result.tenant?._id);
-
-        // Create tenant role assignment
-        const tenantRole = new TenantRole({
-          tenantId: result.tenant._id,
-          userId: user._id,
-          role: 'TENANT_ADMIN',
-          assignedBy: 'SYSTEM'
-        });
-        await tenantRole.save();
-        console.log('✅ Tenant role assigned');
-
-        // Update tenant status to active
-        result.tenant.status = 'active';
-        result.tenant.activatedAt = new Date();
-        await result.tenant.save();
-        console.log('✅ Tenant status updated to active');
-
-        // Send welcome email
-        try {
-          const baseDomain = (process.env.BASE_DOMAIN || 'thewolfstack.up.railway.app').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
-          const subdomain = `${slug}.${baseDomain}`;
-          await emailService.sendTenantWelcomeEmail(user, result.tenant, subdomain);
-          console.log('✅ Welcome email sent');
-        } catch (emailError) {
-          console.error('⚠️ Error sending welcome email (non-critical):', emailError);
-          // Continue even if email fails
-        }
-
-        return {
-          tenant: result.tenant.toJSON(),
-          adminUser: result.adminUser,
-          organization: result.organization,
-          status: 'active',
-          message: 'Tenant created and provisioned successfully',
-          masterERPId: masterERPId
-        };
-      } catch (provisionError) {
-        console.error('❌ Tenant provisioning error:', provisionError);
-        console.error('❌ Provisioning error stack:', provisionError.stack);
-        throw new Error(`Failed to provision tenant: ${provisionError.message}`);
-      }
+    } catch (provisionError) {
+      console.error('❌ Tenant provisioning error:', provisionError);
+      console.error('❌ Provisioning error stack:', provisionError.stack);
+      throw new Error(`Failed to provision tenant: ${provisionError.message}`);
     }
   }
 
@@ -452,8 +411,8 @@ class SelfServeSignupService {
   /**
    * Resend verification OTP
    */
-  async resendOTP(email, metadata = {}) {
-    return await emailVerificationService.resendVerification(email, metadata);
+  resendOTP(email, metadata = {}) {
+    return emailVerificationService.resendVerification(email, metadata);
   }
 
   /**
@@ -480,7 +439,7 @@ class SelfServeSignupService {
       console.log('📝 Organization:', organizationName);
       console.log('📝 Slug:', organizationSlug);
 
-      const result = await session.withTransaction(async () => {
+      await session.withTransaction(async () => {
         // Step 1: Validate email doesn't exist
         const existingUser = await User.findOne({ email: normalizedEmail }).session(session);
         if (existingUser) {
