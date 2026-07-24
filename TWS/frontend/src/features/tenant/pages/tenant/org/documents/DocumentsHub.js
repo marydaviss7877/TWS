@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   DocumentTextIcon,
@@ -30,6 +30,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { DOCUMENT_TEMPLATES, TEMPLATE_IDS } from './documentTemplates';
 import * as documentHubApi from './documentHubApi';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const TEMPLATE_ICONS = {
   document: DocumentTextIcon,
@@ -110,7 +111,7 @@ function DocumentTags({ tags, allTags }) {
 }
 
 const DocumentsHub = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { 
   CurrencyDollarIcon, 
   BanknotesIcon,
@@ -13,9 +12,10 @@ import { useTenantPermissions } from '../../../../../contexts/TenantPermissionsC
 import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
 import ErrorState from '../../../../../../../shared/components/feedback/ErrorState';
 import EmptyState from '../../../../../../../shared/components/feedback/EmptyState';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 const PayrollManagement = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const { isAuthenticated, loading: authLoading } = useTenantAuth();
   const { hasModulePermission } = useTenantPermissions();
   const canWritePayroll = hasModulePermission('payroll', 'write');

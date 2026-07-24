@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
 import ErrorState from '../../../../../../../shared/components/feedback/ErrorState';
 import EmptyState from '../../../../../../../shared/components/feedback/EmptyState';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 const ContractorDashboard = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [summary, setSummary] = useState(null);

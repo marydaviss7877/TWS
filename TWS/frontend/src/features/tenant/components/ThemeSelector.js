@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { useTenantTheme } from '../providers/TenantThemeProvider';
 import { PREDEFINED_THEMES, AVAILABLE_FONTS, isValidColor } from '../utils/themeConfig';
 import toast from 'react-hot-toast';
@@ -9,9 +8,10 @@ import {
   SwatchIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
+import { useTenantSlug } from '../../../shared/hooks/useTenantSlug';
 
 const ThemeSelector = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const { theme, updateTheme } = useTenantTheme();
   const [selectedThemeName, setSelectedThemeName] = useState(theme?.name || 'default');
   const [customColors, setCustomColors] = useState({

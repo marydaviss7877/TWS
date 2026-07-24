@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   ClipboardDocumentCheckIcon,
   PlusIcon,
@@ -28,6 +28,7 @@ import { PROJECT_WORKSPACE_EVENTS } from '../../../../components/ProjectWorkspac
 import { toMongoIdString } from './utils/validation';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 /* ─── helpers ──────────────────────────────────────────────────────────────── */
 
@@ -594,7 +595,7 @@ function TaskCard({
 /* ─── Main Component ───────────────────────────────────────────────────────── */
 
 const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScopedHeader = false }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const location = useLocation();
 
   const [viewMode, setViewMode]             = useState(defaultView);

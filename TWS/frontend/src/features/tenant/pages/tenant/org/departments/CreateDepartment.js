@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import tenantApiService from '../../../../../../shared/services/tenant/tenant-api.service';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const CreateDepartment = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import toast from 'react-hot-toast';
 import {
@@ -8,6 +8,7 @@ import {
   PhotoIcon, ArrowUpTrayIcon,
   Squares2X2Icon,
 } from '@heroicons/react/24/outline';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 /* ─── shared tokens (mirrors OrgProfile) ────────────────────────────────────── */
 const S = {
@@ -99,7 +100,7 @@ function SaveBtn({ saving, onClick, label = 'Save' }) {
 
 /* ─── main ───────────────────────────────────────────────────────────────────── */
 const SettingsOverview = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const { tenant, updateUser } = useTenantAuth();
   const navigate = useNavigate();
   const location = useLocation();

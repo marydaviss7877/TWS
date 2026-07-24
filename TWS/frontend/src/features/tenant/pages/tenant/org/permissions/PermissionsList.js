@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import toast from 'react-hot-toast';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const emptyCatalog = {
   softwareHouse: { title: '', description: '', roleSystem: '', entries: [] },
@@ -89,7 +90,7 @@ function CatalogSection({ section, searchTerm }) {
 }
 
 const PermissionsList = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalog, setCatalog] = useState(emptyCatalog);

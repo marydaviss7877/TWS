@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   FunnelIcon,
   CheckCircleIcon,
@@ -19,9 +19,10 @@ import ChangeRequestCard from './ChangeRequestCard';
 import ChangeRequestEvaluationForm from './ChangeRequestEvaluationForm';
 import DeliverableCardSkeleton from '../deliverables/DeliverableCardSkeleton';
 import ProjectSelector from '../ProjectSelector';
+import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 
 const ChangeRequestDashboard = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get('projectId');

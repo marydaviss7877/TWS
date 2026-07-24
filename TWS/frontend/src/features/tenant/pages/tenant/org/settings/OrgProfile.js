@@ -3,7 +3,6 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   BuildingOfficeIcon,
   EnvelopeIcon,
@@ -20,6 +19,7 @@ import {
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
 import toast from 'react-hot-toast';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 /* ─── tokens ─────────────────────────────────────────────────────────────────── */
 const S = {
@@ -85,7 +85,7 @@ function Sel({ label, value, onChange, options, readOnly, span }) {
 
 /* ─── main ───────────────────────────────────────────────────────────────────── */
 const OrgProfile = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const { user, tenant: ctxTenant, updateTenant } = useTenantAuth();
   const { hasModulePermission } = useTenantPermissions();
 

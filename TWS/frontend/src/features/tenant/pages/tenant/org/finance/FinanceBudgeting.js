@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
 import AdminPageTemplate from '../../../../../../components/AdminPageTemplate/AdminPageTemplate';
 import {
   ChartPieIcon,
@@ -10,9 +9,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import FeatureUnavailable from '../../../../../../shared/components/feedback/FeatureUnavailable';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const FinanceBudgeting = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({

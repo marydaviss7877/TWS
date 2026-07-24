@@ -5,7 +5,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -16,9 +15,10 @@ import { handleApiError } from '../../utils/errorHandler';
 import { showSuccess, showError } from '../../utils/toastNotifications';
 import ConfirmDialog from '../ConfirmDialog';
 import PromptDialog from '../PromptDialog';
+import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 
 const ClientApprovalView = ({ deliverableId, deliverable, onApproval }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [approval, setApproval] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);

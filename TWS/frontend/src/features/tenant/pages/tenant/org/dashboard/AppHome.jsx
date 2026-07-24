@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   BookmarkIcon as BookmarkOutlineIcon,
@@ -34,6 +34,7 @@ import {
   LAUNCHER_UI,
 } from '../../../../components/launcher/launcherUtils';
 import './AppHome.css';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getGreeting() {
   const h = new Date().getHours();
@@ -170,7 +171,7 @@ const AppGrid = ({ items, activeAppKey, favoriteKeys, onNavigate, onToggleFav })
 // ── AppHome ────────────────────────────────────────────────────────────────────
 const AppHome = () => {
   const navigate       = useNavigate();
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const { user, tenant } = useTenantAuth();
   const { hasModulePermission } = useTenantPermissions();
   const {

@@ -5,12 +5,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import tenantProjectApiService from '../services/tenantProjectApiService';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 const ProjectSelector = ({ onProjectChange, currentProjectId = null }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState([]);

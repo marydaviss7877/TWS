@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   PlusIcon,
   MagnifyingGlassIcon,
@@ -14,9 +14,10 @@ import tenantProjectApiService from '../projects/services/tenantProjectApiServic
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const DepartmentsList = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState([]);

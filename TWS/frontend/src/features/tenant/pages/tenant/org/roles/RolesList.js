@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const emptyRoleCatalog = {
   softwareHouse: { title: '', description: '', roleSystem: '', entries: [] },
@@ -94,7 +95,7 @@ function RoleCatalogSection({ section, searchTerm }) {
 }
 
 const RolesList = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalog, setCatalog] = useState(emptyRoleCatalog);

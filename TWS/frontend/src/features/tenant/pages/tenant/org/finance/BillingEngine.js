@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { 
   DocumentChartBarIcon,
   PlusIcon,
@@ -17,9 +16,10 @@ import {
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const BillingEngine = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [invoices, setInvoices] = useState([]);
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);

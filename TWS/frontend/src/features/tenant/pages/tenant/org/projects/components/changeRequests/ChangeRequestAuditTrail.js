@@ -5,7 +5,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   ClockIcon,
   UserIcon,
@@ -14,9 +13,10 @@ import {
 } from '@heroicons/react/24/outline';
 import tenantProjectApiService from '../../services/tenantProjectApiService';
 import { handleApiError } from '../../utils/errorHandler';
+import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 
 const ChangeRequestAuditTrail = ({ changeRequestId }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [auditLog, setAuditLog] = useState([]);
   const [loading, setLoading] = useState(true);
 

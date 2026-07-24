@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { 
   ClockIcon, 
@@ -9,9 +8,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import FeatureUnavailable from '../../../../../../../shared/components/feedback/FeatureUnavailable';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 const HRLeaveRequests = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [loading, setLoading] = useState(true);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [stats, setStats] = useState({

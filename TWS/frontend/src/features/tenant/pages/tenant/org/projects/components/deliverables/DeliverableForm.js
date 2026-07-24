@@ -5,11 +5,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import tenantProjectApiService from '../../services/tenantProjectApiService';
 import { handleApiError } from '../../utils/errorHandler';
 import { showSuccess, showError } from '../../utils/toastNotifications';
+import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 
 const DELIVERABLE_STATUSES = [
   { value: 'created', label: 'Created' },
@@ -21,7 +21,7 @@ const DELIVERABLE_STATUSES = [
 ];
 
 const DeliverableForm = ({ isOpen, onClose, deliverable, projectId, onSuccess }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [formData, setFormData] = useState({
     name: '',
     description: '',

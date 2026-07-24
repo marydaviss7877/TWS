@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -23,6 +23,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import toast from 'react-hot-toast';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 // Software house–specific job roles
 const SOFTWARE_HOUSE_ROLES = [
@@ -80,7 +81,7 @@ const COMMON_SKILLS = [
 ];
 
 const EmployeeCreate = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

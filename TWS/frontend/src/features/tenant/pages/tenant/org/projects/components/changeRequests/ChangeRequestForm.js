@@ -5,14 +5,15 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import tenantProjectApiService from '../../services/tenantProjectApiService';
 import { handleApiError } from '../../utils/errorHandler';
 import { showSuccess, showError } from '../../utils/toastNotifications';
+import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 
 const ChangeRequestForm = ({ projectId, deliverableId, onSuccess }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [searchParams] = useSearchParams();
   const actualProjectId = projectId || searchParams.get('projectId');
   const [formData, setFormData] = useState({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   UserGroupIcon,
   PlusIcon,
@@ -16,6 +16,7 @@ import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthCont
 import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
 import ErrorState from '../../../../../../../shared/components/feedback/ErrorState';
 import EmptyState from '../../../../../../../shared/components/feedback/EmptyState';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 // Lightweight inline invite modal — no extra file needed
 const InviteModal = ({ tenantSlug, onClose }) => {
@@ -124,7 +125,7 @@ const InviteModal = ({ tenantSlug, onClose }) => {
 };
 
 const EmployeeList = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useTenantAuth();
   const [searchTerm, setSearchTerm] = useState('');

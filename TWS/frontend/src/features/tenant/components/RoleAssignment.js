@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { CheckCircleIcon, ClockIcon, CogIcon } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../shared/services/tenant/tenant-api.service';
+import { useTenantSlug } from '../../../shared/hooks/useTenantSlug';
 
 /**
  * RoleAssignment Component
  * Shows current user roles. Role management is done in Settings > Roles.
  */
 const RoleAssignment = ({ userId, currentRoles = [], onUpdate }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [tenantRoles, setTenantRoles] = useState([]);
   const [loading, setLoading] = useState(true);
 

@@ -3,7 +3,6 @@
  * List, grant, revoke, suspend department access with optional expiry.
  */
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   UserPlusIcon,
   TrashIcon,
@@ -16,11 +15,12 @@ import tenantProjectApiService from '../projects/services/tenantProjectApiServic
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const API = (tenantSlug, path = '') => `/api/tenant/${tenantSlug}/department-access${path}`;
 
 export default function DepartmentAccessManagement() {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [list, setList] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [users, setUsers] = useState([]);

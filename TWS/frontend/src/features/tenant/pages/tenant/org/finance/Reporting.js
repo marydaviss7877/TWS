@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   ChartPieIcon,
   DocumentTextIcon,
@@ -19,6 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import toast from 'react-hot-toast';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const REPORT_CATALOG = [
   {
@@ -559,7 +559,7 @@ const REPORT_RENDERERS = {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 const Reporting = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [generating, setGenerating] = useState(false);
   const [activeReportId, setActiveReportId] = useState(null);
   const [reportData, setReportData] = useState(null);

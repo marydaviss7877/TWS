@@ -1,6 +1,6 @@
 export { default } from '../software-house/hr/HROverview';
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   UsersIcon,
   UserIcon,
@@ -15,9 +15,10 @@ import { tenantApiService } from '../../../../../../shared/services/tenant/tenan
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const HROverview = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

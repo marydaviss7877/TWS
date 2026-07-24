@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   ShieldCheckIcon,
   ClockIcon,
@@ -13,6 +13,7 @@ import {
   TENANT_ACCESS_TOKEN_MINUTES,
   TENANT_REFRESH_SESSION_DAYS,
 } from '../../../constants/tenantSessionPolicy';
+import { useTenantSlug } from '../../../../../shared/hooks/useTenantSlug';
 
 const Section = ({ icon: Icon, title, children }) => (
   <section className="rounded-xl border border-gray-200/80 dark:border-white/10 bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm p-5 sm:p-6 shadow-sm">
@@ -33,7 +34,7 @@ const Section = ({ icon: Icon, title, children }) => (
  * Copy is aligned with tenantSessionPolicy.js and typical backend JWT defaults.
  */
 const TenantOrgRulebook = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const home = `/${tenantSlug}/org/dashboard`;
 
   return (

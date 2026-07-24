@@ -5,14 +5,14 @@
  */
 
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import tenantProjectApiService from '../../services/tenantProjectApiService';
 import { handleApiError } from '../../utils/errorHandler';
 import { showSuccess, showError } from '../../utils/toastNotifications';
+import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 
 const ChangeRequestEvaluationForm = ({ changeRequest, onSubmit, onCancel }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [formData, setFormData] = useState({
     effort_days: '',
     cost_impact: '',

@@ -15,7 +15,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useTenantSlug } from '../../../shared/hooks/useTenantSlug';
 import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
-
 import { useTenantAuth } from '../../../app/providers/TenantAuthContext';
 import { useTheme } from '../../../app/providers/ThemeContext';
 import { getIndustryMenuItems } from '../utils/industryMenuBuilder';

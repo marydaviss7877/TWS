@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { 
   FlagIcon,
   CheckCircleIcon,
@@ -15,9 +14,10 @@ import tenantApiService from '../../../../../../shared/services/tenant/tenant-ap
 import { MILESTONE_STATUS } from './constants/projectConstants';
 import { ApprovalProgress, ApprovalChainSetup } from './components/approvals';
 import { showSuccess, showError } from './utils/toastNotifications';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const ProjectMilestones = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [viewMode, setViewMode] = useState('timeline'); // 'timeline' or 'list'
   const [loading, setLoading] = useState(true);
   const [milestones, setMilestones] = useState([]);

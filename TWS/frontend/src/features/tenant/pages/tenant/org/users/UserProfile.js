@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
 import toast from 'react-hot-toast';
@@ -23,9 +23,10 @@ import {
   CalendarIcon,
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const UserProfile = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const { user, tenant, updateUser } = useTenantAuth();
   const { hasModulePermission } = useTenantPermissions();

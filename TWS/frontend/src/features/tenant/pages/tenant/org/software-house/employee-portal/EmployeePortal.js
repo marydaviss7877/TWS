@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Routes, Route, Navigate } from 'react-router-dom';
+import { useNavigate, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../../../../../../../app/providers/AuthContext';
 import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthContext';
 import { useTenantPermissions } from '../../../../../contexts/TenantPermissionsContext';
@@ -29,6 +29,7 @@ import EmployeeWorkspacesView from './EmployeeWorkspacesView';
 import { getAccessLevel, PORTAL_SECTIONS } from './employeePortalAccessLevels';
 import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
 import ErrorState from '../../../../../../../shared/components/feedback/ErrorState';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 // Protects a portal section by role; redirects to portal dashboard if no access
 const ProtectedPortalRoute = ({ section, canAccessSection, tenantSlug, children }) => {
@@ -39,7 +40,7 @@ const ProtectedPortalRoute = ({ section, canAccessSection, tenantSlug, children 
 };
 
 const EmployeePortal = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
   const { user: tenantUser, loading: tenantAuthLoading } = useTenantAuth();
@@ -281,7 +282,7 @@ const EmployeePortal = () => {
 
 // Dashboard Content Component
 const EmployeeDashboardContent = ({ stats, employee }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
 
   const statCards = [

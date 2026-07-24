@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
-import { useParams } from 'react-router-dom';
 import EntityManagerPage from '../../../../components/common/EntityManagerPage';
 import { retailApi } from '../../../../../../shared/services/industry';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const productFields = [
   { name: 'name', label: 'Name', type: 'text', required: true },
@@ -81,7 +81,7 @@ const searchKeys = [
 ];
 
 const Products = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
 
   const fetchProducts = useCallback(async () => {
     const response = await retailApi.getProducts(tenantSlug);

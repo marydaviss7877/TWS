@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { 
   ClockIcon, 
   PlusIcon, 
@@ -13,9 +12,10 @@ import {
 } from '@heroicons/react/24/outline';
 import tenantProjectApiService from './services/tenantProjectApiService';
 import { TIMESHEET_STATUS } from './constants/projectConstants';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const ProjectTimesheets = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [activeTimer, setActiveTimer] = useState(null);
   const [filterPeriod, setFilterPeriod] = useState('this_week');
   const [filterProject, setFilterProject] = useState('all');

@@ -4,7 +4,7 @@
  */
 
 import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import {
   ArrowPathIcon,
   ArrowTrendingUpIcon,
@@ -27,6 +27,7 @@ import { tenantApiService } from '../../../../../../shared/services/tenant/tenan
 import { softwareHouseApi } from '../../../../../../shared/services/industry/softwareHouseApi';
 import Breadcrumbs from '../../../../../../shared/components/navigation/Breadcrumbs';
 import './TenantAdminDashboard.css';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const STATUS_CLASS = {
   completed: 'tad-status tad-status--completed',
@@ -282,7 +283,7 @@ function DashboardSkeleton() {
 }
 
 export default function TenantAdminDashboard() {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const { user, tenant } = useTenantAuth();
   const { userPermissions, hasModulePermission } = useTenantPermissions();

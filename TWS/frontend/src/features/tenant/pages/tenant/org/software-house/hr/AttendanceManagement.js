@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ClockIcon,
@@ -15,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthContext';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -68,7 +68,7 @@ const DecisionModal = ({ open, title, reason, setReason, saving, onClose, onConf
 };
 
 const AttendanceManagement = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const { isAuthenticated, loading: authLoading } = useTenantAuth();
 
   const [loading, setLoading] = useState(true);

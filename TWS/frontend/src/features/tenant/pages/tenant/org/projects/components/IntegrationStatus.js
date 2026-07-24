@@ -4,7 +4,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -12,9 +11,10 @@ import {
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import tenantProjectApiService from '../services/tenantProjectApiService';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 const IntegrationStatus = ({ projectId }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
 

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { 
   AcademicCapIcon, 
   BookOpenIcon,
@@ -8,9 +7,10 @@ import {
   PlusIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 const HRTraining = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [loading, setLoading] = useState(true);
   const [trainingPrograms, setTrainingPrograms] = useState([]);
   const [stats, setStats] = useState({

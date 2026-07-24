@@ -5,14 +5,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { XMarkIcon, UserIcon } from '@heroicons/react/24/outline';
 import tenantProjectApiService from '../../services/tenantProjectApiService';
 import { handleApiError } from '../../utils/errorHandler';
 import { showSuccess, showError } from '../../utils/toastNotifications';
+import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 
 const ApprovalChainSetup = ({ isOpen, onClose, deliverableId, onChainCreated }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [formData, setFormData] = useState({
     devLeadId: '',
     qaLeadId: '',

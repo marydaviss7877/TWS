@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   PlusIcon, 
   PlayIcon, 
@@ -17,6 +17,7 @@ import tenantApiService from '../../../../../../shared/services/tenant/tenant-ap
 import { SPRINT_STATUS } from './constants/projectConstants';
 import CreateSprintModal from './components/CreateSprintModal';
 import { showSuccess, showError } from './utils/toastNotifications';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 function getSprintProjectId(sprint) {
   const p = sprint?.projectId;
@@ -26,7 +27,7 @@ function getSprintProjectId(sprint) {
 }
 
 const SprintManagement = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [sprints, setSprints] = useState([]);
   const [activeSprint, setActiveSprint] = useState(null);

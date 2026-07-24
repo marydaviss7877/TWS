@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useParams } from 'react-router-dom';
 import tenantProjectApiService from '../services/tenantProjectApiService';
 import { validateProjectForm, sanitizeProjectData } from '../utils/validation';
 import { handleApiError, handleSuccess } from '../utils/errorHandler';
 import { SUCCESS_MESSAGES, PROJECT_PRIORITY, CURRENCIES, PROJECT_TYPE } from '../constants/projectConstants';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [formData, setFormData] = useState({
     name: '',
     description: '',

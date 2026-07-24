@@ -5,7 +5,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   ExclamationTriangleIcon,
   CalendarIcon,
@@ -14,9 +13,10 @@ import {
 import tenantProjectApiService from '../../services/tenantProjectApiService';
 import { handleApiError } from '../../utils/errorHandler';
 import DateValidationForm from './DateValidationForm';
+import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 
 const DateValidationAlerts = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [deliverables, setDeliverables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [validatingId, setValidatingId] = useState(null);

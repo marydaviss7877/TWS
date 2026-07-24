@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FlagIcon,
   PlusIcon,
@@ -24,6 +24,7 @@ import { ApprovalProgress } from './components/approvals';
 import DeliverableCardSkeleton from './components/deliverables/DeliverableCardSkeleton';
 import { showSuccess, showError } from './utils/toastNotifications';
 import ProjectSelector from './components/ProjectSelector';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const DELIVERABLE_STATUSES = {
   created: { label: 'Created', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
@@ -35,7 +36,7 @@ const DELIVERABLE_STATUSES = {
 };
 
 const DeliverablesPage = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [searchParams] = useSearchParams();
   const projectId = searchParams.get('projectId');
   const navigate = useNavigate();

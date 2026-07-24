@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   PlusIcon,
   MagnifyingGlassIcon,
@@ -20,9 +20,10 @@ import { tenantApiService } from '../../../../../../shared/services/tenant/tenan
 import { PROJECT_STATUS, PROJECT_TYPE } from './constants/projectConstants';
 import CreateProjectModal from './components/CreateProjectModal';
 import toast from 'react-hot-toast';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const ProjectsList = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   
   const [projects, setProjects] = useState([]);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   CurrencyDollarIcon,
   ArrowTrendingUpIcon,
@@ -23,9 +23,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const FinanceOverview = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useTenantAuth();
   const [loading, setLoading] = useState(true);

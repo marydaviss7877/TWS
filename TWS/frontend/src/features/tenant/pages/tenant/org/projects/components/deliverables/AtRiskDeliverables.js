@@ -5,7 +5,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   ExclamationTriangleIcon,
   CalendarIcon,
@@ -13,9 +12,10 @@ import {
 } from '@heroicons/react/24/outline';
 import tenantProjectApiService from '../../services/tenantProjectApiService';
 import { handleApiError } from '../../utils/errorHandler';
+import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 
 const AtRiskDeliverables = ({ projectId }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [atRiskDeliverables, setAtRiskDeliverables] = useState([]);
   const [loading, setLoading] = useState(true);
 

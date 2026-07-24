@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useParams } from 'react-router-dom';
 import tenantProjectApiService from '../services/tenantProjectApiService';
 import { handleApiError } from '../utils/errorHandler';
 import { toMongoIdString } from '../utils/validation';
 import { PROJECT_PRIORITY, CARD_TYPE, CARD_STATUS } from '../constants/projectConstants';
 import { showSuccess, showError } from '../utils/toastNotifications';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 /** Create / edit task — full-viewport right drawer (portaled to document.body so it is not clipped by workspace scroll areas). */
 const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultStatus = CARD_STATUS.TODO, defaultAssigneeId = '', initialTask = null }) => {
   const isEdit = !!initialTask;
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [formData, setFormData] = useState({
     title: '',
     description: '',

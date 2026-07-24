@@ -14,12 +14,13 @@ import {
   ExclamationTriangleIcon,
   PhotoIcon,
 } from '@heroicons/react/24/outline';
-import { useParams } from 'react-router-dom';
+
 import tenantProjectApiService from '../services/tenantProjectApiService';
 import { validateProjectForm, sanitizeProjectData } from '../utils/validation';
 import { handleApiError, handleSuccess } from '../utils/errorHandler';
 import { SUCCESS_MESSAGES, PROJECT_PRIORITY, PROJECT_TYPE } from '../constants/projectConstants';
 import { showSuccess, showError } from '../utils/toastNotifications';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 /* ─── constants ─────────────────────────────────────────────────────────────── */
 const PROJECT_STATUS_OPTIONS = [
@@ -77,7 +78,7 @@ function getProjectLogoApiUrl(url, tenantSlug) {
 
 /* ─── Main component ─────────────────────────────────────────────────────────── */
 const ProjectSettingsModal = ({ isOpen, onClose, project, projectId: projectIdProp, onSaved }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const projectId = projectIdProp || project?._id || project?.id;
 
   const [activeTab,  setActiveTab]  = useState('general');

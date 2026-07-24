@@ -5,7 +5,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -21,9 +20,10 @@ import { showSuccess, showError } from '../../utils/toastNotifications';
 import ApprovalStep from './ApprovalStep';
 import ConfirmDialog from '../ConfirmDialog';
 import ApprovalProgressSkeleton from './ApprovalProgressSkeleton';
+import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 
 const ApprovalProgress = ({ deliverableId, isClientView = false, onApprovalChange }) => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import FeatureUnavailable from '../../../../../../shared/components/feedback/FeatureUnavailable';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const DashboardAnalytics = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [analytics, setAnalytics] = useState(null);

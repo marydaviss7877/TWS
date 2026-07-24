@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   ClipboardDocumentListIcon,
   UsersIcon,
@@ -17,6 +17,7 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { softwareHouseApi } from '../../../shared/services/industry/softwareHouseApi';
+import { useTenantSlug } from '../../../shared/hooks/useTenantSlug';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const badge = (type) => ({
@@ -72,7 +73,7 @@ const HealthBar = ({ label, count, total, colorClass }) => {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 const SoftwareHouseDashboard = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate       = useNavigate();
 
   const [loading, setLoading] = useState(true);

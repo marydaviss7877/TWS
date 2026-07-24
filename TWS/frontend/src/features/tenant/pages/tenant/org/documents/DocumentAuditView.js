@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeftIcon, ClipboardDocumentListIcon, FunnelIcon, XMarkIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import * as documentHubApi from './documentHubApi';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const ACTION_LABELS = {
   viewed: 'Viewed',
@@ -16,7 +17,7 @@ const ACTION_LABELS = {
 };
 
 const DocumentAuditView = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 });

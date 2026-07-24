@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   BuildingOffice2Icon,
   GlobeAltIcon,
@@ -7,6 +6,7 @@ import {
   PhoneIcon,
   MapPinIcon
 } from '@heroicons/react/24/outline';
+import { useTenantSlug } from '../../../../shared/hooks/useTenantSlug';
 
 const Field = ({ label, value }) => (
   <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-900">
@@ -16,7 +16,7 @@ const Field = ({ label, value }) => (
 );
 
 const ClientOrganizationProfile = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profile, setProfile] = useState(null);

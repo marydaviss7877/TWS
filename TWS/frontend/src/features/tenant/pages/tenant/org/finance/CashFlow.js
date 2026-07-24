@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { 
   BanknotesIcon,
   PlusIcon,
@@ -18,9 +17,10 @@ import {
   FunnelIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const CashFlow = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [cashFlowData, setCashFlowData] = useState([]);
   const [forecasts, setForecasts] = useState([]);
   const [loading, setLoading] = useState(true);

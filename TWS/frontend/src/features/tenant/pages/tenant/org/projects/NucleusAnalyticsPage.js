@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChartBarIcon,
   FlagIcon,
@@ -30,6 +30,7 @@ import {
 import tenantProjectApiService from './services/tenantProjectApiService';
 import DeliverableCardSkeleton from './components/deliverables/DeliverableCardSkeleton';
 import ProjectSelector from './components/ProjectSelector';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
@@ -46,7 +47,7 @@ const STATUS_LABELS = {
 };
 
 const NucleusAnalyticsPage = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectIdFilter = searchParams.get('projectId') || '';

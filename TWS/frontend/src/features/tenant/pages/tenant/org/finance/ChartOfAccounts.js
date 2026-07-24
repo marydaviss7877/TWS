@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { 
   DocumentTextIcon,
   PlusIcon,
@@ -20,9 +19,10 @@ import {
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const ChartOfAccounts = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { 
   ClockIcon,
   PlayIcon,
@@ -12,6 +11,7 @@ import {
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import toast from 'react-hot-toast';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const unwrapApiData = (response) => {
   if (!response) return null;
@@ -20,7 +20,7 @@ const unwrapApiData = (response) => {
 };
 
 const TimeTracking = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const { isAuthenticated, loading: authLoading } = useTenantAuth();
   const [loading, setLoading] = useState(true);
   const [activeTracking, setActiveTracking] = useState(null);

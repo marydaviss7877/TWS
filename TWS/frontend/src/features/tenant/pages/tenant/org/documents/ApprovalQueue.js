@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   DocumentTextIcon,
@@ -10,9 +10,10 @@ import {
   ChevronLeftIcon,
 } from '@heroicons/react/24/outline';
 import * as documentHubApi from './documentHubApi';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const ApprovalQueue = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);

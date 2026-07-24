@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   ArrowTrendingUpIcon,
   ClockIcon,
@@ -28,9 +28,10 @@ import { tenantApiService } from '../../../../../../shared/services/tenant/tenan
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const AccountsReceivable = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useTenantAuth();
   const [loading, setLoading] = useState(true);
@@ -991,7 +992,6 @@ const AccountsReceivable = () => {
           )}
         </div>
       </div>
-
 
       {/* Payment Form Modal */}
       {showPaymentForm && selectedInvoice && (

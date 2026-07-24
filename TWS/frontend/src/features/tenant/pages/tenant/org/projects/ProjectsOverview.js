@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   ChartBarIcon, 
   UsersIcon, 
@@ -52,6 +52,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 // Register Chart.js components
 ChartJS.register(
@@ -142,7 +143,7 @@ function formatHoursSummary(totalHours) {
 }
 
 const ProjectsOverviewContent = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const location = useLocation();
   

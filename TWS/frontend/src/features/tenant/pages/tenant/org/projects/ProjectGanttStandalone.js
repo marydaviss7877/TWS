@@ -4,16 +4,17 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
 import GanttChart from './components/gantt/GanttChart';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProjectSelector from './components/ProjectSelector';
 import tenantProjectApiService from './services/tenantProjectApiService';
 import { showError } from './utils/toastNotifications';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const ProjectGanttStandalone = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const projectId = searchParams.get('projectId');

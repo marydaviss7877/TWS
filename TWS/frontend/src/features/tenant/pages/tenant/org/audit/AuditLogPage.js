@@ -3,7 +3,6 @@
  * GET /api/tenant/:tenantSlug/audit
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   ArrowDownTrayIcon,
   ArrowPathIcon,
@@ -18,6 +17,7 @@ import {
   ChevronUpIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const API = (tenantSlug, qs) => `/api/tenant/${tenantSlug}/audit${qs ? `?${qs}` : ''}`;
 
@@ -96,7 +96,7 @@ function setPresetRange(preset) {
 }
 
 export default function AuditLogPage() {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

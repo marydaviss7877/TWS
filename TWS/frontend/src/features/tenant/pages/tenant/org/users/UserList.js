@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import toast from 'react-hot-toast';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const HR_SUB_ROLES = [
   { value: '', label: '— None —' },
@@ -88,7 +89,7 @@ const normalizePermissionCodeList = (codes) => {
 };
 
 const UserList = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   ClipboardDocumentCheckIcon,
   CheckCircleIcon,
@@ -17,6 +17,7 @@ import tenantProjectApiService from './services/tenantProjectApiService';
 import { handleApiError } from './utils/errorHandler';
 import { showSuccess, showError } from './utils/toastNotifications';
 import DeliverableCardSkeleton from './components/deliverables/DeliverableCardSkeleton';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const STEP_NAMES = {
   1: 'Dev Lead',
@@ -26,7 +27,7 @@ const STEP_NAMES = {
 };
 
 const ApprovalsQueuePage = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [pending, setPending] = useState([]);
   const [loading, setLoading] = useState(true);

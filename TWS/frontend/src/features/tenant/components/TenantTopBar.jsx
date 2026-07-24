@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -20,6 +20,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/Avatar/Avatar';
 import { Badge } from '../../../components/ui/Badge/Badge';
 import { QUICK_ADD_ACTIONS } from '../../../constants/navigationConstants';
+import { useTenantSlug } from '../../../shared/hooks/useTenantSlug';
 
 /**
  * TenantTopBar — horizontal top navigation bar for the tenant org portal.
@@ -44,7 +45,7 @@ const TenantTopBar = ({
   onLogout,
 }) => {
   const navigate = useNavigate();
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
 
   const initial = (orgName || 'O').charAt(0).toUpperCase();
   const userInitial = (user?.fullName?.[0] ?? user?.email?.[0] ?? 'U').toUpperCase();

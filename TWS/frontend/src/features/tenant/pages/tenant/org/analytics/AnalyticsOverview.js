@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import {
   UsersIcon,
   ClipboardDocumentListIcon,
@@ -25,11 +24,12 @@ import { tenantApiService } from '../../../../../../shared/services/tenant/tenan
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
 
 const AnalyticsOverview = () => {
-  const { tenantSlug } = useParams();
+  const tenantSlug = useTenantSlug();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
