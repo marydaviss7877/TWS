@@ -11,7 +11,7 @@ const getSecureCookieOptions = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   const isHTTPS = process.env.FORCE_HTTPS === 'true' || process.env.HTTPS_ENABLED === 'true';
   // Strip protocol, trailing slashes, and any whitespace (Railway env vars can have trailing \n)
-  const rawDomain = process.env.BASE_DOMAIN || 'thewolfstack.up.railway.app';
+  const rawDomain = process.env.BASE_DOMAIN || 'twspms.work.gd';
   const baseDomain = rawDomain.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '').trim();
 
   // Only set a domain cookie when the host has real subdomains (not on *.railway.app).
@@ -92,7 +92,7 @@ const setRefreshTokenCookie = (res, name, value, options = {}) => {
  */
 const clearSecureCookie = (res, name) => {
   const isProduction = process.env.NODE_ENV === 'production';
-  const rawDomain = process.env.BASE_DOMAIN || 'thewolfstack.up.railway.app';
+  const rawDomain = process.env.BASE_DOMAIN || 'twspms.work.gd';
   const baseDomain = rawDomain.trim().replace(/^https?:\/\//, '').replace(/\/+$/, '').trim();
   const usesDomainCookie = isProduction && !baseDomain.endsWith('.railway.app');
   res.clearCookie(name, {

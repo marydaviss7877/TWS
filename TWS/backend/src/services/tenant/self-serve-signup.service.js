@@ -342,7 +342,7 @@ class SelfServeSignupService {
 
       // Send welcome email
       try {
-        const baseDomain = (process.env.BASE_DOMAIN || 'thewolfstack.up.railway.app').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+        const baseDomain = (process.env.BASE_DOMAIN || 'twspms.work.gd').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
         const subdomain = `${slug}.${baseDomain}`;
         await emailService.sendTenantWelcomeEmail(user, result.tenant, subdomain);
         console.log('✅ Welcome email sent');
@@ -630,7 +630,7 @@ class SelfServeSignupService {
       setImmediate(async () => {
         try {
           console.log('📝 Step 14: Sending welcome email (background)...');
-          const baseDomain = (process.env.BASE_DOMAIN || 'thewolfstack.up.railway.app').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+          const baseDomain = (process.env.BASE_DOMAIN || 'twspms.work.gd').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
           const subdomain = `${organizationSlug}.${baseDomain}`;
           await emailService.sendTenantWelcomeEmail(user, tenant, subdomain);
           console.log('✅ Welcome email sent');
