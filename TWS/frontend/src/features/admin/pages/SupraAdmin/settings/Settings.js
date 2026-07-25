@@ -13,7 +13,11 @@ import {
   SparklesIcon,
   BoltIcon
 } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import { useTheme } from '../../../../../app/providers/ThemeContext';
+import { Button } from '../../../../../components/ui/Button/Button';
+import { Spinner } from '../../../../../components/ui/Spinner/Spinner';
+import { get, put } from '../../../../../shared/utils/apiClient';
 
 const Settings = () => {
   const [settings, setSettings] = useState(null);
@@ -30,53 +34,13 @@ const Settings = () => {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      // SECURITY FIX: Use credentials: 'include' to send HttpOnly cookies
-      const response = await fetch('/api/supra-admin/settings', {
-        method: 'GET',
-        credentials: 'include', // SECURITY FIX: Include cookies (HttpOnly tokens)
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch settings');
-      }
-      
-      const data = await response.json();
+      setError(null);
+      const data = await get('/api/supra-admin/settings');
       setSettings(data);
     } catch (err) {
+      // Don't mask a failed load behind fabricated defaults — show the real error instead.
       setError(err.message);
-      // Mock data for development
-      setSettings({
-        systemName: 'TWS SupraAdmin',
-        version: '1.0.0',
-        maintenanceMode: false,
-        registrationEnabled: true,
-        defaultTrialDays: 14,
-        maxTenantsPerAdmin: 100,
-        backupSettings: {
-          frequency: 'daily',
-          retention: 30
-        },
-        emailSettings: {
-          enabled: true,
-          smtpHost: 'smtp.gmail.com',
-          smtpPort: 587,
-          fromEmail: 'noreply@tws.com'
-        },
-        securitySettings: {
-          passwordMinLength: 8,
-          sessionTimeout: 24,
-          ipWhitelist: []
-        },
-        notificationSettings: {
-          emailNotifications: true,
-          systemAlerts: true,
-          maintenanceAlerts: true,
-          securityAlerts: true
-        }
-      });
+      toast.error(err.message || 'Failed to load settings');
     } finally {
       setLoading(false);
     }
@@ -85,24 +49,12 @@ const Settings = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      // SECURITY FIX: Use credentials: 'include' to send HttpOnly cookies
-      const response = await fetch('/api/supra-admin/settings', {
-        method: 'PUT',
-        credentials: 'include', // SECURITY FIX: Include cookies
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(settings)
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save settings');
-      }
-      
-      // Show success message
-      console.log('Settings saved successfully');
+      setError(null);
+      await put('/api/supra-admin/settings', settings);
+      toast.success('Settings saved');
     } catch (err) {
       setError(err.message);
+      toast.error(err.message || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -137,14 +89,8 @@ const Settings = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          </div>
-        </div>
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <Spinner size="lg" label="Loading settings..." />
       </div>
     );
   }
@@ -153,11 +99,14 @@ const Settings = () => {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="flex">
-            <div className="ml-3">
+          <div className="flex items-start justify-between gap-4">
+            <div>
               <h3 className="text-sm font-medium text-red-800">Error loading settings</h3>
               <div className="mt-2 text-sm text-red-700">{error}</div>
             </div>
+            <Button variant="outline" size="sm" onClick={fetchSettings} className="flex-shrink-0 border-red-300 text-red-800 hover:bg-red-100">
+              Try again
+            </Button>
           </div>
         </div>
       </div>
@@ -185,21 +134,14 @@ const Settings = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <button
-              onClick={fetchSettings}
-              className="glass-card px-4 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-white/10 transition-all duration-200"
-            >
-              <BoltIcon className="w-4 h-4 inline mr-2" />
+            <Button variant="outline" onClick={fetchSettings}>
+              <BoltIcon className="w-4 h-4 mr-2" />
               Refresh
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-6 py-3 rounded-xl hover:from-primary-600 hover:to-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              <CheckIcon className="h-4 w-4 inline mr-2" />
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              <CheckIcon className="h-4 w-4 mr-2" />
               {saving ? 'Saving...' : 'Save Changes'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -462,20 +404,13 @@ const Settings = () => {
             
             <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
               <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
+                <Button type="button" variant="outline">
                   Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                >
+                </Button>
+                <Button onClick={handleSave} disabled={saving}>
                   {saving ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <Spinner size="sm" className="mr-2" />
                       Saving...
                     </>
                   ) : (
@@ -484,7 +419,7 @@ const Settings = () => {
                       Save Changes
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

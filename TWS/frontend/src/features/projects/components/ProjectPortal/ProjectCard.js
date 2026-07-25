@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import projectApiService from '../../services/projectApiService';
 import { handleApiError, handleSuccess } from '../../utils/errorHandler';
 import { PROJECT_STATUS, STATUS_COLORS, PROJECT_PRIORITY, PRIORITY_COLORS, SUCCESS_MESSAGES } from '../../constants/projectConstants';
-import ConfirmDialog from '../ConfirmDialog';
+import ConfirmDialog from '../../../../components/ConfirmDialog/ConfirmDialog';
 
 const ProjectCard = ({ project, onUpdate }) => {
   const navigate = useNavigate();

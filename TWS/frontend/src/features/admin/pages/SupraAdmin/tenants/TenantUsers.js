@@ -13,6 +13,19 @@ import {
   ClockIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
+import { Button } from '../../../../../components/ui/Button/Button';
+import { Badge } from '../../../../../components/ui/Badge/Badge';
+import { Spinner } from '../../../../../components/ui/Spinner/Spinner';
+import { EmptyState } from '../../../../../components/ui/EmptyState/EmptyState';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+} from '../../../../../components/ui/Dialog/Dialog';
+import { getRoleVariant, getStatusVariant } from '../../../../../shared/utils/statusVariants';
+import { get, post, put, del } from '../../../../../shared/utils/apiClient';
 
 const TenantUsers = () => {
   const [tenantId, setTenantId] = useState(null);
@@ -45,20 +58,7 @@ const TenantUsers = () => {
   const fetchTenantUsers = async (id) => {
     try {
       setLoading(true);
-      // SECURITY FIX: Use credentials: 'include' instead of Authorization header
-      const response = await fetch(`${API_BASE_URL}/api/tenant/switching/tenants/${id}/users`, {
-        method: 'GET',
-        credentials: 'include', // SECURITY FIX: Include cookies
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch tenant users');
-      }
-      
-      const data = await response.json();
+      const data = await get(`${API_BASE_URL}/api/tenant/switching/tenants/${id}/users`);
       setUsers(data);
     } catch (err) {
       setError(err.message);
@@ -69,20 +69,7 @@ const TenantUsers = () => {
 
   const fetchTenantStats = async (id) => {
     try {
-      // SECURITY FIX: Use credentials: 'include' instead of Authorization header
-      const response = await fetch(`${API_BASE_URL}/api/tenant/switching/tenants/${id}/stats`, {
-        method: 'GET',
-        credentials: 'include', // SECURITY FIX: Include cookies
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch tenant stats');
-      }
-      
-      const data = await response.json();
+      const data = await get(`${API_BASE_URL}/api/tenant/switching/tenants/${id}/stats`);
       setStats(data);
     } catch (err) {
       console.error('Error fetching stats:', err);
@@ -92,20 +79,7 @@ const TenantUsers = () => {
   const handleInviteUser = async (e) => {
     e.preventDefault();
     try {
-      // SECURITY FIX: Use credentials: 'include' instead of Authorization header
-      const response = await fetch(`${API_BASE_URL}/api/tenant/switching/tenants/${tenantId}/invite`, {
-        method: 'POST',
-        credentials: 'include', // SECURITY FIX: Include cookies
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(inviteForm)
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to invite user');
-      }
-      
+      await post(`${API_BASE_URL}/api/tenant/switching/tenants/${tenantId}/invite`, inviteForm);
       setShowInviteModal(false);
       setInviteForm({ email: '', role: 'employee' });
       fetchTenantUsers(tenantId);
@@ -117,20 +91,7 @@ const TenantUsers = () => {
 
   const handleUpdateUserRole = async (userId, newRole) => {
     try {
-      // SECURITY FIX: Use credentials: 'include' instead of Authorization header
-      const response = await fetch(`${API_BASE_URL}/api/tenant/switching/tenants/${tenantId}/users/${userId}/role`, {
-        method: 'PUT',
-        credentials: 'include', // SECURITY FIX: Include cookies
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ role: newRole })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update user role');
-      }
-      
+      await put(`${API_BASE_URL}/api/tenant/switching/tenants/${tenantId}/users/${userId}/role`, { role: newRole });
       fetchTenantUsers(tenantId);
     } catch (err) {
       setError(err.message);
@@ -141,21 +102,9 @@ const TenantUsers = () => {
     if (!window.confirm('Are you sure you want to remove this user from the tenant?')) {
       return;
     }
-    
+
     try {
-      // SECURITY FIX: Use credentials: 'include' instead of Authorization header
-      const response = await fetch(`${API_BASE_URL}/api/tenant/switching/tenants/${tenantId}/users/${userId}`, {
-        method: 'DELETE',
-        credentials: 'include', // SECURITY FIX: Include cookies
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to remove user');
-      }
-      
+      await del(`${API_BASE_URL}/api/tenant/switching/tenants/${tenantId}/users/${userId}`);
       fetchTenantUsers(tenantId);
       fetchTenantStats(tenantId);
     } catch (err) {
@@ -163,40 +112,22 @@ const TenantUsers = () => {
     }
   };
 
+  const STATUS_ICONS = { active: CheckCircleIcon, pending: ClockIcon, inactive: XMarkIcon };
+  const STATUS_LABELS = { active: 'Active', pending: 'Pending', inactive: 'Inactive' };
+
   const getStatusBadge = (status) => {
-    const statusConfig = {
-      active: { color: 'bg-green-100 text-green-800', label: 'Active', icon: CheckCircleIcon },
-      pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending', icon: ClockIcon },
-      inactive: { color: 'bg-gray-100 text-gray-800', label: 'Inactive', icon: XMarkIcon }
-    };
-    
-    const config = statusConfig[status] || statusConfig.pending;
-    const Icon = config.icon;
-    
+    const Icon = STATUS_ICONS[status] || ClockIcon;
     return (
-      <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${config.color}`}>
-        <Icon className="h-3 w-3 mr-1" />
-        {config.label}
-      </span>
+      <Badge variant={getStatusVariant(status)} className="gap-1">
+        <Icon className="h-3 w-3" />
+        {STATUS_LABELS[status] || 'Pending'}
+      </Badge>
     );
   };
 
   const getRoleBadge = (role) => {
-    const roleConfig = {
-      owner: { color: 'bg-purple-100 text-purple-800', label: 'Owner' },
-      admin: { color: 'bg-blue-100 text-blue-800', label: 'Admin' },
-      manager: { color: 'bg-green-100 text-green-800', label: 'Manager' },
-      employee: { color: 'bg-gray-100 text-gray-800', label: 'Employee' },
-      client: { color: 'bg-yellow-100 text-yellow-800', label: 'Client' },
-      contractor: { color: 'bg-indigo-100 text-indigo-800', label: 'Contractor' }
-    };
-    
-    const config = roleConfig[role] || roleConfig.employee;
-    return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${config.color}`}>
-        {config.label}
-      </span>
-    );
+    const label = role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Employee';
+    return <Badge variant={getRoleVariant(role)}>{label}</Badge>;
   };
 
   const filteredUsers = users.filter(user => 
@@ -207,11 +138,19 @@ const TenantUsers = () => {
   if (!tenantId) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <UserGroupIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No Tenant Selected</h3>
-          <p className="mt-1 text-sm text-gray-500">Please select a tenant to manage users</p>
-        </div>
+        <EmptyState
+          icon={UserGroupIcon}
+          title="No tenant selected"
+          description="Please select a tenant to manage users"
+        />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner size="lg" label="Loading users..." />
       </div>
     );
   }
@@ -228,13 +167,10 @@ const TenantUsers = () => {
                 Manage users and permissions for this tenant
               </p>
             </div>
-            <button
-              onClick={() => setShowInviteModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
-            >
+            <Button onClick={() => setShowInviteModal(true)}>
               <UserPlusIcon className="h-5 w-5 mr-2" />
               Invite User
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -375,15 +311,17 @@ const TenantUsers = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => {
                             setSelectedUser(user);
                             setShowUserDetails(true);
                           }}
-                          className="text-blue-600 hover:text-blue-900"
+                          title="View details"
                         >
                           <EyeIcon className="h-4 w-4" />
-                        </button>
+                        </Button>
                         <select
                           value={user.roles[0]?.role || 'employee'}
                           onChange={(e) => handleUpdateUserRole(user._id, e.target.value)}
@@ -394,12 +332,15 @@ const TenantUsers = () => {
                           <option value="admin">Admin</option>
                           <option value="owner">Owner</option>
                         </select>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleRemoveUser(user._id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10"
+                          title="Remove from tenant"
                         >
                           <TrashIcon className="h-4 w-4" />
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -411,94 +352,78 @@ const TenantUsers = () => {
       </div>
 
       {/* Invite User Modal */}
-      {showInviteModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Invite User to Tenant</h3>
-              <form onSubmit={handleInviteUser} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    value={inviteForm.email}
-                    onChange={(e) => setInviteForm({...inviteForm, email: e.target.value})}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="user@example.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Role</label>
-                  <select
-                    value={inviteForm.role}
-                    onChange={(e) => setInviteForm({...inviteForm, role: e.target.value})}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="employee">Employee</option>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Admin</option>
-                    <option value="owner">Owner</option>
-                  </select>
-                </div>
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowInviteModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Send Invitation
-                  </button>
-                </div>
-              </form>
+      <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Invite User to Tenant</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleInviteUser} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email Address</label>
+              <input
+                type="email"
+                required
+                value={inviteForm.email}
+                onChange={(e) => setInviteForm({...inviteForm, email: e.target.value})}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+                placeholder="user@example.com"
+              />
             </div>
-          </div>
-        </div>
-      )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
+              <select
+                value={inviteForm.role}
+                onChange={(e) => setInviteForm({...inviteForm, role: e.target.value})}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="employee">Employee</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+                <option value="owner">Owner</option>
+              </select>
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowInviteModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Send Invitation</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* User Details Modal */}
       {showUserDetails && selectedUser && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">User Details</h3>
-              <div className="space-y-3">
-                <div>
-                  <span className="font-medium">Name:</span> {selectedUser.userId.fullName}
-                </div>
-                <div>
-                  <span className="font-medium">Email:</span> {selectedUser.userId.email}
-                </div>
-                <div>
-                  <span className="font-medium">Role:</span> {selectedUser.roles[0]?.role || 'employee'}
-                </div>
-                <div>
-                  <span className="font-medium">Status:</span> {selectedUser.status}
-                </div>
-                <div>
-                  <span className="font-medium">Joined:</span> {new Date(selectedUser.createdAt).toLocaleDateString()}
-                </div>
-                <div>
-                  <span className="font-medium">Last Activity:</span> {selectedUser.lastActivity ? new Date(selectedUser.lastActivity).toLocaleDateString() : 'Never'}
-                </div>
+        <Dialog open={showUserDetails} onOpenChange={setShowUserDetails}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>User Details</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 text-gray-900 dark:text-gray-100">
+              <div>
+                <span className="font-medium">Name:</span> {selectedUser.userId.fullName}
               </div>
-              <div className="flex justify-end pt-4">
-                <button
-                  onClick={() => setShowUserDetails(false)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Close
-                </button>
+              <div>
+                <span className="font-medium">Email:</span> {selectedUser.userId.email}
+              </div>
+              <div>
+                <span className="font-medium">Role:</span> {selectedUser.roles[0]?.role || 'employee'}
+              </div>
+              <div>
+                <span className="font-medium">Status:</span> {selectedUser.status}
+              </div>
+              <div>
+                <span className="font-medium">Joined:</span> {new Date(selectedUser.createdAt).toLocaleDateString()}
+              </div>
+              <div>
+                <span className="font-medium">Last Activity:</span> {selectedUser.lastActivity ? new Date(selectedUser.lastActivity).toLocaleDateString() : 'Never'}
               </div>
             </div>
-          </div>
-        </div>
+            <DialogFooter>
+              <Button onClick={() => setShowUserDetails(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

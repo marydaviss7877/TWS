@@ -72,9 +72,7 @@ const SupraAdminLayout = ({ children }) => {
       icon: UserGroupIcon, 
       children: [
         { name: 'All Users', href: '/supra-admin/users', icon: UserGroupIcon },
-        { name: 'Department Management', href: '/supra-admin/department-management', icon: BuildingOfficeIcon },
-        { name: 'Department Access', href: '/supra-admin/department-access', icon: ShieldCheckIcon },
-        { name: 'Departments', href: '/supra-admin/departments', icon: BuildingOfficeIcon }
+        { name: 'Department Management', href: '/supra-admin/department-management', icon: BuildingOfficeIcon }
       ]
     },
     
@@ -239,14 +237,14 @@ const SupraAdminLayout = ({ children }) => {
             type="button"
             className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer ${
               isActive
-                ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 dark:from-blue-500/30 dark:to-purple-500/30 text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-700/50 shadow-lg shadow-blue-500/10'
-                : 'bg-white/50 dark:bg-gray-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 backdrop-blur-sm'
+                ? 'bg-gradient-to-r from-primary-500/20 to-accent-500/20 dark:from-primary-500/30 dark:to-accent-500/30 text-primary-700 dark:text-primary-300 border border-primary-200/50 dark:border-primary-700/50 shadow-lg shadow-primary-500/10'
+                : 'bg-white/50 dark:bg-gray-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 backdrop-blur-sm'
             }`}
           >
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
                 isActive 
-                  ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/50' 
+                  ? 'bg-gradient-to-br from-primary-500 to-accent-600 text-white shadow-lg shadow-primary-500/50' 
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
               }`}>
                 <item.icon className="w-5 h-5" />
@@ -256,7 +254,7 @@ const SupraAdminLayout = ({ children }) => {
             <ChevronDownIcon className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
           </button>
           {isExpanded && (
-            <div className="mt-2 ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-1 animate-fade-in">
+            <div className="mt-2 ml-4 pl-4 border-l-2 border-primary-200 dark:border-primary-800 space-y-1 animate-fade-in">
               {item.children.map((child) => {
                 const isChildCurrent = isCurrentPath(child.href);
                 return (
@@ -266,8 +264,8 @@ const SupraAdminLayout = ({ children }) => {
                     onClick={() => isMobile && setSidebarOpen(false)}
                     className={`block px-4 py-2.5 text-sm rounded-lg transition-all duration-200 cursor-pointer ${
                       isChildCurrent 
-                        ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 dark:from-blue-500/30 text-blue-700 dark:text-blue-300 font-semibold shadow-sm' 
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-gray-700/60 hover:text-blue-600 dark:hover:text-blue-400'
+                        ? 'bg-gradient-to-r from-primary-500/20 to-accent-500/20 dark:from-primary-500/30 text-primary-700 dark:text-primary-300 font-semibold shadow-sm' 
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-gray-700/60 hover:text-primary-600 dark:hover:text-primary-400'
                     }`}
                     style={{ cursor: 'pointer' }}
                   >
@@ -288,13 +286,13 @@ const SupraAdminLayout = ({ children }) => {
           onClick={() => isMobile && setSidebarOpen(false)}
           className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer ${
             isCurrent
-              ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 dark:from-blue-500/30 dark:to-purple-500/30 text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-700/50 shadow-lg shadow-blue-500/10'
-              : 'bg-white/50 dark:bg-gray-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 backdrop-blur-sm'
+              ? 'bg-gradient-to-r from-primary-500/20 to-accent-500/20 dark:from-primary-500/30 dark:to-accent-500/30 text-primary-700 dark:text-primary-300 border border-primary-200/50 dark:border-primary-700/50 shadow-lg shadow-primary-500/10'
+              : 'bg-white/50 dark:bg-gray-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 backdrop-blur-sm'
           }`}
         >
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
             isCurrent 
-              ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/50' 
+              ? 'bg-gradient-to-br from-primary-500 to-accent-600 text-white shadow-lg shadow-primary-500/50' 
               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
           }`}>
             <item.icon className="w-5 h-5" />
@@ -306,7 +304,7 @@ const SupraAdminLayout = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-950 dark:via-blue-950/30 dark:to-purple-950/30">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-primary-50/30 to-accent-50/30 dark:from-gray-950 dark:via-primary-950/30 dark:to-accent-950/30">
       {/* Animated background pattern */}
       <div className="fixed inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none z-0">
         <div className="absolute inset-0" style={{
@@ -441,9 +439,9 @@ const SupraAdminLayout = ({ children }) => {
                         {index > 0 && <span className="text-gray-400 dark:text-gray-600">/</span>}
                         <Link
                           to={crumb.path}
-                          className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${
+                          className={`hover:text-primary-600 dark:hover:text-primary-400 transition-colors ${
                             index === getBreadcrumbs().length - 1 
-                              ? 'text-blue-600 dark:text-blue-400 font-semibold' 
+                              ? 'text-primary-600 dark:text-primary-400 font-semibold' 
                               : ''
                           }`}
                         >
@@ -469,7 +467,7 @@ const SupraAdminLayout = ({ children }) => {
                   placeholder="Search... (Ctrl+K)"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64 pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-64 pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                 />
               </div>
 
@@ -506,7 +504,7 @@ const SupraAdminLayout = ({ children }) => {
                       <button
                         onClick={() => { setTheme('light'); setShowThemeMenu(false); }}
                         className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                          !isDarkMode ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-700 dark:text-gray-300'
+                          !isDarkMode ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30' : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         <SunIcon className="h-4 w-4" />
@@ -515,7 +513,7 @@ const SupraAdminLayout = ({ children }) => {
                       <button
                         onClick={() => { setTheme('dark'); setShowThemeMenu(false); }}
                         className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                          isDarkMode ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-700 dark:text-gray-300'
+                          isDarkMode ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30' : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         <MoonIcon className="h-4 w-4" />
@@ -524,7 +522,7 @@ const SupraAdminLayout = ({ children }) => {
                       <button
                         onClick={() => { setTheme('system'); setShowThemeMenu(false); }}
                         className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                          theme === 'system' ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-700 dark:text-gray-300'
+                          theme === 'system' ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30' : 'text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         <ComputerDesktopIcon className="h-4 w-4" />
@@ -571,7 +569,7 @@ const SupraAdminLayout = ({ children }) => {
                   }}
                   className="flex items-center space-x-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-600 rounded-xl flex items-center justify-center shadow-lg">
                     <span className="text-white text-sm font-bold">
                       {user?.fullName?.charAt(0) || 'U'}
                     </span>
@@ -589,7 +587,7 @@ const SupraAdminLayout = ({ children }) => {
 
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
-                    <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary-50 to-accent-50 dark:from-primary-900/20 dark:to-accent-900/20">
                       <p className="text-sm font-bold text-gray-900 dark:text-white">
                         {user?.fullName || 'Admin User'}
                       </p>
@@ -605,7 +603,7 @@ const SupraAdminLayout = ({ children }) => {
                         }}
                         className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
                       >
-                        <UserCircleIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <UserCircleIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                         <span>Profile</span>
                       </button>
                       <button 
@@ -615,7 +613,7 @@ const SupraAdminLayout = ({ children }) => {
                         }}
                         className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center space-x-2"
                       >
-                        <Cog6ToothIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <Cog6ToothIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                         <span>Settings</span>
                       </button>
                       <hr className="my-2 border-gray-200 dark:border-gray-700" />

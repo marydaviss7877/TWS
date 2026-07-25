@@ -13,7 +13,7 @@ import {
 import tenantProjectApiService from '../../services/tenantProjectApiService';
 import { handleApiError } from '../../utils/errorHandler';
 import { showSuccess, showError } from '../../utils/toastNotifications';
-import ConfirmDialog from '../ConfirmDialog';
+import ConfirmDialog from '../../../../../../../../components/ConfirmDialog/ConfirmDialog';
 import PromptDialog from '../PromptDialog';
 import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 

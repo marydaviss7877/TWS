@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   Table,
@@ -19,6 +20,7 @@ import {
   DeleteOutlined,
   EyeOutlined,
   ReloadOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 import moment from 'moment';
 
@@ -27,6 +29,7 @@ const { Text } = Typography;
 const { Search, TextArea } = Input;
 
 const TenantManagement = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [tenants, setTenants] = useState([]);
   const [filteredTenants, setFilteredTenants] = useState([]);
@@ -230,7 +233,7 @@ const TenantManagement = () => {
     closeDeleteModal();
   };
 
-  const handleStatusChange = async (id, status) => {
+  const applyStatusChange = async (id, status) => {
     try {
       const res = await fetch(`/api/supra-admin/tenants/${id}/status`, {
         method: 'PUT',
@@ -246,6 +249,22 @@ const TenantManagement = () => {
     } catch (e) {
       message.error(e.message || 'Failed to update status');
     }
+  };
+
+  const handleStatusChange = (id, status, tenantName) => {
+    // Access-reducing transitions cut the tenant off immediately — confirm before firing.
+    if (status === 'suspended' || status === 'cancelled') {
+      Modal.confirm({
+        title: status === 'suspended' ? 'Suspend this tenant?' : 'Cancel this tenant?',
+        content: `${tenantName || 'This tenant'} will immediately lose access to the platform.`,
+        okText: status === 'suspended' ? 'Suspend' : 'Cancel tenant',
+        okButtonProps: { danger: true },
+        cancelText: 'Keep current status',
+        onOk: () => applyStatusChange(id, status),
+      });
+      return;
+    }
+    applyStatusChange(id, status);
   };
 
   const planColors = { trial: 'orange', basic: 'blue', professional: 'green', enterprise: 'purple' };
@@ -283,7 +302,7 @@ const TenantManagement = () => {
           value={status}
           size="small"
           style={{ width: 110 }}
-          onChange={(v) => handleStatusChange(r._id, v)}
+          onChange={(v) => handleStatusChange(r._id, v, r.name)}
         >
           <Option value="active">Active</Option>
           <Option value="trialing">Trial</Option>
@@ -326,6 +345,9 @@ const TenantManagement = () => {
         <Space>
           <Tooltip title="View">
             <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => { setSelectedTenant(r); setViewModalVisible(true); }} />
+          </Tooltip>
+          <Tooltip title="View users">
+            <Button type="text" size="small" icon={<TeamOutlined />} onClick={() => navigate(`/supra-admin/tenants/users?tenantId=${r._id}`)} />
           </Tooltip>
           <Tooltip title="Edit">
             <Button type="text" size="small" icon={<EditOutlined />} onClick={() => { setSelectedTenant(r); setEditModalVisible(true); }} />

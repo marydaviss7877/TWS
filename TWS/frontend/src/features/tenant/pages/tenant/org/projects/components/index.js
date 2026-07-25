@@ -9,7 +9,7 @@ export { default as CreateProjectModal } from './CreateProjectModal';
 export { default as ProjectSettingsModal } from './ProjectSettingsModal';
 export { default as AddResourceModal } from './AddResourceModal';
 export { default as CreateTaskModal } from './CreateTaskModal';
-export { default as ConfirmDialog } from './ConfirmDialog';
+export { default as ConfirmDialog } from '../../../../../../../components/ConfirmDialog/ConfirmDialog';
 export { default as EmptyState } from './EmptyState';
 export {
   EmptyProjects,

@@ -16,8 +16,22 @@ import {
   InformationCircleIcon,
   AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import { useTheme } from '../../../../../app/providers/ThemeContext';
 import { get, patch, post } from '../../../../../shared/utils/apiClient';
+import { Button } from '../../../../../components/ui/Button/Button';
+import { Badge } from '../../../../../components/ui/Badge/Badge';
+import { EmptyState } from '../../../../../components/ui/EmptyState/EmptyState';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from '../../../../../components/ui/Dialog/Dialog';
+import { TableSkeleton } from '../../../../../shared/components/ui/SkeletonLoader';
+import { getRoleVariant, getStatusVariant } from '../../../../../shared/utils/statusVariants';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -32,7 +46,7 @@ const Users = () => {
   const [assigning, setAssigning] = useState(false);
   const [creating, setCreating] = useState(false);
   const [selectedResponsibility, setSelectedResponsibility] = useState('');
-  const [createForm, setCreateForm] = useState({
+  const defaultCreateForm = {
     email: '',
     password: '',
     fullName: '',
@@ -40,8 +54,19 @@ const Users = () => {
     phone: '',
     department: 'Platform Administration',
     status: 'active'
-  });
+  };
+  const [createForm, setCreateForm] = useState(defaultCreateForm);
   const { isDarkMode } = useTheme();
+
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
+    setCreateForm(defaultCreateForm);
+  };
+
+  const closeEditModal = () => {
+    setShowAssignModal(false);
+    setSelectedUser(null);
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -83,16 +108,6 @@ const Users = () => {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const getRoleBadgeColor = (role) => {
-    switch (role) {
-      case 'platform_super_admin': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'platform_admin': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      case 'platform_support': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'platform_billing': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
-    }
-  };
-  
   const getRoleDisplayName = (role) => {
     switch (role) {
       case 'platform_super_admin': return 'Super Admin';
@@ -100,15 +115,6 @@ const Users = () => {
       case 'platform_support': return 'Support';
       case 'platform_billing': return 'Billing';
       default: return role;
-    }
-  };
-
-  const getStatusBadgeColor = (status) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'suspended': return 'bg-red-100 text-red-800';
-      case 'inactive': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -125,16 +131,7 @@ const Users = () => {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="bg-white p-4 rounded-lg shadow">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <TableSkeleton rows={5} columns={5} />
       </div>
     );
   }
@@ -160,23 +157,35 @@ const Users = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <button
-              onClick={fetchUsers}
-              className="glass-card px-4 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-white/10 transition-all duration-200"
-            >
-              <BoltIcon className="w-4 h-4 inline mr-2" />
+            <Button variant="outline" onClick={fetchUsers}>
+              <BoltIcon className="w-4 h-4 mr-2" />
               Refresh
-            </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="glass-card-premium px-6 py-2 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white hover:from-primary-600 hover:to-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-            >
-              <UserPlusIcon className="w-4 h-4 inline mr-2" />
+            </Button>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <UserPlusIcon className="w-4 h-4 mr-2" />
               Add User
-            </button>
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="glass-card p-4 hover-glow border-l-4 border-red-500">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start space-x-3">
+              <XCircleIcon className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-red-800 dark:text-red-300">Couldn't load users</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{error}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchUsers} className="flex-shrink-0 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-500/10">
+              Try again
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Info Banner */}
       <div className="glass-card p-4 hover-glow border-l-4 border-blue-500">
@@ -284,14 +293,10 @@ const Users = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
-                      {getRoleDisplayName(user.role)}
-                    </span>
+                    <Badge variant={getRoleVariant(user.role)}>{getRoleDisplayName(user.role)}</Badge>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(user.status)}`}>
-                      {user.status}
-                    </span>
+                    <Badge variant={getStatusVariant(user.status)}>{user.status}</Badge>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm text-gray-900 dark:text-white">
@@ -302,39 +307,47 @@ const Users = () => {
                     {user.lastLogin ? formatLastLogin(new Date(user.lastLogin)) : 'Never'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button className="p-2 text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-500/10 rounded-lg transition-all duration-200" title="View">
+                    <div className="flex items-center space-x-1">
+                      <Button variant="ghost" size="icon" title="View">
                         <EyeIcon className="h-4 w-4" />
-                      </button>
-                      <button 
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => {
                           setSelectedUser(user);
                           setShowAssignModal(true);
                         }}
-                        className="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all duration-200" 
                         title="Edit User"
                       >
                         <PencilIcon className="h-4 w-4" />
-                      </button>
-                      <button 
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10"
                         onClick={async () => {
                           if (window.confirm(`Are you sure you want to delete ${user.fullName}?`)) {
                             try {
-                              await fetch(`/api/supra-admin/users/${user._id}`, {
+                              const res = await fetch(`/api/supra-admin/users/${user._id}`, {
                                 method: 'DELETE',
                                 credentials: 'include'
                               });
+                              if (!res.ok) {
+                                const data = await res.json().catch(() => ({}));
+                                throw new Error(data.message || 'Failed to delete user');
+                              }
+                              toast.success('User deleted');
                               fetchUsers();
                             } catch (err) {
-                              alert('Failed to delete user');
+                              toast.error(err.message || 'Failed to delete user');
                             }
                           }
                         }}
-                        className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200" 
                         title="Delete User"
                       >
                         <TrashIcon className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -344,34 +357,33 @@ const Users = () => {
         </div>
       </div>
 
-      {filteredUsers.length === 0 && (
-        <div className="text-center py-12">
-          <UserGroupIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No users found</h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {searchTerm || roleFilter || statusFilter 
+      {!error && filteredUsers.length === 0 && (
+        <EmptyState
+          icon={UserGroupIcon}
+          title="No users found"
+          description={
+            searchTerm || roleFilter || statusFilter
               ? 'Try adjusting your search or filter criteria.'
               : 'No TWS Admin users found. Click "Add User" to create a new one.'
-            }
-          </p>
-        </div>
+          }
+        />
       )}
 
       {/* Create User Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative w-full max-w-md glass-card-premium rounded-2xl shadow-2xl">
-            <div className="p-8">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <UserPlusIcon className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Create TWS Admin User</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Add a new Supra Admin / TWS internal employee</p>
-                </div>
+      <Dialog open={showCreateModal} onOpenChange={(open) => !open && closeCreateModal()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center shadow-lg">
+                <UserPlusIcon className="w-5 h-5 text-white" />
               </div>
-              
+              <div>
+                <DialogTitle>Create TWS Admin User</DialogTitle>
+                <DialogDescription>Add a new Supra Admin / TWS internal employee</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
               <form className="space-y-4" onSubmit={async (e) => {
                 e.preventDefault();
                 
@@ -392,19 +404,10 @@ const Users = () => {
                   console.log('✅ User creation response:', response);
                   
                   await fetchUsers();
-                  
-                  setShowCreateModal(false);
-                  setCreateForm({
-                    email: '',
-                    password: '',
-                    fullName: '',
-                    role: 'platform_admin',
-                    phone: '',
-                    department: 'Platform Administration',
-                    status: 'active'
-                  });
-                  
-                  alert('User created successfully!');
+
+                  closeCreateModal();
+
+                  toast.success('User created');
                 } catch (err) {
                   console.error('❌ Create user error:', err);
                   console.error('Error details:', {
@@ -433,8 +436,7 @@ const Users = () => {
                     errorMessage = err.message;
                   }
                   
-                  setError(errorMessage);
-                  alert(errorMessage);
+                  toast.error(errorMessage);
                 } finally {
                   setCreating(false);
                 }
@@ -520,61 +522,38 @@ const Users = () => {
                   />
                 </div>
                 
-                <div className="flex justify-end space-x-3 pt-6">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setCreateForm({
-                        email: '',
-                        password: '',
-                        fullName: '',
-                        role: 'platform_admin',
-                        phone: '',
-                        department: 'Platform Administration',
-                        status: 'active'
-                      });
-                    }}
-                    disabled={creating}
-                    className="px-6 py-3 glass-card rounded-xl text-gray-700 dark:text-gray-300 hover:bg-white/10 transition-all duration-200 font-medium disabled:opacity-50"
-                  >
+                <DialogFooter className="pt-2">
+                  <Button type="button" variant="outline" onClick={closeCreateModal} disabled={creating}>
                     Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={creating}
-                    className="px-6 py-3 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-xl hover:from-primary-600 hover:to-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                  >
+                  </Button>
+                  <Button type="submit" disabled={creating}>
                     {creating ? 'Creating...' : 'Create User'}
-                  </button>
-                </div>
+                  </Button>
+                </DialogFooter>
               </form>
-            </div>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* Edit User Modal */}
       {showAssignModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative w-full max-w-md glass-card-premium rounded-2xl shadow-2xl">
-            <div className="p-8">
-              <div className="flex items-center space-x-3 mb-6">
+        <Dialog open={showAssignModal} onOpenChange={(open) => !open && closeEditModal()}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center shadow-lg">
                   <PencilIcon className="w-5 h-5 text-white" />
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Edit User</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Update user information</p>
-                </div>
+                <DialogTitle>Edit User</DialogTitle>
               </div>
-              
-              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <DialogDescription className="sr-only">Update user information</DialogDescription>
+            </DialogHeader>
+
+              <div className="mb-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <p className="text-sm text-blue-800 dark:text-blue-200">
                   <strong>{selectedUser.fullName}</strong> ({selectedUser.email})
                 </p>
               </div>
-              
+
               <form className="space-y-4" onSubmit={async (e) => {
                 e.preventDefault();
                 
@@ -590,14 +569,13 @@ const Users = () => {
                   });
                   
                   await fetchUsers();
-                  
-                  setShowAssignModal(false);
-                  setSelectedUser(null);
-                  
-                  alert('User updated successfully!');
+
+                  closeEditModal();
+
+                  toast.success('User updated');
                 } catch (err) {
                   console.error('Update user error:', err);
-                  alert(err.response?.data?.message || 'Failed to update user');
+                  toast.error(err.response?.data?.message || err.message || 'Failed to update user');
                 } finally {
                   setAssigning(false);
                 }
@@ -670,30 +648,17 @@ const Users = () => {
                   />
                 </div>
                 
-                <div className="flex justify-end space-x-3 pt-6">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAssignModal(false);
-                      setSelectedUser(null);
-                    }}
-                    disabled={assigning}
-                    className="px-6 py-3 glass-card rounded-xl text-gray-700 dark:text-gray-300 hover:bg-white/10 transition-all duration-200 font-medium disabled:opacity-50"
-                  >
+                <DialogFooter className="pt-2">
+                  <Button type="button" variant="outline" onClick={closeEditModal} disabled={assigning}>
                     Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={assigning}
-                    className="px-6 py-3 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-xl hover:from-primary-600 hover:to-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                  >
+                  </Button>
+                  <Button type="submit" disabled={assigning}>
                     {assigning ? 'Updating...' : 'Update User'}
-                  </button>
-                </div>
+                  </Button>
+                </DialogFooter>
               </form>
-            </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

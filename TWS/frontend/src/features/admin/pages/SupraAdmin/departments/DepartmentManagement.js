@@ -267,6 +267,41 @@ const DepartmentManagement = () => {
     return { totalDepartments, totalEmployees, totalBudget, activeDepartments };
   };
 
+  const handleExportDepartments = () => {
+    try {
+      const rows = getFilteredDepartments();
+      const headers = ['Name', 'Code', 'Manager', 'Employees', 'Budget', 'Status', 'Location'];
+      const csvRows = rows.map(dept => [
+        dept.name || 'N/A',
+        dept.code || 'N/A',
+        dept.manager?.name || dept.manager?.fullName || 'Not assigned',
+        dept.employees || 0,
+        (dept.budget || 0).toFixed(2),
+        dept.status || 'N/A',
+        dept.location || 'N/A'
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = `departments-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      message.success('Departments exported to CSV successfully');
+    } catch (error) {
+      console.error('Error exporting departments:', error);
+      message.error('Failed to export departments');
+    }
+  };
+
   const departmentMenu = (record) => ({
     items: [
       {
@@ -456,10 +491,12 @@ const DepartmentManagement = () => {
         </Title>
         <div className="header-actions">
           <Space>
-            <Button icon={<ImportOutlined />}>
-              Import
-            </Button>
-            <Button icon={<ExportOutlined />}>
+            <Tooltip title="Bulk import isn't available yet">
+              <Button icon={<ImportOutlined />} disabled>
+                Import
+              </Button>
+            </Tooltip>
+            <Button icon={<ExportOutlined />} onClick={handleExportDepartments}>
               Export
             </Button>
             <Button 

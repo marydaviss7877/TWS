@@ -13,6 +13,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { get } from '../../../../../shared/utils/apiClient';
 import { createLogger } from '../../../../../shared/utils/logger';
+import { Button } from '../../../../../components/ui/Button/Button';
+import { Badge } from '../../../../../components/ui/Badge/Badge';
+import { Spinner } from '../../../../../components/ui/Spinner/Spinner';
+import { EmptyState } from '../../../../../components/ui/EmptyState/EmptyState';
 
 const logger = createLogger('SessionAnalytics');
 
@@ -119,8 +123,7 @@ const SessionAnalytics = () => {
   if (loading && !analytics.overview) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <p className="ml-4 text-gray-600 dark:text-gray-400">Loading analytics data...</p>
+        <Spinner size="lg" label="Loading analytics data..." />
       </div>
     );
   }
@@ -132,12 +135,9 @@ const SessionAnalytics = () => {
           <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 text-red-700 dark:text-red-400 px-4 py-3 rounded">
             <p className="font-bold">Error Loading Analytics</p>
             <p>{error}</p>
-            <button
-              onClick={fetchAnalytics}
-              className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-            >
+            <Button variant="destructive" onClick={fetchAnalytics} className="mt-4">
               Retry
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -169,13 +169,10 @@ const SessionAnalytics = () => {
               <option value="30d">Last 30 Days</option>
               <option value="90d">Last 90 Days</option>
             </select>
-            <button
-              onClick={fetchAnalytics}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-            >
-              <ArrowPathIcon className="w-4 h-4" />
-              <span>Refresh</span>
-            </button>
+            <Button onClick={fetchAnalytics}>
+              <ArrowPathIcon className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
           </div>
         </div>
       </div>
@@ -268,13 +265,12 @@ const SessionAnalytics = () => {
                 <div>
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white">{insight.title}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{insight.message}</p>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-2 ${
-                    insight.impact === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                    insight.impact === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                    'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                  }`}>
+                  <Badge
+                    variant={insight.impact === 'high' ? 'destructive' : insight.impact === 'medium' ? 'warning' : 'success'}
+                    className="mt-2"
+                  >
                     {insight.impact} impact
-                  </span>
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -337,6 +333,13 @@ const SessionAnalytics = () => {
                   </td>
                 </tr>
               ))}
+              {!analytics.byTenant?.length && (
+                <tr>
+                  <td colSpan={6}>
+                    <EmptyState icon={BuildingOffice2Icon} title="No tenant session data" description="Data will appear once tenants have active sessions." />
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -397,6 +400,13 @@ const SessionAnalytics = () => {
                   </td>
                 </tr>
               ))}
+              {!analytics.byDepartment?.length && (
+                <tr>
+                  <td colSpan={6}>
+                    <EmptyState icon={ChartPieIcon} title="No department session data" description="Data will appear once departments have active sessions." />
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

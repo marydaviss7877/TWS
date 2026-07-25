@@ -33,6 +33,11 @@ import {
 } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../../../../app/providers/ThemeContext';
+import { Button } from '../../../../../components/ui/Button/Button';
+import { Badge } from '../../../../../components/ui/Badge/Badge';
+import { Spinner } from '../../../../../components/ui/Spinner/Spinner';
+import { EmptyState } from '../../../../../components/ui/EmptyState/EmptyState';
+import { get } from '../../../../../shared/utils/apiClient';
 
 ChartJS.register(
   CategoryScale,
@@ -59,25 +64,11 @@ const SupraAdminDashboard = () => {
     try {
       setLoading(true);
       setIsRefreshing(true);
-      
-      const response = await fetch('/api/supra-admin/dashboard', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
+
+      const data = await get('/api/supra-admin/dashboard');
       setDashboardData(data);
-      console.log('✅ Dashboard data loaded successfully');
-      
     } catch (err) {
-      console.error('❌ Dashboard data fetch error:', err);
+      console.error('Dashboard data fetch error:', err);
       setError(`Unable to load dashboard data: ${err.message}`);
     } finally {
       setLoading(false);
@@ -93,13 +84,7 @@ const SupraAdminDashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="relative w-20 h-20 mx-auto mb-4">
-            <div className="absolute inset-0 border-4 border-blue-200 dark:border-blue-800 rounded-full"></div>
-            <div className="absolute inset-0 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-          <p className="text-gray-600 dark:text-gray-400 font-medium">Loading dashboard...</p>
-        </div>
+        <Spinner size="lg" label="Loading dashboard..." />
       </div>
     );
   }
@@ -113,13 +98,10 @@ const SupraAdminDashboard = () => {
           </div>
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Error loading dashboard</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
-          <button
-            onClick={fetchDashboardData}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center gap-2 mx-auto"
-          >
-            <BoltIcon className="w-5 h-5" />
+          <Button onClick={fetchDashboardData} className="mx-auto">
+            <BoltIcon className="w-5 h-5 mr-2" />
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -277,14 +259,15 @@ const SupraAdminDashboard = () => {
         </div>
         <div className="flex items-center gap-4">
           {/* Manual Refresh Button */}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={fetchDashboardData}
             disabled={loading || isRefreshing}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Refresh dashboard"
           >
             <ArrowPathIcon className={`w-5 h-5 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
-          </button>
+          </Button>
           
           <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
             <ShieldCheckIcon className="w-6 h-6 text-white" />
@@ -364,10 +347,11 @@ const SupraAdminDashboard = () => {
               </div>
             </div>
             <div className="h-64 flex items-center justify-center">
-              <div className="text-center text-gray-500 dark:text-gray-400">
-                <p className="text-lg font-medium">No revenue data available</p>
-                <p className="text-sm mt-2">Revenue will appear when billing data is available</p>
-              </div>
+              <EmptyState
+                icon={ChartBarIcon}
+                title="No revenue data available"
+                description="Revenue will appear when billing data is available"
+              />
             </div>
           </div>
         )}
@@ -406,10 +390,11 @@ const SupraAdminDashboard = () => {
                 }} 
               />
             ) : (
-              <div className="text-center text-gray-500 dark:text-gray-400">
-                <p className="text-lg font-medium">No tenants yet</p>
-                <p className="text-sm mt-2">Tenant distribution will appear when tenants are added</p>
-              </div>
+              <EmptyState
+                icon={BuildingOffice2Icon}
+                title="No tenants yet"
+                description="Tenant distribution will appear when tenants are added"
+              />
             )}
           </div>
         </div>
@@ -445,12 +430,14 @@ const SupraAdminDashboard = () => {
                 </span>
               </div>
             )}
-            {(systemHealth.totalUsers === null || systemHealth.totalUsers === undefined) && 
+            {(systemHealth.totalUsers === null || systemHealth.totalUsers === undefined) &&
              (systemHealth.avgResponseTime === null || systemHealth.avgResponseTime === undefined) && (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                <p>No system health data available</p>
-                <p className="text-sm mt-2">Data will appear when available</p>
-              </div>
+              <EmptyState
+                icon={ShieldCheckIcon}
+                title="No system health data available"
+                description="Data will appear when available"
+                className="py-8"
+              />
             )}
           </div>
         </div>
@@ -487,7 +474,7 @@ const SupraAdminDashboard = () => {
               </div>
             ))}
             {(!recentActivity.recentTenants || recentActivity.recentTenants.length === 0) && (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-8">No recent activity</p>
+              <EmptyState icon={ClockIcon} title="No recent activity" className="py-8" />
             )}
           </div>
           {/* View All Tenants Button */}
@@ -546,9 +533,7 @@ const SupraAdminDashboard = () => {
                     <div className="text-sm text-gray-500 dark:text-gray-400">{tenant.slug}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="px-3 py-1 text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
-                      {tenant.plan}
-                    </span>
+                    <Badge variant="secondary">{tenant.plan}</Badge>
                   </td>
                   <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
                     ${tenant.totalRevenue?.toLocaleString() || '0'}
@@ -557,9 +542,7 @@ const SupraAdminDashboard = () => {
                     {tenant.invoiceCount || 0} invoices
                   </td>
                   <td className="px-6 py-4">
-                    <span className="px-3 py-1 text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full">
-                      Active
-                    </span>
+                    <Badge variant="success">Active</Badge>
                   </td>
                 </tr>
               ))}

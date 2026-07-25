@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../../../app/providers/AuthContext';
 import ProjectCard from '../../../features/projects/components/ProjectPortal/ProjectCard';
 import CreateProjectModal from '../components/ProjectPortal/CreateProjectModal';
-import ConfirmDialog from '../components/ConfirmDialog';
+import ConfirmDialog from '../../../components/ConfirmDialog/ConfirmDialog';
 import ErrorBoundary from '../components/ErrorBoundary';
 import projectApiService from '../services/projectApiService';
 import { handleApiError, handleSuccess } from '../utils/errorHandler';

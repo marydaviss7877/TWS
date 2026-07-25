@@ -18,7 +18,7 @@ import tenantProjectApiService from '../../services/tenantProjectApiService';
 import { handleApiError } from '../../utils/errorHandler';
 import { showSuccess, showError } from '../../utils/toastNotifications';
 import ApprovalStep from './ApprovalStep';
-import ConfirmDialog from '../ConfirmDialog';
+import ConfirmDialog from '../../../../../../../../components/ConfirmDialog/ConfirmDialog';
 import ApprovalProgressSkeleton from './ApprovalProgressSkeleton';
 import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 

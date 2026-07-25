@@ -19,7 +19,8 @@ import {
   List,
   Avatar,
   Badge,
-  Divider
+  Divider,
+  message
 } from 'antd';
 import { 
   BarChartOutlined,
@@ -599,6 +600,42 @@ const Analytics = () => {
     }
   ];
 
+  const handleExportAnalytics = () => {
+    try {
+      const overview = analyticsData?.overview || {};
+      const growth = analyticsData?.growth || {};
+      const rows = [
+        ['Total Tenants', overview.totalTenants || 0, `${growth.tenantsGrowth || 0}%`],
+        ['Active Tenants', overview.activeTenants || 0, ''],
+        ['Total Users', overview.totalUsers || 0, `${growth.usersGrowth || 0}%`],
+        ['Active Users', overview.activeUsers || 0, ''],
+        ['Total Revenue', (overview.totalRevenue || 0).toFixed(2), ''],
+        ['Monthly Revenue', (overview.monthlyRevenue || 0).toFixed(2), `${growth.revenueGrowth || 0}%`],
+        ['System Uptime', `${overview.systemUptime || 0}%`, `${growth.uptimeChange || 0}%`],
+        ['Avg Response Time', `${overview.avgResponseTime || 0}ms`, ''],
+      ];
+
+      const csvContent = [
+        ['Metric', 'Value', 'Growth'].join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = `analytics-overview-${moment().format('YYYY-MM-DD')}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      message.success('Analytics exported to CSV successfully');
+    } catch (err) {
+      console.error('Error exporting analytics:', err);
+      message.error('Failed to export analytics');
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
@@ -683,7 +720,7 @@ const Analytics = () => {
           <Button icon={<ReloadOutlined />} onClick={fetchAnalyticsData} loading={loading}>
               Refresh
           </Button>
-          <Button icon={<DownloadOutlined />} type="primary">
+          <Button icon={<DownloadOutlined />} type="primary" onClick={handleExportAnalytics}>
             Export
           </Button>
         </Space>

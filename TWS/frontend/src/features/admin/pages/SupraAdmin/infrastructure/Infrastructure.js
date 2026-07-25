@@ -245,11 +245,12 @@ const Infrastructure = () => {
           <Tooltip title="Settings">
             <Button icon={<SettingOutlined />} size="small" />
           </Tooltip>
-          <Tooltip title={record.status === 'running' ? 'Stop' : 'Start'}>
-            <Button 
-              icon={record.status === 'running' ? <StopOutlined /> : <PlayCircleOutlined />} 
-              size="small" 
+          <Tooltip title="Server power controls aren't available yet">
+            <Button
+              icon={record.status === 'running' ? <StopOutlined /> : <PlayCircleOutlined />}
+              size="small"
               danger={record.status === 'running'}
+              disabled
             />
           </Tooltip>
         </Space>

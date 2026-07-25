@@ -311,14 +311,9 @@ const BillingManagement = () => {
         }]
       };
 
-      // Try to update via API first
-      try {
-        await axiosInstance.put(`/api/supra-admin/billing/invoices/${selectedInvoice._id}`, updatedInvoice);
-      } catch (apiError) {
-        console.warn('API update failed, updating locally:', apiError);
-      }
+      await axiosInstance.put(`/api/supra-admin/billing/invoices/${selectedInvoice._id}`, updatedInvoice);
 
-      setInvoices(prev => prev.map(inv => 
+      setInvoices(prev => prev.map(inv =>
         inv._id === selectedInvoice._id ? updatedInvoice : inv
       ));
       setEditModalVisible(false);
@@ -326,7 +321,7 @@ const BillingManagement = () => {
       editForm.resetFields();
       message.success('Invoice updated successfully');
     } catch (error) {
-      message.error('Failed to update invoice');
+      message.error(error.response?.data?.message || 'Failed to update invoice');
     }
   };
 
@@ -575,12 +570,7 @@ const BillingManagement = () => {
         notes: values.notes
       };
 
-      // Try to record via API
-      try {
-        await axiosInstance.post(`/api/supra-admin/billing/invoices/${selectedInvoice._id}/payments`, paymentData);
-      } catch (apiError) {
-        console.warn('API payment recording failed, updating locally:', apiError);
-      }
+      await axiosInstance.post(`/api/supra-admin/billing/invoices/${selectedInvoice._id}/payments`, paymentData);
 
       // Update invoice
       const updatedInvoice = {
@@ -590,7 +580,7 @@ const BillingManagement = () => {
         paidAmount: (selectedInvoice.paidAmount || 0) + values.amount
       };
 
-      setInvoices(prev => prev.map(inv => 
+      setInvoices(prev => prev.map(inv =>
         inv._id === selectedInvoice._id ? updatedInvoice : inv
       ));
       setPaymentModalVisible(false);
@@ -599,7 +589,7 @@ const BillingManagement = () => {
       message.success('Payment recorded successfully');
     } catch (error) {
       console.error('Error recording payment:', error);
-      message.error('Failed to record payment');
+      message.error(error.response?.data?.message || 'Failed to record payment');
     }
   };
 
@@ -615,19 +605,12 @@ const BillingManagement = () => {
         message: values.message || `Please find attached invoice ${selectedInvoice.invoiceNumber} for your review.`
       };
 
-      // Try to send via API
-      try {
-        await axiosInstance.post(`/api/supra-admin/billing/invoices/${selectedInvoice._id}/send-email`, emailData);
-        message.success('Invoice email sent successfully');
-      } catch (apiError) {
-        // If API fails, simulate success for demo
-        console.warn('Email API not available, simulating send:', apiError);
-        message.success('Invoice email queued for sending');
-      }
+      await axiosInstance.post(`/api/supra-admin/billing/invoices/${selectedInvoice._id}/send-email`, emailData);
+      message.success('Invoice email sent successfully');
 
       // Update invoice status to sent
-      setInvoices(prev => prev.map(inv => 
-        inv._id === selectedInvoice._id 
+      setInvoices(prev => prev.map(inv =>
+        inv._id === selectedInvoice._id
           ? { ...inv, status: 'sent', sentDate: new Date() }
           : inv
       ));
@@ -636,7 +619,7 @@ const BillingManagement = () => {
       emailForm.resetFields();
     } catch (error) {
       console.error('Error sending email:', error);
-      message.error('Failed to send email');
+      message.error(error.response?.data?.message || 'Failed to send email');
     }
   };
 
@@ -1388,16 +1371,12 @@ const BillingManagement = () => {
                       >
                         Download PDF
                       </Button>
-                      <Button 
-                        icon={<MailOutlined />}
-                        onClick={() => {
-                          setModalVisible(false);
-                          setEmailModalVisible(true);
-                        }}
-                      >
-                        Send Email
-                      </Button>
-                      <Button 
+                      <Tooltip title="Email delivery isn't available yet">
+                        <Button icon={<MailOutlined />} disabled>
+                          Send Email
+                        </Button>
+                      </Tooltip>
+                      <Button
                         icon={<PrinterOutlined />}
                         onClick={() => {
                           window.print();
@@ -1405,15 +1384,11 @@ const BillingManagement = () => {
                       >
                         Print
                       </Button>
-                      <Button 
-                        icon={<CreditCardOutlined />}
-                        onClick={() => {
-                          setModalVisible(false);
-                          setPaymentModalVisible(true);
-                        }}
-                      >
-                        Record Payment
-                      </Button>
+                      <Tooltip title="Payment recording isn't available yet">
+                        <Button icon={<CreditCardOutlined />} disabled>
+                          Record Payment
+                        </Button>
+                      </Tooltip>
                       {selectedInvoice.status === 'pending' && (
                         <Button 
                           type="primary" 
@@ -1585,12 +1560,11 @@ const BillingManagement = () => {
           <Button key="download" icon={<DownloadOutlined />} onClick={() => selectedInvoice && handleDownloadInvoice(selectedInvoice)}>
             Download
           </Button>,
-          <Button key="email" icon={<MailOutlined />} onClick={() => {
-            setPreviewModalVisible(false);
-            setEmailModalVisible(true);
-          }}>
-            Send Email
-          </Button>,
+          <Tooltip key="email" title="Email delivery isn't available yet">
+            <Button icon={<MailOutlined />} disabled>
+              Send Email
+            </Button>
+          </Tooltip>,
           <Button key="close" onClick={() => {
             setPreviewModalVisible(false);
             setSelectedInvoice(null);
