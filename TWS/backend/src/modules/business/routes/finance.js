@@ -7,11 +7,11 @@ const ValidationMiddleware = require('../../../middleware/validation/validation'
 // UPR Phase 1.4 + 4.2: finance uses requireErpAccess with checkRevocation on sensitive routes
 const financeRead = requireErpAccess({ module: 'finance', action: 'read', checkRevocation: true, sensitive: true, auditResourceType: 'finance' });
 const financeWrite = requireErpAccess({ module: 'finance', action: 'write', checkRevocation: true, sensitive: true, auditResourceType: 'finance' });
-const { 
-  Transaction, 
-  ChartOfAccounts, 
+const {
+  Transaction,
+  ChartOfAccounts,
   JournalEntry,
-  Account, 
+  Account,
   Invoice,
   Client,
   Vendor,
@@ -28,8 +28,82 @@ const FinanceExportService = require('../../../services/financeExportService');
 
 const router = express.Router();
 
+// Populate req.user from the JWT before any requireErpAccess check runs — matches
+// the sibling billing.js router. Without this, requireErpAccess still fails closed
+// (403, since req.user is undefined) but every route is unusable for legitimate callers too.
+const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
+router.use(verifyERPToken);
+
 const getOrgId = (req) => req.user?.orgId;
 
+/**
+ * @swagger
+ * /api/finance:
+ *   get:
+ *     summary: List financial transactions (paginated)
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [expense, revenue, investment, transfer, loan]
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *     responses:
+ *       200:
+ *         description: Paginated list of transactions scoped to the caller's organization
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     transactions:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         total:
+ *                           type: integer
+ *                         pages:
+ *                           type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get transactions
 router.get('/', [
   financeRead,
@@ -45,7 +119,7 @@ router.get('/', [
 
   const filter = { orgId: getOrgId(req) };
   if (req.query.type) filter.type = req.query.type;
-  
+
   if (req.query.from || req.query.to) {
     filter.date = {};
     if (req.query.from) filter.date.$gte = new Date(req.query.from);
@@ -74,6 +148,48 @@ router.get('/', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance:
+ *   post:
+ *     summary: Create a financial transaction
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [type, category, amount, description]
+ *             properties:
+ *               type:
+ *                 type: string
+ *                 enum: [expense, revenue, investment, transfer, loan]
+ *               category:
+ *                 type: string
+ *               amount:
+ *                 type: number
+ *                 description: Transaction amount (Transaction.amount is a plain Number field)
+ *               description:
+ *                 type: string
+ *               date:
+ *                 type: string
+ *                 format: date-time
+ *               accountId:
+ *                 type: string
+ *                 description: Mongo ObjectId of a ChartOfAccounts entry
+ *     responses:
+ *       201:
+ *         description: Transaction created
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Create transaction
 router.post('/', [
   financeWrite,
@@ -94,6 +210,22 @@ router.post('/', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/accounts:
+ *   get:
+ *     summary: List active legacy financial accounts
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of active accounts scoped to the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get accounts
 router.get('/accounts', financeRead, ErrorHandler.asyncHandler(async (req, res) => {
   const accounts = await Account.find({ active: true, orgId: getOrgId(req) }).sort({ code: 1 });
@@ -104,6 +236,39 @@ router.get('/accounts', financeRead, ErrorHandler.asyncHandler(async (req, res) 
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/accounts:
+ *   post:
+ *     summary: Create a legacy financial account
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, type, code]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [asset, liability, equity, revenue, expense]
+ *               code:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Account created
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Create account
 router.post('/accounts', [
   financeWrite,
@@ -121,6 +286,39 @@ router.post('/accounts', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/invoices:
+ *   get:
+ *     summary: List invoices (paginated)
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [draft, sent, paid, overdue, cancelled]
+ *     responses:
+ *       200:
+ *         description: Paginated list of invoices scoped to the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get invoices
 router.get('/invoices', [
   financeRead,
@@ -157,6 +355,63 @@ router.get('/invoices', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/invoices:
+ *   post:
+ *     summary: Create an invoice (invoice number auto-generated as INV-####)
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [clientName, clientEmail, issueDate, dueDate, items, subtotal, taxAmount, total]
+ *             properties:
+ *               clientName:
+ *                 type: string
+ *               clientEmail:
+ *                 type: string
+ *                 format: email
+ *               issueDate:
+ *                 type: string
+ *                 format: date-time
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     description:
+ *                       type: string
+ *                     quantity:
+ *                       type: number
+ *                     unitPrice:
+ *                       type: number
+ *                     total:
+ *                       type: number
+ *               subtotal:
+ *                 type: number
+ *               taxAmount:
+ *                 type: number
+ *               total:
+ *                 type: number
+ *                 description: Invoice.currency defaults to USD; not settable on this route
+ *     responses:
+ *       201:
+ *         description: Invoice created
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Create invoice
 router.post('/invoices', [
   financeWrite,
@@ -195,6 +450,60 @@ router.post('/invoices', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/reports/pnl:
+ *   get:
+ *     summary: Get profit & loss summary for a date range
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: start
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: end
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *     responses:
+ *       200:
+ *         description: Revenue, expenses, and net income for the period (sums of Transaction.amount, Number type)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     period:
+ *                       type: object
+ *                       properties:
+ *                         start:
+ *                           type: string
+ *                         end:
+ *                           type: string
+ *                     revenue:
+ *                       type: number
+ *                     expenses:
+ *                       type: number
+ *                     netIncome:
+ *                       type: number
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get financial reports
 router.get('/reports/pnl', [
   financeRead,
@@ -252,6 +561,34 @@ router.get('/reports/pnl', [
 
 // ==================== CHART OF ACCOUNTS ROUTES ====================
 
+/**
+ * @swagger
+ * /api/finance/chart-of-accounts:
+ *   get:
+ *     summary: List chart of accounts entries
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [asset, liability, equity, revenue, expense]
+ *       - in: query
+ *         name: level
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 5
+ *     responses:
+ *       200:
+ *         description: Chart of accounts entries scoped to the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get chart of accounts
 router.get('/chart-of-accounts', [
   financeRead,
@@ -272,6 +609,46 @@ router.get('/chart-of-accounts', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/chart-of-accounts:
+ *   post:
+ *     summary: Create a chart of accounts entry
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [code, name, type]
+ *             properties:
+ *               code:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [asset, liability, equity, revenue, expense]
+ *               parentAccount:
+ *                 type: string
+ *                 description: Mongo ObjectId of parent ChartOfAccounts entry
+ *               level:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *     responses:
+ *       201:
+ *         description: Chart of accounts entry created
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Create chart of accounts entry
 router.post('/chart-of-accounts', [
   financeWrite,
@@ -296,6 +673,49 @@ router.post('/chart-of-accounts', [
 
 // ==================== JOURNAL ENTRIES ROUTES ====================
 
+/**
+ * @swagger
+ * /api/finance/journal-entries:
+ *   get:
+ *     summary: List journal entries (paginated)
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [draft, posted, reversed]
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *     responses:
+ *       200:
+ *         description: Paginated list of journal entries scoped to the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get journal entries
 router.get('/journal-entries', [
   financeRead,
@@ -311,7 +731,7 @@ router.get('/journal-entries', [
 
   const filter = { orgId: req.user.orgId };
   if (req.query.status) filter.status = req.query.status;
-  
+
   if (req.query.from || req.query.to) {
     filter.date = {};
     if (req.query.from) filter.date.$gte = new Date(req.query.from);
@@ -341,6 +761,55 @@ router.get('/journal-entries', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/journal-entries:
+ *   post:
+ *     summary: Create a journal entry (double-entry; total debits must equal total credits)
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [description, entries]
+ *             properties:
+ *               description:
+ *                 type: string
+ *               entries:
+ *                 type: array
+ *                 minItems: 2
+ *                 items:
+ *                   type: object
+ *                   required: [accountId]
+ *                   properties:
+ *                     accountId:
+ *                       type: string
+ *                       description: Mongo ObjectId of a ChartOfAccounts entry
+ *                     debit:
+ *                       type: number
+ *                     credit:
+ *                       type: number
+ *               date:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       201:
+ *         description: Journal entry created (entryNumber auto-generated as JE-####)
+ *       400:
+ *         description: Validation error, or total debits do not equal total credits
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Create journal entry
 router.post('/journal-entries', [
   financeWrite,
@@ -352,11 +821,11 @@ router.post('/journal-entries', [
   body('date').optional().isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const { entries, ...entryData } = req.body;
-  
+
   // Validate debits equal credits
   const totalDebit = entries.reduce((sum, entry) => sum + (entry.debit || 0), 0);
   const totalCredit = entries.reduce((sum, entry) => sum + (entry.credit || 0), 0);
-  
+
   if (Math.abs(totalDebit - totalCredit) > 0.01) {
     return res.status(400).json({
       success: false,
@@ -389,6 +858,30 @@ router.post('/journal-entries', [
 
 // ==================== PROJECT COSTING ROUTES ====================
 
+/**
+ * @swagger
+ * /api/finance/project-costing/{projectId}:
+ *   get:
+ *     summary: Get project costing / profitability record for a project
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: ProjectCosting record (budget/actualCosts amounts are plain Number fields)
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 // Get project profitability
 router.get('/project-costing/:projectId', [
   financeRead
@@ -415,6 +908,42 @@ router.get('/project-costing/:projectId', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/project-costing/{projectId}:
+ *   put:
+ *     summary: Upsert project costing budget/actual-costs for a project
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               budget:
+ *                 type: object
+ *                 description: "{ total, hourly, fixed, contingency } — all Number"
+ *               actualCosts:
+ *                 type: object
+ *                 description: "{ labor, materials, overhead, total } — all Number"
+ *     responses:
+ *       200:
+ *         description: Project costing created or updated (upsert)
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Update project costing
 router.put('/project-costing/:projectId', [
   financeWrite,
@@ -423,7 +952,7 @@ router.put('/project-costing/:projectId', [
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const projectCosting = await ProjectCosting.findOneAndUpdate(
     { projectId: req.params.projectId, orgId: req.user.orgId },
-    { 
+    {
       ...req.body,
       lastUpdated: new Date()
     },
@@ -439,6 +968,50 @@ router.put('/project-costing/:projectId', [
 
 // ==================== TIME ENTRIES ROUTES ====================
 
+/**
+ * @swagger
+ * /api/finance/time-entries:
+ *   get:
+ *     summary: List billable time entries
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: clientId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: employeeId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [draft, submitted, approved, billed]
+ *     responses:
+ *       200:
+ *         description: Time entries scoped to the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get time entries
 router.get('/time-entries', [
   financeRead,
@@ -450,12 +1023,12 @@ router.get('/time-entries', [
   query('status').optional().isIn(['draft', 'submitted', 'approved', 'billed'])
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const filter = { orgId: req.user.orgId };
-  
+
   if (req.query.projectId) filter.projectId = req.query.projectId;
   if (req.query.clientId) filter.clientId = req.query.clientId;
   if (req.query.employeeId) filter.employeeId = req.query.employeeId;
   if (req.query.status) filter.status = req.query.status;
-  
+
   if (req.query.from || req.query.to) {
     filter.date = {};
     if (req.query.from) filter.date.$gte = new Date(req.query.from);
@@ -475,6 +1048,48 @@ router.get('/time-entries', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/time-entries:
+ *   post:
+ *     summary: Create a billable time entry
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [employeeId, projectId, clientId, date, hours, description]
+ *             properties:
+ *               employeeId:
+ *                 type: string
+ *               projectId:
+ *                 type: string
+ *               clientId:
+ *                 type: string
+ *               date:
+ *                 type: string
+ *                 format: date-time
+ *               hours:
+ *                 type: number
+ *                 minimum: 0
+ *               description:
+ *                 type: string
+ *               hourlyRate:
+ *                 type: number
+ *     responses:
+ *       201:
+ *         description: Time entry created
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Create time entry
 router.post('/time-entries', [
   financeWrite,
@@ -502,6 +1117,28 @@ router.post('/time-entries', [
 
 // ==================== VENDORS & BILLS ROUTES ====================
 
+/**
+ * @swagger
+ * /api/finance/vendors:
+ *   get:
+ *     summary: List vendors
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, inactive, suspended]
+ *     responses:
+ *       200:
+ *         description: Vendors scoped to the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get vendors
 router.get('/vendors', [
   financeRead,
@@ -520,6 +1157,41 @@ router.get('/vendors', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/vendors:
+ *   post:
+ *     summary: Create a vendor
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               paymentTerms:
+ *                 type: string
+ *                 enum: [net_15, net_30, net_45, net_60, due_on_receipt]
+ *                 default: net_30
+ *     responses:
+ *       201:
+ *         description: Vendor created
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Create vendor
 router.post('/vendors', [
   financeWrite,
@@ -541,6 +1213,42 @@ router.post('/vendors', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/bills:
+ *   get:
+ *     summary: List vendor bills (accounts payable)
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: vendorId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [draft, pending_approval, approved, paid, overdue, cancelled]
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *     responses:
+ *       200:
+ *         description: Bills scoped to the caller's organization (Bill.total/subtotal/taxAmount/paidAmount are Number, Bill.currency defaults to USD)
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get bills
 router.get('/bills', [
   financeRead,
@@ -550,10 +1258,10 @@ router.get('/bills', [
   query('to').optional().isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const filter = { orgId: req.user.orgId };
-  
+
   if (req.query.vendorId) filter.vendorId = req.query.vendorId;
   if (req.query.status) filter.status = req.query.status;
-  
+
   if (req.query.from || req.query.to) {
     filter.dueDate = {};
     if (req.query.from) filter.dueDate.$gte = new Date(req.query.from);
@@ -570,6 +1278,60 @@ router.get('/bills', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/bills:
+ *   post:
+ *     summary: Create a vendor bill (bill number auto-generated as BILL-####)
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [vendorId, billDate, dueDate, items, subtotal, taxAmount, total]
+ *             properties:
+ *               vendorId:
+ *                 type: string
+ *               billDate:
+ *                 type: string
+ *                 format: date-time
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *               items:
+ *                 type: array
+ *                 minItems: 1
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     description:
+ *                       type: string
+ *                     quantity:
+ *                       type: number
+ *                     unitPrice:
+ *                       type: number
+ *                     total:
+ *                       type: number
+ *               subtotal:
+ *                 type: number
+ *               taxAmount:
+ *                 type: number
+ *               total:
+ *                 type: number
+ *     responses:
+ *       201:
+ *         description: Bill created
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Create bill
 router.post('/bills', [
   financeWrite,
@@ -606,6 +1368,28 @@ router.post('/bills', [
 
 // ==================== CASH FLOW FORECASTING ROUTES ====================
 
+/**
+ * @swagger
+ * /api/finance/cash-flow-forecasts:
+ *   get:
+ *     summary: List cash flow forecasts
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [draft, active, archived]
+ *     responses:
+ *       200:
+ *         description: Cash flow forecasts scoped to the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get cash flow forecasts
 router.get('/cash-flow-forecasts', [
   financeRead,
@@ -624,6 +1408,52 @@ router.get('/cash-flow-forecasts', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/cash-flow-forecasts:
+ *   post:
+ *     summary: Create a cash flow forecast
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, period, forecastType, scenarios]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               period:
+ *                 type: object
+ *                 properties:
+ *                   start:
+ *                     type: string
+ *                     format: date-time
+ *                   end:
+ *                     type: string
+ *                     format: date-time
+ *               forecastType:
+ *                 type: string
+ *                 enum: [monthly, quarterly, yearly]
+ *               scenarios:
+ *                 type: array
+ *                 minItems: 1
+ *                 items:
+ *                   type: object
+ *                   description: "{ name, probability, inflows: [{date, amount, description, category}], outflows: [...] } — amount is Number"
+ *     responses:
+ *       201:
+ *         description: Cash flow forecast created
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Create cash flow forecast
 router.post('/cash-flow-forecasts', [
   financeWrite,
@@ -650,18 +1480,41 @@ router.post('/cash-flow-forecasts', [
 
 // ==================== FINANCIAL KPIs ROUTES ====================
 
+/**
+ * @swagger
+ * /api/finance/kpis:
+ *   get:
+ *     summary: Get the most recent financial KPI snapshot for a period
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Any date within the target month; resolves to that calendar month's KPI window
+ *     responses:
+ *       200:
+ *         description: Latest matching FinancialKPI document, or null
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get financial KPIs
 router.get('/kpis', [
   financeRead,
   query('period').optional().isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const filter = { orgId: req.user.orgId };
-  
+
   if (req.query.period) {
     const period = new Date(req.query.period);
     const startOfMonth = new Date(period.getFullYear(), period.getMonth(), 1);
     const endOfMonth = new Date(period.getFullYear(), period.getMonth() + 1, 0);
-    
+
     filter['period.start'] = startOfMonth;
     filter['period.end'] = endOfMonth;
   }
@@ -676,6 +1529,43 @@ router.get('/kpis', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/kpis/calculate:
+ *   post:
+ *     summary: Recalculate and upsert the financial KPI snapshot for a period
+ *     description: Aggregates Transaction (revenue/expense), TimeEntry (utilization), Invoice (recurring revenue), PayrollRecord (payroll cost), and Project (active count) for the given period, all scoped to the caller's organization.
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [period]
+ *             properties:
+ *               period:
+ *                 type: object
+ *                 required: [start, end]
+ *                 properties:
+ *                   start:
+ *                     type: string
+ *                     format: date-time
+ *                   end:
+ *                     type: string
+ *                     format: date-time
+ *     responses:
+ *       200:
+ *         description: Recalculated FinancialKPI document
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Calculate and update financial KPIs
 router.post('/kpis/calculate', [
   financeWrite,
@@ -683,7 +1573,7 @@ router.post('/kpis/calculate', [
   body('period.end').isISO8601()
 ], ValidationMiddleware.handleValidationErrors, ErrorHandler.asyncHandler(async (req, res) => {
   const { period } = req.body;
-  
+
   // Calculate revenue metrics
   const revenueData = await Transaction.aggregate([
     {
@@ -730,10 +1620,10 @@ router.post('/kpis/calculate', [
       $group: {
         _id: null,
         totalHours: { $sum: '$hours' },
-        billableHours: { 
-          $sum: { 
-            $cond: ['$billable', '$hours', 0] 
-          } 
+        billableHours: {
+          $sum: {
+            $cond: ['$billable', '$hours', 0]
+          }
         }
       }
     }
@@ -834,6 +1724,29 @@ router.post('/kpis/calculate', [
 
 // ==================== MASTER FINANCE DASHBOARD ROUTES ====================
 
+/**
+ * @swagger
+ * /api/finance/kpis/dashboard:
+ *   get:
+ *     summary: Get comprehensive finance dashboard KPIs
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [week, month, quarter, year]
+ *           default: month
+ *     responses:
+ *       200:
+ *         description: KPI payload computed by FinanceDashboardService for the caller's organization and role
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get comprehensive KPIs for dashboard
 router.get('/kpis/dashboard', [
   financeRead,
@@ -849,6 +1762,29 @@ router.get('/kpis/dashboard', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/revenue/trends:
+ *   get:
+ *     summary: Get revenue trend series
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [week, month, quarter, year]
+ *           default: month
+ *     responses:
+ *       200:
+ *         description: Revenue trend data computed by FinanceDashboardService for the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get revenue trends
 router.get('/revenue/trends', [
   financeRead,
@@ -863,6 +1799,29 @@ router.get('/revenue/trends', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/expenses/trends:
+ *   get:
+ *     summary: Get expense trend series
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [week, month, quarter, year]
+ *           default: month
+ *     responses:
+ *       200:
+ *         description: Expense trend data computed by FinanceDashboardService for the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get expense trends
 router.get('/expenses/trends', [
   financeRead,
@@ -877,6 +1836,29 @@ router.get('/expenses/trends', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/cash-flow:
+ *   get:
+ *     summary: Get cash flow summary for the dashboard
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [week, month, quarter, year]
+ *           default: month
+ *     responses:
+ *       200:
+ *         description: Cash flow data computed by FinanceDashboardService for the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get cash flow data
 router.get('/cash-flow', [
   financeRead,
@@ -891,6 +1873,22 @@ router.get('/cash-flow', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/accounts/aging:
+ *   get:
+ *     summary: Get accounts receivable/payable aging buckets
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Aging data computed by FinanceDashboardService for the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get accounts aging
 router.get('/accounts/aging', [
   financeRead
@@ -903,6 +1901,22 @@ router.get('/accounts/aging', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/projects/profitability:
+ *   get:
+ *     summary: Get per-project profitability summary
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Profitability data computed by FinanceDashboardService for the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get project profitability
 router.get('/projects/profitability', [
   financeRead
@@ -915,6 +1929,29 @@ router.get('/projects/profitability', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/budget/vs-actual:
+ *   get:
+ *     summary: Get budget vs actual spend comparison
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [week, month, quarter, year]
+ *           default: month
+ *     responses:
+ *       200:
+ *         description: Budget vs actual data computed by FinanceDashboardService for the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get budget vs actual
 router.get('/budget/vs-actual', [
   financeRead,
@@ -929,6 +1966,22 @@ router.get('/budget/vs-actual', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/alerts:
+ *   get:
+ *     summary: Get financial alerts (e.g. overdue invoices, low cash) for the dashboard
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Alerts computed by FinanceDashboardService for the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get financial alerts
 router.get('/alerts', [
   financeRead
@@ -941,6 +1994,22 @@ router.get('/alerts', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/invoices/overdue:
+ *   get:
+ *     summary: List up to 10 overdue invoices
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Overdue invoices scoped to the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get overdue invoices
 router.get('/invoices/overdue', [
   financeRead
@@ -959,6 +2028,30 @@ router.get('/invoices/overdue', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/bills/upcoming:
+ *   get:
+ *     summary: List up to 10 upcoming vendor bills due within N days
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 90
+ *           default: 30
+ *     responses:
+ *       200:
+ *         description: Upcoming bills scoped to the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get upcoming bills
 router.get('/bills/upcoming', [
   financeRead,
@@ -983,6 +2076,30 @@ router.get('/bills/upcoming', [
   });
 }));
 
+/**
+ * @swagger
+ * /api/finance/transactions:
+ *   get:
+ *     summary: List most recent transactions
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Recent transactions scoped to the caller's organization
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get recent transactions
 router.get('/transactions', [
   financeRead,
@@ -1005,6 +2122,34 @@ router.get('/transactions', [
 
 // ==================== EXPORT ROUTES ====================
 
+/**
+ * @swagger
+ * /api/finance/export/kpis/excel:
+ *   get:
+ *     summary: Export KPIs to Excel (falls back to CSV if Excel export is unsupported)
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [week, month, quarter, year]
+ *           default: month
+ *     responses:
+ *       200:
+ *         description: Binary file stream (xlsx or csv) for the caller's organization
+ *         content:
+ *           application/octet-stream:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Export KPIs to Excel
 router.get('/export/kpis/excel', [
   financeRead,
@@ -1017,6 +2162,34 @@ router.get('/export/kpis/excel', [
   await FinanceExportService.exportKPIsToExcel(req.user.orgId, period, res);
 }));
 
+/**
+ * @swagger
+ * /api/finance/export/kpis/pdf:
+ *   get:
+ *     summary: Export KPIs to PDF (falls back to CSV if PDF export is unsupported)
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [week, month, quarter, year]
+ *           default: month
+ *     responses:
+ *       200:
+ *         description: Binary file stream (pdf or csv) for the caller's organization
+ *         content:
+ *           application/octet-stream:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Export KPIs to PDF
 router.get('/export/kpis/pdf', [
   financeRead,
@@ -1029,6 +2202,34 @@ router.get('/export/kpis/pdf', [
   await FinanceExportService.exportKPIsToPDF(req.user.orgId, period, res);
 }));
 
+/**
+ * @swagger
+ * /api/finance/export/kpis/csv:
+ *   get:
+ *     summary: Export KPIs to CSV
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [week, month, quarter, year]
+ *           default: month
+ *     responses:
+ *       200:
+ *         description: CSV file stream for the caller's organization
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Export KPIs to CSV
 router.get('/export/kpis/csv', [
   financeRead,
@@ -1038,6 +2239,34 @@ router.get('/export/kpis/csv', [
   await FinanceExportService.exportKPIsToCSV(req.user.orgId, period, res);
 }));
 
+/**
+ * @swagger
+ * /api/finance/export/dashboard/excel:
+ *   get:
+ *     summary: Export the full finance dashboard to Excel (falls back to CSV if Excel export is unsupported)
+ *     tags: [Finance]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [week, month, quarter, year]
+ *           default: month
+ *     responses:
+ *       200:
+ *         description: Binary file stream (xlsx or csv) for the caller's organization
+ *         content:
+ *           application/octet-stream:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Export full dashboard to Excel
 router.get('/export/dashboard/excel', [
   financeRead,

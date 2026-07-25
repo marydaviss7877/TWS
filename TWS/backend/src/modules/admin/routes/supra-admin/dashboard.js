@@ -13,6 +13,106 @@ const {
 } = require('./shared');
 
 // Get dashboard overview
+/**
+ * @swagger
+ * /api/supra-admin/dashboard:
+ *   get:
+ *     summary: Get the Supra Admin dashboard overview
+ *     description: >
+ *       Aggregates tenant counts (total/active/trial/suspended/cancelled, with 30-day
+ *       growth deltas), the 5 most recently created tenants, the 5 most recently
+ *       created active tenants, and a best-effort system-health snapshot (bounded to a
+ *       2s timeout; falls back to null fields on failure).
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dashboard data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 overview:
+ *                   type: object
+ *                   properties:
+ *                     totalTenants:
+ *                       type: integer
+ *                     activeTenants:
+ *                       type: integer
+ *                     totalRevenue:
+ *                       type: number
+ *                       nullable: true
+ *                     monthlyGrowth:
+ *                       type: number
+ *                       nullable: true
+ *                     trialTenants:
+ *                       type: integer
+ *                     cancelledTenants:
+ *                       type: integer
+ *                     totalTenantsChange:
+ *                       type: number
+ *                       nullable: true
+ *                     activeTenantsChange:
+ *                       type: number
+ *                       nullable: true
+ *                     trialTenantsChange:
+ *                       type: number
+ *                       nullable: true
+ *                 tenantStats:
+ *                   type: object
+ *                   properties:
+ *                     active:
+ *                       type: integer
+ *                     trial:
+ *                       type: integer
+ *                     suspended:
+ *                       type: integer
+ *                     cancelled:
+ *                       type: integer
+ *                 systemHealth:
+ *                   type: object
+ *                   properties:
+ *                     totalUsers:
+ *                       type: integer
+ *                       nullable: true
+ *                     avgResponseTime:
+ *                       type: number
+ *                       nullable: true
+ *                 recentActivity:
+ *                   type: object
+ *                   properties:
+ *                     recentTenants:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           status:
+ *                             type: string
+ *                 topTenants:
+ *                   type: object
+ *                   properties:
+ *                     topRevenue:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         description: Failed to fetch dashboard data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.get('/dashboard', requirePlatformPermission(PLATFORM_PERMISSIONS.ANALYTICS.READ), async (req, res) => {
   const startTime = Date.now();
   try {
@@ -137,6 +237,37 @@ router.get('/dashboard', requirePlatformPermission(PLATFORM_PERMISSIONS.ANALYTIC
 });
 
 // Get system-wide analytics
+/**
+ * @swagger
+ * /api/supra-admin/analytics:
+ *   get:
+ *     summary: Get system-wide analytics (stub)
+ *     description: The underlying analytics service was removed; this always returns a static placeholder message.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Placeholder response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Analytics service removed
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         description: Failed to fetch analytics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.get('/analytics', requirePlatformPermission(PLATFORM_PERMISSIONS.ANALYTICS.READ), async (req, res) => {
   try {
     const analytics = { message: 'Analytics service removed' };
@@ -148,6 +279,63 @@ router.get('/analytics', requirePlatformPermission(PLATFORM_PERMISSIONS.ANALYTIC
 });
 
 // Get ERP statistics
+/**
+ * @swagger
+ * /api/supra-admin/erp/stats:
+ *   get:
+ *     summary: Get tenant ERP category/module usage statistics
+ *     description: >
+ *       Aggregates Tenant documents by `erpCategory` (count + active count), counts new
+ *       tenants per category since the requested time range, and counts usage of each
+ *       `erpModules` entry across all tenants.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           enum: [7d, 30d, 90d]
+ *           default: 30d
+ *     responses:
+ *       200:
+ *         description: ERP statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     categoryDistribution:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     newTenantsByCategory:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     moduleUsage:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     timeRange:
+ *                       type: string
+ *                     generatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/erp/stats', requirePlatformPermission(PLATFORM_PERMISSIONS.ANALYTICS.READ), async (req, res) => {
   try {
     const { timeRange = '30d' } = req.query;

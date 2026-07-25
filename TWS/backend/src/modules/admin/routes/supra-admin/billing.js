@@ -13,6 +13,57 @@ const {
 } = require('./shared');
 
 // Get billing overview
+/**
+ * @swagger
+ * /api/supra-admin/billing/overview:
+ *   get:
+ *     summary: Get platform-wide billing overview
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: >
+ *           Billing overview from billingService.getBillingOverview(). On error, still
+ *           returns 200 with a zeroed-out fallback shape (see 500 response below for the
+ *           same shape returned with a message field).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 summary:
+ *                   type: object
+ *                   properties:
+ *                     totalRevenue:
+ *                       type: number
+ *                     monthlyRevenue:
+ *                       type: number
+ *                     pendingRevenue:
+ *                       type: number
+ *                     overdueRevenue:
+ *                       type: number
+ *                     totalInvoices:
+ *                       type: integer
+ *                     paidInvoices:
+ *                       type: integer
+ *                     pendingInvoices:
+ *                       type: integer
+ *                 monthlyTrend:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 planDistribution:
+ *                   type: object
+ *                 topCustomers:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/billing/overview', requirePlatformPermission(PLATFORM_PERMISSIONS.BILLING.READ), async (req, res) => {
   try {
     const overview = await billingService.getBillingOverview();
@@ -30,6 +81,64 @@ router.get('/billing/overview', requirePlatformPermission(PLATFORM_PERMISSIONS.B
 });
 
 // Create invoice
+/**
+ * @swagger
+ * /api/supra-admin/billing/invoices:
+ *   post:
+ *     summary: Create an invoice for a tenant
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tenantId]
+ *             properties:
+ *               tenantId:
+ *                 type: string
+ *               total:
+ *                 type: number
+ *               description:
+ *                 type: string
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *               invoiceNumber:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Invoice created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 invoice:
+ *                   type: object
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     invoice:
+ *                       type: object
+ *       400:
+ *         description: Tenant is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/billing/invoices', requirePlatformPermission(PLATFORM_PERMISSIONS.BILLING.INVOICES), async (req, res) => {
   try {
     const { tenantId, total, description, dueDate, invoiceNumber } = req.body;
@@ -54,6 +163,61 @@ router.post('/billing/invoices', requirePlatformPermission(PLATFORM_PERMISSIONS.
 });
 
 // Update invoice (mark paid, etc.)
+/**
+ * @swagger
+ * /api/supra-admin/billing/invoices/{id}:
+ *   put:
+ *     summary: Update an invoice's payment status
+ *     description: >
+ *       Marking an invoice `paid` clears `subscription.paymentFailedAt` and
+ *       `subscription.readOnlyMode` on the associated tenant; marking it `failed` sets
+ *       `subscription.paymentFailedAt` on the tenant.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *               paymentStatus:
+ *                 type: string
+ *                 enum: [pending, paid, failed, refunded, cancelled]
+ *               paymentDate:
+ *                 type: string
+ *                 format: date-time
+ *     responses:
+ *       200:
+ *         description: Invoice updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 invoice:
+ *                   type: object
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.put('/billing/invoices/:id', requirePlatformPermission(PLATFORM_PERMISSIONS.BILLING.INVOICES), async (req, res) => {
   try {
     const { id } = req.params;
@@ -98,6 +262,71 @@ router.put('/billing/invoices/:id', requirePlatformPermission(PLATFORM_PERMISSIO
 });
 
 // Get all invoices
+/**
+ * @swagger
+ * /api/supra-admin/billing/invoices:
+ *   get:
+ *     summary: List invoices across tenants, with pagination
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Filters on paymentStatus
+ *       - in: query
+ *         name: tenantId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Paginated invoices (top-level `invoices`/`pagination` are duplicated inside `data` for legacy clients)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     invoices:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         current:
+ *                           type: integer
+ *                         pages:
+ *                           type: integer
+ *                         total:
+ *                           type: integer
+ *                 invoices:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/billing/invoices', requirePlatformPermission(PLATFORM_PERMISSIONS.BILLING.INVOICES), async (req, res) => {
   try {
     const { page = 1, limit = 20, status, tenantId } = req.query;

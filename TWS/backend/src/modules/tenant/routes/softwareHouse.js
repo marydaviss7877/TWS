@@ -634,7 +634,8 @@ require('./softwareHouseFinanceWrites')(router, {
   Project,
   ProjectCosting,
   CashFlowForecast,
-  Expense
+  Expense,
+  Transaction
 });
 
 // ==================== SOFTWARE-HOUSE FINANCE: CLIENTS ====================

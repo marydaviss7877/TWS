@@ -106,6 +106,13 @@ app.use(morgan('combined'));
 const centralizedRoutes = require('./src/routes/index');
 app.use('/', centralizedRoutes);
 
+// API documentation (Swagger UI) — never expose route/schema structure in production
+if (!config.isProduction()) {
+  const { specs, swaggerUi, swaggerOptions } = require('./src/config/swagger');
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerOptions));
+  console.log('📚 API docs available at /api-docs (non-production only)');
+}
+
 // MongoDB connection
 async function connectToMongoDB() {
   try {

@@ -63,6 +63,71 @@ const checkDatabaseConnection = (req, res, next) => {
  * Diagnostic: DB connection + whether email exists in User or TWSAdmin (no secrets).
  * Use to verify backend is connected and sees the user when login returns 401.
  */
+/**
+ * @swagger
+ * /api/auth/db-status:
+ *   get:
+ *     summary: Check database connection status and optionally look up an email
+ *     description: >
+ *       Diagnostic endpoint. Reports MongoDB connection state and, if an `email`
+ *       query param is supplied, whether that email exists in the User or
+ *       TWSAdmin collections (no passwords or secrets are returned).
+ *     tags: [Authentication]
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Email address to look up
+ *     responses:
+ *       200:
+ *         description: Database status (and email lookup result, if requested)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     database:
+ *                       type: object
+ *                       properties:
+ *                         connected:
+ *                           type: boolean
+ *                         readyState:
+ *                           type: number
+ *                         name:
+ *                           type: string
+ *                           nullable: true
+ *                     emailCheck:
+ *                       type: object
+ *                       properties:
+ *                         email:
+ *                           type: string
+ *                         inUser:
+ *                           type: boolean
+ *                         inTWSAdmin:
+ *                           type: boolean
+ *                         userId:
+ *                           type: string
+ *                           nullable: true
+ *                         twsAdminId:
+ *                           type: string
+ *                           nullable: true
+ *                         role:
+ *                           type: string
+ *                           nullable: true
+ *                         status:
+ *                           type: string
+ *                           nullable: true
+ *       503:
+ *         description: Database connection not ready
+ */
 router.get('/db-status', checkDatabaseConnection, ErrorHandler.asyncHandler(async (req, res) => {
   const dbState = mongoose.connection.readyState;
   const dbName = mongoose.connection.db?.databaseName || null;
@@ -94,8 +159,65 @@ router.get('/db-status', checkDatabaseConnection, ErrorHandler.asyncHandler(asyn
   res.json({ success: true, data: payload });
 }));
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user (assigned to the default organization)
+ *     description: >
+ *       Rate limited to 3 requests/hour/IP. Creates the user and immediately
+ *       logs them in by setting `accessToken` and `refreshToken` as httpOnly
+ *       cookies — no tokens are returned in the response body.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password, fullName]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *               fullName:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [super_admin, org_manager, pmo, project_manager, department_lead, contributor, client, reseller, owner, admin, hr, finance, manager, employee, contractor, auditor]
+ *                 description: Defaults to "contributor" if omitted
+ *     responses:
+ *       201:
+ *         description: User registered successfully; auth cookies set
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Validation failed or user already exists
+ *       429:
+ *         description: Too many registration attempts from this IP
+ *       500:
+ *         description: Default organization not found
+ *       503:
+ *         description: Database connection not ready
+ */
 // Register
-router.post('/register', 
+router.post('/register',
   registrationLimiter, // SECURITY: Rate limiting (3 registrations per hour per IP)
   checkDatabaseConnection,
   body('email').isEmail().normalizeEmail(AUTH_EMAIL_NORMALIZE),
@@ -156,6 +278,59 @@ router.post('/register',
   });
 }));
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Log in a tenant / software-house user
+ *     description: >
+ *       Tenant and software-house users only — Supra Admins must use
+ *       POST /api/auth/supra-admin/login. Rate limited to 5 requests/15min/IP.
+ *       On success, `accessToken` and `refreshToken` are set as httpOnly
+ *       cookies; no tokens are returned in the response body.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful; auth cookies set
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Validation failed
+ *       401:
+ *         description: Invalid email or password
+ *       403:
+ *         description: Account is not active
+ *       429:
+ *         description: Too many login attempts from this IP
+ *       503:
+ *         description: Database connection not ready
+ */
 // Login - tenant / software-house users ONLY
 // Supra admins must use POST /api/auth/supra-admin/login
 router.post('/login',
@@ -243,6 +418,60 @@ router.post('/login',
   })
 );
 
+/**
+ * @swagger
+ * /api/auth/supra-admin/login:
+ *   post:
+ *     summary: Log in a Supra Admin (TWSAdmin)
+ *     description: >
+ *       Supra Admin accounts only (TWSAdmin model) — regular tenant users must
+ *       use POST /api/auth/login. Rate limited to 5 requests/15min/IP. On
+ *       success, `accessToken` and `refreshToken` are set as httpOnly cookies;
+ *       no tokens are returned in the response body.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful; auth cookies set
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       description: TWSAdmin document with role forced to "super_admin", userType "twsAdmin", orgId/tenantId null
+ *       400:
+ *         description: Validation failed
+ *       401:
+ *         description: Invalid email or password
+ *       403:
+ *         description: Account is not active
+ *       429:
+ *         description: Too many login attempts from this IP
+ *       503:
+ *         description: Database connection not ready
+ */
 // Supra Admin Login - TWSAdmin model ONLY
 // Regular tenant users must use POST /api/auth/login
 router.post('/supra-admin/login',
@@ -288,6 +517,29 @@ router.post('/supra-admin/login',
   })
 );
 
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh the access token using the refresh token cookie
+ *     description: >
+ *       Rate limited to 10 requests/15min/IP. Reads the refresh token from the
+ *       httpOnly `refreshToken` cookie (falls back to `refreshToken` in the
+ *       body for legacy clients). On success, new `accessToken` and
+ *       `refreshToken` cookies are set; no tokens are returned in the body.
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: Token refreshed successfully; new auth cookies set
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       401:
+ *         description: Refresh token missing, invalid, or not recognized
+ *       429:
+ *         description: Too many refresh attempts from this IP
+ */
 // Refresh token
 router.post('/refresh',
   tokenRefreshLimiter, // SECURITY: Rate limiting (10 refresh attempts per 15 minutes per IP)
@@ -347,6 +599,26 @@ router.post('/refresh',
   }
 }));
 
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Log out the current user
+ *     description: >
+ *       Unauthenticated requests are allowed (frontend may call this even
+ *       after a failed login). Clears the `accessToken` and `refreshToken`
+ *       httpOnly cookies and, if a valid token/refresh token is present,
+ *       removes the stored refresh token from the user record. Always
+ *       responds 200, even on internal error.
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: Logout successful; auth cookies cleared
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ */
 // Logout - Allow unauthenticated requests (frontend may call this even if login fails)
 router.post('/logout', ErrorHandler.asyncHandler(async (req, res) => {
   try {
@@ -401,6 +673,41 @@ router.post('/logout', ErrorHandler.asyncHandler(async (req, res) => {
   }
 }));
 
+/**
+ * @swagger
+ * /api/auth/token-info:
+ *   get:
+ *     summary: Check whether the caller currently has a valid access token
+ *     description: >
+ *       Reads the access token from the httpOnly `accessToken` cookie (or the
+ *       Authorization header as a fallback) and reports whether it is valid.
+ *       Does not require authentication middleware — always responds 200,
+ *       with `data.authenticated` indicating the result.
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: Authentication status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                       nullable: true
+ *                       description: First 20 characters of the access token followed by "...", or null
+ *                     authenticated:
+ *                       type: boolean
+ *                     userId:
+ *                       type: string
+ *                     expiresAt:
+ *                       type: number
+ */
 // Get token info (for frontend to check if authenticated)
 // SECURITY FIX: Returns token info from HttpOnly cookie
 router.get('/token-info', ErrorHandler.asyncHandler(async (req, res) => {
@@ -433,6 +740,39 @@ router.get('/token-info', ErrorHandler.asyncHandler(async (req, res) => {
   }
 }));
 
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get the authenticated user's profile
+ *     description: >
+ *       Returns the current User document (or TWSAdmin document, normalized
+ *       with role "super_admin" / userType "twsAdmin") for the caller
+ *       identified by the access token.
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         description: User not found
+ */
 // Get current user
 router.get('/me', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
   // Check if user is TWSAdmin or regular User
@@ -513,6 +853,42 @@ router.get('/me', authenticateToken, ErrorHandler.asyncHandler(async (req, res) 
   });
 }));
 
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   post:
+ *     summary: Change the authenticated user's password
+ *     description: Rate limited to 10 requests/15min/user.
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [currentPassword, newPassword]
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 6
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       400:
+ *         description: Current password is incorrect, or validation failed
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       429:
+ *         description: Too many requests
+ */
 // Change password
 router.post('/change-password',
   verifyERPToken,
@@ -547,6 +923,57 @@ router.post('/change-password',
   });
 }));
 
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request a password reset
+ *     description: >
+ *       Rate limited to 3 requests/hour/IP. Always responds 200 with a
+ *       generic message when the account doesn't exist (prevents email
+ *       enumeration). On a valid, active account, generates an 8-character
+ *       temporary password, sets `mustChangePassword`, and emails it to the
+ *       user. In development only, if the email fails to send, the response
+ *       includes the temporary password in the body (`tempPassword`) so it
+ *       can still be retrieved for testing.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: >
+ *           Generic success message (returned whether or not the account
+ *           exists). In development, may include `tempPassword` if the
+ *           reset email failed to send.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 tempPassword:
+ *                   type: string
+ *                   description: Development-only, sent when the email failed to dispatch
+ *       400:
+ *         description: Validation failed
+ *       403:
+ *         description: Account is not active
+ *       429:
+ *         description: Too many password reset requests from this IP
+ */
 // Forgot password - Request password reset
 router.post('/forgot-password',
   passwordResetLimiter, // SECURITY: Rate limiting (3 password reset requests per hour per IP)
@@ -614,6 +1041,46 @@ router.post('/forgot-password',
 // POST /api/auth/invite/accept         — set password + activate account
 // ---------------------------------------------------------------------------
 
+/**
+ * @swagger
+ * /api/auth/invite/accept:
+ *   get:
+ *     summary: Validate a tenant invitation token
+ *     description: >
+ *       Public endpoint — the invitation token itself identifies the tenant
+ *       and invitee, so no session/tenant slug is required.
+ *     tags: [Authentication]
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Invitation is valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     email:
+ *                       type: string
+ *                     fullName:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *       400:
+ *         description: Token missing, invalid, or expired
+ *       503:
+ *         description: Database connection not ready
+ */
 router.get('/invite/accept', checkDatabaseConnection, ErrorHandler.asyncHandler(async (req, res) => {
   const { token } = req.query;
   if (!token) return res.status(400).json({ success: false, message: 'token required' });
@@ -639,6 +1106,43 @@ router.get('/invite/accept', checkDatabaseConnection, ErrorHandler.asyncHandler(
   });
 }));
 
+/**
+ * @swagger
+ * /api/auth/invite/accept:
+ *   post:
+ *     summary: Accept a tenant invitation and activate the account
+ *     description: >
+ *       Public endpoint identified by the invitation token. Sets the user's
+ *       password, activates the User and TenantUser records, and invalidates
+ *       any cached resolved permissions for the user.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *     responses:
+ *       200:
+ *         description: Account activated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       400:
+ *         description: Validation failed, or invitation invalid/expired
+ *       404:
+ *         description: User account not found
+ *       503:
+ *         description: Database connection not ready
+ */
 router.post('/invite/accept',
   checkDatabaseConnection,
   body('token').notEmpty(),

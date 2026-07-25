@@ -7,6 +7,7 @@
     "start": "node server.js",
     "build": "echo \"No build step for Node backend\"",
     "dev": "nodemon server.js",
+    "docs:export": "node scripts/export-openapi.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

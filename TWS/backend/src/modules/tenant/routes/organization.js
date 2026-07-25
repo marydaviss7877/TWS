@@ -67,6 +67,20 @@ const requireSettingsAdmin = (req, res, next) => {
   next();
 };
 
+// Gates user-management writes (create/update/delete/password reset) to admin-like roles.
+// req.user.role is resolved server-side from TenantUser/User in verifyERPToken — never client-supplied.
+const requireUserManagementAdmin = (req, res, next) => {
+  const role = String(req.user?.role || '').toLowerCase();
+  if (!SETTINGS_ADMIN_ROLES.has(role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Only organization admins can manage users.',
+      code: 'USER_MANAGEMENT_ADMIN_REQUIRED'
+    });
+  }
+  next();
+};
+
 const getExistingUploadPathOrNull = async (relativePath) => {
   if (!relativePath || typeof relativePath !== 'string' || !relativePath.startsWith('/uploads/')) {
     return null;
@@ -2831,8 +2845,13 @@ router.get('/users', verifyERPToken, async (req, res) => {
 });
 
 // Create user
-router.post('/users', verifyERPToken, checkReadOnlySoftwareHouseOnly, checkUsageLimitSoftwareHouseOnly('users', 1), async (req, res) => {
+router.post('/users', verifyERPToken, requireUserManagementAdmin, checkReadOnlySoftwareHouseOnly, checkUsageLimitSoftwareHouseOnly('users', 1), async (req, res) => {
   try {
+    const requesterRole = String(req.user?.role || '').toLowerCase();
+    const requestedRole = String(req.body?.erpRole || req.body?.role || '').trim().toLowerCase();
+    if (requestedRole === 'owner' && requesterRole !== 'owner') {
+      return res.status(403).json({ success: false, message: 'Only an owner can create another owner account' });
+    }
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const userData = req.body;
     const user = await tenantOrgService.createUser(tenantContext, userData);
@@ -2893,9 +2912,17 @@ router.get('/users/:id', verifyERPToken, async (req, res) => {
 });
 
 // Admin: set user password (no "view password" — replaces hash; optional activation from pending)
-router.patch('/users/:id/admin-password', verifyERPToken, strictLimiter, async (req, res) => {
+router.patch('/users/:id/admin-password', verifyERPToken, requireUserManagementAdmin, strictLimiter, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const tenantId = req.tenant?._id || tenantContext?.tenantId;
+    const requesterRole = String(req.user?.role || '').toLowerCase();
+    const TenantUser = require('../../../models/tenant/TenantUser');
+    const targetTenantUser = await TenantUser.findOne({ userId: req.params.id, tenantId }).select('roles').lean();
+    const targetRole = String(targetTenantUser?.roles?.[0]?.role || '').toLowerCase();
+    if (targetRole === 'owner' && requesterRole !== 'owner') {
+      return res.status(403).json({ success: false, message: 'Only an owner can reset another owner\'s password' });
+    }
     const newPassword = String(req.body.newPassword || '').trim();
     if (newPassword.length < 6) {
       return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
@@ -2910,12 +2937,14 @@ router.patch('/users/:id/admin-password', verifyERPToken, strictLimiter, async (
 });
 
 // Update user (includes TenantUser.hrSubRole / financeSubRole — UPR Phase 2)
-router.put('/users/:id', verifyERPToken, async (req, res) => {
+router.put('/users/:id', verifyERPToken, requireUserManagementAdmin, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const tenantId = req.tenant?._id || tenantContext?.tenantId;
     const { id } = req.params;
     const { hrSubRole, financeSubRole, role, erpRole, customPermissionCodes, deniedPermissionCodes, ...userData } = req.body;
+    const requesterRole = String(req.user?.role || '').toLowerCase();
+    const isSelf = String(id) === String(req.user?._id || '');
     console.log('[UPRDBG][PUT incoming]', {
       userId: id,
       actorId: String(req.user?._id || ''),
@@ -2933,6 +2962,14 @@ router.put('/users/:id', verifyERPToken, async (req, res) => {
         success: false,
         message: `role must be one of: ${TENANT_ROLE_ENUM.join(', ')}`
       });
+    }
+
+    if (roleToApply === 'owner' && requesterRole !== 'owner') {
+      return res.status(403).json({ success: false, message: 'Only an owner can grant the owner role' });
+    }
+
+    if (isSelf && roleToApply && roleToApply !== requesterRole) {
+      return res.status(403).json({ success: false, message: 'You cannot change your own role' });
     }
 
     const TenantUser = require('../../../models/tenant/TenantUser');
@@ -3439,10 +3476,24 @@ router.get('/uploads/project-logos/:filename', verifyERPToken, async (req, res) 
 });
 
 // Delete user
-router.delete('/users/:id', verifyERPToken, async (req, res) => {
+router.delete('/users/:id', verifyERPToken, requireUserManagementAdmin, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const tenantId = req.tenant?._id || tenantContext?.tenantId;
     const { id } = req.params;
+    const requesterRole = String(req.user?.role || '').toLowerCase();
+    const TenantUser = require('../../../models/tenant/TenantUser');
+    const targetTenantUser = await TenantUser.findOne({ userId: id, tenantId }).select('roles').lean();
+    const targetRole = String(targetTenantUser?.roles?.[0]?.role || '').toLowerCase();
+    if (targetRole === 'owner') {
+      if (requesterRole !== 'owner') {
+        return res.status(403).json({ success: false, message: 'Only an owner can remove another owner' });
+      }
+      const ownerCount = await TenantUser.countDocuments({ tenantId, status: 'active', 'roles.0.role': 'owner' });
+      if (ownerCount <= 1) {
+        return res.status(400).json({ success: false, message: 'Cannot remove the last owner of the organization' });
+      }
+    }
     await tenantOrgService.deleteUser(tenantContext, id);
     res.json({ success: true, message: 'User deleted successfully' });
   } catch (error) {

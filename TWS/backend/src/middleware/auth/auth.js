@@ -84,46 +84,6 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Development mode: Handle mock tokens
-    if (process.env.NODE_ENV !== 'production' && token.startsWith('mock-jwt-token-')) {
-      // Extract role from mock token (format: mock-jwt-token-{role}-{timestamp})
-      const tokenParts = token.split('-');
-      const roleIndex = tokenParts.findIndex(part => part === 'token') + 1;
-      const role = tokenParts[roleIndex] || 'super_admin';
-      
-      // Create mock user object based on role
-      const mockUser = {
-        _id: '507f1f77bcf86cd799439015',
-        id: '507f1f77bcf86cd799439015',
-        email: 'admin@tws.com',
-        fullName: 'TWS Admin',
-        role: role === 'super_admin' ? 'super_admin' : role,
-        status: 'active',
-        orgId: {
-          _id: '507f1f77bcf86cd799439012',
-          name: 'TWS Organization',
-          slug: 'tws-org',
-          status: 'active'
-        },
-        permissions: ['*']
-      };
-      
-      // Add security context to request
-      req.user = mockUser;
-      req.token = token;
-      req.authContext = {
-        userId: mockUser._id,
-        orgId: mockUser.orgId._id,
-        role: mockUser.role,
-        type: role === 'super_admin' ? 'tws_admin' : 'user',
-        tokenIssuedAt: Math.floor(Date.now() / 1000),
-        tokenExpiresAt: Math.floor(Date.now() / 1000) + 3600
-      };
-      
-      console.log('🔧 Development mode: Using mock authentication for role:', role);
-      return next();
-    }
-
     // Verify token - handle tenant_owner tokens separately
     let decoded;
     

@@ -14,6 +14,84 @@ const {
 } = require('./shared');
 
 // Get all tenants
+/**
+ * @swagger
+ * /api/supra-admin/tenants:
+ *   get:
+ *     summary: List all tenants across the platform
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 100
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Exact status filter; overrides includeCancelled when set
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Case-insensitive regex match against name, slug, or contactInfo.email
+ *       - in: query
+ *         name: includeCancelled
+ *         schema:
+ *           type: string
+ *           enum: ['true', 'false']
+ *         description: When not 'true' and status is unset, cancelled tenants are excluded
+ *     responses:
+ *       200:
+ *         description: Tenant list with pagination and status summary
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 tenants:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     current:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                 summary:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     totalIncludingCancelled:
+ *                       type: integer
+ *                     active:
+ *                       type: integer
+ *                     suspended:
+ *                       type: integer
+ *                     trialing:
+ *                       type: integer
+ *                     cancelled:
+ *                       type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/tenants', requirePlatformPermission(PLATFORM_PERMISSIONS.TENANTS.READ), async (req, res) => {
   try {
     const { page = 1, limit = 100, status, search, includeCancelled } = req.query;
@@ -48,7 +126,50 @@ router.get('/tenants', requirePlatformPermission(PLATFORM_PERMISSIONS.TENANTS.RE
   }
 });
 
-router.get('/tenants/:id', requirePlatformAdminAccessReason(), async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/tenants/{id}:
+ *   get:
+ *     summary: Get a single tenant's full details and usage
+ *     description: >
+ *       AUTHORIZATION GAP: guarded only by `requirePlatformAdminAccessReason()`, which
+ *       is NOT a role/permission check — for any caller whose `req.user.role` is not
+ *       `platform_super_admin`/`platform_admin`/`super_admin` it calls `next()`
+ *       immediately with no further checks (see
+ *       src/middleware/auth/requirePlatformAdminAccessReason.js). Because the parent
+ *       router only applies generic `authenticateToken`, any authenticated user
+ *       (including a regular tenant employee) can currently reach this endpoint and
+ *       read another tenant's full record and usage stats. No `requirePlatformPermission`
+ *       is applied here, unlike `GET /tenants` above.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Tenant and usage details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 tenant:
+ *                   type: object
+ *                 usage:
+ *                   type: object
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.get('/tenants/:id', requirePlatformPermission(PLATFORM_PERMISSIONS.TENANTS.READ), requirePlatformAdminAccessReason(), async (req, res) => {
   try {
     const tenant = await Tenant.findById(req.params.id).populate('createdBy', 'fullName email').populate('supportNotes.createdBy', 'fullName');
     if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
@@ -60,7 +181,58 @@ router.get('/tenants/:id', requirePlatformAdminAccessReason(), async (req, res) 
   }
 });
 
-router.put('/tenants/:id', requirePlatformAdminAccessReason(), async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/tenants/{id}:
+ *   put:
+ *     summary: Update a tenant's details
+ *     description: >
+ *       AUTHORIZATION GAP: guarded only by `requirePlatformAdminAccessReason()`, which
+ *       is not a role/permission check (see note on `GET /tenants/{id}` above) — it only
+ *       conditionally demands an access-reason header/body field when the caller already
+ *       happens to be a platform admin, but never blocks a non-admin authenticated user.
+ *       No `requirePlatformPermission` is applied on this write route.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       description: Fields forwarded as-is to tenantService.updateTenant; slug is immutable.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               accessReason:
+ *                 type: string
+ *                 description: Required if the caller's role is a platform admin role (see description)
+ *     responses:
+ *       200:
+ *         description: Updated tenant document
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *       400:
+ *         description: Slug is immutable, or other validation failure
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.put('/tenants/:id', requirePlatformPermission(PLATFORM_PERMISSIONS.TENANTS.UPDATE), requirePlatformAdminAccessReason(), async (req, res) => {
   try {
     const tenant = await tenantService.updateTenant(req.params.id, req.body, req.user._id);
     await platformAdminAccessService.logPlatformAdminAccess({
@@ -81,7 +253,65 @@ router.put('/tenants/:id', requirePlatformAdminAccessReason(), async (req, res) 
   }
 });
 
-router.put('/tenants/:id/status', requirePlatformAdminAccessReason(), async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/tenants/{id}/status:
+ *   put:
+ *     summary: Change a tenant's status (active/suspended/cancelled/trialing)
+ *     description: >
+ *       AUTHORIZATION GAP: guarded only by `requirePlatformAdminAccessReason()`, which
+ *       is not a role/permission check (see note on `GET /tenants/{id}` above). Any
+ *       authenticated user can currently suspend or cancel another tenant. No
+ *       `requirePlatformPermission` is applied on this route.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [status]
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [active, suspended, cancelled, trialing]
+ *               accessReason:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Status updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.put('/tenants/:id/status', requirePlatformPermission(PLATFORM_PERMISSIONS.TENANTS.UPDATE), requirePlatformAdminAccessReason(), async (req, res) => {
   try {
     const { status } = req.body;
     if (!['active', 'suspended', 'cancelled', 'trialing'].includes(status)) return res.status(400).json({ message: 'Invalid status' });
@@ -100,7 +330,82 @@ router.put('/tenants/:id/status', requirePlatformAdminAccessReason(), async (req
   }
 });
 
-router.delete('/tenants/cancelled', requirePlatformAdminAccessReason(), async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/tenants/cancelled:
+ *   delete:
+ *     summary: Permanently delete every cancelled tenant
+ *     description: >
+ *       Bulk, irreversible deletion of all tenants with status `cancelled` and their
+ *       associated data. AUTHORIZATION GAP: guarded only by
+ *       `requirePlatformAdminAccessReason()`, which is not a role/permission check (see
+ *       note on `GET /tenants/{id}` above) — any authenticated user who can supply a
+ *       50+ character justification string can trigger this. No
+ *       `requirePlatformPermission` is applied on this highly destructive route.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [justification]
+ *             properties:
+ *               justification:
+ *                 type: string
+ *                 minLength: 50
+ *                 description: Required, minimum 50 characters (also accepted via X-Justification header)
+ *     responses:
+ *       200:
+ *         description: All cancelled tenants deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     deleted:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     failed:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     total:
+ *                       type: integer
+ *                     totalCancelled:
+ *                       type: integer
+ *                     deletedCount:
+ *                       type: integer
+ *                     failedCount:
+ *                       type: integer
+ *       207:
+ *         description: Partial success — some tenants failed to delete
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *       400:
+ *         description: Justification missing or under 50 characters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.delete('/tenants/cancelled', requirePlatformPermission(PLATFORM_PERMISSIONS.TENANTS.DELETE), requirePlatformAdminAccessReason(), async (req, res) => {
   try {
     const cancelledTenants = await Tenant.find({ status: 'cancelled' }).select('_id name slug');
     if (!cancelledTenants || cancelledTenants.length === 0) return res.json({ success: true, message: 'No cancelled tenants found to delete', data: { deleted: [], failed: [], total: 0 } });
@@ -126,7 +431,63 @@ router.delete('/tenants/cancelled', requirePlatformAdminAccessReason(), async (r
   }
 });
 
-router.delete('/tenants/bulk', requirePlatformAdminAccessReason(), async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/tenants/bulk:
+ *   delete:
+ *     summary: Permanently delete an arbitrary set of tenants by id
+ *     description: >
+ *       Bulk, irreversible deletion of the specified tenants and their associated data.
+ *       AUTHORIZATION GAP: guarded only by `requirePlatformAdminAccessReason()`, which
+ *       is not a role/permission check (see note on `GET /tenants/{id}` above) — any
+ *       authenticated user who can supply a 50+ character justification string can
+ *       delete any tenants by id. No `requirePlatformPermission` is applied on this
+ *       highly destructive route.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [ids, justification]
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 minItems: 1
+ *               justification:
+ *                 type: string
+ *                 minLength: 50
+ *                 description: Required, minimum 50 characters (also accepted via X-Justification header)
+ *     responses:
+ *       200:
+ *         description: All requested tenants deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *       207:
+ *         description: Partial success — some tenants failed to delete
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *       400:
+ *         description: ids array or justification missing/invalid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.delete('/tenants/bulk', requirePlatformPermission(PLATFORM_PERMISSIONS.TENANTS.DELETE), requirePlatformAdminAccessReason(), async (req, res) => {
   try {
     const { ids } = req.body || {};
     if (!ids || !Array.isArray(ids) || ids.length === 0) return res.status(400).json({ success: false, message: 'Request body must include an array of tenant ids' });
@@ -150,7 +511,59 @@ router.delete('/tenants/bulk', requirePlatformAdminAccessReason(), async (req, r
   }
 });
 
-router.delete('/tenants/:id', requirePlatformAdminAccessReason(), async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/tenants/{id}:
+ *   delete:
+ *     summary: Permanently delete a tenant and all associated data
+ *     description: >
+ *       AUTHORIZATION GAP: guarded only by `requirePlatformAdminAccessReason()`, which
+ *       is not a role/permission check (see note on `GET /tenants/{id}` above) — any
+ *       authenticated user who can supply a 30+ character justification string can
+ *       delete this tenant. No `requirePlatformPermission` is applied on this highly
+ *       destructive route.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [justification]
+ *             properties:
+ *               justification:
+ *                 type: string
+ *                 minLength: 30
+ *                 description: Required, minimum 30 characters (also accepted via X-Justification header)
+ *     responses:
+ *       200:
+ *         description: Tenant and all associated data deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       400:
+ *         description: Justification missing or under 30 characters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.delete('/tenants/:id', requirePlatformPermission(PLATFORM_PERMISSIONS.TENANTS.DELETE), requirePlatformAdminAccessReason(), async (req, res) => {
   try {
     const tenant = await Tenant.findById(req.params.id);
     if (!tenant) return res.status(404).json({ success: false, message: 'Tenant not found' });
@@ -171,7 +584,66 @@ router.delete('/tenants/:id', requirePlatformAdminAccessReason(), async (req, re
   }
 });
 
-router.put('/tenants/:id/password', [body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')], requirePlatformAdminAccessReason(), async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/tenants/{id}/password:
+ *   put:
+ *     summary: Change a tenant owner's password
+ *     description: >
+ *       AUTHORIZATION GAP: guarded only by `requirePlatformAdminAccessReason()` (plus a
+ *       password-length validator), which is not a role/permission check (see note on
+ *       `GET /tenants/{id}` above) — any authenticated user who can supply a 20+
+ *       character justification string can reset this tenant owner's password. No
+ *       `requirePlatformPermission` is applied on this highly sensitive credential-reset
+ *       route.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [newPassword, justification]
+ *             properties:
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 6
+ *               justification:
+ *                 type: string
+ *                 minLength: 20
+ *                 description: Required, minimum 20 characters (also accepted via X-Justification header)
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Validation failure (password too short) or missing/short justification
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.put('/tenants/:id/password', [body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')], requirePlatformPermission(PLATFORM_PERMISSIONS.TENANTS.UPDATE), requirePlatformAdminAccessReason(), async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });

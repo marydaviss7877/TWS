@@ -86,8 +86,8 @@ router.post('/template',
     const tenantId = req.tenantId || req.user?.tenantId;
     const result = await seedDepartmentTemplate({
       tenantId,
-      orgId: req.body.orgId || orgId,
-      createdBy: req.body.createdBy || req.user?._id
+      orgId,
+      createdBy: req.user?._id
     });
 
     res.status(201).json({
@@ -194,13 +194,13 @@ router.post('/',
     code: code.toUpperCase().trim(),
     description: description ? description.trim() : undefined,
     tenantId,
-    orgId: req.body.orgId || orgId,
+    orgId,
     parentDepartment: parentDepartment || undefined,
     departmentHead: departmentHead || undefined,
     settings: settings || {},
     moduleKey: moduleKey && VALID_MODULE_KEYS.has(moduleKey) ? moduleKey : undefined,
     status: 'active',
-    createdBy: req.body.createdBy || req.user?._id
+    createdBy: req.user?._id
   });
   
   await department.save();

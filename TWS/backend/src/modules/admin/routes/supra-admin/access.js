@@ -12,6 +12,68 @@ const {
   platformAdminAccessService
 } = require('./shared');
 
+/**
+ * @swagger
+ * /api/supra-admin/access/request-approval:
+ *   post:
+ *     summary: Request approval to access a tenant's data
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tenantId, reason, justification]
+ *             properties:
+ *               tenantId:
+ *                 type: string
+ *               reason:
+ *                 type: string
+ *                 description: Must be one of platformAdminAccessService's allowed reasons
+ *               justification:
+ *                 type: string
+ *                 minLength: 20
+ *     responses:
+ *       201:
+ *         description: Approval request created (pending)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     approval:
+ *                       type: object
+ *                     status:
+ *                       type: string
+ *                       example: pending
+ *                     message:
+ *                       type: string
+ *       400:
+ *         description: Missing fields, invalid reason, justification too short, or request creation failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/access/request-approval', requirePlatformPermission(PLATFORM_PERMISSIONS.TENANTS.READ), async (req, res) => {
   try {
     const { tenantId, reason, justification } = req.body;
@@ -40,6 +102,57 @@ router.post('/access/request-approval', requirePlatformPermission(PLATFORM_PERMI
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/access/approve/{approvalId}:
+ *   post:
+ *     summary: Approve a pending platform-admin tenant-access request
+ *     description: Grants access for 1 hour from approval time (`accessExpiresAt = now + 1h`).
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: approvalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Approval granted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     approval:
+ *                       type: object
+ *                     accessExpiresAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Approval request is not pending
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/access/approve/:approvalId', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.ASSIGN_ROLE), async (req, res) => {
   try {
     const approval = await PlatformAdminApproval.findById(req.params.approvalId);
@@ -59,6 +172,64 @@ router.post('/access/approve/:approvalId', requirePlatformPermission(PLATFORM_PE
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/access/reject/{approvalId}:
+ *   post:
+ *     summary: Reject a pending platform-admin tenant-access request
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: approvalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [rejectionReason]
+ *             properties:
+ *               rejectionReason:
+ *                 type: string
+ *                 minLength: 10
+ *     responses:
+ *       200:
+ *         description: Approval rejected
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     approval:
+ *                       type: object
+ *       400:
+ *         description: Rejection reason missing/too short, or approval request is not pending
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/access/reject/:approvalId', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.UPDATE), async (req, res) => {
   try {
     const { rejectionReason } = req.body;
@@ -78,6 +249,46 @@ router.post('/access/reject/:approvalId', requirePlatformPermission(PLATFORM_PER
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/access/approvals:
+ *   get:
+ *     summary: List the caller's own tenant-access approval requests
+ *     description: "Filter is always scoped to platformAdminId = req.user._id — a caller only ever sees their own requests here."
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: tenantId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Approval requests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/access/approvals', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.READ), async (req, res) => {
   try {
     const { status, tenantId } = req.query;
@@ -92,6 +303,44 @@ router.get('/access/approvals', requirePlatformPermission(PLATFORM_PERMISSIONS.P
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/access/pending-approvals:
+ *   get:
+ *     summary: List all pending tenant-access approval requests platform-wide
+ *     description: >
+ *       Beyond the route's `requirePlatformPermission(platform_users:read)`, the handler
+ *       adds an inline check that only allows `platform_super_admin` or `platform_admin`
+ *       roles through (403 otherwise) — a stricter check than the sibling `GET /access/approvals`.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All pending approval requests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       403:
+ *         description: Caller's role is not platform_super_admin or platform_admin
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/access/pending-approvals', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.READ), async (req, res) => {
   try {
     if (req.user.role !== 'platform_super_admin' && req.user.role !== 'platform_admin') {
@@ -105,6 +354,64 @@ router.get('/access/pending-approvals', requirePlatformPermission(PLATFORM_PERMI
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/access/revoke/{approvalId}:
+ *   post:
+ *     summary: Revoke a previously approved tenant-access grant
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: approvalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [revocationReason]
+ *             properties:
+ *               revocationReason:
+ *                 type: string
+ *                 minLength: 10
+ *     responses:
+ *       200:
+ *         description: Approval revoked
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     approval:
+ *                       type: object
+ *       400:
+ *         description: Revocation reason missing/too short, or approval is not currently approved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/access/revoke/:approvalId', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.UPDATE), async (req, res) => {
   try {
     const { revocationReason } = req.body;

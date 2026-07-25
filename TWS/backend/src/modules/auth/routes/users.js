@@ -32,6 +32,73 @@ const resolveOrgId = (req) => {
   );
 };
 
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: List users in the caller's organization
+ *     description: Requires "users" read (or read_own) permission.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [owner, admin, hr, finance, manager, employee, contractor, auditor]
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, suspended, inactive]
+ *     responses:
+ *       200:
+ *         description: Paginated list of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     users:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/User'
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         total:
+ *                           type: integer
+ *                         pages:
+ *                           type: integer
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Insufficient permissions, or organization context not found
+ */
 // Get all users
 router.get('/', [
   usersRead,
@@ -78,6 +145,58 @@ router.get('/', [
 })
 ]);
 
+/**
+ * @swagger
+ * /api/users/profile:
+ *   get:
+ *     summary: Get the authenticated user's own profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Own profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         _id:
+ *                           type: string
+ *                         fullName:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         phone:
+ *                           type: string
+ *                         department:
+ *                           type: string
+ *                         jobTitle:
+ *                           type: string
+ *                         role:
+ *                           type: string
+ *                         profilePicUrl:
+ *                           type: string
+ *                         status:
+ *                           type: string
+ *                         orgId:
+ *                           type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         description: User not found
+ */
 // Get current user's own profile (must be before /:id)
 router.get('/profile', ErrorHandler.asyncHandler(async (req, res) => {
   const userId = req.user._id || req.user.id;
@@ -107,6 +226,75 @@ router.get('/profile', ErrorHandler.asyncHandler(async (req, res) => {
   });
 }));
 
+/**
+ * @swagger
+ * /api/users/profile:
+ *   patch:
+ *     summary: Update the authenticated user's own profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               department:
+ *                 type: string
+ *               jobTitle:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         _id:
+ *                           type: string
+ *                         fullName:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         phone:
+ *                           type: string
+ *                         department:
+ *                           type: string
+ *                         jobTitle:
+ *                           type: string
+ *                         role:
+ *                           type: string
+ *                         profilePicUrl:
+ *                           type: string
+ *                         status:
+ *                           type: string
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         description: User not found
+ */
 // Update current user's own profile (must be before /:id)
 router.patch('/profile', [
   body('fullName').optional().trim().notEmpty(),
@@ -147,6 +335,44 @@ router.patch('/profile', [
   })
 ]);
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get a user by ID (scoped to caller's organization)
+ *     description: Requires "users" read (or read_own) permission.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Insufficient permissions, or organization context not found
+ *       404:
+ *         description: User not found
+ */
 // Get user by ID
 router.get('/:id', usersRead, ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = resolveOrgId(req);
@@ -171,6 +397,71 @@ router.get('/:id', usersRead, ErrorHandler.asyncHandler(async (req, res) => {
   });
 }));
 
+/**
+ * @swagger
+ * /api/users:
+ *   post:
+ *     summary: Create (invite) a new user in the caller's organization
+ *     description: >
+ *       Requires "users" write (or admin) permission. Generates a random
+ *       temporary password for the new account.
+ *       NOTE: the temporary password is currently returned in the response
+ *       body (`data.tempPassword`) rather than only delivered out-of-band —
+ *       see code comment "// Remove this in production" at the call site.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, fullName, role]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               fullName:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [owner, admin, hr, finance, manager, employee, contractor, auditor]
+ *               department:
+ *                 type: string
+ *               jobTitle:
+ *                 type: string
+ *               managerId:
+ *                 type: string
+ *                 description: MongoDB ObjectId of the manager
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *                     tempPassword:
+ *                       type: string
+ *                       description: Auto-generated temporary password (see summary note)
+ *       400:
+ *         description: Validation failed, or user already exists
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Insufficient permissions, or organization context not found
+ */
 // Create user (invite)
 router.post('/', [
   usersWrite,
@@ -226,6 +517,77 @@ router.post('/', [
 })
 ]);
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   patch:
+ *     summary: Update a user (scoped to caller's organization)
+ *     description: >
+ *       Requires "users" write (or admin) permission. `password` and `email`
+ *       fields are stripped from the request before applying the update, even
+ *       if included.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [owner, admin, hr, finance, manager, employee, contractor, auditor]
+ *               status:
+ *                 type: string
+ *                 enum: [active, suspended, inactive]
+ *               department:
+ *                 type: string
+ *               jobTitle:
+ *                 type: string
+ *               managerId:
+ *                 type: string
+ *                 description: MongoDB ObjectId of the manager
+ *               teamIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Insufficient permissions, or organization context not found
+ *       404:
+ *         description: User not found
+ */
 // Update user
 router.patch('/:id', [
   usersWrite,
@@ -267,6 +629,39 @@ router.patch('/:id', [
 })
 ]);
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Delete a user (scoped to caller's organization)
+ *     description: >
+ *       Requires "users" write (or admin) permission. Refuses to delete a
+ *       user that still has an associated Employee record.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       400:
+ *         description: User still has an associated employee record
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Insufficient permissions, or organization context not found
+ *       404:
+ *         description: User not found
+ */
 // Delete user
 router.delete('/:id', usersWrite, ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = resolveOrgId(req);
@@ -299,6 +694,46 @@ router.delete('/:id', usersWrite, ErrorHandler.asyncHandler(async (req, res) => 
   });
 }));
 
+/**
+ * @swagger
+ * /api/users/{id}/teams:
+ *   get:
+ *     summary: Get a user's teams (scoped to caller's organization)
+ *     description: Requires "users" read (or read_own) permission.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User's teams
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     teams:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Insufficient permissions, or organization context not found
+ *       404:
+ *         description: User not found
+ */
 // Get user's teams
 router.get('/:id/teams', usersRead, ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = resolveOrgId(req);
@@ -322,6 +757,60 @@ router.get('/:id/teams', usersRead, ErrorHandler.asyncHandler(async (req, res) =
   });
 }));
 
+/**
+ * @swagger
+ * /api/users/{id}/teams:
+ *   patch:
+ *     summary: Replace a user's teams (scoped to caller's organization)
+ *     description: Requires "users" write (or admin) permission.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [teamIds]
+ *             properties:
+ *               teamIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: User teams updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Insufficient permissions, or organization context not found
+ *       404:
+ *         description: User not found
+ */
 // Update user's teams
 router.patch('/:id/teams', [
   usersWrite,

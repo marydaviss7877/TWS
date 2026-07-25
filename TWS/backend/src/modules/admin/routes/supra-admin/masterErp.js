@@ -12,6 +12,37 @@ const {
 } = require('./shared');
 
 // Get all Master ERP templates
+/**
+ * @swagger
+ * /api/supra-admin/master-erp:
+ *   get:
+ *     summary: List Master ERP templates
+ *     description: Sorted by usageCount descending, with createdBy populated (fullName, email).
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Master ERP templates
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/master-erp', requirePlatformPermission(PLATFORM_PERMISSIONS.TEMPLATES.READ), async (req, res) => {
   try {
     const masterERPs = await MasterERP.find()
@@ -33,6 +64,60 @@ router.get('/master-erp', requirePlatformPermission(PLATFORM_PERMISSIONS.TEMPLAT
 });
 
 // Create new Master ERP template
+/**
+ * @swagger
+ * /api/supra-admin/master-erp:
+ *   post:
+ *     summary: Create a Master ERP template
+ *     description: >
+ *       Accepts arbitrary additional fields in the body beyond the validated ones below
+ *       (the handler spreads `req.body` onto the new MasterERP document).
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, industry]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               industry:
+ *                 type: string
+ *                 enum: [software_house, business, finance]
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Master ERP template created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: Validation failure
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/master-erp',
   requirePlatformPermission(PLATFORM_PERMISSIONS.TEMPLATES.CREATE),
   [

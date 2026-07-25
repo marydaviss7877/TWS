@@ -63,6 +63,64 @@ function averageDurationMinutes(sessions, now) {
 }
 
 // Get all active sessions
+/**
+ * @swagger
+ * /api/supra-admin/sessions/sessions:
+ *   get:
+ *     summary: List platform sessions across all tenants
+ *     description: >
+ *       Currently returns a hardcoded mock session list filtered in-memory by the
+ *       query params below (not read from the Session collection).
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: tenantId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           default: active
+ *     responses:
+ *       200:
+ *         description: Session list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 sessions:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 total:
+ *                   type: integer
+ *                 summary:
+ *                   type: object
+ *                   properties:
+ *                     active:
+ *                       type: integer
+ *                     idle:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/sessions', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
   try {
     const { tenantId, userId, status = 'active' } = req.query;
@@ -160,7 +218,45 @@ router.get('/sessions', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.RE
 });
 
 // Get department access information
-router.get('/department-access', async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/sessions/department-access:
+ *   get:
+ *     summary: List cross-tenant department access records
+ *     description: >
+ *       Currently returns a hardcoded mock list (not read from DepartmentAccess).
+ *       Requires `requirePlatformPermission(SYSTEM.READ)`, same as `GET /sessions` above.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: tenantId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Department access list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 departmentAccess:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 total:
+ *                   type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.get('/department-access', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
   try {
     const { tenantId } = req.query;
     
@@ -225,7 +321,45 @@ router.get('/department-access', async (req, res) => {
 });
 
 // Get all departments
-router.get('/departments', async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/sessions/departments:
+ *   get:
+ *     summary: List departments across all tenants
+ *     description: >
+ *       Currently returns a hardcoded mock list (not read from the Department collection).
+ *       Requires `requirePlatformPermission(SYSTEM.READ)`.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: tenantId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Department list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 departments:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 total:
+ *                   type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.get('/departments', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
   try {
     const { tenantId } = req.query;
     
@@ -293,7 +427,101 @@ router.get('/departments', async (req, res) => {
 });
 
 // Get session analytics
-router.get('/analytics/sessions', async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/sessions/analytics/sessions:
+ *   get:
+ *     summary: Get cross-tenant session analytics
+ *     description: >
+ *       Real implementation backed by the Session collection: computes totals, growth
+ *       vs. the previous window, daily trends, device/browser breakdowns, and a
+ *       per-tenant leaderboard for the requested time range.
+ *       Requires `requirePlatformPermission(ANALYTICS.READ)`.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           enum: [24h, 7d, 30d, 90d]
+ *           default: 7d
+ *       - in: query
+ *         name: tenantId
+ *         schema:
+ *           type: string
+ *         description: Must be a valid Mongo ObjectId to take effect
+ *     responses:
+ *       200:
+ *         description: Session analytics for the requested range
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 analytics:
+ *                   type: object
+ *                   properties:
+ *                     timeRange:
+ *                       type: string
+ *                     totalSessions:
+ *                       type: integer
+ *                     activeSessions:
+ *                       type: integer
+ *                     averageSessionDuration:
+ *                       type: number
+ *                       description: Minutes
+ *                     peakConcurrentUsers:
+ *                       type: integer
+ *                     sessionGrowth:
+ *                       type: number
+ *                       description: Percent change vs. previous window
+ *                     durationGrowth:
+ *                       type: number
+ *                     sessionTrends:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           date:
+ *                             type: string
+ *                           sessions:
+ *                             type: integer
+ *                           activeUsers:
+ *                             type: integer
+ *                     deviceBreakdown:
+ *                       type: object
+ *                     browserBreakdown:
+ *                       type: object
+ *                     topTenants:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           tenantId:
+ *                             type: string
+ *                           tenantName:
+ *                             type: string
+ *                           totalSessions:
+ *                             type: integer
+ *                           activeSessions:
+ *                             type: integer
+ *                           averageDuration:
+ *                             type: number
+ *                           peakUsers:
+ *                             type: integer
+ *                           growth:
+ *                             type: number
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.get('/analytics/sessions', requirePlatformPermission(PLATFORM_PERMISSIONS.ANALYTICS.READ), async (req, res) => {
   try {
     const { timeRange = '7d', tenantId } = req.query;
     const { now, since, prevSince } = resolveRange(timeRange);
@@ -399,7 +627,93 @@ router.get('/analytics/sessions', async (req, res) => {
 });
 
 // Get department access analytics
-router.get('/analytics/department-access', async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/sessions/analytics/department-access:
+ *   get:
+ *     summary: Get cross-tenant department access analytics
+ *     description: >
+ *       Real implementation backed by Department, Session, and DepartmentAccess: computes
+ *       department/user counts, permission-level breakdown, daily access trends, and a
+ *       per-department leaderboard for the requested time range.
+ *       Requires `requirePlatformPermission(ANALYTICS.READ)`.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           enum: [24h, 7d, 30d, 90d]
+ *           default: 7d
+ *       - in: query
+ *         name: tenantId
+ *         schema:
+ *           type: string
+ *         description: Must be a valid Mongo ObjectId to take effect
+ *     responses:
+ *       200:
+ *         description: Department access analytics for the requested range
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 analytics:
+ *                   type: object
+ *                   properties:
+ *                     timeRange:
+ *                       type: string
+ *                     totalDepartments:
+ *                       type: integer
+ *                     activeDepartments:
+ *                       type: integer
+ *                     totalUsers:
+ *                       type: integer
+ *                     activeUsers:
+ *                       type: integer
+ *                     accessTrends:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           date:
+ *                             type: string
+ *                           departments:
+ *                             type: integer
+ *                           users:
+ *                             type: integer
+ *                     permissionBreakdown:
+ *                       type: object
+ *                     topDepartments:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           departmentId:
+ *                             type: string
+ *                           departmentName:
+ *                             type: string
+ *                           totalSessions:
+ *                             type: integer
+ *                           activeSessions:
+ *                             type: integer
+ *                           averageDuration:
+ *                             type: number
+ *                           peakUsers:
+ *                             type: integer
+ *                           growth:
+ *                             type: number
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.get('/analytics/department-access', requirePlatformPermission(PLATFORM_PERMISSIONS.ANALYTICS.READ), async (req, res) => {
   try {
     const { timeRange = '7d', tenantId } = req.query;
     const { now, since, prevSince } = resolveRange(timeRange);
@@ -502,7 +816,42 @@ router.get('/analytics/department-access', async (req, res) => {
 });
 
 // Terminate a session
-router.delete('/sessions/:sessionId', async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/sessions/sessions/{sessionId}:
+ *   delete:
+ *     summary: Terminate a session
+ *     description: >
+ *       Stub implementation — always reports success without actually terminating a
+ *       Session document. Requires `requirePlatformPermission(SYSTEM.UPDATE)`.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Session terminated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.delete('/sessions/:sessionId', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.UPDATE), async (req, res) => {
   try {
     const { sessionId } = req.params;
     
@@ -521,7 +870,60 @@ router.delete('/sessions/:sessionId', async (req, res) => {
 });
 
 // Bulk terminate sessions
-router.post('/sessions/bulk-terminate', async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/sessions/sessions/bulk-terminate:
+ *   post:
+ *     summary: Terminate multiple sessions at once
+ *     description: >
+ *       Stub implementation — always reports success without actually terminating any
+ *       Session documents. Requires `requirePlatformPermission(SYSTEM.UPDATE)`.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionIds]
+ *             properties:
+ *               sessionIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               reason:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Sessions terminated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 terminatedSessions:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       400:
+ *         description: Session IDs array is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.post('/sessions/bulk-terminate', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.UPDATE), async (req, res) => {
   try {
     const { sessionIds, reason } = req.body;
     
@@ -548,7 +950,57 @@ router.post('/sessions/bulk-terminate', async (req, res) => {
 });
 
 // Grant department access
-router.post('/department-access', async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/sessions/department-access:
+ *   post:
+ *     summary: Grant a user department-level access
+ *     description: >
+ *       Stub implementation — echoes back a fabricated access record without persisting
+ *       anything. Requires `requirePlatformPermission(SYSTEM.UPDATE)`.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               department:
+ *                 type: string
+ *               permissions:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               accessLevel:
+ *                 type: string
+ *               tenantId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Access granted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 access:
+ *                   type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.post('/department-access', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.UPDATE), async (req, res) => {
   try {
     const { userId, department, permissions, accessLevel, tenantId } = req.body;
     
@@ -576,7 +1028,56 @@ router.post('/department-access', async (req, res) => {
 });
 
 // Revoke department access
-router.post('/department-access/:accessId/revoke', async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/sessions/department-access/{accessId}/revoke:
+ *   post:
+ *     summary: Revoke a user's department-level access
+ *     description: >
+ *       Stub implementation — always reports success without persisting a revocation.
+ *       Requires `requirePlatformPermission(SYSTEM.UPDATE)`.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: accessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Access revoked
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 accessId:
+ *                   type: string
+ *                 revokedAt:
+ *                   type: string
+ *                   format: date-time
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.post('/department-access/:accessId/revoke', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.UPDATE), async (req, res) => {
   try {
     const { accessId } = req.params;
     const { reason } = req.body;
@@ -598,7 +1099,62 @@ router.post('/department-access/:accessId/revoke', async (req, res) => {
 });
 
 // Create department
-router.post('/departments', async (req, res) => {
+/**
+ * @swagger
+ * /api/supra-admin/sessions/departments:
+ *   post:
+ *     summary: Create a department
+ *     description: >
+ *       Stub implementation — echoes back a fabricated department record without
+ *       persisting anything. Requires `requirePlatformPermission(SYSTEM.UPDATE)`.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, tenantId]
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               manager:
+ *                 type: string
+ *               tenantId:
+ *                 type: string
+ *               budget:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Department created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 department:
+ *                   type: object
+ *       400:
+ *         description: Department name and tenant ID are required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+router.post('/departments', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.UPDATE), async (req, res) => {
   try {
     const { name, description, manager, tenantId, budget } = req.body;
     

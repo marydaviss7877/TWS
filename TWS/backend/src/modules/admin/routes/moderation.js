@@ -13,6 +13,33 @@ const ErrorHandler = require('../../../middleware/common/errorHandler');
 // DISABLED: Messaging feature has been removed
 // All message moderation routes return 410 (Gone) status
 
+/**
+ * @swagger
+ * /api/admin/moderation/messages/{messageId}/flag:
+ *   post:
+ *     summary: Flag a message for moderation (disabled)
+ *     description: >
+ *       Messaging has been removed from the platform. This route is retained only to
+ *       return a 410 Gone to old clients and always short-circuits before doing any work.
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: messageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       410:
+ *         description: Messaging feature has been disabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.post('/messages/:messageId/flag', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
   return res.status(410).json({
     success: false,
@@ -20,6 +47,33 @@ router.post('/messages/:messageId/flag', authenticateToken, ErrorHandler.asyncHa
   });
 }));
 
+/**
+ * @swagger
+ * /api/admin/moderation/messages/{messageId}/flag:
+ *   delete:
+ *     summary: Unflag a message (disabled)
+ *     description: Messaging has been removed from the platform; always returns 410 Gone.
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: messageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       410:
+ *         description: Messaging feature has been disabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.delete('/messages/:messageId/flag', authenticateToken, requireRole(['admin', 'moderator']), ErrorHandler.asyncHandler(async (req, res) => {
   return res.status(410).json({
     success: false,
@@ -27,6 +81,33 @@ router.delete('/messages/:messageId/flag', authenticateToken, requireRole(['admi
   });
 }));
 
+/**
+ * @swagger
+ * /api/admin/moderation/messages/{messageId}/hide:
+ *   post:
+ *     summary: Hide a message (disabled)
+ *     description: Messaging has been removed from the platform; always returns 410 Gone.
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: messageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       410:
+ *         description: Messaging feature has been disabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.post('/messages/:messageId/hide', authenticateToken, requireRole(['admin', 'moderator']), ErrorHandler.asyncHandler(async (req, res) => {
   return res.status(410).json({
     success: false,
@@ -34,6 +115,33 @@ router.post('/messages/:messageId/hide', authenticateToken, requireRole(['admin'
   });
 }));
 
+/**
+ * @swagger
+ * /api/admin/moderation/messages/{messageId}:
+ *   delete:
+ *     summary: Delete a message (disabled)
+ *     description: Messaging has been removed from the platform; always returns 410 Gone.
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: messageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       410:
+ *         description: Messaging feature has been disabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.delete('/messages/:messageId', authenticateToken, requireRole(['admin', 'moderator']), ErrorHandler.asyncHandler(async (req, res) => {
   return res.status(410).json({
     success: false,
@@ -41,6 +149,33 @@ router.delete('/messages/:messageId', authenticateToken, requireRole(['admin', '
   });
 }));
 
+/**
+ * @swagger
+ * /api/admin/moderation/messages/{messageId}/restore:
+ *   post:
+ *     summary: Restore a deleted message (disabled)
+ *     description: Messaging has been removed from the platform; always returns 410 Gone.
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: messageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       410:
+ *         description: Messaging feature has been disabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.post('/messages/:messageId/restore', authenticateToken, requireRole(['admin', 'moderator']), ErrorHandler.asyncHandler(async (req, res) => {
   return res.status(410).json({
     success: false,
@@ -48,6 +183,51 @@ router.post('/messages/:messageId/restore', authenticateToken, requireRole(['adm
   });
 }));
 
+/**
+ * @swagger
+ * /api/admin/moderation/messages/flagged:
+ *   get:
+ *     summary: List flagged messages (disabled)
+ *     description: Messaging has been removed from the platform; always returns 410 Gone with an empty paginated payload.
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       410:
+ *         description: Messaging feature has been disabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items: {}
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *                     hasNext:
+ *                       type: boolean
+ *                     hasPrev:
+ *                       type: boolean
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/messages/flagged', authenticateToken, requireRole(['admin', 'moderator']), ErrorHandler.asyncHandler(async (req, res) => {
   return res.status(410).json({
     success: false,
@@ -67,6 +247,69 @@ router.get('/messages/flagged', authenticateToken, requireRole(['admin', 'modera
 // ===== USER MODERATION ROUTES =====
 
 // Ban a user
+/**
+ * @swagger
+ * /api/admin/moderation/users/{userId}/ban:
+ *   post:
+ *     summary: Ban a user within the caller's organization
+ *     description: >
+ *       Creates a UserBan record scoped to `req.user.orgId` and writes an AuditLog entry.
+ *       Fails with 404 if the target user does not exist, or 400 if already banned.
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 default: Violation of community guidelines
+ *               banType:
+ *                 type: string
+ *                 default: temporary
+ *               duration:
+ *                 type: number
+ *                 description: Ban duration in hours
+ *                 default: 24
+ *     responses:
+ *       200:
+ *         description: User banned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   description: The created UserBan document
+ *       400:
+ *         description: User is already banned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.post('/users/:userId/ban', authenticateToken, requireRole(['admin']), ErrorHandler.asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const { reason, banType = 'temporary', duration = 24 } = req.body;
@@ -120,6 +363,45 @@ router.post('/users/:userId/ban', authenticateToken, requireRole(['admin']), Err
 }));
 
 // Unban a user
+/**
+ * @swagger
+ * /api/admin/moderation/users/{userId}/unban:
+ *   post:
+ *     summary: Unban a user within the caller's organization
+ *     description: Revokes the user's active ban (scoped to `req.user.orgId`) and writes an AuditLog entry.
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 default: Ban lifted by admin
+ *     responses:
+ *       200:
+ *         $ref: '#/components/schemas/Success'
+ *       400:
+ *         description: User is not currently banned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.post('/users/:userId/unban', authenticateToken, requireRole(['admin']), ErrorHandler.asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const { reason } = req.body;
@@ -152,6 +434,40 @@ router.post('/users/:userId/unban', authenticateToken, requireRole(['admin']), E
 }));
 
 // Get user ban history
+/**
+ * @swagger
+ * /api/admin/moderation/users/{userId}/bans:
+ *   get:
+ *     summary: Get a user's ban history within the caller's organization
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Ban history for the user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/users/:userId/bans', authenticateToken, requireRole(['admin', 'moderator']), ErrorHandler.asyncHandler(async (req, res) => {
   const { userId } = req.params;
   
@@ -166,6 +482,33 @@ router.get('/users/:userId/bans', authenticateToken, requireRole(['admin', 'mode
 // ===== CHAT MODERATION ROUTES =====
 // DISABLED: Messaging feature has been removed
 
+/**
+ * @swagger
+ * /api/admin/moderation/chats/{chatId}/mute:
+ *   post:
+ *     summary: Mute a chat (disabled)
+ *     description: Messaging has been removed from the platform; always returns 410 Gone.
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       410:
+ *         description: Messaging feature has been disabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.post('/chats/:chatId/mute', authenticateToken, requireRole(['admin', 'moderator']), ErrorHandler.asyncHandler(async (req, res) => {
   return res.status(410).json({
     success: false,
@@ -173,6 +516,33 @@ router.post('/chats/:chatId/mute', authenticateToken, requireRole(['admin', 'mod
   });
 }));
 
+/**
+ * @swagger
+ * /api/admin/moderation/chats/{chatId}/unmute:
+ *   post:
+ *     summary: Unmute a chat (disabled)
+ *     description: Messaging has been removed from the platform; always returns 410 Gone.
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       410:
+ *         description: Messaging feature has been disabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.post('/chats/:chatId/unmute', authenticateToken, requireRole(['admin', 'moderator']), ErrorHandler.asyncHandler(async (req, res) => {
   return res.status(410).json({
     success: false,
@@ -183,6 +553,63 @@ router.post('/chats/:chatId/unmute', authenticateToken, requireRole(['admin', 'm
 // ===== AUDIT LOG ROUTES =====
 
 // Get moderation audit log
+/**
+ * @swagger
+ * /api/admin/moderation/audit-log:
+ *   get:
+ *     summary: Get the organization's moderation audit log
+ *     description: >
+ *       Returns AuditLog entries scoped to `req.user.orgId`, restricted server-side to
+ *       `user_banned` / `user_unbanned` actions (messaging-related actions were removed).
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *     responses:
+ *       200:
+ *         description: Paginated audit log entries
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *                     hasNext:
+ *                       type: boolean
+ *                     hasPrev:
+ *                       type: boolean
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/audit-log', authenticateToken, requireRole(['admin', 'moderator']), ErrorHandler.asyncHandler(async (req, res) => {
   const { page = 1, limit = 50 } = req.query;
   
@@ -216,6 +643,45 @@ router.get('/audit-log', authenticateToken, requireRole(['admin', 'moderator']),
 }));
 
 // Get user-specific audit log
+/**
+ * @swagger
+ * /api/admin/moderation/users/{userId}/audit-log:
+ *   get:
+ *     summary: Get a specific user's audit log within the caller's organization
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *     responses:
+ *       200:
+ *         description: Audit log entries for the user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/users/:userId/audit-log', authenticateToken, requireRole(['admin', 'moderator']), ErrorHandler.asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const { limit = 50 } = req.query;
@@ -231,6 +697,36 @@ router.get('/users/:userId/audit-log', authenticateToken, requireRole(['admin', 
 // ===== SEARCH ROUTES =====
 // DISABLED: Messaging feature has been removed
 
+/**
+ * @swagger
+ * /api/admin/moderation/search/messages:
+ *   get:
+ *     summary: Search messages (disabled)
+ *     description: Messaging has been removed from the platform; always returns 410 Gone with an empty result set.
+ *     tags: [Moderation]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       410:
+ *         description: Messaging feature has been disabled
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items: {}
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/search/messages', authenticateToken, requireRole(['admin', 'moderator']), ErrorHandler.asyncHandler(async (req, res) => {
   return res.status(410).json({
     success: false,

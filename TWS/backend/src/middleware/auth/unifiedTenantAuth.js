@@ -409,17 +409,22 @@ const unifiedTenantAuth = (options = {}) => {
       }
 
       // ============================================
-      // STEP 6: Verify workspace membership (if required)
+      // STEP 6: Verify tenant membership
+      // SECURITY: this runs unconditionally — the aggregation above resolves `tenant`
+      // via an $or that includes a bare tenantSlug match, so without this check any
+      // authenticated user could reach an arbitrary tenant just by supplying its slug
+      // in the URL. `requireWorkspace` only controls whether the richer
+      // workspace.members lookup ran; it must never gate whether membership is verified.
       // ============================================
-      if (requireWorkspace) {
+      {
         const userTenantId = userContext.tenantId?.toString();
         const requestedTenantId = tenant._id.toString();
         const isSuperAdmin = ['super_admin', 'platform_admin', 'platform_super_admin'].includes(userContext.role);
-        
+
         let hasAccess = false;
         let workspaceRole = null;
 
-        if (workspace && workspace.members) {
+        if (requireWorkspace && workspace && workspace.members) {
           const membership = workspace.members.find(
             m => m.userId.toString() === userId.toString() && m.status === 'active'
           );
@@ -452,8 +457,8 @@ const unifiedTenantAuth = (options = {}) => {
             ip: req.ip,
             severity: 'high'
           });
-          return res.status(403).json({ 
-            success: false, 
+          return res.status(403).json({
+            success: false,
             message: 'Access denied: You are not a member of this workspace',
             code: 'NOT_WORKSPACE_MEMBER'
           });

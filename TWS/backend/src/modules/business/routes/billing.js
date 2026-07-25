@@ -14,9 +14,58 @@ const billingRead = requireErpAccess({ module: 'finance', action: ['read', 'read
 router.use(verifyERPToken);
 
 /**
- * GET /usage - Current tenant subscription + usage (for Software House; others get N/A-style response).
- * Returns usage, limits, atRisk (80% warning), readOnlyMode, plan.
+ * @swagger
+ * /api/billing/usage:
+ *   get:
+ *     summary: Get current tenant subscription usage and plan (Software House tenants only; others get an N/A-style response)
+ *     description: Resolves the tenant from the authenticated user's organization (req.user.orgId, set by verifyERPToken), then reads usage/limits/overage from the tenant's subscription plan. Not settable by the client — tenantId is never taken from req.body/req.params.
+ *     tags: [Billing]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Usage metrics per resource (users, projects, workspaces, clientAccounts, storage, apiCalls), plan slug, at-risk flag, and overage cost estimate (Number, in the plan's overage-cost unit)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     usage:
+ *                       type: object
+ *                       description: Per-metric { current, limit, percentage, overage, overageCost }
+ *                     plan:
+ *                       type: string
+ *                       nullable: true
+ *                     atRisk:
+ *                       type: boolean
+ *                     atRiskMetrics:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     readOnlyMode:
+ *                       type: boolean
+ *                     totalOverageCost:
+ *                       type: number
+ *                     billingEligible:
+ *                       type: boolean
+ *       400:
+ *         description: Organization context required (no orgId on the authenticated user)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
  */
+// GET /usage - Current tenant subscription + usage (for Software House; others get N/A-style response).
+// Returns usage, limits, atRisk (80% warning), readOnlyMode, plan.
 router.get('/usage', billingRead, ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = req.user?.orgId || req.user?.organization;
   if (!orgId) {

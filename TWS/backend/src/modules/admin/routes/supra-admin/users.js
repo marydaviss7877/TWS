@@ -15,6 +15,36 @@ const {
   auditService
 } = require('./shared');
 
+/**
+ * @swagger
+ * /api/supra-admin/admins:
+ *   get:
+ *     summary: List active platform admins (TWSAdmin accounts)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of active TWSAdmin users (password/refreshTokens/twoFASecret excluded)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/admins', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.READ), async (req, res) => {
   try {
     const admins = await TWSAdmin.find({ status: 'active' }).select('-password -refreshTokens -twoFASecret').sort({ createdAt: -1 });
@@ -25,6 +55,78 @@ router.get('/admins', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_US
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/admins:
+ *   post:
+ *     summary: Create a new Supra Admin portal user (TWSAdmin)
+ *     description: >
+ *       Requires `platform_users:create`. Role assignment is further constrained by
+ *       `PlatformRBAC.canAssignRole` — the assigner cannot grant `platform_super_admin`
+ *       unless they are one themselves.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password, fullName]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 8
+ *               fullName:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [platform_super_admin, platform_admin, platform_support, platform_billing, platform_analyst, platform_developer]
+ *                 default: platform_admin
+ *               phone:
+ *                 type: string
+ *               department:
+ *                 type: string
+ *                 default: Platform Administration
+ *     responses:
+ *       201:
+ *         description: Admin created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     admin:
+ *                       type: object
+ *       400:
+ *         description: Validation failure, duplicate email, or invalid role
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Assigner not permitted to grant the requested role
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/admins', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.CREATE), [
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
@@ -63,6 +165,79 @@ router.post('/admins', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_U
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/portal-users:
+ *   get:
+ *     summary: List TWSAdmin users with search/filter and pagination
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Case-insensitive regex match against fullName or email
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: portalResponsibility
+ *         schema:
+ *           type: string
+ *         description: Case-insensitive regex match against department
+ *     responses:
+ *       200:
+ *         description: Paginated portal users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     users:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         total:
+ *                           type: integer
+ *                         pages:
+ *                           type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/portal-users', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.READ), async (req, res) => {
   try {
     const { page = 1, limit = 50, search, role, status, portalResponsibility } = req.query;
@@ -80,6 +255,74 @@ router.get('/portal-users', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATF
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/users:
+ *   get:
+ *     summary: List TWSAdmin users with search/filter and pagination
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Case-insensitive regex match against fullName, email, or department
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Paginated users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     users:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         total:
+ *                           type: integer
+ *                         pages:
+ *                           type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/users', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.READ), async (req, res) => {
   try {
     const { page = 1, limit = 50, search, role, status } = req.query;
@@ -96,6 +339,42 @@ router.get('/users', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USE
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/users/{id}:
+ *   get:
+ *     summary: Get a single TWSAdmin user by id
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: TWSAdmin user (password/refreshTokens/twoFASecret excluded)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/users/:id', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.READ), async (req, res) => {
   try {
     const user = await TWSAdmin.findById(req.params.id).select('-password -refreshTokens -twoFASecret').lean();
@@ -107,6 +386,82 @@ router.get('/users/:id', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/users:
+ *   post:
+ *     summary: Create a new TWS Admin user
+ *     description: >
+ *       Functionally overlaps with `POST /admins` above (both create a TWSAdmin
+ *       document). Requires `platform_users:create`, and role assignment is further
+ *       constrained by `PlatformRBAC.canAssignRole`.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password, fullName]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 8
+ *               fullName:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [platform_super_admin, platform_admin, platform_support, platform_billing, platform_analyst, platform_developer]
+ *                 default: platform_admin
+ *               phone:
+ *                 type: string
+ *               department:
+ *                 type: string
+ *                 default: Platform Administration
+ *               status:
+ *                 type: string
+ *                 enum: [active, suspended, inactive]
+ *                 default: active
+ *     responses:
+ *       201:
+ *         description: User created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *       400:
+ *         description: Missing fields, weak password, or duplicate email
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Assigner not permitted to grant the requested role
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/users', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.CREATE), [
   body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
@@ -140,6 +495,71 @@ router.post('/users', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_US
   }
 }));
 
+/**
+ * @swagger
+ * /api/supra-admin/users/{id}:
+ *   patch:
+ *     summary: Update a TWSAdmin user
+ *     description: >
+ *       Requires `platform_users:update`. Role changes are further constrained by
+ *       `PlatformRBAC.canAssignRole`. `password` and `email` are stripped from the
+ *       update payload server-side even if sent.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [platform_super_admin, platform_admin, platform_support, platform_billing, platform_analyst, platform_developer]
+ *               status:
+ *                 type: string
+ *                 enum: [active, suspended, inactive]
+ *               phone:
+ *                 type: string
+ *               department:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       403:
+ *         description: Assigner not permitted to grant the requested role
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.patch('/users/:id', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.UPDATE), [
   body('fullName').optional().notEmpty().withMessage('Full name cannot be empty'),
   body('role').optional().isIn(['platform_super_admin', 'platform_admin', 'platform_support', 'platform_billing', 'platform_analyst', 'platform_developer']).withMessage('Valid role is required'),
@@ -176,6 +596,39 @@ router.patch('/users/:id', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFO
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/users/{id}:
+ *   delete:
+ *     summary: Delete a TWSAdmin user
+ *     description: >
+ *       Requires `platform_users:delete`. A user cannot delete their own account, and
+ *       only a `platform_super_admin` can delete another `platform_super_admin`.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         $ref: '#/components/schemas/Success'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       403:
+ *         description: Self-deletion, or insufficient role to delete a super admin
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.delete('/users/:id', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.DELETE), async (req, res) => {
   try {
     const user = await TWSAdmin.findById(req.params.id);
@@ -191,6 +644,67 @@ router.delete('/users/:id', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATF
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/users/{id}/assign-portal-responsibility:
+ *   patch:
+ *     summary: Assign a Supra Admin portal responsibility to a user
+ *     description: >
+ *       Note: operates on the `User` model (not `TWSAdmin`), unlike the sibling routes
+ *       in this file.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [portalResponsibility]
+ *             properties:
+ *               portalResponsibility:
+ *                 type: string
+ *                 enum: [finance, hr, admin, support, erp_management, billing]
+ *     responses:
+ *       200:
+ *         description: Responsibility assigned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *       400:
+ *         description: portalResponsibility missing or not an allowed value
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.patch('/users/:id/assign-portal-responsibility', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.UPDATE), async (req, res) => {
   try {
     const { portalResponsibility } = req.body || {};
@@ -225,6 +739,48 @@ router.patch('/users/:id/assign-portal-responsibility', requirePlatformPermissio
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/users/{id}/remove-portal-responsibility:
+ *   patch:
+ *     summary: Remove a user's Supra Admin portal responsibility
+ *     description: Operates on the `User` model (not `TWSAdmin`).
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Responsibility removed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.patch('/users/:id/remove-portal-responsibility', requirePlatformPermission(PLATFORM_PERMISSIONS.PLATFORM_USERS.UPDATE), async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -242,6 +798,65 @@ router.patch('/users/:id/remove-portal-responsibility', requirePlatformPermissio
 });
 
 if (process.env.NODE_ENV === 'development') {
+  /**
+   * @swagger
+   * /api/supra-admin/users/debug-verify:
+   *   post:
+   *     summary: Debug — verify credentials against TWSAdmin or User (development only)
+   *     description: >
+   *       Only registered when `NODE_ENV === 'development'`, so it does not exist in
+   *       production. AUTHORIZATION GAP: has no permission/role check at all beyond the
+   *       router-level `authenticateToken` — any authenticated user in a dev environment
+   *       can use this as a password oracle (it returns `passwordMatch: true/false` for
+   *       an arbitrary email/password pair) and can enumerate whether an email exists in
+   *       either the TWSAdmin or User collection.
+   *     tags: [Admin]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [email]
+   *             properties:
+   *               email:
+   *                 type: string
+   *                 format: email
+   *               password:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Lookup result (never returns the stored password/hash)
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 found:
+   *                   type: boolean
+   *                 model:
+   *                   type: string
+   *                   enum: [TWSAdmin, User]
+   *                 user:
+   *                   type: object
+   *                 message:
+   *                   type: string
+   *       400:
+   *         description: Email is required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         $ref: '#/components/responses/UnauthorizedError'
+   *       500:
+   *         $ref: '#/components/responses/ServerError'
+   */
   router.post('/users/debug-verify', async (req, res) => {
     try {
       const { email, password } = req.body;

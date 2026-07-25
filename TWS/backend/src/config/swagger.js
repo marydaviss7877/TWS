@@ -455,6 +455,7 @@ const options = {
   },
   apis: [
     './src/routes/*.js',
+    './src/modules/**/routes/**/*.js',
     './src/models/*.js'
   ]
 };

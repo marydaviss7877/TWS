@@ -12,6 +12,49 @@ const {
 } = require('./shared');
 
 // System health
+/**
+ * @swagger
+ * /api/supra-admin/system-health:
+ *   get:
+ *     summary: Get server system health snapshot
+ *     description: >
+ *       Combines live OS metrics (CPU, memory, load average, uptime) with
+ *       systemMonitoringService.getSystemHealth() for service statuses. Returns 200 even
+ *       on internal failure, with `success: false` and zeroed-out fields.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: System health snapshot (see `success` field for actual outcome)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     overall:
+ *                       type: object
+ *                     system:
+ *                       type: object
+ *                     performance:
+ *                       type: object
+ *                     services:
+ *                       type: object
+ *                     security:
+ *                       type: object
+ *                     timestamp:
+ *                       type: string
+ *                       format: date-time
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/system-health', requirePlatformPermission(PLATFORM_PERMISSIONS.ANALYTICS.SYSTEM_HEALTH), ErrorHandler.asyncHandler(async (req, res) => {
   try {
     const health = await systemMonitoringService.getSystemHealth();
@@ -31,6 +74,50 @@ router.get('/system-health', requirePlatformPermission(PLATFORM_PERMISSIONS.ANAL
   }
 }));
 
+/**
+ * @swagger
+ * /api/supra-admin/settings:
+ *   get:
+ *     summary: Get platform system settings
+ *     description: Currently a hardcoded settings object, not read from a persisted config store.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: System settings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 systemName:
+ *                   type: string
+ *                 version:
+ *                   type: string
+ *                 maintenanceMode:
+ *                   type: boolean
+ *                 registrationEnabled:
+ *                   type: boolean
+ *                 defaultTrialDays:
+ *                   type: integer
+ *                 maxTenantsPerAdmin:
+ *                   type: integer
+ *                 backupSettings:
+ *                   type: object
+ *                 emailSettings:
+ *                   type: object
+ *                 securitySettings:
+ *                   type: object
+ *                 notificationSettings:
+ *                   type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/settings', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
   try {
     const settings = { systemName: 'TWS - The Wolf Stack', version: '1.0.0', maintenanceMode: false, registrationEnabled: true, defaultTrialDays: 14, maxTenantsPerAdmin: 100, backupSettings: { frequency: 'daily', retention: 30 }, emailSettings: { enabled: true, smtpHost: 'smtp.gmail.com', smtpPort: 587, fromEmail: 'noreply@tws.com' }, securitySettings: { passwordMinLength: 8, sessionTimeout: 24, ipWhitelist: [] }, notificationSettings: { emailNotifications: true, systemAlerts: true, maintenanceAlerts: true, securityAlerts: true } };
@@ -40,6 +127,40 @@ router.get('/settings', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.RE
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/settings:
+ *   put:
+ *     summary: Update platform system settings (stub)
+ *     description: >
+ *       Stub implementation — accepts any body and always reports success without
+ *       persisting anything.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Reports success (no-op)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.put('/settings', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.UPDATE), async (req, res) => {
   try {
     res.json({ message: 'Settings updated successfully' });
@@ -48,6 +169,37 @@ router.put('/settings', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.UP
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/infrastructure/servers:
+ *   get:
+ *     summary: Get live server infrastructure metrics
+ *     description: Reports metrics for the single Node.js process/host this backend is running on (via the `os` module), not a fleet of servers.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Server metrics (single-element array)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/infrastructure/servers', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
   try {
     const hostname = os.hostname();
@@ -82,6 +234,37 @@ router.get('/infrastructure/servers', requirePlatformPermission(PLATFORM_PERMISS
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/infrastructure/databases:
+ *   get:
+ *     summary: Get live database (MongoDB) infrastructure metrics
+ *     description: Pings the current mongoose connection and reports stats/response time; returns a disconnected/error entry if unreachable.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Database metrics (single-element array)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/infrastructure/databases', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
   try {
     const databases = [];
@@ -105,6 +288,37 @@ router.get('/infrastructure/databases', requirePlatformPermission(PLATFORM_PERMI
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/infrastructure/apis:
+ *   get:
+ *     summary: List API groups and their (hardcoded) health metrics
+ *     description: Response time, requests/min, and error rate are static placeholder values, not measured metrics.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: API group list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/infrastructure/apis', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
   try {
     const apiGroups = [{ name: 'Authentication API', endpoint: '/api/auth', description: 'User authentication' }, { name: 'User Management API', endpoint: '/api/users', description: 'User CRUD' }, { name: 'Supra Admin API', endpoint: '/api/supra-admin', description: 'Supra admin panel' }];
@@ -115,6 +329,37 @@ router.get('/infrastructure/apis', requirePlatformPermission(PLATFORM_PERMISSION
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/infrastructure/security:
+ *   get:
+ *     summary: Get security component status (TLS, auth, DB, rate limiting)
+ *     description: Derived from process.env flags and mongoose connection state; threat counts are always zero (not tracked).
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Security component list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/infrastructure/security', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
   try {
     const tlsEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE_TLS === 'true';
@@ -132,6 +377,60 @@ router.get('/infrastructure/security', requirePlatformPermission(PLATFORM_PERMIS
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/infrastructure/stats:
+ *   get:
+ *     summary: Get aggregate infrastructure health stats
+ *     description: >
+ *       Rolls up server/database/API/security counts into a single `overallHealth`
+ *       verdict. On internal error still returns 200 with a best-effort fallback payload.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Aggregate stats
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalServers:
+ *                       type: integer
+ *                     activeServers:
+ *                       type: integer
+ *                     totalDatabases:
+ *                       type: integer
+ *                     activeDatabases:
+ *                       type: integer
+ *                     apiEndpoints:
+ *                       type: integer
+ *                     healthyApis:
+ *                       type: integer
+ *                     securityComponents:
+ *                       type: integer
+ *                     healthySecurity:
+ *                       type: integer
+ *                     securityScore:
+ *                       type: number
+ *                     overallHealth:
+ *                       type: string
+ *                       enum: [critical, warning, good]
+ *                     lastUpdated:
+ *                       type: string
+ *                       format: date-time
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/infrastructure/stats', requirePlatformPermission(PLATFORM_PERMISSIONS.ANALYTICS.READ), async (req, res) => {
   try {
     const activeServers = mongoose.connection.readyState === 1 ? 1 : 0;
@@ -145,6 +444,37 @@ router.get('/infrastructure/stats', requirePlatformPermission(PLATFORM_PERMISSIO
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/infrastructure/monitoring:
+ *   get:
+ *     summary: List active monitoring integrations
+ *     description: Mostly static entries describing the built-in monitoring service and health-check endpoint; adds a MongoDB entry only when connected.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Monitoring integration list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/infrastructure/monitoring', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
   try {
     const monitoring = [{ id: 1, name: 'System Monitoring Service', type: 'Metrics Collection', status: 'healthy', endpoints: 1, metricsCollected: 8, lastUpdated: new Date(), description: 'Built-in system monitoring', metrics: { endpoints: 1, metricsCollected: 8 } }, { id: 2, name: 'Health Check API', type: 'Health Monitoring', status: 'healthy', endpoints: 1, lastUpdated: new Date(), description: 'System health at /api/supra-admin/system-health', metrics: { endpoint: '/api/supra-admin/system-health' } }];
@@ -155,6 +485,37 @@ router.get('/infrastructure/monitoring', requirePlatformPermission(PLATFORM_PERM
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/infrastructure/networks:
+ *   get:
+ *     summary: List host network interfaces
+ *     description: Enumerates OS network interfaces via the `os` module; bandwidth/device counts are placeholder values, not measured.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Network interface list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.get('/infrastructure/networks', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
   try {
     const networks = [];
@@ -178,6 +539,40 @@ router.get('/infrastructure/networks', requirePlatformPermission(PLATFORM_PERMIS
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/infrastructure/servers/{id}/restart:
+ *   post:
+ *     summary: Restart a server (stub)
+ *     description: Stub implementation — always reports success, does not actually restart any process.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Restart initiated (no-op)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 serverId:
+ *                   type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/infrastructure/servers/:id/restart', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.MAINTENANCE), async (req, res) => {
   try {
     res.json({ message: 'Server restart initiated', serverId: parseInt(req.params.id) });
@@ -186,6 +581,40 @@ router.post('/infrastructure/servers/:id/restart', requirePlatformPermission(PLA
   }
 });
 
+/**
+ * @swagger
+ * /api/supra-admin/infrastructure/security/{id}/scan:
+ *   post:
+ *     summary: Run a security scan (stub)
+ *     description: Stub implementation — always reports success, does not actually run a scan.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Scan initiated (no-op)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 securityId:
+ *                   type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
 router.post('/infrastructure/security/:id/scan', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.UPDATE), async (req, res) => {
   try {
     res.json({ message: 'Security scan initiated', securityId: parseInt(req.params.id) });

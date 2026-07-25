@@ -1,6 +1,14 @@
 /**
  * Software-house finance GET APIs used by tenant-ui (tenant-api.service.js).
  * Returns real data from Finance models when present; otherwise empty shapes (no 404).
+ *
+ * Mounted (see modules/tenant/routes/softwareHouse.js -> server.js) at:
+ *   /api/tenant/{tenantSlug}/software-house
+ * so every route below resolves to /api/tenant/{tenantSlug}/software-house/finance/...
+ *
+ * All queries below scope to `orgId` derived from `req.user.orgId`, which is set by
+ * `unifiedSoftwareHouseAuth` (verifyERPToken) after verifying the JWT and cross-checking
+ * tenant/workspace membership — never taken from req.params or req.body.
  */
 
 const ErrorHandler = require('../../../middleware/common/errorHandler');
@@ -35,6 +43,63 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
 
   const shFinanceRead = requireErpAccess({ module: 'finance', action: 'read' });
 
+  /**
+   * @swagger
+   * /api/tenant/{tenantSlug}/software-house/finance:
+   *   get:
+   *     summary: Get software-house finance overview (revenue, expenses, AR/AP totals)
+   *     tags: [Software House Finance]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Aggregated totals (Number, summed from Transaction.amount / Invoice.total / Bill.total — no currency conversion; currency defaults to USD on the underlying models)
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     totalRevenue:
+   *                       type: number
+   *                     totalExpenses:
+   *                       type: number
+   *                     netIncome:
+   *                       type: number
+   *                     accountsReceivable:
+   *                       type: number
+   *                     accountsPayable:
+   *                       type: number
+   *                     cashBalance:
+   *                       type: number
+   *                     grossMargin:
+   *                       type: number
+   *                       description: Percentage, rounded to 1 decimal
+   *                     monthlyRecurringRevenue:
+   *                       type: number
+   *                     utilizationRate:
+   *                       type: number
+   *       400:
+   *         description: Organization required (no orgId resolvable from the authenticated user)
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         $ref: '#/components/responses/UnauthorizedError'
+   *       403:
+   *         $ref: '#/components/responses/ForbiddenError'
+   */
   router.get(
     '/finance',
     unifiedSoftwareHouseAuth,
@@ -95,6 +160,34 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
     })
   );
 
+  /**
+   * @swagger
+   * /api/tenant/{tenantSlug}/software-house/finance/accounts-payable:
+   *   get:
+   *     summary: List vendor bills (accounts payable) with paid/pending/overdue totals
+   *     tags: [Software House Finance]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Up to 200 most-recently-due bills (Bill.total/paidAmount are Number) plus paid/pending/overdue Number totals
+   *       400:
+   *         description: Organization required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         $ref: '#/components/responses/UnauthorizedError'
+   *       403:
+   *         $ref: '#/components/responses/ForbiddenError'
+   */
   router.get(
     '/finance/accounts-payable',
     unifiedSoftwareHouseAuth,
@@ -137,6 +230,34 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
     })
   );
 
+  /**
+   * @swagger
+   * /api/tenant/{tenantSlug}/software-house/finance/accounts-receivable:
+   *   get:
+   *     summary: List invoices (accounts receivable) with paid/pending/overdue totals
+   *     tags: [Software House Finance]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Up to 200 most-recently-due invoices (Invoice.total/paidAmount/remainingAmount are Number) plus paid/pending/overdue Number totals
+   *       400:
+   *         description: Organization required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         $ref: '#/components/responses/UnauthorizedError'
+   *       403:
+   *         $ref: '#/components/responses/ForbiddenError'
+   */
   router.get(
     '/finance/accounts-receivable',
     unifiedSoftwareHouseAuth,
@@ -178,6 +299,40 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
     })
   );
 
+  /**
+   * @swagger
+   * /api/tenant/{tenantSlug}/software-house/finance/transactions/recent:
+   *   get:
+   *     summary: List the most recent transactions
+   *     tags: [Software House Finance]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           default: 10
+   *         description: Not validated server-side beyond parseInt + capped at 50
+   *     responses:
+   *       200:
+   *         description: Recent transactions (amount is Number; type mapped revenue->income, else expense)
+   *       400:
+   *         description: Organization required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         $ref: '#/components/responses/UnauthorizedError'
+   *       403:
+   *         $ref: '#/components/responses/ForbiddenError'
+   */
   router.get(
     '/finance/transactions/recent',
     unifiedSoftwareHouseAuth,
@@ -203,6 +358,34 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
     })
   );
 
+  /**
+   * @swagger
+   * /api/tenant/{tenantSlug}/software-house/finance/invoices/overdue:
+   *   get:
+   *     summary: List up to 100 overdue invoices, sorted by due date ascending
+   *     tags: [Software House Finance]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Overdue invoices with computed daysOverdue and amount (Number)
+   *       400:
+   *         description: Organization required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         $ref: '#/components/responses/UnauthorizedError'
+   *       403:
+   *         $ref: '#/components/responses/ForbiddenError'
+   */
   router.get(
     '/finance/invoices/overdue',
     unifiedSoftwareHouseAuth,
@@ -238,6 +421,34 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
     })
   );
 
+  /**
+   * @swagger
+   * /api/tenant/{tenantSlug}/software-house/finance/bills/upcoming:
+   *   get:
+   *     summary: List up to 100 bills due within the next 60 days, sorted by due date ascending
+   *     tags: [Software House Finance]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Upcoming bills with computed daysUntilDue and amount (Number, from Bill.total)
+   *       400:
+   *         description: Organization required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         $ref: '#/components/responses/UnauthorizedError'
+   *       403:
+   *         $ref: '#/components/responses/ForbiddenError'
+   */
   router.get(
     '/finance/bills/upcoming',
     unifiedSoftwareHouseAuth,
@@ -273,6 +484,34 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
     })
   );
 
+  /**
+   * @swagger
+   * /api/tenant/{tenantSlug}/software-house/finance/projects/profitability:
+   *   get:
+   *     summary: List up to 100 project costing records with computed profit/margin
+   *     tags: [Software House Finance]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: ProjectCosting records with budget/actualCost/revenue/profit (Number) and margin (percentage, rounded to 1 decimal)
+   *       400:
+   *         description: Organization required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         $ref: '#/components/responses/UnauthorizedError'
+   *       403:
+   *         $ref: '#/components/responses/ForbiddenError'
+   */
   router.get(
     '/finance/projects/profitability',
     unifiedSoftwareHouseAuth,
@@ -307,6 +546,34 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
     })
   );
 
+  /**
+   * @swagger
+   * /api/tenant/{tenantSlug}/software-house/finance/cash-flow:
+   *   get:
+   *     summary: List up to 200 recent transactions shaped as cash-flow inflow/outflow entries
+   *     tags: [Software House Finance]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Transactions mapped to { type inflow/outflow, amount (Number), description, category, date }
+   *       400:
+   *         description: Organization required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         $ref: '#/components/responses/UnauthorizedError'
+   *       403:
+   *         $ref: '#/components/responses/ForbiddenError'
+   */
   router.get(
     '/finance/cash-flow',
     unifiedSoftwareHouseAuth,
@@ -331,6 +598,34 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
     })
   );
 
+  /**
+   * @swagger
+   * /api/tenant/{tenantSlug}/software-house/finance/cash-flow/forecasts:
+   *   get:
+   *     summary: List up to 25 cash flow forecasts, flattened into individual inflow/outflow entries (max 100 entries returned)
+   *     tags: [Software House Finance]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Flattened forecast entries with amount (Number) and a hardcoded confidence of "medium"
+   *       400:
+   *         description: Organization required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         $ref: '#/components/responses/UnauthorizedError'
+   *       403:
+   *         $ref: '#/components/responses/ForbiddenError'
+   */
   router.get(
     '/finance/cash-flow/forecasts',
     unifiedSoftwareHouseAuth,
@@ -375,6 +670,34 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
     })
   );
 
+  /**
+   * @swagger
+   * /api/tenant/{tenantSlug}/software-house/finance/vendors:
+   *   get:
+   *     summary: List up to 500 vendors
+   *     tags: [Software House Finance]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Vendor list scoped to the tenant's organization
+   *       400:
+   *         description: Organization required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         $ref: '#/components/responses/UnauthorizedError'
+   *       403:
+   *         $ref: '#/components/responses/ForbiddenError'
+   */
   router.get(
     '/finance/vendors',
     unifiedSoftwareHouseAuth,
@@ -387,6 +710,34 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
     })
   );
 
+  /**
+   * @swagger
+   * /api/tenant/{tenantSlug}/software-house/finance/chart-of-accounts:
+   *   get:
+   *     summary: List up to 500 active chart-of-accounts entries
+   *     tags: [Software House Finance]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: tenantSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Active ChartOfAccounts entries scoped to the tenant's organization, sorted by code
+   *       400:
+   *         description: Organization required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       401:
+   *         $ref: '#/components/responses/UnauthorizedError'
+   *       403:
+   *         $ref: '#/components/responses/ForbiddenError'
+   */
   router.get(
     '/finance/chart-of-accounts',
     unifiedSoftwareHouseAuth,

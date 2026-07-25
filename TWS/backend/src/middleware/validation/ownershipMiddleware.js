@@ -31,20 +31,22 @@ const injectOwnership = async (req, res, next) => {
       // Continue without orgId - route handler should validate
     }
 
-    // Inject ownership fields into request body
+    // Inject ownership fields into request body.
+    // SECURITY: always overwrite with server-verified values — never trust a client-supplied
+    // orgId/tenantId/createdBy, or a caller could plant records in another tenant's org.
     if (req.body && typeof req.body === 'object') {
-      // Only set if not already provided (allow override for admin operations)
-      if (!req.body.createdBy) {
-        req.body.createdBy = req.user._id;
-      }
-      
-      if (!req.body.orgId && orgId) {
+      req.body.createdBy = req.user._id;
+
+      if (orgId) {
         req.body.orgId = orgId;
+      } else {
+        delete req.body.orgId;
       }
 
-      // Set tenantId if available
-      if (!req.body.tenantId && req.tenantId) {
+      if (req.tenantId) {
         req.body.tenantId = req.tenantId;
+      } else {
+        delete req.body.tenantId;
       }
     }
 
