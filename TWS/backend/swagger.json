@@ -5950,7 +5950,7 @@
     "/api/supra-admin/sessions/department-access": {
       "get": {
         "summary": "List cross-tenant department access records",
-        "description": "Currently returns a hardcoded mock list (not read from DepartmentAccess). AUTHORIZATION GAP: this route only has `authenticateToken` (applied at the router level) — no `requirePlatformPermission`/role check, unlike `GET /sessions` above which explicitly requires `system:read`.\n",
+        "description": "Currently returns a hardcoded mock list (not read from DepartmentAccess). Requires `requirePlatformPermission(SYSTEM.READ)`, same as `GET /sessions` above.\n",
         "tags": [
           "Admin"
         ],
@@ -6004,7 +6004,7 @@
       },
       "post": {
         "summary": "Grant a user department-level access",
-        "description": "Stub implementation — echoes back a fabricated access record without persisting anything. AUTHORIZATION GAP: this route only has `authenticateToken` (applied at the router level) — no `requirePlatformPermission`/role check on what would be a cross-tenant privilege-granting action.\n",
+        "description": "Stub implementation — echoes back a fabricated access record without persisting anything. Requires `requirePlatformPermission(SYSTEM.UPDATE)`.\n",
         "tags": [
           "Admin"
         ],
@@ -6078,7 +6078,7 @@
     "/api/supra-admin/sessions/departments": {
       "get": {
         "summary": "List departments across all tenants",
-        "description": "Currently returns a hardcoded mock list (not read from the Department collection). AUTHORIZATION GAP: this route only has `authenticateToken` (applied at the router level) — no `requirePlatformPermission`/role check.\n",
+        "description": "Currently returns a hardcoded mock list (not read from the Department collection). Requires `requirePlatformPermission(SYSTEM.READ)`.\n",
         "tags": [
           "Admin"
         ],
@@ -6132,7 +6132,7 @@
       },
       "post": {
         "summary": "Create a department",
-        "description": "Stub implementation — echoes back a fabricated department record without persisting anything. AUTHORIZATION GAP: this route only has `authenticateToken` (applied at the router level) — no `requirePlatformPermission`/role check.\n",
+        "description": "Stub implementation — echoes back a fabricated department record without persisting anything. Requires `requirePlatformPermission(SYSTEM.UPDATE)`.\n",
         "tags": [
           "Admin"
         ],
@@ -6217,7 +6217,7 @@
     "/api/supra-admin/sessions/analytics/sessions": {
       "get": {
         "summary": "Get cross-tenant session analytics",
-        "description": "Real implementation backed by the Session collection: computes totals, growth vs. the previous window, daily trends, device/browser breakdowns, and a per-tenant leaderboard for the requested time range. AUTHORIZATION GAP: this route only has `authenticateToken` (applied at the router level) — no `requirePlatformPermission`/role check, despite exposing session and usage data across every tenant.\n",
+        "description": "Real implementation backed by the Session collection: computes totals, growth vs. the previous window, daily trends, device/browser breakdowns, and a per-tenant leaderboard for the requested time range. Requires `requirePlatformPermission(ANALYTICS.READ)`.\n",
         "tags": [
           "Admin"
         ],
@@ -6359,7 +6359,7 @@
     "/api/supra-admin/sessions/analytics/department-access": {
       "get": {
         "summary": "Get cross-tenant department access analytics",
-        "description": "Real implementation backed by Department, Session, and DepartmentAccess: computes department/user counts, permission-level breakdown, daily access trends, and a per-department leaderboard for the requested time range. AUTHORIZATION GAP: this route only has `authenticateToken` (applied at the router level) — no `requirePlatformPermission`/role check, despite exposing access data across every tenant.\n",
+        "description": "Real implementation backed by Department, Session, and DepartmentAccess: computes department/user counts, permission-level breakdown, daily access trends, and a per-department leaderboard for the requested time range. Requires `requirePlatformPermission(ANALYTICS.READ)`.\n",
         "tags": [
           "Admin"
         ],
@@ -6490,7 +6490,7 @@
     "/api/supra-admin/sessions/sessions/{sessionId}": {
       "delete": {
         "summary": "Terminate a session",
-        "description": "Stub implementation — always reports success without actually terminating a Session document. AUTHORIZATION GAP: this route only has `authenticateToken` (applied at the router level) — no `requirePlatformPermission`/role check on what is a destructive, cross-tenant session-management action.\n",
+        "description": "Stub implementation — always reports success without actually terminating a Session document. Requires `requirePlatformPermission(SYSTEM.UPDATE)`.\n",
         "tags": [
           "Admin"
         ],
@@ -6541,7 +6541,7 @@
     "/api/supra-admin/sessions/sessions/bulk-terminate": {
       "post": {
         "summary": "Terminate multiple sessions at once",
-        "description": "Stub implementation — always reports success without actually terminating any Session documents. AUTHORIZATION GAP: this route only has `authenticateToken` (applied at the router level) — no `requirePlatformPermission`/role check on what is a destructive, cross-tenant bulk action.\n",
+        "description": "Stub implementation — always reports success without actually terminating any Session documents. Requires `requirePlatformPermission(SYSTEM.UPDATE)`.\n",
         "tags": [
           "Admin"
         ],
@@ -6622,7 +6622,7 @@
     "/api/supra-admin/sessions/department-access/{accessId}/revoke": {
       "post": {
         "summary": "Revoke a user's department-level access",
-        "description": "Stub implementation — always reports success without persisting a revocation. AUTHORIZATION GAP: this route only has `authenticateToken` (applied at the router level) — no `requirePlatformPermission`/role check.\n",
+        "description": "Stub implementation — always reports success without persisting a revocation. Requires `requirePlatformPermission(SYSTEM.UPDATE)`.\n",
         "tags": [
           "Admin"
         ],
@@ -12365,6 +12365,65 @@
                         },
                         "utilizationRate": {
                           "type": "number"
+                        },
+                        "overdueInvoiceCount": {
+                          "type": "integer"
+                        },
+                        "overdueBillCount": {
+                          "type": "integer"
+                        },
+                        "currentMonth": {
+                          "type": "object",
+                          "description": "Month-to-date figures (calendar month), for trend display",
+                          "properties": {
+                            "revenue": {
+                              "type": "number"
+                            },
+                            "expenses": {
+                              "type": "number"
+                            },
+                            "netIncome": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "previousMonth": {
+                          "type": "object",
+                          "description": "Prior full calendar month, same shape as currentMonth",
+                          "properties": {
+                            "revenue": {
+                              "type": "number"
+                            },
+                            "expenses": {
+                              "type": "number"
+                            },
+                            "netIncome": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "trends": {
+                          "type": "object",
+                          "description": "Percent change of currentMonth vs previousMonth. null when previousMonth is 0 (no baseline to compare against).",
+                          "properties": {
+                            "revenue": {
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "expenses": {
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "netIncome": {
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "accountsReceivable": {
+                              "type": "number",
+                              "nullable": true,
+                              "description": "Based on invoice issuance volume this month vs last month, not the outstanding balance itself"
+                            }
+                          }
                         }
                       }
                     }

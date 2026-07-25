@@ -34,7 +34,7 @@ const ProjectCard = ({ project, tenantSlug }) => {
 
   const handleViewProject = () => {
     if (tenantSlug) {
-      navigate(`/${tenantSlug}/org/projects/${project._id || project.id}/board`);
+      navigate(`/${tenantSlug}/org/projects/${project.slug || project._id || project.id}/board`);
     }
   };
 

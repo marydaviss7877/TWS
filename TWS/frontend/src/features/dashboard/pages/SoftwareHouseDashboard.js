@@ -215,7 +215,7 @@ const SoftwareHouseDashboard = () => {
                 <li
                   key={p._id || i}
                   className="px-5 py-3 flex items-center justify-between gap-2 hover:bg-gray-50 dark:hover:bg-white/[0.03] transition-colors cursor-pointer"
-                  onClick={() => navigate(`/${tenantSlug}/org/projects/${p._id}`)}
+                  onClick={() => navigate(`/${tenantSlug}/org/projects/${p.slug || p._id}`)}
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{p.name}</p>

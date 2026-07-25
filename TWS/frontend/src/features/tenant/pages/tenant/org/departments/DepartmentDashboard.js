@@ -256,9 +256,9 @@ const DepartmentDashboard = () => {
             {projects.length > 0 ? (
               projects.map((project) => (
                 <div
-                  key={project._id || project.id}
+                  key={project.slug || project._id || project.id}
                   className="glass-card p-4 hover-glow cursor-pointer"
-                  onClick={() => navigate(`/${tenantSlug}/org/projects/${project._id || project.id}/board`)}
+                  onClick={() => navigate(`/${tenantSlug}/org/projects/${project.slug || project._id || project.id}/board`)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

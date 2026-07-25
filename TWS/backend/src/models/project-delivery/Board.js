@@ -4,7 +4,8 @@ const { ObjectId } = mongoose.Schema.Types;
 // Enhanced Board Schema with modern PM practices
 const BoardSchema = new mongoose.Schema({
   // Basic Info
-  workspaceId: { type: ObjectId, ref: 'Workspace', required: true },
+  orgId: { type: ObjectId, ref: 'Organization', required: true },
+  workspaceId: { type: ObjectId, ref: 'Workspace', required: false },
   projectId: { type: ObjectId, ref: 'Project', required: true },
   name: { type: String, required: true },
   description: String,
@@ -226,6 +227,7 @@ const BoardSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
+BoardSchema.index({ orgId: 1, projectId: 1, archived: 1, order: 1 });
 BoardSchema.index({ workspaceId: 1, status: 1 });
 BoardSchema.index({ projectId: 1 });
 BoardSchema.index({ type: 1 });

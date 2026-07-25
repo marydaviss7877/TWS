@@ -456,9 +456,9 @@ const ProjectsList = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ml-9">
                     {group.projects.map((project) => (
                       <div
-                        key={project._id || project.id}
+                        key={project.slug || project._id || project.id}
                         className="glass-card-premium p-6 hover-glow cursor-pointer transition-all"
-                        onClick={() => navigate(`/${tenantSlug}/org/projects/${project._id || project.id}/board`)}
+                        onClick={() => navigate(`/${tenantSlug}/org/projects/${project.slug || project._id || project.id}/board`)}
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
@@ -482,7 +482,7 @@ const ProjectsList = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/${tenantSlug}/org/projects/${project._id || project.id}/board`);
+                              navigate(`/${tenantSlug}/org/projects/${project.slug || project._id || project.id}/board`);
                             }}
                             className="flex-1 px-3 py-2 text-xs font-medium bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
                           >
@@ -499,9 +499,9 @@ const ProjectsList = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProjects.map((project) => (
                 <div
-                  key={project._id || project.id}
+                  key={project.slug || project._id || project.id}
                   className="glass-card-premium p-6 hover-glow cursor-pointer transition-all"
-                  onClick={() => navigate(`/${tenantSlug}/org/projects/${project._id || project.id}/board`)}
+                  onClick={() => navigate(`/${tenantSlug}/org/projects/${project.slug || project._id || project.id}/board`)}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
@@ -569,7 +569,7 @@ const ProjectsList = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/${tenantSlug}/org/projects/${project._id || project.id}/board`);
+                        navigate(`/${tenantSlug}/org/projects/${project.slug || project._id || project.id}/board`);
                       }}
                       className="flex-1 px-3 py-2 text-xs font-medium bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors flex items-center justify-center gap-1"
                     >
@@ -579,7 +579,7 @@ const ProjectsList = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/${tenantSlug}/org/projects/${project._id || project.id}/board`);
+                        navigate(`/${tenantSlug}/org/projects/${project.slug || project._id || project.id}/board`);
                       }}
                       className="px-3 py-2 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                     >
@@ -593,9 +593,9 @@ const ProjectsList = () => {
             <div className="space-y-4">
               {filteredProjects.map((project) => (
                 <div
-                  key={project._id || project.id}
+                  key={project.slug || project._id || project.id}
                   className="glass-card-premium p-6 hover-glow cursor-pointer"
-                  onClick={() => navigate(`/${tenantSlug}/org/projects/${project._id || project.id}/board`)}
+                  onClick={() => navigate(`/${tenantSlug}/org/projects/${project.slug || project._id || project.id}/board`)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -631,7 +631,7 @@ const ProjectsList = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/${tenantSlug}/org/projects/${project._id || project.id}/board`);
+                          navigate(`/${tenantSlug}/org/projects/${project.slug || project._id || project.id}/board`);
                         }}
                         className="px-4 py-2 text-sm font-medium bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
                       >

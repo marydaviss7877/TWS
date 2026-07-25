@@ -130,6 +130,12 @@ router.get('/metrics', (req, res, next) => {
 const { injectOwnership, injectUpdateOwnership } = require('../middleware/validation/ownershipMiddleware');
 // Import resource access check middleware (Issue #9.1 Fix)
 const { validateResourceAccess } = require('../middleware/security/resourceAccessCheck');
+// Resolves a project param that is a slug (not an ObjectId) to the real ObjectId, org-scoped
+const resolveProjectIdParam = require('../middleware/project/resolveProjectIdParam');
+
+// The :projectId param name is unique to this router's gantt/dashboard/members/logo routes below,
+// so a single router.param covers all of them without touching :id used by sibling resources (tasks/:id etc.)
+router.param('projectId', (req, res, next) => resolveProjectIdParam('projectId')(req, res, next));
 
 const projectLogoStorage = multer.diskStorage({
   destination: async (req, file, cb) => {
@@ -335,6 +341,34 @@ router.delete('/sprints/:id',
   projectController.deleteSprint);
 router.patch('/sprints/:id/velocity', projectController.calculateVelocity);
 
+// Boards endpoints (multiple boards per project — e.g. "Dev Board", "Bug Board")
+router.get('/boards', projectController.getBoards);
+router.post('/boards',
+  verifyERPToken,
+  [
+    body('name').notEmpty().trim().isLength({ min: 1, max: 255 }).withMessage('Board name is required'),
+    body('projectId').notEmpty().isMongoId().withMessage('Valid project ID is required'),
+    body('type').optional().isIn(['kanban', 'scrum', 'agile', 'waterfall', 'custom', 'timeline', 'calendar']).withMessage('Invalid board type'),
+    (req, res, next) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() });
+      }
+      next();
+    }
+  ],
+  injectOwnership,
+  projectController.createBoard);
+// ✅ IDOR Fix: Validate resource access
+router.patch('/boards/:id',
+  verifyERPToken,
+  validateResourceAccess('Board', 'id'),
+  projectController.updateBoard);
+router.delete('/boards/:id',
+  verifyERPToken,
+  validateResourceAccess('Board', 'id'),
+  projectController.deleteBoard);
+
 // Task-specific routes (these use :taskId, not :id, so they're safe)
 router.post('/tasks/:taskId/dependencies', projectController.createTaskDependency);
 router.delete('/tasks/:taskId/dependencies/:dependencyId', projectController.deleteTaskDependency);
@@ -381,7 +415,9 @@ router.delete(
 
 // Generic parameterized routes - MUST come LAST to avoid conflicts with specific routes
 // This will match any remaining paths, but we validate ObjectId format in the controller
-router.get('/:id', projectController.getProject);
+// :id is shared with sibling resource routes above (tasks/:id, sprints/:id, ...), so it can't use
+// router.param — resolveProjectIdParam('id') is applied explicitly per-route instead.
+router.get('/:id', resolveProjectIdParam('id'), projectController.getProject);
 
 // SECURITY: Add comprehensive security middleware for project creation
 // Only admins, project managers, and org managers can create projects
@@ -415,12 +451,14 @@ router.post('/',
 
 // Update and delete project routes - MUST come after specific routes but before other parameterized routes
 // ✅ IDOR Fix: Validate resource access before allowing update/delete
-router.patch('/:id', 
+router.patch('/:id',
   verifyERPToken,
+  resolveProjectIdParam('id'),
   validateResourceAccess('Project', 'id'),
   projectController.updateProject);
-router.delete('/:id', 
+router.delete('/:id',
   verifyERPToken,
+  resolveProjectIdParam('id'),
   validateResourceAccess('Project', 'id'),
   projectController.deleteProject);
 
@@ -430,6 +468,7 @@ router.delete('/:id',
  */
 router.post('/:id/archive',
   verifyERPToken,
+  resolveProjectIdParam('id'),
   requireRole(['admin', 'super_admin', 'org_manager', 'project_manager', 'pmo', 'owner']),
   ErrorHandler.asyncHandler(async (req, res) => {
     const Project = require('../models/project-delivery/Project');
@@ -468,6 +507,7 @@ router.post('/:id/archive',
  */
 router.post('/:id/restore',
   verifyERPToken,
+  resolveProjectIdParam('id'),
   checkReadOnlySoftwareHouseOnly,
   checkUsageLimitSoftwareHouseOnly('projects', 1),
   requireRole(['admin', 'super_admin', 'org_manager', 'project_manager', 'pmo', 'owner']),

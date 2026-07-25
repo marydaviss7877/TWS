@@ -89,6 +89,47 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
    *                       type: number
    *                     utilizationRate:
    *                       type: number
+   *                     overdueInvoiceCount:
+   *                       type: integer
+   *                     overdueBillCount:
+   *                       type: integer
+   *                     currentMonth:
+   *                       type: object
+   *                       description: Month-to-date figures (calendar month), for trend display
+   *                       properties:
+   *                         revenue:
+   *                           type: number
+   *                         expenses:
+   *                           type: number
+   *                         netIncome:
+   *                           type: number
+   *                     previousMonth:
+   *                       type: object
+   *                       description: Prior full calendar month, same shape as currentMonth
+   *                       properties:
+   *                         revenue:
+   *                           type: number
+   *                         expenses:
+   *                           type: number
+   *                         netIncome:
+   *                           type: number
+   *                     trends:
+   *                       type: object
+   *                       description: Percent change of currentMonth vs previousMonth. null when previousMonth is 0 (no baseline to compare against).
+   *                       properties:
+   *                         revenue:
+   *                           type: number
+   *                           nullable: true
+   *                         expenses:
+   *                           type: number
+   *                           nullable: true
+   *                         netIncome:
+   *                           type: number
+   *                           nullable: true
+   *                         accountsReceivable:
+   *                           type: number
+   *                           nullable: true
+   *                           description: Based on invoice issuance volume this month vs last month, not the outstanding balance itself
    *       400:
    *         description: Organization required (no orgId resolvable from the authenticated user)
    *         content:
@@ -109,7 +150,32 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
       if (!orgId) {
         return res.status(400).json({ success: false, message: 'Organization required' });
       }
-      const [rev, exp, arRows, apRows] = await Promise.all([
+
+      const now = new Date();
+      const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+      const sumByTypeAndRange = (type, start, end) =>
+        Transaction.aggregate([
+          { $match: { orgId, type, date: { $gte: start, $lt: end } } },
+          { $group: { _id: null, t: { $sum: '$amount' } } }
+        ]).catch(() => []);
+
+      const [
+        rev,
+        exp,
+        arRows,
+        apRows,
+        revThisMonth,
+        revLastMonth,
+        expThisMonth,
+        expLastMonth,
+        arIssuedThisMonth,
+        arIssuedLastMonth,
+        overdueInvoiceRows,
+        overdueBillRows
+      ] = await Promise.all([
         Transaction.aggregate([
           { $match: { orgId, type: 'revenue' } },
           { $group: { _id: null, t: { $sum: '$amount' } } }
@@ -137,11 +203,73 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
         Bill.aggregate([
           { $match: { orgId, status: { $nin: ['paid', 'cancelled'] } } },
           { $group: { _id: null, t: { $sum: { $ifNull: ['$total', 0] } } } }
+        ]).catch(() => []),
+        sumByTypeAndRange('revenue', startOfThisMonth, startOfNextMonth),
+        sumByTypeAndRange('revenue', startOfLastMonth, startOfThisMonth),
+        sumByTypeAndRange('expense', startOfThisMonth, startOfNextMonth),
+        sumByTypeAndRange('expense', startOfLastMonth, startOfThisMonth),
+        Invoice.aggregate([
+          { $match: { orgId, issueDate: { $gte: startOfThisMonth, $lt: startOfNextMonth } } },
+          {
+            $group: {
+              _id: null,
+              t: {
+                $sum: {
+                  $ifNull: [
+                    '$remainingAmount',
+                    { $max: [0, { $subtract: [{ $ifNull: ['$total', 0] }, { $ifNull: ['$paidAmount', 0] }] }] }
+                  ]
+                }
+              }
+            }
+          }
+        ]).catch(() => []),
+        Invoice.aggregate([
+          { $match: { orgId, issueDate: { $gte: startOfLastMonth, $lt: startOfThisMonth } } },
+          {
+            $group: {
+              _id: null,
+              t: {
+                $sum: {
+                  $ifNull: [
+                    '$remainingAmount',
+                    { $max: [0, { $subtract: [{ $ifNull: ['$total', 0] }, { $ifNull: ['$paidAmount', 0] }] }] }
+                  ]
+                }
+              }
+            }
+          }
+        ]).catch(() => []),
+        Invoice.aggregate([
+          { $match: { orgId, status: { $nin: ['paid', 'cancelled'] }, dueDate: { $lt: now } } },
+          { $group: { _id: null, count: { $sum: 1 } } }
+        ]).catch(() => []),
+        Bill.aggregate([
+          { $match: { orgId, status: { $nin: ['paid', 'cancelled'] }, dueDate: { $lt: now } } },
+          { $group: { _id: null, count: { $sum: 1 } } }
         ]).catch(() => [])
       ]);
+
       const totalRevenue = rev[0]?.t || 0;
       const totalExpenses = exp[0]?.t || 0;
       const netIncome = totalRevenue - totalExpenses;
+
+      // Period-over-period trend: null pct when the prior period has nothing to compare against
+      // (avoids a misleading "+100%" when a metric simply had no baseline).
+      const pctChange = (current, previous) => {
+        if (!previous) return current ? null : 0;
+        return Math.round(((current - previous) / previous) * 1000) / 10;
+      };
+
+      const currentMonthRevenue = revThisMonth[0]?.t || 0;
+      const previousMonthRevenue = revLastMonth[0]?.t || 0;
+      const currentMonthExpenses = expThisMonth[0]?.t || 0;
+      const previousMonthExpenses = expLastMonth[0]?.t || 0;
+      const currentMonthNetIncome = currentMonthRevenue - currentMonthExpenses;
+      const previousMonthNetIncome = previousMonthRevenue - previousMonthExpenses;
+      const currentMonthArIssued = arIssuedThisMonth[0]?.t || 0;
+      const previousMonthArIssued = arIssuedLastMonth[0]?.t || 0;
+
       res.json({
         success: true,
         data: {
@@ -154,7 +282,27 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
           grossMargin: totalRevenue > 0 ? Math.round((netIncome / totalRevenue) * 1000) / 10 : 0,
           monthlyRecurringRevenue: 0,
           utilizationRate: 0,
-          financialMetrics: {}
+          financialMetrics: {},
+          overdueInvoiceCount: overdueInvoiceRows[0]?.count || 0,
+          overdueBillCount: overdueBillRows[0]?.count || 0,
+          // Month-to-date figures + trend vs the prior calendar month. Additive fields only —
+          // existing consumers (FinanceOverview.js) read the all-time totals above and are unaffected.
+          currentMonth: {
+            revenue: currentMonthRevenue,
+            expenses: currentMonthExpenses,
+            netIncome: currentMonthNetIncome
+          },
+          previousMonth: {
+            revenue: previousMonthRevenue,
+            expenses: previousMonthExpenses,
+            netIncome: previousMonthNetIncome
+          },
+          trends: {
+            revenue: pctChange(currentMonthRevenue, previousMonthRevenue),
+            expenses: pctChange(currentMonthExpenses, previousMonthExpenses),
+            netIncome: pctChange(currentMonthNetIncome, previousMonthNetIncome),
+            accountsReceivable: pctChange(currentMonthArIssued, previousMonthArIssued)
+          }
         }
       });
     })

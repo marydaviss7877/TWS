@@ -88,7 +88,7 @@ const EmployeeWorkspacesView = ({ tenantSlug }) => {
 
   const handleOpenProject = (project) => {
     // Navigate to project view
-    navigate(`/${tenantSlug}/org/projects/${project._id}`);
+    navigate(`/${tenantSlug}/org/projects/${project.slug || project._id}`);
   };
 
   if (loading) {

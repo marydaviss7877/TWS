@@ -9,7 +9,7 @@ import { showSuccess, showError } from '../utils/toastNotifications';
 import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 
 /** Create / edit task — full-viewport right drawer (portaled to document.body so it is not clipped by workspace scroll areas). */
-const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultStatus = CARD_STATUS.TODO, defaultAssigneeId = '', initialTask = null }) => {
+const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, boardId = null, defaultStatus = CARD_STATUS.TODO, defaultAssigneeId = '', initialTask = null }) => {
   const isEdit = !!initialTask;
   const tenantSlug = useTenantSlug();
   const [formData, setFormData] = useState({
@@ -203,6 +203,7 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, defaultSta
         projectId: pid,
         ...(deptId ? { departmentId: deptId } : {}),
         ...(assignee ? { assigneeId: assignee } : {}),
+        ...(boardId && !isEdit ? { boardId } : {}),
         startDate: formData.startDate || undefined,
         dueDate: formData.dueDate || undefined
       };

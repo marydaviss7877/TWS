@@ -798,8 +798,8 @@ const MyWork = () => {
               <div className="space-y-1">
                 {projects.map(p => (
                   <button
-                    key={p._id || p.id}
-                    onClick={() => navigate(`/${tenantSlug}/org/projects/${p._id || p.id}/board`)}
+                    key={p.slug || p._id || p.id}
+                    onClick={() => navigate(`/${tenantSlug}/org/projects/${p.slug || p._id || p.id}/board`)}
                     className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex items-center justify-between group"
                   >
                     <span className="truncate">{p.name || p.title}</span>

@@ -159,12 +159,33 @@ class TenantOrgService {
       // Get basic counts
       // Note: Some models use 'status' field, others use 'isActive', handle both
       const baseFilter = { ...filter };
-      const [userCount, employeeCount, projectCount, taskCount] = await Promise.all([
+      const now = new Date();
+      const startOfThisWeek = new Date(now);
+      startOfThisWeek.setDate(now.getDate() - 7);
+      const startOfLastWeek = new Date(now);
+      startOfLastWeek.setDate(now.getDate() - 14);
+
+      const [
+        userCount,
+        employeeCount,
+        projectCount,
+        taskCount,
+        projectsCreatedThisWeek,
+        projectsCreatedLastWeek
+      ] = await Promise.all([
         models.User.countDocuments(baseFilter).catch(() => 0),
         models.Employee.countDocuments(baseFilter).catch(() => 0),
         models.Project.countDocuments(baseFilter).catch(() => 0),
-        models.Task.countDocuments(baseFilter).catch(() => 0)
+        models.Task.countDocuments(baseFilter).catch(() => 0),
+        models.Project.countDocuments({ ...baseFilter, createdAt: { $gte: startOfThisWeek } }).catch(() => 0),
+        models.Project.countDocuments({ ...baseFilter, createdAt: { $gte: startOfLastWeek, $lt: startOfThisWeek } }).catch(() => 0)
       ]);
+
+      // Week-over-week trend on new project creation. null when there's no prior-week
+      // baseline to compare against (avoids a misleading +100% on a fresh workspace).
+      const projectsTrendPct = projectsCreatedLastWeek
+        ? Math.round(((projectsCreatedThisWeek - projectsCreatedLastWeek) / projectsCreatedLastWeek) * 1000) / 10
+        : (projectsCreatedThisWeek ? null : 0);
 
       // Get recent activity (tasks)
       let formattedRecentActivity = [];
@@ -212,6 +233,9 @@ class TenantOrgService {
         recentActivity: formattedRecentActivity,
         projectStatus: projectStatus || [],
         taskStatus: taskStatus || [],
+        trends: {
+          totalProjects: projectsTrendPct
+        },
         lastUpdated: new Date()
       };
     } catch (error) {
@@ -227,6 +251,9 @@ class TenantOrgService {
         recentActivity: [],
         projectStatus: [],
         taskStatus: [],
+        trends: {
+          totalProjects: 0
+        },
         lastUpdated: new Date()
       };
     }
@@ -1006,19 +1033,34 @@ class TenantOrgService {
     try {
       const models = this.getTenantModels(tenantContext);
       const filter = this.getTenantFilter(tenantContext);
-      
+
       const employeeFilter = { ...filter, status: { $in: ['active', 'probation', 'on-leave'] } };
-      const [employeeCount, departmentCount, attendanceStats, payrollStats] = await Promise.all([
+      const [employeeCount, departmentCount, attendanceStats, previousMonthAttendanceStats, payrollStats] = await Promise.all([
         models.Employee.countDocuments(employeeFilter).catch(() => 0),
         models.Employee.distinct('department', employeeFilter).catch(() => []),
         this.getAttendanceStats(tenantContext).catch(() => []),
+        this.getPreviousMonthAttendanceStats(tenantContext).catch(() => []),
         this.getPayrollStats(tenantContext).catch(() => ({ totalAmount: 0, employeeCount: 0 }))
       ]);
+
+      const presentRate = (stats) => {
+        const total = (stats || []).reduce((s, st) => s + (st.count || 0), 0);
+        const present = (stats || []).find((st) => st._id === 'present')?.count || 0;
+        return total > 0 ? Math.round((present / total) * 1000) / 10 : null;
+      };
+      const currentPct = presentRate(attendanceStats);
+      const previousPct = presentRate(previousMonthAttendanceStats);
+      const attendanceTrendPct =
+        currentPct == null || previousPct == null
+          ? null
+          : Math.round((currentPct - previousPct) * 10) / 10;
 
       return {
         totalEmployees: employeeCount || 0,
         totalDepartments: (departmentCount && departmentCount.length) || 0,
         attendanceStats: attendanceStats || [],
+        // Attendance rate trend vs the prior full calendar month (percentage-point delta, not a ratio).
+        attendanceTrend: attendanceTrendPct,
         payrollStats: payrollStats || { totalAmount: 0, employeeCount: 0 },
         lastUpdated: new Date()
       };
@@ -1029,6 +1071,7 @@ class TenantOrgService {
         totalEmployees: 0,
         totalDepartments: 0,
         attendanceStats: [],
+        attendanceTrend: null,
         payrollStats: { totalAmount: 0, employeeCount: 0 },
         lastUpdated: new Date()
       };
@@ -2136,6 +2179,33 @@ class TenantOrgService {
       return stats || [];
     } catch (error) {
       console.error('Error getting attendance stats:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Same shape as getAttendanceStats, scoped to the prior full calendar month.
+   * Used to compute a month-over-month attendance-rate trend for the dashboard.
+   */
+  async getPreviousMonthAttendanceStats(tenantContext) {
+    try {
+      const today = new Date();
+      const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const startOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const models = this.getTenantModels(tenantContext);
+      const orgId = tenantContext.orgId;
+      const matchFilter = orgId
+        ? { organizationId: orgId, date: { $gte: startOfLastMonth, $lt: startOfThisMonth } }
+        : { ...this.getTenantFilter(tenantContext), date: { $gte: startOfLastMonth, $lt: startOfThisMonth } };
+
+      const stats = await models.Attendance.aggregate([
+        { $match: matchFilter },
+        { $group: { _id: '$status', count: { $sum: 1 } } }
+      ]);
+
+      return stats || [];
+    } catch (error) {
+      console.error('Error getting previous month attendance stats:', error);
       return [];
     }
   }

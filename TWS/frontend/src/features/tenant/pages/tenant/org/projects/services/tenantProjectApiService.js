@@ -573,6 +573,71 @@ class TenantProjectApiService {
   }
 
   /**
+   * Get boards for a project (multiple boards per project are supported)
+   * @param {string} tenantSlug - Tenant slug
+   * @param {Object} params - Query parameters (e.g. { projectId })
+   * @returns {Promise} API response
+   */
+  async getBoards(tenantSlug, params = {}) {
+    try {
+      const queryParams = new URLSearchParams(params).toString();
+      const url = `${API_ENDPOINTS.PROJECT_BOARDS(tenantSlug)}${queryParams ? '?' + queryParams : ''}`;
+      return await makeRequest(url);
+    } catch (error) {
+      throw this.handleError(error, ERROR_MESSAGES.NETWORK_ERROR);
+    }
+  }
+
+  /**
+   * Create a board on a project
+   * @param {string} tenantSlug - Tenant slug
+   * @param {Object} boardData - { projectId, name, description?, type?, color? }
+   * @returns {Promise} API response
+   */
+  async createBoard(tenantSlug, boardData) {
+    try {
+      return await makeRequest(API_ENDPOINTS.PROJECT_BOARDS(tenantSlug), {
+        method: 'POST',
+        body: JSON.stringify(boardData)
+      });
+    } catch (error) {
+      throw this.handleError(error, ERROR_MESSAGES.VALIDATION_ERROR);
+    }
+  }
+
+  /**
+   * Update a board (rename, recolor, reorder)
+   * @param {string} tenantSlug - Tenant slug
+   * @param {string} boardId - Board ID
+   * @param {Object} updates - Partial fields
+   * @returns {Promise} API response
+   */
+  async updateBoard(tenantSlug, boardId, updates) {
+    try {
+      return await makeRequest(API_ENDPOINTS.PROJECT_BOARD(tenantSlug, boardId), {
+        method: 'PATCH',
+        body: JSON.stringify(updates)
+      });
+    } catch (error) {
+      throw this.handleError(error, ERROR_MESSAGES.VALIDATION_ERROR);
+    }
+  }
+
+  /**
+   * Archive a board
+   * @param {string} tenantSlug - Tenant slug
+   * @param {string} boardId - Board ID
+   * @returns {Promise} API response
+   */
+  async deleteBoard(tenantSlug, boardId) {
+    try {
+      return await makeRequest(API_ENDPOINTS.PROJECT_BOARD(tenantSlug, boardId), { method: 'DELETE' });
+    } catch (error) {
+      throw this.handleError(error, ERROR_MESSAGES.NETWORK_ERROR);
+    }
+  }
+
+  /**
    * Get all clients
    * @param {string} tenantSlug - Tenant slug
    * @returns {Promise} API response

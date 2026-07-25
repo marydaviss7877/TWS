@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 import { useLocation } from 'react-router-dom';
 import axiosInstance from '../../shared/utils/axiosInstance';
 import { buildApiUrl } from '../config/api';
-import { isTenantWorkspacePath } from '../../shared/utils/tenantRoutes';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
@@ -60,10 +59,6 @@ export const AuthProvider = ({ children }) => {
       location.pathname === route || location.pathname.startsWith(route + '/')
     );
 
-    // On tenant workspace routes (FR2: /<slug>/org/... or /<slug>/dashboard): preserve login state
-    const isTenantRoute = isTenantWorkspacePath(location.pathname);
-    const hasTenantData = isTenantRoute && !!localStorage.getItem('tenantData');
-
     const checkAuth = async () => {
       // Skip auth check on public routes to avoid unnecessary 401; do NOT clear user/token
       // so that a successful login() does not get wiped before redirect/navigation
@@ -80,24 +75,8 @@ export const AuthProvider = ({ children }) => {
         // Handle case where interceptor returns { data: null, status: 401 } for 401 errors
         // Check status first, then check if data is null or doesn't have success
         if (response.status === 401) {
-          // On tenant routes with tenantData: preserve user from localStorage (just logged in)
-          // Prevents auto-logout when /api/auth/me 401 due to cookie timing
-          if (hasTenantData) {
-            try {
-              const storedUser = localStorage.getItem('user');
-              if (storedUser) {
-                const parsed = JSON.parse(storedUser);
-                if (parsed?.email) {
-                  setUser(parsed);
-                  setToken('cookie-based');
-                  setLoading(false);
-                  return;
-                }
-              }
-            } catch (e) {
-              // Fall through to clear
-            }
-          }
+          // SECURITY: the server is authoritative — a 401 always means logged out,
+          // regardless of any cached user/tenantData sitting in localStorage.
           setToken(null);
           setUser(null);
           setLoading(false);
@@ -122,23 +101,8 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         // 401 is expected when user is not logged in - don't log as error
         if (error.response?.status === 401 || error.status === 401) {
-          // On tenant routes with tenantData: preserve user from localStorage (just logged in)
-          if (hasTenantData) {
-            try {
-              const storedUser = localStorage.getItem('user');
-              if (storedUser) {
-                const parsed = JSON.parse(storedUser);
-                if (parsed?.email) {
-                  setUser(parsed);
-                  setToken('cookie-based');
-                  setLoading(false);
-                  return;
-                }
-              }
-            } catch (e) {
-              // Fall through to clear
-            }
-          }
+          // SECURITY: the server is authoritative — a 401 always means logged out,
+          // regardless of any cached user/tenantData sitting in localStorage.
           setToken(null);
           setUser(null);
         } else {

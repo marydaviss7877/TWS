@@ -243,8 +243,8 @@ export const API_ENDPOINTS = {
   PROJECT_TIMESHEET: (tenantSlug, id) => `/api/tenant/${tenantSlug}/organization/projects/timesheets/${id}`,
   PROJECT_SPRINTS: (tenantSlug) => `/api/tenant/${tenantSlug}/organization/projects/sprints`,
   PROJECT_SPRINT: (tenantSlug, id) => `/api/tenant/${tenantSlug}/organization/projects/sprints/${id}`,
-  PROJECT_BOARDS: (tenantSlug, projectId) => `/api/tenant/${tenantSlug}/organization/projects/${projectId}/boards`,
-  PROJECT_BOARD: (tenantSlug, projectId, boardId) => `/api/tenant/${tenantSlug}/organization/projects/${projectId}/boards/${boardId}`,
+  PROJECT_BOARDS: (tenantSlug) => `/api/tenant/${tenantSlug}/organization/projects/boards`,
+  PROJECT_BOARD: (tenantSlug, boardId) => `/api/tenant/${tenantSlug}/organization/projects/boards/${boardId}`,
   CLIENTS: (tenantSlug) => `/api/tenant/${tenantSlug}/organization/projects/clients`,
   CLIENT: (tenantSlug, id) => `/api/tenant/${tenantSlug}/organization/projects/clients/${id}`,
   // Gantt Chart endpoints

@@ -7,19 +7,24 @@ import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
   ArrowPathIcon,
+  ArrowTrendingDownIcon,
   ArrowTrendingUpIcon,
-  ChartBarIcon,
+  BanknotesIcon,
+  CalendarDaysIcon,
+  ChartPieIcon,
   CheckCircleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   ClipboardDocumentListIcon,
   ClockIcon,
   ExclamationTriangleIcon,
+  PlusIcon,
   PresentationChartLineIcon,
   RocketLaunchIcon,
   ShieldCheckIcon,
   UserGroupIcon,
   UserIcon,
+  UserPlusIcon,
 } from '@heroicons/react/24/outline';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
@@ -32,15 +37,31 @@ import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 const STATUS_CLASS = {
   completed: 'tad-status tad-status--completed',
   in_progress: 'tad-status tad-status--in_progress',
+  active: 'tad-status tad-status--in_progress',
   pending: 'tad-status tad-status--pending',
   planning: 'tad-status tad-status--planning',
   on_hold: 'tad-status tad-status--on_hold',
   cancelled: 'tad-status tad-status--cancelled',
 };
 
+const AVATAR_PALETTE = ['#2A3EEB', '#0E9C8F', '#C8790E', '#5C6CFF', '#D8434B', '#7C4DE0'];
+
 function statusAvatarClass(status) {
   const key = status || '';
   return STATUS_CLASS[key] || 'tad-status tad-status--default';
+}
+
+function avatarColor(seed) {
+  const s = String(seed || '');
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
+}
+
+function initials(name) {
+  const parts = String(name || '?').trim().split(/\s+/);
+  if (!parts.length || !parts[0]) return '?';
+  return parts.length > 1 ? `${parts[0][0]}${parts[1][0]}`.toUpperCase() : parts[0].slice(0, 2).toUpperCase();
 }
 
 function greeting() {
@@ -59,6 +80,43 @@ function todayLabel() {
 }
 
 const fmtStatus = (s) => (s || 'unknown').replace(/_/g, ' ');
+
+const currencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+function formatCompactCurrency(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  return currencyFormatter.format(value);
+}
+
+function formatDeadline(date) {
+  if (!date) return null;
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+/** pct: signed percent (or percentage-point delta when unit is 'pt'). null = no baseline to compare against. */
+function TrendBadge({ pct, unit = '%', period = 'vs last period' }) {
+  if (pct == null) return <span className="tad-trend tad-trend--muted">New this period</span>;
+  const isUp = pct > 0;
+  const isFlat = pct === 0;
+  const Icon = isFlat ? null : isUp ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
+  const cls = isFlat ? 'tad-trend tad-trend--flat' : isUp ? 'tad-trend tad-trend--up' : 'tad-trend tad-trend--down';
+  const sign = pct > 0 ? '+' : '';
+  return (
+    <span className={cls}>
+      {Icon && <Icon className="tad-trend__icon" aria-hidden />}
+      {sign}
+      {pct}
+      {unit === 'pt' ? 'pt' : '%'} <span className="tad-trend__period">{period}</span>
+    </span>
+  );
+}
 
 function deliveryHealthScore(projectPct, taskPct, totalProjectsListed, totalTasksListed) {
   if (totalProjectsListed <= 0 && totalTasksListed <= 0) return null;
@@ -116,6 +174,22 @@ function healthNarrative(score) {
   return 'Pipeline-heavy — prioritize closing tasks and clearing blockers.';
 }
 
+/** Builds a CSS conic-gradient() value from [{ pct, color }] segments (pct sums to <=100). */
+function conicGradient(segments, emptyColor = 'var(--tad-track)') {
+  const total = segments.reduce((s, x) => s + (x.pct || 0), 0);
+  if (total <= 0) return emptyColor;
+  let acc = 0;
+  const stops = segments
+    .filter((s) => s.pct > 0)
+    .map((s) => {
+      const from = acc;
+      acc += s.pct;
+      return `${s.color} ${from}% ${acc}%`;
+    });
+  if (acc < 100) stops.push(`${emptyColor} ${acc}% 100%`);
+  return `conic-gradient(${stops.join(', ')})`;
+}
+
 function SparklineChart({ values, ariaLabel }) {
   const uid = useId().replace(/:/g, '');
   const fillId = `tad-spark-fill-${uid}`;
@@ -144,12 +218,12 @@ function SparklineChart({ values, ariaLabel }) {
       <svg className="tad-dashboard__spark-svg" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img">
         <defs>
           <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-primary-500, #3b82f6)" stopOpacity="0.38" />
-            <stop offset="100%" stopColor="var(--color-primary-500, #3b82f6)" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--tad-accent)" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="var(--tad-accent)" stopOpacity="0" />
           </linearGradient>
           <linearGradient id={strokeId} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="var(--color-primary-600, #2563eb)" />
-            <stop offset="100%" stopColor="var(--color-accent-500, #a855f7)" />
+            <stop offset="0%" stopColor="var(--tad-accent)" />
+            <stop offset="100%" stopColor="var(--tad-accent-2)" />
           </linearGradient>
         </defs>
         <path d={areaD} fill={`url(#${fillId})`} className="tad-dashboard__spark-area" />
@@ -159,21 +233,18 @@ function SparklineChart({ values, ariaLabel }) {
   );
 }
 
-function KpiMicro({ label, value, sub, icon: Icon }) {
+function StatCard({ label, value, sub, trendPct, trendUnit, trendPeriod, icon: Icon }) {
   return (
-    <div className="tad-dashboard__kpi">
-      <div className="tad-dashboard__kpi-inner">
-        <div className="tad-dashboard__kpi-body">
-          <p className="tad-dashboard__kpi-label">{label}</p>
-          <p className="tad-dashboard__kpi-value">{value ?? '—'}</p>
-          {sub && <p className="tad-dashboard__kpi-sub">{sub}</p>}
-        </div>
-        {Icon && (
-          <span className="tad-dashboard__kpi-icon-wrap" aria-hidden>
-            <Icon className="tad-dashboard__kpi-icon-svg" />
-          </span>
-        )}
+    <div className="tad-stat">
+      <div className="tad-stat__top">
+        <span className="tad-stat__icon" aria-hidden>
+          <Icon />
+        </span>
+        {trendPct !== undefined && <TrendBadge pct={trendPct} unit={trendUnit} period={trendPeriod} />}
       </div>
+      <p className="tad-stat__label">{label}</p>
+      <p className="tad-stat__value">{value ?? '—'}</p>
+      {sub && <p className="tad-stat__sub">{sub}</p>}
     </div>
   );
 }
@@ -240,34 +311,16 @@ function DashboardSkeleton() {
           </div>
           <div className="tad-skel__line tad-skel__line--title" />
           <div className="tad-skel__line tad-skel__line--lede" />
-          <div className="tad-skel__completion-pair">
-            <div className="tad-skel__completion" />
-            <div className="tad-skel__completion" />
-          </div>
-        </div>
-        <div className="tad-skel__metrics-head">
-          <span className="tad-skel tad-skel__pill tad-skel__pill--wide" />
-          <span className="tad-skel__line tad-skel__line--hint" />
         </div>
         <div className="tad-skel-grid tad-skel-grid--kpi">
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className="tad-skel tad-skel--kpi" />
           ))}
         </div>
-        <div className="tad-skel tad-skel--spotlight">
-          <div className="tad-skel__spotlight-split">
-            <div className="tad-skel__spotlight-main">
-              <span className="tad-skel tad-skel__pill tad-skel__pill--wide" />
-              <div className="tad-skel__line tad-skel__line--title" />
-              <div className="tad-skel__line tad-skel__line--lede" />
-              <div className="tad-skel__spark-placeholder" />
-            </div>
-            <div className="tad-skel__spotlight-aside">
-              <span className="tad-skel tad-skel__pill" />
-              <div className="tad-skel__line tad-skel__line--hint" />
-              <div className="tad-skel__line tad-skel__line--hint" />
-            </div>
-          </div>
+        <div className="tad-skel-grid tad-skel-grid--charts">
+          <div className="tad-skel tad-skel--panel tad-skel--panel-tall" />
+          <div className="tad-skel tad-skel--panel tad-skel--panel-tall" />
+          <div className="tad-skel tad-skel--panel tad-skel--panel-tall" />
         </div>
         <div className="tad-skel-main">
           <div className="tad-skel tad-skel--panel tad-skel--panel-tall" />
@@ -297,6 +350,7 @@ export default function TenantAdminDashboard() {
   const [financeOverview, setFinanceOverview] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [userTotal, setUserTotal] = useState(null);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [pendingLeaveCount, setPendingLeaveCount] = useState(null);
 
   const erpCategory = tenant?.erpCategory || 'software_house';
@@ -313,7 +367,7 @@ export default function TenantAdminDashboard() {
       tenantApiService.getHROverview(tenantSlug),
       isSoftwareHouse ? tenantApiService.getFinanceOverview(tenantSlug) : Promise.resolve(null),
       tenantApiService.getDepartments(tenantSlug),
-      tenantApiService.getUsers(tenantSlug, { page: 1, limit: 1 }),
+      tenantApiService.getUsers(tenantSlug, { page: 1, limit: 6 }),
       tenantApiService.getLeaveRequests(tenantSlug, { status: 'pending', page: 1, limit: 50 }),
     ]);
 
@@ -344,6 +398,7 @@ export default function TenantAdminDashboard() {
     } else if (rUsers.status === 'fulfilled' && Array.isArray(rUsers.value?.users)) {
       setUserTotal(rUsers.value.users.length);
     } else setUserTotal(null);
+    setTeamMembers(rUsers.status === 'fulfilled' && Array.isArray(rUsers.value?.users) ? rUsers.value.users : []);
 
     if (rLeave.status === 'fulfilled' && rLeave.value) {
       const lv = rLeave.value;
@@ -366,6 +421,7 @@ export default function TenantAdminDashboard() {
   }, [load]);
 
   const overview = orgOverview?.overview || {};
+  const orgTrends = orgOverview?.trends || {};
   const recentActivity = useMemo(() => orgOverview?.recentActivity || [], [orgOverview]);
   const projectStatus = useMemo(() => orgOverview?.projectStatus || [], [orgOverview]);
   const taskStatus = useMemo(() => orgOverview?.taskStatus || [], [orgOverview]);
@@ -394,6 +450,12 @@ export default function TenantAdminDashboard() {
   const presentAttendance = attendanceStats.find((st) => st._id === 'present')?.count || 0;
   const attendancePulsePct =
     totalAttendanceRows > 0 ? Math.round((presentAttendance / totalAttendanceRows) * 100) : null;
+  const attendanceTrend = hrOverview?.attendanceTrend;
+
+  const financeCurrent = financeOverview?.currentMonth || null;
+  const financeTrends = financeOverview?.trends || {};
+  const overdueInvoiceCount = financeOverview?.overdueInvoiceCount ?? 0;
+  const overdueBillCount = financeOverview?.overdueBillCount ?? 0;
 
   const dailyActivitySeries = useMemo(() => buildDailyTaskUpdateSeries(recentActivity, 7), [recentActivity]);
   const statusMixSeries = useMemo(() => taskStatusMixSeries(taskStatus), [taskStatus]);
@@ -434,6 +496,100 @@ export default function TenantAdminDashboard() {
 
   const showSparkline = sparkBundle.values.length >= 2 && sparkBundle.values.some((v) => v > 0);
 
+  const projectDonutSegments = useMemo(() => {
+    const colors = {
+      completed: 'var(--tad-good)',
+      active: 'var(--tad-accent)',
+      in_progress: 'var(--tad-accent)',
+      planning: 'var(--tad-accent-2)',
+      on_hold: 'var(--tad-warn)',
+      cancelled: 'var(--tad-bad)',
+    };
+    return projectStatus
+      .filter((s) => (s.count || 0) > 0)
+      .map((s) => ({
+        key: s._id,
+        label: fmtStatus(s._id),
+        count: s.count,
+        pct: totalProjectsListed > 0 ? Math.round((s.count / totalProjectsListed) * 100) : 0,
+        color: colors[s._id] || 'var(--tad-ink-3)',
+      }));
+  }, [projectStatus, totalProjectsListed]);
+
+  const attentionItems = useMemo(() => {
+    const items = [];
+    if (pendingLeaveCount) {
+      items.push({
+        key: 'leave',
+        icon: ClockIcon,
+        title: 'Leave requests',
+        sub: `${pendingLeaveCount} awaiting approval`,
+        tag: pendingLeaveCount > 5 ? 'high' : 'medium',
+        onClick: () => navigate(`/${tenantSlug}/org/hr/leave-requests`),
+      });
+    }
+    if (isSoftwareHouse && m.atRiskProjects) {
+      items.push({
+        key: 'at-risk',
+        icon: ExclamationTriangleIcon,
+        title: `${m.atRiskProjects} project${m.atRiskProjects > 1 ? 's' : ''} at risk`,
+        sub: 'Needs a check-in',
+        tag: 'medium',
+        onClick: () => navigate(`/${tenantSlug}/org/projects`),
+      });
+    }
+    if (isSoftwareHouse && m.delayedProjects) {
+      items.push({
+        key: 'delayed',
+        icon: ExclamationTriangleIcon,
+        title: `${m.delayedProjects} project${m.delayedProjects > 1 ? 's' : ''} delayed`,
+        sub: 'Behind schedule',
+        tag: 'high',
+        onClick: () => navigate(`/${tenantSlug}/org/projects`),
+      });
+    }
+    if (isSoftwareHouse && overdueInvoiceCount) {
+      items.push({
+        key: 'ar-overdue',
+        icon: BanknotesIcon,
+        title: `${overdueInvoiceCount} invoice${overdueInvoiceCount > 1 ? 's' : ''} overdue`,
+        sub: 'Payment past due',
+        tag: 'high',
+        onClick: () => navigate(`/${tenantSlug}/org/finance/accounts-receivable`),
+      });
+    }
+    if (isSoftwareHouse && overdueBillCount) {
+      items.push({
+        key: 'ap-overdue',
+        icon: BanknotesIcon,
+        title: `${overdueBillCount} bill${overdueBillCount > 1 ? 's' : ''} overdue`,
+        sub: 'Vendor payment due',
+        tag: 'medium',
+        onClick: () => navigate(`/${tenantSlug}/org/finance/accounts-payable`),
+      });
+    }
+    return items;
+  }, [pendingLeaveCount, isSoftwareHouse, m.atRiskProjects, m.delayedProjects, overdueInvoiceCount, overdueBillCount, navigate, tenantSlug]);
+
+  const upcomingDeadlines = useMemo(() => {
+    if (!isSoftwareHouse) return [];
+    const items = [];
+    activeSprints.forEach((s) => {
+      if (s.endDate) {
+        items.push({ key: `sprint-${s._id}`, title: s.name, sub: 'Sprint ends', date: new Date(s.endDate), icon: RocketLaunchIcon });
+      }
+    });
+    recentProjects.forEach((p) => {
+      if (p.timeline?.endDate) {
+        items.push({ key: `proj-${p._id}`, title: p.name, sub: 'Project deadline', date: new Date(p.timeline.endDate), icon: ClipboardDocumentListIcon });
+      }
+    });
+    return items
+      .filter((i) => !Number.isNaN(i.date?.getTime()))
+      .sort((a, b) => a.date - b.date)
+      .slice(0, 5);
+  }, [isSoftwareHouse, activeSprints, recentProjects]);
+
   if (loading) {
     return <DashboardSkeleton />;
   }
@@ -465,10 +621,9 @@ export default function TenantAdminDashboard() {
             <div className="tad-dashboard__header-main">
               <div className="tad-dashboard__hero-kicker">
                 <span className="tad-dashboard__hero-badge">Live workspace</span>
-                <p className="tad-dashboard__section-label tad-dashboard__section-label--inline">Overview</p>
               </div>
               <h1 className="tad-dashboard__title tad-dashboard__title--display">
-                {greeting()}, <span className="tad-dashboard__title-accent">{user?.fullName || user?.name || 'there'}</span>
+                {greeting()}, {user?.fullName || user?.name || 'there'}
               </h1>
               <p className="tad-dashboard__lede">
                 <span className="tad-dashboard__org-mark">{orgLabel}</span>
@@ -488,6 +643,14 @@ export default function TenantAdminDashboard() {
                 <ArrowPathIcon className="tad-dashboard__icon" />
                 Refresh
               </button>
+              <div className="tad-health" aria-label="Organization delivery health">
+                <div className="tad-health__ring" style={{ background: conicGradient([{ pct: deliveryHealth ?? 0, color: 'var(--tad-accent)' }]) }}>
+                  <div className="tad-health__ring-label">
+                    <span className="tad-health__num">{deliveryHealth != null ? deliveryHealth : '—'}</span>
+                    <span className="tad-health__tag">Health</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </header>
 
@@ -497,180 +660,326 @@ export default function TenantAdminDashboard() {
               <span>{error}</span>
             </div>
           )}
-
-          <div className="tad-dashboard__completion-grid">
-            <div className="tad-dashboard__completion-card">
-              <div className="tad-dashboard__completion-head">
-                <span>Project completion</span>
-                <span className="tad-dashboard__completion-value">{projectPct}%</span>
-              </div>
-              <div className="tad-dashboard__progress-track tad-dashboard__progress-track--lg">
-                <div className="tad-dashboard__progress-fill" style={{ '--tad-pct': projectPct }} />
-              </div>
-            </div>
-            <div className="tad-dashboard__completion-card">
-              <div className="tad-dashboard__completion-head">
-                <span>Task completion</span>
-                <span className="tad-dashboard__completion-value">{taskPct}%</span>
-              </div>
-              <div className="tad-dashboard__progress-track tad-dashboard__progress-track--lg">
-                <div className="tad-dashboard__progress-fill" style={{ '--tad-pct': taskPct }} />
-              </div>
-            </div>
-          </div>
-
-          <div className="tad-dashboard__pulse-row" aria-label="Workspace pulse">
-            <button
-              type="button"
-              className="tad-dashboard__pulse-chip"
-              onClick={() => navigate(`/${tenantSlug}/org/projects`)}
-            >
-              <span className="tad-dashboard__pulse-dot tad-dashboard__pulse-dot--brand" aria-hidden />
-              <span className="tad-dashboard__pulse-copy">
-                <span className="tad-dashboard__pulse-label">Project catalog</span>
-                <span className="tad-dashboard__pulse-value">{overview.totalProjects ?? '—'} tracked</span>
-              </span>
-            </button>
-            <button
-              type="button"
-              className="tad-dashboard__pulse-chip"
-              onClick={() => navigate(`/${tenantSlug}/org/projects/tasks`)}
-            >
-              <span className="tad-dashboard__pulse-dot tad-dashboard__pulse-dot--violet" aria-hidden />
-              <span className="tad-dashboard__pulse-copy">
-                <span className="tad-dashboard__pulse-label">Work queue</span>
-                <span className="tad-dashboard__pulse-value">{overview.totalTasks ?? '—'} open tasks</span>
-              </span>
-            </button>
-            <button
-              type="button"
-              className="tad-dashboard__pulse-chip"
-              onClick={() => navigate(`/${tenantSlug}/org/hr`)}
-            >
-              <span
-                className={`tad-dashboard__pulse-dot ${attendancePulsePct != null ? 'tad-dashboard__pulse-dot--live' : 'tad-dashboard__pulse-dot--muted'}`}
-                aria-hidden
-              />
-              <span className="tad-dashboard__pulse-copy">
-                <span className="tad-dashboard__pulse-label">People pulse</span>
-                <span className="tad-dashboard__pulse-value">
-                  {attendancePulsePct != null ? `${attendancePulsePct}% attendance rate` : hrOverview ? 'HR synced' : 'Open HR'}
-                </span>
-              </span>
-            </button>
-            <button
-              type="button"
-              className="tad-dashboard__pulse-chip"
-              onClick={() => navigate(`/${tenantSlug}/org/hr/leave-requests`)}
-            >
-              <span className="tad-dashboard__pulse-dot tad-dashboard__pulse-dot--amber" aria-hidden />
-              <span className="tad-dashboard__pulse-copy">
-                <span className="tad-dashboard__pulse-label">Approvals</span>
-                <span className="tad-dashboard__pulse-value">
-                  {pendingLeaveCount != null ? `${pendingLeaveCount} leave pending` : 'Leave queue'}
-                </span>
-              </span>
-            </button>
-          </div>
         </div>
 
+        {/* STAT GRID */}
         <section aria-label="Key metrics" className="tad-dashboard__metrics-block">
           <div className="tad-dashboard__metrics-head">
             <p className="tad-dashboard__section-label tad-dashboard__mb-0">Key metrics</p>
             <p className="tad-dashboard__metrics-hint">Snapshot across your organization</p>
           </div>
-          <div className="tad-dashboard__kpi-grid">
-            <KpiMicro label="Users" value={displayUsers} icon={UserIcon} />
-            <KpiMicro label="Employees" value={displayEmployees} icon={UserGroupIcon} />
-            <KpiMicro
-              label="Active projects"
-              value={isSoftwareHouse ? m.activeProjects ?? overview.totalProjects : overview.totalProjects}
-              sub={isSoftwareHouse ? `${m.completedProjects ?? 0} done` : undefined}
-              icon={ClipboardDocumentListIcon}
-            />
-            <KpiMicro label="Open tasks" value={overview.totalTasks} icon={CheckCircleIcon} />
-            {isSoftwareHouse && <KpiMicro label="Active sprints" value={sprints.activeSprints} icon={RocketLaunchIcon} />}
-            <KpiMicro label="Pending leave" value={pendingLeaveCount ?? '—'} sub="HR queue" icon={ClockIcon} />
-          </div>
+          {isSoftwareHouse ? (
+            <div className="tad-stat-grid">
+              <StatCard
+                label="Revenue MTD"
+                value={formatCompactCurrency(financeCurrent?.revenue)}
+                icon={BanknotesIcon}
+                trendPct={financeTrends.revenue}
+                trendPeriod="vs last month"
+              />
+              <StatCard
+                label="Expenses MTD"
+                value={formatCompactCurrency(financeCurrent?.expenses)}
+                icon={BanknotesIcon}
+                trendPct={financeTrends.expenses}
+                trendPeriod="vs last month"
+              />
+              <StatCard
+                label="Active Projects"
+                value={m.activeProjects ?? overview.totalProjects}
+                sub={`${m.completedProjects ?? 0} completed`}
+                icon={ClipboardDocumentListIcon}
+                trendPct={orgTrends.totalProjects}
+                trendPeriod="vs last week"
+              />
+              <StatCard
+                label="Team Utilization"
+                value={attendancePulsePct != null ? `${attendancePulsePct}%` : '—'}
+                sub="Attendance this month"
+                icon={UserGroupIcon}
+                trendPct={attendanceTrend}
+                trendUnit="pt"
+                trendPeriod="vs last month"
+              />
+              <StatCard
+                label="Pending Invoices"
+                value={formatCompactCurrency(financeOverview?.accountsReceivable)}
+                icon={ClipboardDocumentListIcon}
+                trendPct={financeTrends.accountsReceivable}
+                trendPeriod="issuance vs last month"
+              />
+              <StatCard
+                label="Cash Flow"
+                value={formatCompactCurrency(financeCurrent?.netIncome)}
+                sub="Net income MTD"
+                icon={PresentationChartLineIcon}
+                trendPct={financeTrends.netIncome}
+                trendPeriod="vs last month"
+              />
+            </div>
+          ) : (
+            <div className="tad-stat-grid">
+              <StatCard label="Users" value={displayUsers} icon={UserIcon} />
+              <StatCard label="Employees" value={displayEmployees} icon={UserGroupIcon} />
+              <StatCard label="Active projects" value={overview.totalProjects} icon={ClipboardDocumentListIcon} trendPct={orgTrends.totalProjects} trendPeriod="vs last week" />
+              <StatCard label="Open tasks" value={overview.totalTasks} icon={CheckCircleIcon} />
+              <StatCard label="Pending leave" value={pendingLeaveCount ?? '—'} sub="HR queue" icon={ClockIcon} />
+            </div>
+          )}
         </section>
 
-        <section className="tad-dashboard__spotlight" aria-labelledby="tad-spotlight-heading">
-          <div className="tad-dashboard__spotlight-grid">
-            <div className="tad-dashboard__spotlight-main">
-              <div className="tad-dashboard__spotlight-kicker">
-                <PresentationChartLineIcon className="tad-dashboard__spotlight-icon" aria-hidden />
-                <p className="tad-dashboard__section-label tad-dashboard__mb-0">Insight</p>
-              </div>
-              <h2 id="tad-spotlight-heading" className="tad-dashboard__spotlight-title">
-                Delivery momentum
-              </h2>
-              <p className="tad-dashboard__spotlight-lede">{healthNarrative(deliveryHealth)}</p>
-              <div className="tad-dashboard__spotlight-score-row">
-                <div className="tad-dashboard__spotlight-score" aria-label="Blended delivery health">
-                  <span className="tad-dashboard__spotlight-score-num">{deliveryHealth != null ? deliveryHealth : '—'}</span>
-                  {deliveryHealth != null && <span className="tad-dashboard__spotlight-score-suffix">/ 100</span>}
-                </div>
-                {trendPhrase && (
-                  <p className="tad-dashboard__spotlight-trend">
-                    <ArrowTrendingUpIcon className="tad-dashboard__spotlight-trend-icon" aria-hidden />
-                    {trendPhrase}
-                  </p>
-                )}
-              </div>
-              {showSparkline ? (
-                <SparklineChart values={sparkBundle.values} ariaLabel={sparkBundle.caption} />
-              ) : (
-                <div className="tad-dashboard__spark tad-dashboard__spark--empty" aria-hidden />
-              )}
-              <p className="tad-dashboard__spotlight-caption">{sparkBundle.caption}</p>
-              <div className="tad-dashboard__spotlight-actions">
-                <button type="button" className="tad-dashboard__btn tad-dashboard__btn--primary" onClick={() => navigate(`/${tenantSlug}/org/analytics`)}>
-                  Explore analytics
-                </button>
-                <button type="button" className="tad-dashboard__btn tad-dashboard__btn--secondary" onClick={() => navigate(`/${tenantSlug}/org/projects/tasks`)}>
-                  Open tasks
-                </button>
+        {/* QUICK ACTIONS */}
+        <div className="tad-qa-row">
+          <button type="button" className="tad-btn tad-btn--primary" onClick={() => navigate(`/${tenantSlug}/org/projects`)}>
+            <PlusIcon className="tad-btn__icon" />
+            New project
+          </button>
+          <button type="button" className="tad-btn" onClick={() => navigate(`/${tenantSlug}/org/projects/tasks`)}>
+            <CheckCircleIcon className="tad-btn__icon" />
+            New task
+          </button>
+          {isSoftwareHouse && (
+            <button type="button" className="tad-btn" onClick={() => navigate(`/${tenantSlug}/org/finance/accounts-receivable`)}>
+              <BanknotesIcon className="tad-btn__icon" />
+              Create invoice
+            </button>
+          )}
+          <button type="button" className="tad-btn" onClick={() => navigate(`/${tenantSlug}/org/users?create=user`)}>
+            <UserPlusIcon className="tad-btn__icon" />
+            Add employee
+          </button>
+          {isSoftwareHouse && (
+            <button type="button" className="tad-btn" onClick={() => navigate(`/${tenantSlug}/org/projects/sprints`)}>
+              <RocketLaunchIcon className="tad-btn__icon" />
+              Start sprint
+            </button>
+          )}
+        </div>
+
+        {/* CHART ROW */}
+        <div className="tad-chart-row">
+          <div className="tad-panel">
+            <div className="tad-panel__head">
+              <div>
+                <p className="tad-panel__title">Delivery momentum</p>
+                <p className="tad-panel__meta">{sparkBundle.source === 'daily' ? 'Last 7 days' : 'Task mix'}</p>
               </div>
             </div>
-            <aside className="tad-dashboard__spotlight-aside" aria-label="Execution mix">
-              <p className="tad-dashboard__section-label tad-dashboard__mb-2">Execution mix</p>
-              <dl className="tad-dashboard__spotlight-dl">
-                <div className="tad-dashboard__spotlight-dl-row">
-                  <dt>Projects completed</dt>
-                  <dd>{projectPct}%</dd>
+            <p className="tad-dashboard__spotlight-lede tad-mb-2">{healthNarrative(deliveryHealth)}</p>
+            {showSparkline ? (
+              <SparklineChart values={sparkBundle.values} ariaLabel={sparkBundle.caption} />
+            ) : (
+              <div className="tad-dashboard__spark tad-dashboard__spark--empty" aria-hidden />
+            )}
+            {trendPhrase && (
+              <p className="tad-trend tad-trend--up tad-mt-2">
+                <ArrowTrendingUpIcon className="tad-trend__icon" aria-hidden />
+                {trendPhrase}
+              </p>
+            )}
+            <p className="tad-panel__caption">{sparkBundle.caption}</p>
+          </div>
+
+          <div className="tad-panel">
+            <div className="tad-panel__head">
+              <div>
+                <p className="tad-panel__title">{isSoftwareHouse ? 'Revenue vs Expenses' : 'Task status'}</p>
+                <p className="tad-panel__meta">{isSoftwareHouse ? 'Last 2 months' : 'Current mix'}</p>
+              </div>
+            </div>
+            {isSoftwareHouse ? (
+              <>
+                <div className="tad-mini-compare">
+                  {[
+                    { label: 'Last month', revenue: financeOverview?.previousMonth?.revenue || 0, expense: financeOverview?.previousMonth?.expenses || 0 },
+                    { label: 'This month', revenue: financeCurrent?.revenue || 0, expense: financeCurrent?.expenses || 0 },
+                  ].map((group) => {
+                    const max = Math.max(1, financeOverview?.previousMonth?.revenue || 0, financeOverview?.previousMonth?.expenses || 0, financeCurrent?.revenue || 0, financeCurrent?.expenses || 0);
+                    return (
+                      <div className="tad-mini-compare__group" key={group.label}>
+                        <div className="tad-mini-compare__bars">
+                          <div className="tad-bar tad-bar--revenue" style={{ height: `${Math.max(4, (group.revenue / max) * 100)}%` }} title={`Revenue: ${formatCompactCurrency(group.revenue)}`} />
+                          <div className="tad-bar tad-bar--expense" style={{ height: `${Math.max(4, (group.expense / max) * 100)}%` }} title={`Expenses: ${formatCompactCurrency(group.expense)}`} />
+                        </div>
+                        <span className="tad-mini-compare__label">{group.label}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="tad-dashboard__spotlight-track-wrap">
-                  <div className="tad-dashboard__progress-track tad-dashboard__progress-track--spot">
-                    <div className="tad-dashboard__progress-fill" style={{ '--tad-pct': projectPct }} />
+                <div className="tad-legend">
+                  <span><i className="tad-legend__dot" style={{ background: 'var(--tad-accent)' }} />Revenue</span>
+                  <span><i className="tad-legend__dot" style={{ background: 'var(--tad-ink-3)' }} />Expenses</span>
+                </div>
+              </>
+            ) : (
+              <div className="tad-mini-compare">
+                {taskStatus.filter((s) => (s.count || 0) > 0).map((s) => {
+                  const max = Math.max(1, ...taskStatus.map((x) => x.count || 0));
+                  return (
+                    <div className="tad-mini-compare__group" key={String(s._id)}>
+                      <div className="tad-mini-compare__bars">
+                        <div className="tad-bar tad-bar--revenue" style={{ height: `${Math.max(4, (s.count / max) * 100)}%` }} title={`${s.count}`} />
+                      </div>
+                      <span className="tad-mini-compare__label capitalize">{fmtStatus(s._id)}</span>
+                    </div>
+                  );
+                })}
+                {!totalTasksListed && <p className="tad-dashboard__empty">No tasks yet</p>}
+              </div>
+            )}
+          </div>
+
+          <div className="tad-panel">
+            <div className="tad-panel__head">
+              <div>
+                <p className="tad-panel__title">Project status</p>
+                <p className="tad-panel__meta">This workspace</p>
+              </div>
+            </div>
+            {projectDonutSegments.length ? (
+              <div className="tad-donut-wrap">
+                <div className="tad-donut" style={{ background: conicGradient(projectDonutSegments.map((s) => ({ pct: s.pct, color: s.color }))) }}>
+                  <div className="tad-donut__label">
+                    <span className="tad-donut__num">{totalProjectsListed}</span>
+                    <span className="tad-donut__tag">Total</span>
                   </div>
                 </div>
-                <div className="tad-dashboard__spotlight-dl-row tad-dashboard__mt-2">
-                  <dt>Tasks completed</dt>
-                  <dd>{taskPct}%</dd>
+                <div className="tad-donut-legend">
+                  {projectDonutSegments.map((s) => (
+                    <div className="tad-donut-legend__row" key={s.key}>
+                      <span className="tad-donut-legend__dot" style={{ background: s.color }} />
+                      <span className="tad-donut-legend__label capitalize">{s.label}</span>
+                      <span className="tad-donut-legend__val">{s.pct}%</span>
+                    </div>
+                  ))}
                 </div>
-                <div className="tad-dashboard__spotlight-track-wrap">
-                  <div className="tad-dashboard__progress-track tad-dashboard__progress-track--spot">
-                    <div className="tad-dashboard__progress-fill tad-dashboard__progress-fill--violet" style={{ '--tad-pct': taskPct }} />
-                  </div>
+              </div>
+            ) : (
+              <div className="tad-dashboard__empty">
+                <ChartPieIcon className="tad-dashboard__icon" aria-hidden />
+                No projects yet
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* MID ROW */}
+        <div className="tad-mid-row">
+          <div className="tad-panel">
+            <div className="tad-panel__head">
+              <div>
+                <p className="tad-panel__title">Attention center</p>
+                <p className="tad-panel__meta">{attentionItems.length} item{attentionItems.length === 1 ? '' : 's'}</p>
+              </div>
+            </div>
+            {attentionItems.length ? (
+              <div className="tad-att-list">
+                {attentionItems.map((item) => (
+                  <button type="button" key={item.key} className="tad-att-item" onClick={item.onClick}>
+                    <span className="tad-att-item__icon"><item.icon aria-hidden /></span>
+                    <span className="tad-att-item__body">
+                      <span className="tad-att-item__title">{item.title}</span>
+                      <span className="tad-att-item__sub">{item.sub}</span>
+                    </span>
+                    <span className={`tad-tag tad-tag--${item.tag}`}>{item.tag}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="tad-dashboard__empty">All caught up — nothing needs attention right now.</div>
+            )}
+          </div>
+
+          <div className="tad-panel">
+            <div className="tad-panel__head">
+              <div>
+                <p className="tad-panel__title">{isSoftwareHouse ? 'Finance summary' : 'Workforce'}</p>
+                <p className="tad-panel__meta">This month</p>
+              </div>
+            </div>
+            {isSoftwareHouse ? (
+              <dl className="tad-fin-rows">
+                <div className="tad-fin-row">
+                  <dt>Revenue</dt>
+                  <dd><b>{formatCompactCurrency(financeCurrent?.revenue)}</b><TrendBadge pct={financeTrends.revenue} period="" /></dd>
+                </div>
+                <div className="tad-fin-row">
+                  <dt>Expenses</dt>
+                  <dd><b>{formatCompactCurrency(financeCurrent?.expenses)}</b><TrendBadge pct={financeTrends.expenses} period="" /></dd>
+                </div>
+                <div className="tad-fin-row">
+                  <dt>Net income</dt>
+                  <dd><b>{formatCompactCurrency(financeCurrent?.netIncome)}</b><TrendBadge pct={financeTrends.netIncome} period="" /></dd>
+                </div>
+                <div className="tad-fin-row">
+                  <dt>Pending invoices</dt>
+                  <dd><b>{formatCompactCurrency(financeOverview?.accountsReceivable)}</b></dd>
+                </div>
+                <div className="tad-fin-row">
+                  <dt>Pending bills</dt>
+                  <dd><b>{formatCompactCurrency(financeOverview?.accountsPayable)}</b></dd>
                 </div>
               </dl>
-              <ul className="tad-dashboard__spotlight-mini">
-                <li>
-                  <strong>{overview.totalProjects ?? '—'}</strong>
-                  <span>projects</span>
-                </li>
-                <li>
-                  <strong>{overview.totalTasks ?? '—'}</strong>
-                  <span>tasks</span>
-                </li>
-                <li>
-                  <strong>{recentActivity.length}</strong>
-                  <span>recent touches</span>
-                </li>
-              </ul>
-            </aside>
+            ) : (
+              <dl className="tad-fin-rows">
+                <div className="tad-fin-row">
+                  <dt>Employees</dt>
+                  <dd><b>{displayEmployees ?? '—'}</b></dd>
+                </div>
+                <div className="tad-fin-row">
+                  <dt>Departments</dt>
+                  <dd><b>{departments.length}</b></dd>
+                </div>
+                <div className="tad-fin-row">
+                  <dt>Pending leave</dt>
+                  <dd><b>{pendingLeaveCount ?? '—'}</b></dd>
+                </div>
+                <div className="tad-fin-row">
+                  <dt>Attendance</dt>
+                  <dd><b>{attendancePulsePct != null ? `${attendancePulsePct}%` : '—'}</b></dd>
+                </div>
+              </dl>
+            )}
           </div>
-        </section>
+
+          <div className="tad-panel">
+            <div className="tad-panel__head">
+              <div>
+                <p className="tad-panel__title">{isSoftwareHouse ? 'Sprint overview' : 'Task completion'}</p>
+                <p className="tad-panel__meta">{isSoftwareHouse ? 'Active sprint' : 'This workspace'}</p>
+              </div>
+            </div>
+            {isSoftwareHouse ? (
+              <>
+                <div className="tad-ring-lg" style={{ background: conicGradient([{ pct: taskPct, color: 'var(--tad-accent)' }]) }}>
+                  <div className="tad-ring-lg__label">
+                    <span className="tad-ring-lg__num">{taskPct}%</span>
+                    <span className="tad-ring-lg__tag">Completed</span>
+                  </div>
+                </div>
+                <dl className="tad-fin-rows">
+                  <div className="tad-fin-row"><dt>Completed tasks</dt><dd><b>{completedTasks}</b></dd></div>
+                  <div className="tad-fin-row"><dt>Total tasks</dt><dd><b>{totalTasksListed}</b></dd></div>
+                  <div className="tad-fin-row"><dt>Active sprints</dt><dd><b>{sprints.activeSprints ?? 0}</b></dd></div>
+                  <div className="tad-fin-row"><dt>Avg. velocity</dt><dd><b>{sprints.averageVelocity ?? 0}</b></dd></div>
+                </dl>
+              </>
+            ) : (
+              <>
+                <div className="tad-ring-lg" style={{ background: conicGradient([{ pct: taskPct, color: 'var(--tad-accent)' }]) }}>
+                  <div className="tad-ring-lg__label">
+                    <span className="tad-ring-lg__num">{taskPct}%</span>
+                    <span className="tad-ring-lg__tag">Completed</span>
+                  </div>
+                </div>
+                <dl className="tad-fin-rows">
+                  <div className="tad-fin-row"><dt>Completed tasks</dt><dd><b>{completedTasks}</b></dd></div>
+                  <div className="tad-fin-row"><dt>Total tasks</dt><dd><b>{totalTasksListed}</b></dd></div>
+                </dl>
+              </>
+            )}
+          </div>
+        </div>
 
         <div className="tad-dashboard__main-grid">
           <div className="tad-dashboard__main-col">
@@ -699,10 +1008,10 @@ export default function TenantAdminDashboard() {
                         <button
                           type="button"
                           className="tad-dashboard__list-btn"
-                          onClick={() => p._id && navigate(`/${tenantSlug}/org/projects/${p._id}`)}
+                          onClick={() => p._id && navigate(`/${tenantSlug}/org/projects/${p.slug || p._id}`)}
                         >
                           <span className="min-w-0 truncate">{p.name}</span>
-                          <span className="tad-dashboard__pill">{(p.health || p.status || 'active').replace(/_/g, ' ')}</span>
+                          <span className="tad-dashboard__pill">{(p.status || 'active').replace(/_/g, ' ')}</span>
                         </button>
                       </li>
                     ))}
@@ -754,9 +1063,107 @@ export default function TenantAdminDashboard() {
                 </div>
               </details>
             </div>
+
+            {isSoftwareHouse && (
+              <div className="tad-dashboard__panel tad-dashboard__panel--flush tad-mt-4">
+                <div className="tad-dashboard__panel-header">
+                  <div>
+                    <p className="tad-dashboard__section-label">Portfolio</p>
+                    <h2 className="tad-dashboard__panel-title">Project control center</h2>
+                  </div>
+                  <button type="button" className="tad-dashboard__link-row" onClick={() => navigate(`/${tenantSlug}/org/projects`)}>
+                    View projects
+                    <ChevronRightIcon className="tad-dashboard__icon" />
+                  </button>
+                </div>
+                {recentProjects.length ? (
+                  <div className="tad-table-scroll">
+                    <table className="tad-table">
+                      <thead>
+                        <tr>
+                          <th>Project</th>
+                          <th>Status</th>
+                          <th>Client</th>
+                          <th>Deadline</th>
+                          <th>Budget used</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recentProjects.map((p, i) => {
+                          const total = p.budget?.total || 0;
+                          const spent = p.budget?.spent || 0;
+                          const pct = total > 0 ? Math.min(100, Math.round((spent / total) * 100)) : null;
+                          return (
+                            <tr key={p._id || i} onClick={() => p._id && navigate(`/${tenantSlug}/org/projects/${p.slug || p._id}`)}>
+                              <td className="tad-table__name">{p.name}</td>
+                              <td><span className={`tad-health-pill tad-health-pill--${p.status === 'completed' ? 'ok' : p.status === 'on_hold' ? 'risk' : p.status === 'cancelled' ? 'delay' : 'ok'}`}>{fmtStatus(p.status)}</span></td>
+                              <td>{p.clientId?.name || '—'}</td>
+                              <td className="mono">{formatDeadline(p.timeline?.endDate) || '—'}</td>
+                              <td>
+                                {pct != null ? (
+                                  <span className="tad-progress-inline">
+                                    <span className="tad-progress-inline__track"><span className="tad-progress-inline__fill" style={{ width: `${pct}%` }} /></span>
+                                    <span className="mono">{pct}%</span>
+                                  </span>
+                                ) : '—'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="tad-dashboard__empty">No recent projects yet</div>
+                )}
+              </div>
+            )}
           </div>
 
           <aside className="tad-dashboard__side-col tad-dashboard__side-stack" aria-label="Workspace shortcuts">
+            <div className="tad-dashboard__panel tad-dashboard__panel-padding">
+              <p className="tad-dashboard__section-label tad-dashboard__mb-2">Team overview</p>
+              {teamMembers.length ? (
+                <ul className="tad-team-list">
+                  {teamMembers.slice(0, 6).map((tm) => (
+                    <li key={tm._id} className="tad-team-row">
+                      <span className="tad-team-row__avatar" style={{ background: avatarColor(tm._id || tm.email) }}>{initials(tm.fullName || tm.email)}</span>
+                      <span className="tad-team-row__body">
+                        <span className="tad-team-row__name">{tm.fullName || tm.email || 'Team member'}</span>
+                        <span className="tad-team-row__role capitalize">{fmtStatus(tm.role)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="tad-dashboard__body">No team members yet.</p>
+              )}
+              <div className="tad-dashboard__link-stack">
+                <SidebarLink onClick={() => navigate(`/${tenantSlug}/org/users`)}>All users</SidebarLink>
+              </div>
+            </div>
+
+            {isSoftwareHouse && upcomingDeadlines.length > 0 && (
+              <div className="tad-dashboard__panel tad-dashboard__panel-padding">
+                <p className="tad-dashboard__section-label tad-dashboard__mb-2">Upcoming deadlines</p>
+                <ul className="tad-ev-list">
+                  {upcomingDeadlines.map((ev) => (
+                    <li key={ev.key} className="tad-ev-row">
+                      <span className="tad-ev-row__icon"><ev.icon aria-hidden /></span>
+                      <span className="tad-ev-row__body">
+                        <span className="tad-ev-row__title">{ev.title}</span>
+                        <span className="tad-ev-row__sub">{ev.sub}</span>
+                      </span>
+                      <span className="tad-ev-row__date mono">
+                        <CalendarDaysIcon className="tad-dashboard__icon" aria-hidden />
+                        {formatDeadline(ev.date)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="tad-dashboard__panel tad-dashboard__divide-y">
               <div className="tad-dashboard__panel-padding">
                 <p className="tad-dashboard__section-label tad-dashboard__mb-2">People</p>
@@ -832,7 +1239,7 @@ export default function TenantAdminDashboard() {
               <p className="tad-dashboard__section-label tad-dashboard__mb-2">Insights</p>
               <p className="tad-dashboard__body">Analytics and exports live in a dedicated space.</p>
               <button type="button" className="tad-dashboard__btn tad-dashboard__btn--primary" onClick={() => navigate(`/${tenantSlug}/org/analytics`)}>
-                <ChartBarIcon className="tad-dashboard__icon tad-dashboard__icon--muted" />
+                <PresentationChartLineIcon className="tad-dashboard__icon tad-dashboard__icon--muted" />
                 Open analytics
               </button>
               <button

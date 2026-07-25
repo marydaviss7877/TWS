@@ -633,6 +633,13 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
   const [boardSortDir, setBoardSortDir] = useState('asc');
   const [sortPanelOpen, setSortPanelOpen] = useState(false);
 
+  // Multiple boards per project — null selectedBoardId means the default ("Main") board
+  const [boards, setBoards]                 = useState([]);
+  const [selectedBoardId, setSelectedBoardId] = useState(null);
+  const [newBoardOpen, setNewBoardOpen]     = useState(false);
+  const [newBoardName, setNewBoardName]     = useState('');
+  const [creatingBoard, setCreatingBoard]   = useState(false);
+
   /* ── timer tick ── */
   useEffect(() => {
     if (!timerTaskId || !timerStartedAt) return;
@@ -700,6 +707,41 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
     if (scopeProjectId) setFilterProject(scopeProjectId);
   }, [scopeProjectId]);
 
+  const fetchBoards = useCallback(async () => {
+    if (!tenantSlug || !scopeProjectId) return;
+    try {
+      const res = await tenantProjectApiService.getBoards(tenantSlug, { projectId: scopeProjectId });
+      const list = Array.isArray(res) ? res : (res?.boards || []);
+      setBoards(list);
+    } catch {
+      setBoards([]);
+    }
+  }, [tenantSlug, scopeProjectId]);
+
+  useEffect(() => {
+    setSelectedBoardId(null);
+    fetchBoards();
+  }, [fetchBoards]);
+
+  const handleCreateBoard = async (e) => {
+    e?.preventDefault?.();
+    const name = newBoardName.trim();
+    if (!name || creatingBoard || !scopeProjectId) return;
+    setCreatingBoard(true);
+    try {
+      const board = await tenantProjectApiService.createBoard(tenantSlug, { projectId: scopeProjectId, name });
+      setBoards((prev) => [...prev, board]);
+      setSelectedBoardId(board._id || board.id);
+      setNewBoardName('');
+      setNewBoardOpen(false);
+      showSuccess('Board created');
+    } catch (err) {
+      showError(err?.message || 'Failed to create board');
+    } finally {
+      setCreatingBoard(false);
+    }
+  };
+
   useEffect(() => {
     if (!tenantSlug || !scopeProjectId) return;
     let cancelled = false;
@@ -737,6 +779,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
       const params = { groupBy: 'status' };
       if (scopeProjectId || filterProject !== 'all') params.projectId = scopeProjectId || filterProject;
       if (filterDepartment !== 'all') params.departmentId = filterDepartment;
+      if (selectedBoardId) params.boardId = selectedBoardId;
       const data = await tenantProjectApiService.getProjectTasks(tenantSlug, params);
 
       if (data?.tasks) {
@@ -761,7 +804,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
         setLoading(false);
       }
     }
-  }, [tenantSlug, scopeProjectId, filterProject, filterDepartment]);
+  }, [tenantSlug, scopeProjectId, filterProject, filterDepartment, selectedBoardId]);
 
   const fetchProjects = async () => {
     try {
@@ -846,6 +889,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
       type: CARD_TYPE.TASK,
     };
     if (departmentId) payload.departmentId = departmentId;
+    if (selectedBoardId) payload.boardId = selectedBoardId;
     await tenantProjectApiService.createTask(tenantSlug, payload);
     showSuccess('Task created');
     fetchTasks({ silent: true });
@@ -1075,6 +1119,74 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
           </div>
         )}
       </div>
+
+      {/* ── Board switcher: a project can have more than one board (e.g. "Dev", "Bugs") ── */}
+      {scopeProjectId && (
+        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => setSelectedBoardId(null)}
+            className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-colors shrink-0 ${
+              selectedBoardId === null
+                ? 'bg-primary-500 text-white'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+          >
+            Main
+          </button>
+          {boards.map((b) => (
+            <button
+              key={b._id || b.id}
+              type="button"
+              onClick={() => setSelectedBoardId(b._id || b.id)}
+              className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-colors shrink-0 ${
+                selectedBoardId === (b._id || b.id)
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }`}
+            >
+              {b.name}
+            </button>
+          ))}
+          {newBoardOpen ? (
+            <form onSubmit={handleCreateBoard} className="flex items-center gap-1.5 shrink-0">
+              <input
+                autoFocus
+                type="text"
+                value={newBoardName}
+                onChange={(e) => setNewBoardName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Escape') { setNewBoardOpen(false); setNewBoardName(''); } }}
+                placeholder="Board name…"
+                className="glass-input px-2.5 py-1.5 text-xs sm:text-sm rounded-lg w-32 sm:w-40"
+              />
+              <button
+                type="submit"
+                disabled={!newBoardName.trim() || creatingBoard}
+                className="px-2.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-primary-500 text-white disabled:opacity-50"
+              >
+                Add
+              </button>
+              <button
+                type="button"
+                onClick={() => { setNewBoardOpen(false); setNewBoardName(''); }}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                aria-label="Cancel"
+              >
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setNewBoardOpen(true)}
+              title="New board"
+              className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
+            >
+              <PlusIcon className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
 
       {sortPanelOpen && (
         <div
@@ -1391,6 +1503,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
         onTaskCreated={() => { fetchTasks({ silent: true }); setIsCreateModalOpen(false); setSelectedColumnForTask(null); }}
         defaultStatus={selectedColumnForTask || CARD_STATUS.TODO}
         projectId={scopeProjectId || (filterProject !== 'all' ? filterProject : undefined)}
+        boardId={selectedBoardId}
       />
 
       {/* ── Edit Task Modal ── */}

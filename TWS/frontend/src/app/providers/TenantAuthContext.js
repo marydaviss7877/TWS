@@ -343,8 +343,13 @@ export const TenantAuthProvider = ({ children }) => {
         // Verify tenant slug matches
         // Tokens are in HttpOnly cookies, not in localStorage
         const slugMatches = tenantData && tenantData.slug === tenantSlug;
-        
-        if ((isMainAuth || tenantDataStr) && slugMatches) {
+
+        // SECURITY: isMainAuth (server-verified /api/auth/me) is required — stale
+        // tenantData in localStorage alone must never grant access. Otherwise a
+        // browser with leftover cache from a previous/expired session renders the
+        // whole dashboard shell as "authenticated" while every API call 401s,
+        // instead of redirecting to login.
+        if (isMainAuth && slugMatches) {
           setTenant({
             id: tenantData.id,
             _id: tenantData.id,
@@ -398,10 +403,12 @@ export const TenantAuthProvider = ({ children }) => {
           setLoading(false);
           refreshTenantFromServer(tenantSlug); // non-blocking: always sync logo/branding from server
         } else {
-          console.error('Tenant slug mismatch or invalid tenant data');
+          console.error(isMainAuth ? 'Tenant slug mismatch' : 'No server-verified session — clearing stale tenant cache');
           setLoading(false);
           setIsAuthenticated(false);
-          // Token exists but tenant slug doesn't match, redirect to login (but not if already on login page)
+          // Stale/unverified cache — clear it so it can't fake auth on the next load
+          localStorage.removeItem('tenantData');
+          // Not authenticated (or slug mismatch), redirect to login (but not if already on login page)
           const isOnLoginPage = location.pathname.includes('/login') || location.pathname.includes('/signup');
           if (!isOnLoginPage) {
             const redirectPath = '/software-house-login';

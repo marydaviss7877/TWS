@@ -882,7 +882,7 @@ const ProjectsOverviewContent = () => {
           </button>
           {recentProjects.length > 0 && (
             <button
-              onClick={() => navigate(`/${tenantSlug}/org/projects/${recentProjects[0]._id || recentProjects[0].id}/gantt`)}
+              onClick={() => navigate(`/${tenantSlug}/org/projects/${recentProjects[0].slug || recentProjects[0]._id || recentProjects[0].id}/gantt`)}
               className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white"
             >
               <ChartBarIcon className="w-5 h-5" />
@@ -1465,7 +1465,7 @@ const ProjectsOverviewContent = () => {
           <div className="space-y-4">
             {recentProjects.length > 0 ? (
               recentProjects.slice(0, 6).map((project) => (
-                <div key={project._id || project.id} className="glass-card p-4 hover-glow">
+                <div key={project.slug || project._id || project.id} className="glass-card p-4 hover-glow">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -1511,14 +1511,14 @@ const ProjectsOverviewContent = () => {
                   {/* Action Buttons */}
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <button
-                      onClick={() => navigate(`/${tenantSlug}/org/projects/${project._id || project.id}/gantt`)}
+                      onClick={() => navigate(`/${tenantSlug}/org/projects/${project.slug || project._id || project.id}/gantt`)}
                       className="flex-1 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-1"
                     >
                       <CalendarDaysIcon className="w-4 h-4" />
                       Gantt Chart
                     </button>
                     <button
-                      onClick={() => navigate(`/${tenantSlug}/org/projects/${project._id || project.id}/board`)}
+                      onClick={() => navigate(`/${tenantSlug}/org/projects/${project.slug || project._id || project.id}/board`)}
                       className="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1"
                     >
                       <ClipboardDocumentListIcon className="w-4 h-4" />

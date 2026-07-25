@@ -10,6 +10,7 @@ const Client = require('../../models/industry/Client');
 const Milestone = require('../../models/project-delivery/Milestone');
 const Resource = require('../../models/core/Resource');
 const Sprint = require('../../models/project-delivery/Sprint');
+const Board = require('../../models/project-delivery/Board');
 const { TimeEntry } = require('../../models/finance/Finance');
 const User = require('../../models/users-auth/User');
 const TaskDependency = require('../../models/project-delivery/TaskDependency');
@@ -915,7 +916,7 @@ exports.getTasks = async (req, res) => {
       });
     }
     
-    const { projectId, departmentId, status, assigneeId, groupBy, limit = 50, skip = 0 } = req.query;
+    const { projectId, departmentId, status, assigneeId, boardId, groupBy, limit = 50, skip = 0 } = req.query;
 
     // Build query using orgId from context
     const query = { orgId };
@@ -923,6 +924,7 @@ exports.getTasks = async (req, res) => {
     if (departmentId) query.departmentId = departmentId;
     if (status) query.status = status;
     if (assigneeId) query.assignee = assigneeId;
+    if (boardId) query.boardId = boardId;
 
     // If groupBy is requested, group tasks by that field
     if (groupBy === 'status') {
@@ -1048,6 +1050,7 @@ exports.createTask = async (req, res) => {
       departmentId: initialDepartmentId,
       sprintId,
       milestoneId,
+      boardId,
       assigneeId,
       dueDate,
       startDate,
@@ -1227,6 +1230,7 @@ exports.createTask = async (req, res) => {
       departmentId: departmentIdObj,
       sprintId: sprintIdObj,
       milestoneId: milestoneId ? toObjectId(milestoneId, 'milestoneId') : null,
+      boardId: boardId ? toObjectId(boardId, 'boardId') : null,
       tenantId: tenantIdForTask || undefined,
       taskId: uniqueTaskId,
       title,
@@ -1371,6 +1375,7 @@ exports.updateTask = async (req, res) => {
     if (raw.departmentId !== undefined) updates.departmentId = toObjectId(raw.departmentId) || existingTask.departmentId;
     if (raw.sprintId !== undefined) updates.sprintId = raw.sprintId ? toObjectId(raw.sprintId) : null;
     if (raw.milestoneId !== undefined) updates.milestoneId = raw.milestoneId ? toObjectId(raw.milestoneId) : null;
+    if (raw.boardId !== undefined) updates.boardId = raw.boardId ? toObjectId(raw.boardId) : null;
 
     // Legacy board tasks: attach default sprint so metrics roll up (only when client did not send sprintId)
     if (raw.sprintId === undefined && !existingTask.sprintId) {
@@ -2645,6 +2650,208 @@ exports.calculateVelocity = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to calculate sprint velocity',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get boards for a project (or all boards in the org)
+ * GET /api/tenant/:tenantSlug/organization/projects/boards?projectId=...
+ */
+exports.getBoards = async (req, res) => {
+  try {
+    const orgId = await getOrgId(req);
+    if (!orgId) {
+      return res.status(500).json({
+        success: false,
+        message: 'Organization context not available'
+      });
+    }
+
+    const { projectId } = req.query;
+    const query = { orgId, archived: { $ne: true } };
+    if (projectId) query.projectId = projectId;
+
+    const boards = await Board.find(query)
+      .populate('projectId', 'name slug')
+      .sort({ order: 1, createdAt: 1 })
+      .lean();
+
+    res.json({
+      success: true,
+      data: { boards }
+    });
+  } catch (error) {
+    console.error('Error fetching boards:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch boards',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Create a board for a project
+ * POST /api/tenant/:tenantSlug/organization/projects/boards
+ */
+exports.createBoard = async (req, res) => {
+  try {
+    const orgId = await getOrgId(req);
+    if (!orgId) {
+      return res.status(500).json({
+        success: false,
+        message: 'Organization context not available'
+      });
+    }
+
+    const { projectId, name, description, type = 'kanban', color } = req.body;
+
+    if (!projectId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project ID is required'
+      });
+    }
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Board name is required'
+      });
+    }
+
+    const project = await Project.findOne({ _id: projectId, orgId }).select('workspaceId').lean();
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found'
+      });
+    }
+
+    const lastBoard = await Board.findOne({ orgId, projectId }).sort({ order: -1 }).select('order').lean();
+    const order = lastBoard ? lastBoard.order + 1 : 0;
+
+    const board = new Board({
+      orgId,
+      workspaceId: project.workspaceId || undefined,
+      projectId,
+      name: name.trim(),
+      description,
+      type,
+      color,
+      order,
+      createdBy: req.user?._id || null
+    });
+
+    await board.save();
+    await board.populate('projectId', 'name slug');
+
+    res.status(201).json({
+      success: true,
+      data: board,
+      message: 'Board created successfully'
+    });
+  } catch (error) {
+    console.error('Error creating board:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create board',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Update a board (rename, recolor, etc.)
+ * PATCH /api/tenant/:tenantSlug/organization/projects/boards/:id
+ */
+exports.updateBoard = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const orgId = await getOrgId(req);
+    if (!orgId) {
+      return res.status(500).json({
+        success: false,
+        message: 'Organization context not available'
+      });
+    }
+
+    // Only allow a safe subset of fields to be updated from this endpoint
+    const { name, description, color, type, order } = req.body;
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (description !== undefined) updates.description = description;
+    if (color !== undefined) updates.color = color;
+    if (type !== undefined) updates.type = type;
+    if (order !== undefined) updates.order = order;
+
+    const board = await Board.findOneAndUpdate(
+      { _id: id, orgId },
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).populate('projectId', 'name slug');
+
+    if (!board) {
+      return res.status(404).json({
+        success: false,
+        message: 'Board not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: board,
+      message: 'Board updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating board:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update board',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Archive (soft-delete) a board. Tasks on the board are left untouched and
+ * fall back to the project's default board view.
+ * DELETE /api/tenant/:tenantSlug/organization/projects/boards/:id
+ */
+exports.deleteBoard = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const orgId = await getOrgId(req);
+    if (!orgId) {
+      return res.status(500).json({
+        success: false,
+        message: 'Organization context not available'
+      });
+    }
+
+    const board = await Board.findOneAndUpdate(
+      { _id: id, orgId },
+      { $set: { archived: true, archivedAt: new Date(), status: 'archived' } },
+      { new: true }
+    );
+
+    if (!board) {
+      return res.status(404).json({
+        success: false,
+        message: 'Board not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Board archived successfully'
+    });
+  } catch (error) {
+    console.error('Error archiving board:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to archive board',
       error: error.message
     });
   }
