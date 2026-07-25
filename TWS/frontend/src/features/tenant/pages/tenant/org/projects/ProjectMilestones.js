@@ -7,7 +7,8 @@ import {
   PlusIcon,
   CalendarIcon,
   LinkIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  FolderIcon
 } from '@heroicons/react/24/outline';
 import tenantProjectApiService from './services/tenantProjectApiService';
 import tenantApiService from '../../../../../../shared/services/tenant/tenant-api.service';
@@ -241,7 +242,7 @@ const ProjectMilestones = () => {
                         <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
                           {milestone.ownerId || milestone.owner && (
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-xs font-bold">
+                              <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-bold">
                                 {(milestone.owner?.name || milestone.ownerId?.name || 'U').charAt(0).toUpperCase()}
                               </div>
                               <div>
@@ -355,17 +356,26 @@ const ProjectMilestones = () => {
                           )}
                           <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
                             {(milestone.projectId?.name || milestone.project) && (
-                              <span>📁 {milestone.projectId?.name || milestone.project}</span>
+                              <span className="inline-flex items-center gap-1">
+                                <FolderIcon className="w-3.5 h-3.5" />
+                                {milestone.projectId?.name || milestone.project}
+                              </span>
                             )}
                             {milestone.dueDate && (
-                              <span>📅 {new Date(milestone.dueDate).toLocaleDateString()}</span>
+                              <span className="inline-flex items-center gap-1">
+                                <CalendarIcon className="w-3.5 h-3.5" />
+                                {new Date(milestone.dueDate).toLocaleDateString()}
+                              </span>
                             )}
                             {milestone.tasks && (
-                              <span>✓ {milestone.tasks.completed || 0}/{milestone.tasks.total || 0} tasks</span>
+                              <span className="inline-flex items-center gap-1">
+                                <CheckCircleIcon className="w-3.5 h-3.5" />
+                                {milestone.tasks.completed || 0}/{milestone.tasks.total || 0} tasks
+                              </span>
                             )}
                             {(milestone.ownerId || milestone.owner) && (
                               <div className="flex items-center gap-1">
-                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-xs font-bold">
+                                <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-bold">
                                   {(milestone.owner?.name || milestone.ownerId?.name || 'U').charAt(0).toUpperCase()}
                                 </div>
                                 <span>{milestone.owner?.name || milestone.ownerId?.name || 'Unassigned'}</span>

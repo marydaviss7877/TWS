@@ -40,6 +40,13 @@ module.exports = {
         ],
         alias: {
           ...webpackConfig.resolve.alias,
+          // Mirrors the "paths" block in jsconfig.json — keep both in sync.
+          '@features': path.resolve(__dirname, 'src/features'),
+          '@shared': path.resolve(__dirname, 'src/shared'),
+          '@constants': path.resolve(__dirname, 'src/constants'),
+          '@hooks': path.resolve(__dirname, 'src/shared/hooks'),
+          '@utils': path.resolve(__dirname, 'src/shared/utils'),
+          '@services': path.resolve(__dirname, 'src/shared/services'),
           // Force prosemirror-view to frontend's 1.33.11 (has __serializeForClipboard; 1.34+ removed it)
           'prosemirror-view': path.resolve(__dirname, 'node_modules/prosemirror-view'),
         },

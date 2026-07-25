@@ -341,10 +341,10 @@ const ResponseDashboard = () => {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Responses', value: analytics.total, icon: DocumentTextIcon, color: 'blue', trend: '+12%' },
-          { label: 'Acceptance Rate', value: `${analytics.acceptanceRate}%`, icon: CheckCircleIcon, color: 'green', trend: '+5%' },
-          { label: 'Avg Score', value: analytics.avgScore, icon: StarIcon, color: 'purple', trend: '+0.3' },
-          { label: 'Response Rate', value: `${analytics.responseRate}%`, icon: ArrowTrendingUpIcon, color: 'orange', trend: '+8%' }
+          { label: 'Total Responses', value: analytics.total, icon: DocumentTextIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400', trend: '+12%' },
+          { label: 'Acceptance Rate', value: `${analytics.acceptanceRate}%`, icon: CheckCircleIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400', trend: '+5%' },
+          { label: 'Avg Score', value: analytics.avgScore, icon: StarIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400', trend: '+0.3' },
+          { label: 'Response Rate', value: `${analytics.responseRate}%`, icon: ArrowTrendingUpIcon, iconBg: 'bg-orange-50 dark:bg-orange-900/20', iconColor: 'text-orange-600 dark:text-orange-400', trend: '+8%' }
         ].map((metric, index) => (
           <div key={index} className="glass-card-premium p-6 hover-glow">
             <div className="flex items-center justify-between">
@@ -356,8 +356,8 @@ const ResponseDashboard = () => {
                   {metric.trend}
                 </p>
               </div>
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-${metric.color}-500 to-${metric.color}-600 flex items-center justify-center`}>
-                <metric.icon className="w-6 h-6 text-white" />
+              <div className={`w-12 h-12 rounded-xl ${metric.iconBg} flex items-center justify-center`}>
+                <metric.icon className={`w-6 h-6 ${metric.iconColor}`} />
               </div>
             </div>
           </div>
@@ -522,7 +522,7 @@ const ResponseDashboard = () => {
           <div key={response.id} className="glass-card-premium p-6 hover-glow group">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-4 flex-1">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-primary-600 flex items-center justify-center flex-shrink-0">
                   <UserIcon className="w-6 h-6 text-white" />
                 </div>
                 

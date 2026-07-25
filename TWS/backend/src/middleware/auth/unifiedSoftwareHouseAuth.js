@@ -216,7 +216,7 @@ const unifiedSoftwareHouseAuth = async (req, res, next) => {
     let userObjectId;
     try {
       userObjectId = mongoose.Types.ObjectId.isValid(userId) 
-        ? mongoose.Types.ObjectId(userId) 
+        ? new mongoose.Types.ObjectId(userId) 
         : userId;
     } catch (error) {
       await logSecurityEvent('AUTH_FAILED', userId, {

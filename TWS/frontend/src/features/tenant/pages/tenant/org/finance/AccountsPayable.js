@@ -792,10 +792,10 @@ const AccountsPayable = () => {
   }
 
   const statsData = [
-    { label: 'Total Payable', value: formatCurrency(stats.total), icon: ArrowTrendingDownIcon, iconBg: 'bg-gradient-to-br from-red-500 to-pink-600' },
-    { label: 'Paid', value: formatCurrency(stats.paid), icon: CheckCircleIcon, iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600' },
-    { label: 'Pending', value: formatCurrency(stats.pending), icon: ClockIcon, iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600' },
-    { label: 'Overdue', value: formatCurrency(stats.overdue), icon: ExclamationTriangleIcon, iconBg: 'bg-gradient-to-br from-red-600 to-pink-700' }
+    { label: 'Total Payable', value: formatCurrency(stats.total), icon: ArrowTrendingDownIcon, iconBg: 'bg-red-50 dark:bg-red-900/20', iconColor: 'text-red-600 dark:text-red-400' },
+    { label: 'Paid', value: formatCurrency(stats.paid), icon: CheckCircleIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
+    { label: 'Pending', value: formatCurrency(stats.pending), icon: ClockIcon, iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600 dark:text-amber-400' },
+    { label: 'Overdue', value: formatCurrency(stats.overdue), icon: ExclamationTriangleIcon, iconBg: 'bg-rose-50 dark:bg-rose-900/20', iconColor: 'text-rose-600 dark:text-rose-400' }
   ];
 
   return (
@@ -806,7 +806,7 @@ const AccountsPayable = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
-                Accounts Payable 💸
+                Accounts Payable
               </h1>
               <p className="mt-2 text-sm xl:text-base text-gray-600 dark:text-gray-300">
                 Comprehensive expense management and vendor payment system for software houses
@@ -824,8 +824,8 @@ const AccountsPayable = () => {
               </div>
             </div>
             <div className="hidden sm:block">
-              <div className="w-16 h-16 bg-gradient-to-br from-red-500 via-rose-600 to-pink-700 rounded-2xl flex items-center justify-center shadow-lg">
-                <ArrowTrendingDownIcon className="h-8 w-8 text-white" />
+              <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center">
+                <ArrowTrendingDownIcon className="h-8 w-8 text-red-600 dark:text-red-400" />
               </div>
             </div>
           </div>
@@ -871,8 +871,8 @@ const AccountsPayable = () => {
         {statsData.map((stat, index) => (
           <div key={index} className="glass-card-premium p-5 xl:p-6 hover-lift">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 xl:w-14 xl:h-14 rounded-2xl ${stat.iconBg} flex items-center justify-center shadow-glow-lg`}>
-                <stat.icon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+              <div className={`w-12 h-12 xl:w-14 xl:h-14 rounded-2xl ${stat.iconBg} flex items-center justify-center`}>
+                <stat.icon className={`w-6 h-6 xl:w-7 xl:h-7 ${stat.iconColor}`} />
               </div>
               <div>
                 <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">

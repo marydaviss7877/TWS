@@ -44,7 +44,7 @@ export const getNavigationActions = (tenantSlug, userRole = '') => {
     // --- Quick Create ---
     { id: 'create-task',    label: 'Add Task',        icon: ClipboardDocumentListIcon, category: 'Quick Create', path: `/${tenantSlug}/org/projects/tasks?create=task` },
     { id: 'create-project', label: 'Create Project',  icon: FolderIcon,                category: 'Quick Create', path: `/${tenantSlug}/org/projects?create=project` },
-    { id: 'add-user',       label: 'Add User',         icon: UserIcon,                  category: 'Quick Create', path: `/${tenantSlug}/org/users/create` },
+    { id: 'add-user',       label: 'Add User',         icon: UserIcon,                  category: 'Quick Create', path: `/${tenantSlug}/org/users?create=user` },
     { id: 'log-time',       label: 'Log Time',         icon: ClockIcon,                 category: 'Quick Create', path: `/${tenantSlug}/org/software-house/time-tracking` },
     { id: 'new-document',   label: 'New Document',     icon: PencilSquareIcon,          category: 'Quick Create', path: `/${tenantSlug}/org/documents/new` },
   ];

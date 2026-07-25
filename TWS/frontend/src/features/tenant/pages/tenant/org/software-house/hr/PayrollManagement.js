@@ -152,29 +152,33 @@ const PayrollManagement = () => {
   };
 
   const stats = [
-    { 
-      label: 'Total Payroll', 
-      value: `$${payrollData?.totalAmount?.toLocaleString() || '0'}`, 
-      icon: CurrencyDollarIcon, 
-      iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600' 
+    {
+      label: 'Total Payroll',
+      value: `$${payrollData?.totalAmount?.toLocaleString() || '0'}`,
+      icon: CurrencyDollarIcon,
+      iconBg: 'bg-green-50 dark:bg-green-900/20',
+      iconColor: 'text-green-600 dark:text-green-400'
     },
-    { 
-      label: 'Employees Paid', 
-      value: (payrollData?.employeeCount || 0).toString(), 
-      icon: CheckCircleIcon, 
-      iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600' 
+    {
+      label: 'Employees Paid',
+      value: (payrollData?.employeeCount || 0).toString(),
+      icon: CheckCircleIcon,
+      iconBg: 'bg-blue-50 dark:bg-blue-900/20',
+      iconColor: 'text-blue-600 dark:text-blue-400'
     },
-    { 
-      label: 'Pending Approval', 
-      value: (payrollData?.pendingCount || 0).toString(), 
-      icon: ClockIcon, 
-      iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600' 
+    {
+      label: 'Pending Approval',
+      value: (payrollData?.pendingCount || 0).toString(),
+      icon: ClockIcon,
+      iconBg: 'bg-amber-50 dark:bg-amber-900/20',
+      iconColor: 'text-amber-600 dark:text-amber-400'
     },
-    { 
-      label: 'Payroll Cycles', 
-      value: (payrollData?.cycleCount || 0).toString(), 
-      icon: BanknotesIcon, 
-      iconBg: 'bg-gradient-to-br from-purple-500 to-pink-600' 
+    {
+      label: 'Payroll Cycles',
+      value: (payrollData?.cycleCount || 0).toString(),
+      icon: BanknotesIcon,
+      iconBg: 'bg-purple-50 dark:bg-purple-900/20',
+      iconColor: 'text-purple-600 dark:text-purple-400'
     }
   ];
 
@@ -211,8 +215,8 @@ const PayrollManagement = () => {
         {stats.map((stat, index) => (
           <div key={index} className="glass-card-premium p-5 xl:p-6 hover-lift">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 xl:w-14 xl:h-14 rounded-2xl ${stat.iconBg} flex items-center justify-center shadow-glow-lg`}>
-                <stat.icon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+              <div className={`w-12 h-12 xl:w-14 xl:h-14 rounded-2xl ${stat.iconBg} flex items-center justify-center`}>
+                <stat.icon className={`w-6 h-6 xl:w-7 xl:h-7 ${stat.iconColor}`} />
               </div>
               <div>
                 <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">

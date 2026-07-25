@@ -36,12 +36,11 @@ import TenantOrg from './features/tenant/pages/tenant/org/TenantOrg';
 import SupraAdmin from './features/admin/pages/SupraAdmin/SupraAdmin';
 import SupraAdminDashboard from './features/admin/pages/SupraAdmin/dashboard/SupraAdminDashboard';
 import TenantManagement from './features/admin/pages/SupraAdmin/tenants/TenantManagement';
+import TenantUsers from './features/admin/pages/SupraAdmin/tenants/TenantUsers';
 import BillingManagement from './features/admin/pages/SupraAdmin/billing/BillingManagement';
 import Analytics from './features/admin/pages/SupraAdmin/analytics/Analytics';
 import SupraUsers from './features/admin/pages/SupraAdmin/users/Users';
 import SessionManagement from './features/admin/pages/SupraAdmin/sessions/SessionManagement';
-import DepartmentAccess from './features/admin/pages/SupraAdmin/departments/DepartmentAccess';
-import Departments from './features/admin/pages/SupraAdmin/departments/Departments';
 import SessionAnalytics from './features/admin/pages/SupraAdmin/analytics/SessionAnalytics';
 import SystemHealth from './features/admin/pages/SupraAdmin/monitoring/SystemHealth';
 import Infrastructure from './features/admin/pages/SupraAdmin/infrastructure/Infrastructure';
@@ -58,7 +57,6 @@ import AnalyticsOverview from './features/tenant/pages/tenant/org/analytics/Anal
 // ── Tenant Org — User Management ──────────────────────────────────────────────
 import UserList from './features/tenant/pages/tenant/org/users/UserList';
 import UserProfile from './features/tenant/pages/tenant/org/users/UserProfile';
-import UserCreate from './features/tenant/pages/tenant/org/users/UserCreate';
 
 // ── Tenant Org — HR (software-house path) ────────────────────────────────────
 import HROverview from './features/tenant/pages/tenant/org/software-house/hr/HROverview';
@@ -151,11 +149,8 @@ import ClientBilling from './features/tenant/pages/tenant/org/ClientBilling';
 
 // ── Tenant Org — Permissions / Roles / Departments ───────────────────────────
 import PermissionsList from './features/tenant/pages/tenant/org/permissions/PermissionsList';
-import CreatePermission from './features/tenant/pages/tenant/org/permissions/CreatePermission';
 import RolesList from './features/tenant/pages/tenant/org/roles/RolesList';
-import CreateRole from './features/tenant/pages/tenant/org/roles/CreateRole';
 import DepartmentsList from './features/tenant/pages/tenant/org/departments/DepartmentsList';
-import CreateDepartment from './features/tenant/pages/tenant/org/departments/CreateDepartment';
 import DepartmentDashboard from './features/tenant/pages/tenant/org/departments/DepartmentDashboard';
 import DepartmentAccessManagement from './features/tenant/pages/tenant/org/departments/DepartmentAccessManagement';
 import AuditLogPage from './features/tenant/pages/tenant/org/audit/AuditLogPage';
@@ -329,12 +324,16 @@ function App() {
           >
             <Route index element={<SupraAdminDashboard />} />
             <Route path="tenants" element={<TenantManagement />} />
+            <Route path="tenants/users" element={<TenantUsers />} />
             <Route path="billing" element={<BillingManagement />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="users" element={<SupraUsers />} />
             <Route path="session-management" element={<SessionManagement />} />
-            <Route path="department-access" element={<DepartmentAccess />} />
-            <Route path="departments" element={<Departments />} />
+            {/* Departments and Department Access were merged into Department Management —
+                the only one of the three that was ever more than a read-only duplicate.
+                Redirects keep any existing bookmarks/links working. */}
+            <Route path="department-access" element={<Navigate to="/supra-admin/department-management" replace />} />
+            <Route path="departments" element={<Navigate to="/supra-admin/department-management" replace />} />
             <Route path="session-analytics" element={<SessionAnalytics />} />
             <Route path="department-management" element={<DepartmentManagement />} />
             <Route path="erp-management" element={<ERPManagement />} />
@@ -370,20 +369,20 @@ function App() {
 
             {/* User management */}
             <Route path="users" element={<UserList />} />
-            <Route path="users/create" element={<UserCreate />} />
+            <Route path="users/create" element={<Navigate to="../users?create=user" replace />} />
             <Route path="users/:id" element={<UserProfile />} />
 
             {/* Permissions */}
             <Route path="permissions" element={<PermissionsList />} />
-            <Route path="permissions/create" element={<CreatePermission />} />
+            <Route path="permissions/create" element={<Navigate to="../permissions?create=permission" replace />} />
 
             {/* Roles */}
             <Route path="roles" element={<RolesList />} />
-            <Route path="roles/create" element={<CreateRole />} />
+            <Route path="roles/create" element={<Navigate to="../roles?create=role" replace />} />
 
             {/* Departments */}
             <Route path="departments" element={<DepartmentsList />} />
-            <Route path="departments/create" element={<CreateDepartment />} />
+            <Route path="departments/create" element={<Navigate to="../departments?create=department" replace />} />
             <Route path="departments/access" element={<DepartmentAccessManagement />} />
             <Route path="departments/:departmentId/dashboard" element={<DepartmentDashboard />} />
 

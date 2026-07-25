@@ -317,7 +317,7 @@ class TenantSwitchingService {
       });
       
       const roleDistribution = await TenantUser.aggregate([
-        { $match: { tenantId: mongoose.Types.ObjectId(tenantId), status: 'active' } },
+        { $match: { tenantId: new mongoose.Types.ObjectId(tenantId), status: 'active' } },
         { $unwind: '$roles' },
         { $group: { _id: '$roles.role', count: { $sum: 1 } } }
       ]);

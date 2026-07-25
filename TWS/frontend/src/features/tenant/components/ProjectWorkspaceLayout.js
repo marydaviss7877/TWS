@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Outlet, useParams, useNavigate, useLocation, NavLink } from 'react-router-dom';
+import { useTenantSlug } from '../../../shared/hooks/useTenantSlug';
 import { Popover } from '@headlessui/react';
 import {
   FolderIcon,
@@ -227,7 +228,8 @@ const VIEW_TABS = [
 ];
 
 const ProjectWorkspaceLayout = () => {
-  const { tenantSlug, projectId } = useParams();
+  const { projectId } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const location = useLocation();
   const [project, setProject] = useState(null);

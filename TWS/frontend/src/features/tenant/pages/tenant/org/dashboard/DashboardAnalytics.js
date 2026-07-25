@@ -49,6 +49,8 @@ const DashboardAnalytics = () => {
       <FeatureUnavailable
         title="Analytics unavailable"
         description="Advanced analytics and reporting are not available in this release yet."
+        actionLabel="View analytics"
+        actionTo={`/${tenantSlug}/org/analytics`}
       />
     </div>
   );

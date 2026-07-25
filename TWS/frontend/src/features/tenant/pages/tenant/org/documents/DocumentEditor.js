@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import toast from 'react-hot-toast';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
@@ -37,7 +38,8 @@ function isBlockNoteDocument(content) {
 
 const DocumentEditor = () => {
   const { user: tenantUser } = useTenantAuth();
-  const { tenantSlug, id } = useParams();
+  const { id } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isNew = !id || id === 'new';

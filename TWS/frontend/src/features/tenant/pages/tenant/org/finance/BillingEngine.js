@@ -339,7 +339,7 @@ const BillingEngine = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
-                Billing Engine 🚀
+                Billing Engine
               </h1>
               <p className="mt-2 text-sm xl:text-base text-gray-600 dark:text-gray-300">
                 Automated billing and invoicing system for software houses
@@ -357,8 +357,8 @@ const BillingEngine = () => {
               </div>
             </div>
             <div className="hidden sm:block">
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-700 rounded-2xl flex items-center justify-center shadow-lg">
-                <DocumentChartBarIcon className="h-8 w-8 text-white" />
+              <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center">
+                <DocumentChartBarIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
               </div>
             </div>
           </div>
@@ -385,8 +385,8 @@ const BillingEngine = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-glow-lg">
-              <DocumentChartBarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+              <DocumentChartBarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -400,8 +400,8 @@ const BillingEngine = () => {
         </div>
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-glow-lg">
-              <CurrencyDollarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
+              <CurrencyDollarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-green-600 dark:text-green-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -415,8 +415,8 @@ const BillingEngine = () => {
         </div>
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-glow-lg">
-              <ExclamationTriangleIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center">
+              <ExclamationTriangleIcon className="w-6 h-6 xl:w-7 xl:h-7 text-rose-600 dark:text-rose-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -430,8 +430,8 @@ const BillingEngine = () => {
         </div>
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-glow-lg">
-              <CheckCircleIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
+              <CheckCircleIcon className="w-6 h-6 xl:w-7 xl:h-7 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">

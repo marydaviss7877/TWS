@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -10,6 +10,11 @@ import {
 import toast from 'react-hot-toast';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../../../components/ui/Dialog/Dialog';
+import { Button } from '../../../../../../components/ui/Button/Button';
+import { Input } from '../../../../../../components/ui/Input/Input';
+
+const EMPTY_ROLE_FORM = { name: '', slug: '', description: '', permissions: [] };
 
 const emptyRoleCatalog = {
   softwareHouse: { title: '', description: '', roleSystem: '', entries: [] },
@@ -97,6 +102,7 @@ function RoleCatalogSection({ section, searchTerm }) {
 const RolesList = () => {
   const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
+  const location = useLocation();
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalog, setCatalog] = useState(emptyRoleCatalog);
   const [dbLoading, setDbLoading] = useState(true);
@@ -104,6 +110,9 @@ const RolesList = () => {
   const [permissions, setPermissions] = useState([]);
   const [roleSyncing, setRoleSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [roleForm, setRoleForm] = useState(EMPTY_ROLE_FORM);
+  const [creatingRole, setCreatingRole] = useState(false);
 
   const fetchCatalog = useCallback(async () => {
     try {
@@ -157,6 +166,73 @@ const RolesList = () => {
     fetchDbRoles();
     fetchPermissions();
   }, [fetchCatalog, fetchDbRoles, fetchPermissions]);
+
+  // Quick Create / command palette lands here as ?create=role
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('create') === 'role') {
+      openCreateModal();
+      params.delete('create');
+      const next = params.toString();
+      navigate({ pathname: location.pathname, search: next ? `?${next}` : '' }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
+  const openCreateModal = () => setShowCreateModal(true);
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
+    setRoleForm(EMPTY_ROLE_FORM);
+  };
+
+  const handleRoleFormChange = (e) => {
+    const { name, value } = e.target;
+    setRoleForm((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === 'name' && !prev.slug) {
+        next.slug = value
+          .toLowerCase()
+          .trim()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/[\s_-]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      }
+      return next;
+    });
+  };
+
+  const handleRolePermissionToggle = (permissionCode) => {
+    setRoleForm((prev) => ({
+      ...prev,
+      permissions: prev.permissions.includes(permissionCode)
+        ? prev.permissions.filter((p) => p !== permissionCode)
+        : [...prev.permissions, permissionCode]
+    }));
+  };
+
+  const handleCreateRole = async (e) => {
+    e.preventDefault();
+    if (!roleForm.name.trim()) {
+      toast.error('Name is required');
+      return;
+    }
+    try {
+      setCreatingRole(true);
+      const result = await tenantApiService.createRole(tenantSlug, roleForm);
+      if (result !== null) {
+        toast.success('Role created successfully');
+        closeCreateModal();
+        fetchDbRoles();
+      } else {
+        toast.error('Failed to create role. Please check your authentication.');
+      }
+    } catch (error) {
+      console.error('Error creating role:', error);
+      toast.error(error.message || 'Failed to create role');
+    } finally {
+      setCreatingRole(false);
+    }
+  };
 
   const handleSyncRolesFromCatalog = async () => {
     try {
@@ -235,25 +311,21 @@ const RolesList = () => {
             imported roles can attach all codes.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => fetchCatalog()}
-          className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-        >
+        <Button type="button" variant="outline" onClick={() => fetchCatalog()}>
           Refresh catalog
-        </button>
+        </Button>
       </div>
 
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
         </div>
-        <input
+        <Input
           type="text"
           placeholder="Search catalog slugs, names, or permission codes…"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-800 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+          className="pl-10"
         />
       </div>
 
@@ -275,22 +347,13 @@ const RolesList = () => {
               definitions here (same idea as Permissions). Custom roles use <strong>Create role</strong>.
             </p>
             <div className="flex flex-wrap gap-2 justify-end">
-              <button
-                type="button"
-                disabled={roleSyncing}
-                onClick={() => handleSyncRolesFromCatalog()}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <Button type="button" variant="outline" disabled={roleSyncing} onClick={() => handleSyncRolesFromCatalog()}>
                 {roleSyncing ? 'Importing…' : 'Import catalog'}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(`/${tenantSlug}/org/roles/create`)}
-                className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-              >
-                <PlusIcon className="h-5 w-5 mr-2" />
+              </Button>
+              <Button type="button" onClick={openCreateModal} className="gap-2">
+                <PlusIcon className="h-5 w-5" />
                 Create role
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -373,6 +436,105 @@ const RolesList = () => {
           )}
         </div>
       </details>
+
+      <Dialog open={showCreateModal} onOpenChange={(open) => !open && closeCreateModal()}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create role</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateRole} className="space-y-5 pt-2">
+            <div>
+              <label htmlFor="role-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="text"
+                id="role-name"
+                name="name"
+                value={roleForm.name}
+                onChange={handleRoleFormChange}
+                placeholder="Enter name"
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="role-slug" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Slug
+              </label>
+              <Input
+                type="text"
+                id="role-slug"
+                name="slug"
+                value={roleForm.slug}
+                onChange={handleRoleFormChange}
+                placeholder="Enter slug"
+                className="mt-1"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                URL-friendly identifier (auto-generated from name if not provided)
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="role-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Description
+              </label>
+              <textarea
+                id="role-description"
+                name="description"
+                value={roleForm.description}
+                onChange={handleRoleFormChange}
+                placeholder="Enter description"
+                rows={3}
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Select allowed permissions
+              </label>
+              {permissions.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No assignable permission records yet. Go to{' '}
+                  <strong className="font-medium text-gray-600 dark:text-gray-300">Permissions</strong>, open{' '}
+                  <strong className="font-medium text-gray-600 dark:text-gray-300">Additional catalog (MongoDB)</strong>, then
+                  click <strong className="font-medium text-gray-600 dark:text-gray-300">Import catalog</strong> (or create
+                  custom permissions there).
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-3">
+                  {permissions.map((permission) => (
+                    <label
+                      key={permission._id}
+                      className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-1.5 rounded"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={roleForm.permissions.includes(permission.code)}
+                        onChange={() => handleRolePermissionToggle(permission.code)}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm text-gray-900 dark:text-white">{permission.code}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-2">
+              <Button type="button" variant="outline" onClick={closeCreateModal}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={creatingRole}>
+                {creatingRole ? 'Submitting...' : 'Submit'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

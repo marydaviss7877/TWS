@@ -211,10 +211,10 @@ const EmployeeList = () => {
   };
 
   const statsData = [
-    { label: 'Total Employees', value: stats.total.toString(), icon: UserGroupIcon, iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600' },
-    { label: 'Active', value: stats.active.toString(), icon: UserIcon, iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600' },
-    { label: 'On Leave', value: stats.onLeave.toString(), icon: UserIcon, iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600' },
-    { label: 'Departments', value: stats.departments.toString(), icon: UserGroupIcon, iconBg: 'bg-gradient-to-br from-purple-500 to-pink-600' }
+    { label: 'Total Employees', value: stats.total.toString(), icon: UserGroupIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400' },
+    { label: 'Active', value: stats.active.toString(), icon: UserIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
+    { label: 'On Leave', value: stats.onLeave.toString(), icon: UserIcon, iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600 dark:text-amber-400' },
+    { label: 'Departments', value: stats.departments.toString(), icon: UserGroupIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' }
   ];
 
   if (loading) {
@@ -268,8 +268,8 @@ const EmployeeList = () => {
         {statsData.map((stat, index) => (
           <div key={index} className="glass-card-premium p-5 xl:p-6 hover-lift">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 xl:w-14 xl:h-14 rounded-2xl ${stat.iconBg} flex items-center justify-center shadow-glow-lg`}>
-                <stat.icon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+              <div className={`w-12 h-12 xl:w-14 xl:h-14 rounded-2xl ${stat.iconBg} flex items-center justify-center`}>
+                <stat.icon className={`w-6 h-6 xl:w-7 xl:h-7 ${stat.iconColor}`} />
               </div>
               <div>
                 <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -327,7 +327,7 @@ const EmployeeList = () => {
                   <tr key={employee._id || employee.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow">
+                        <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center">
                           <span className="text-white font-bold text-sm">
                             {employee.name?.charAt(0) || employee.email?.charAt(0) || 'U'}
                           </span>

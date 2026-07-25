@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import {
   BoltIcon,
   CheckCircleIcon,
@@ -165,7 +166,8 @@ function ActivityItem({ item }) {
 
 /* ─── Main component ─────────────────────────────────────────────────────────── */
 const ProjectActivityView = () => {
-  const { tenantSlug, projectId } = useParams();
+  const { projectId } = useParams();
+  const tenantSlug = useTenantSlug();
 
   const [feed,    setFeed]    = useState([]);
   const [loading, setLoading] = useState(true);

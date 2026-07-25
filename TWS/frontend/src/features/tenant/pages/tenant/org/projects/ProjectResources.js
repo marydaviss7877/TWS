@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import {
   UsersIcon,
   MagnifyingGlassIcon,
@@ -529,7 +530,8 @@ function MemberCard({ member, onEdit, onRemove }) {
 /* ─── Main ────────────────────────────────────────────────────────────────── */
 
 const ProjectResources = () => {
-  const { tenantSlug, projectId } = useParams();
+  const { projectId } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
 
   const [loading, setLoading]       = useState(true);

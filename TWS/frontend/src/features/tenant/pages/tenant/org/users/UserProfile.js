@@ -279,7 +279,7 @@ const UserProfile = () => {
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
             <div className="text-center">
               <div className="relative inline-block">
-                <div className="relative h-32 w-32 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg ring-4 ring-white overflow-hidden">
+                <div className="relative h-32 w-32 rounded-full bg-indigo-600 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-white overflow-hidden">
                   <span className="absolute inset-0 flex items-center justify-center" aria-hidden={!!profileImageBlobUrl}>
                     {profileData.fullName?.charAt(0) || user?.email?.charAt(0) || 'U'}
                   </span>

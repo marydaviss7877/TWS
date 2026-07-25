@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import {
   ArrowLeftIcon,
   CheckCircleIcon,
@@ -26,7 +27,8 @@ import ChangeRequestEvaluationForm from './components/changeRequests/ChangeReque
 import DeliverableCardSkeleton from './components/deliverables/DeliverableCardSkeleton';
 
 const ChangeRequestDetailPage = () => {
-  const { tenantSlug, changeRequestId } = useParams();
+  const { changeRequestId } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const { user } = useTenantAuth();
   const { hasModulePermission } = useTenantPermissions();

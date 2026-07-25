@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
   PlusIcon,
   MagnifyingGlassIcon,
   PencilIcon,
   TrashIcon,
   BuildingOfficeIcon,
-  ChartBarIcon,
-  XMarkIcon
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import tenantProjectApiService from '../projects/services/tenantProjectApiService';
@@ -15,24 +14,45 @@ import LoadingSpinner from '../../../../../../shared/components/feedback/Loading
 import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../../../components/ui/Dialog/Dialog';
+import { Button } from '../../../../../../components/ui/Button/Button';
+import { Input } from '../../../../../../components/ui/Input/Input';
+
+const EMPTY_FORM = { name: '', code: '', description: '', departmentHead: '' };
 
 const DepartmentsList = () => {
   const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
   const [isSeedingTemplate, setIsSeedingTemplate] = useState(false);
   const [isUpdatingDepartment, setIsUpdatingDepartment] = useState(false);
+  // formMode is 'create' | 'edit' | null — one modal serves both, matching the
+  // in-place create pattern used by Projects instead of a separate full-page route.
+  const [formMode, setFormMode] = useState(null);
   const [editDepartment, setEditDepartment] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', code: '', description: '', departmentHead: '' });
+  const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
 
   useEffect(() => {
     fetchDepartments();
   }, [tenantSlug]);
+
+  // Quick Create / command palette lands here as ?create=department
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('create') === 'department') {
+      openCreateModal();
+      params.delete('create');
+      const next = params.toString();
+      navigate({ pathname: location.pathname, search: next ? `?${next}` : '' }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -124,6 +144,12 @@ const DepartmentsList = () => {
     }
   };
 
+  const openCreateModal = () => {
+    setEditDepartment(null);
+    setEditForm(EMPTY_FORM);
+    setFormMode('create');
+  };
+
   const openEditModal = (department) => {
     setEditDepartment(department);
     setEditForm({
@@ -134,11 +160,13 @@ const DepartmentsList = () => {
         ? (department?.departmentHead?._id || '')
         : (department?.departmentHead || '')
     });
+    setFormMode('edit');
   };
 
-  const closeEditModal = () => {
+  const closeFormModal = () => {
+    setFormMode(null);
     setEditDepartment(null);
-    setEditForm({ name: '', code: '', description: '', departmentHead: '' });
+    setEditForm(EMPTY_FORM);
   };
 
   const handleEditChange = (e) => {
@@ -149,42 +177,45 @@ const DepartmentsList = () => {
     }));
   };
 
-  const handleUpdateDepartment = async (e) => {
+  const handleSubmitDepartment = async (e) => {
     e.preventDefault();
-    if (!editDepartment?._id) return;
     if (!editForm.name.trim() || !editForm.code.trim()) {
       toast.error('Name and code are required');
       return;
     }
+    const isEditing = formMode === 'edit' && editDepartment?._id;
     try {
       setIsUpdatingDepartment(true);
-      const response = await fetch(`/api/tenant/${tenantSlug}/departments/${editDepartment._id}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: editForm.name.trim(),
-          code: editForm.code.trim(),
-          description: editForm.description?.trim() || '',
-          departmentHead: editForm.departmentHead?.trim() || undefined
-        })
-      });
+      const response = await fetch(
+        `/api/tenant/${tenantSlug}/departments${isEditing ? `/${editDepartment._id}` : ''}`,
+        {
+          method: isEditing ? 'PUT' : 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: editForm.name.trim(),
+            code: editForm.code.trim(),
+            description: editForm.description?.trim() || '',
+            departmentHead: editForm.departmentHead?.trim() || undefined
+          })
+        }
+      );
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(payload?.message || 'Failed to update department');
+        throw new Error(payload?.message || `Failed to ${isEditing ? 'update' : 'create'} department`);
       }
       const sync = payload?.data?.nameSync;
-      if (sync) {
+      if (isEditing && sync) {
         const total = (sync.tenantUsers || 0) + (sync.users || 0) + (sync.employees || 0) + (sync.departmentAccess || 0);
         toast.success(`Department updated. Synced ${total} assignment fields.`);
       } else {
-        toast.success('Department updated successfully');
+        toast.success(isEditing ? 'Department updated successfully' : 'Department created successfully');
       }
-      closeEditModal();
+      closeFormModal();
       fetchDepartments();
     } catch (error) {
-      console.error('Error updating department:', error);
-      toast.error(error.message || 'Failed to update department');
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} department:`, error);
+      toast.error(error.message || `Failed to ${isEditing ? 'update' : 'create'} department`);
     } finally {
       setIsUpdatingDepartment(false);
     }
@@ -229,20 +260,13 @@ const DepartmentsList = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleApplyTemplate}
-            disabled={isSeedingTemplate}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-60"
-          >
+          <Button variant="outline" onClick={handleApplyTemplate} disabled={isSeedingTemplate}>
             {isSeedingTemplate ? 'Applying...' : 'Apply Template'}
-          </button>
-          <button
-            onClick={() => navigate(`/${tenantSlug}/org/departments/create`)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
+          </Button>
+          <Button onClick={openCreateModal} className="gap-2">
+            <PlusIcon className="h-5 w-5" />
             Create Department
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -251,12 +275,12 @@ const DepartmentsList = () => {
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
         </div>
-        <input
+        <Input
           type="text"
           placeholder="Search departments..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-800 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+          className="pl-10"
         />
       </div>
 
@@ -361,90 +385,76 @@ const DepartmentsList = () => {
         </table>
       </div>
 
-      {editDepartment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-lg rounded-lg bg-white dark:bg-gray-800 shadow-xl">
-            <form onSubmit={handleUpdateDepartment} className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Department</h2>
-                <button type="button" onClick={closeEditModal} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
-              </div>
+      <Dialog open={Boolean(formMode)} onOpenChange={(open) => !open && closeFormModal()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{formMode === 'edit' ? 'Edit Department' : 'Create Department'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmitDepartment} className="space-y-4 pt-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+              <Input
+                name="name"
+                value={editForm.name}
+                onChange={handleEditChange}
+                required
+                className="mt-1"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-                <input
-                  name="name"
-                  value={editForm.name}
-                  onChange={handleEditChange}
-                  required
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Code</label>
+              <Input
+                name="code"
+                value={editForm.code}
+                onChange={handleEditChange}
+                required
+                className="mt-1 uppercase"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Code</label>
-                <input
-                  name="code"
-                  value={editForm.code}
-                  onChange={handleEditChange}
-                  required
-                  className="mt-1 block w-full uppercase border border-gray-300 rounded-md shadow-sm py-2 px-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+              <textarea
+                name="description"
+                value={editForm.description}
+                onChange={handleEditChange}
+                rows={3}
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-                <textarea
-                  name="description"
-                  value={editForm.description}
-                  onChange={handleEditChange}
-                  rows={3}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Department Head</label>
+              <select
+                name="departmentHead"
+                value={editForm.departmentHead}
+                onChange={handleEditChange}
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+              >
+                <option value="">Unassigned</option>
+                {users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {user.fullName || user.name || user.email}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {usersLoading ? 'Loading users...' : 'Select who leads this department.'}
+              </p>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Department Head</label>
-                <select
-                  name="departmentHead"
-                  value={editForm.departmentHead}
-                  onChange={handleEditChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                >
-                  <option value="">Unassigned</option>
-                  {users.map((user) => (
-                    <option key={user._id} value={user._id}>
-                      {user.fullName || user.name || user.email}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {usersLoading ? 'Loading users...' : 'Select who leads this department.'}
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={closeEditModal}
-                  className="px-4 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUpdatingDepartment}
-                  className="px-4 py-2 text-sm rounded-md bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60"
-                >
-                  {isUpdatingDepartment ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={closeFormModal}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isUpdatingDepartment}>
+                {isUpdatingDepartment ? 'Saving...' : formMode === 'edit' ? 'Save Changes' : 'Create Department'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

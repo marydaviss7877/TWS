@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import {
   UserGroupIcon,
   ChevronDownIcon,
@@ -182,7 +183,8 @@ function MemberCard({ entry }) {
 
 /* ─── Main component ─────────────────────────────────────────────────────────── */
 const ProjectWorkloadView = () => {
-  const { tenantSlug, projectId } = useParams();
+  const { projectId } = useParams();
+  const tenantSlug = useTenantSlug();
 
   const [tasks,   setTasks]   = useState([]);
   const [members, setMembers] = useState([]);

@@ -11,6 +11,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useTenantSlug } from '../../../shared/hooks/useTenantSlug';
 import {
   MagnifyingGlassIcon,
   BellIcon,
@@ -77,7 +78,7 @@ const OdooTopBar = ({
 }) => {
   const navigate        = useNavigate();
   const location        = useLocation();
-  const { tenantSlug }  = useParams();
+  const tenantSlug = useTenantSlug();
 
   const initial      = (orgName  || 'O').charAt(0).toUpperCase();
   const userInitial  = (user?.fullName?.[0] ?? user?.email?.[0] ?? 'U').toUpperCase();

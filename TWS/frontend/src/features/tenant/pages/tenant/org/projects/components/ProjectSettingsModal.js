@@ -287,7 +287,7 @@ const ProjectSettingsModal = ({ isOpen, onClose, project, projectId: projectIdPr
                 onError={() => setHeaderLogoBroken(true)}
               />
             ) : (
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
                 {(project?.name || 'P').charAt(0).toUpperCase()}
               </div>
             )}

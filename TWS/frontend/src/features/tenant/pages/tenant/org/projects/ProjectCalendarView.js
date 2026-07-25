@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -74,7 +75,8 @@ function initials(name = '') {
 
 /* ─── component ──────────────────────────────────────────────────────────────── */
 const ProjectCalendarView = () => {
-  const { tenantSlug, projectId } = useParams();
+  const { projectId } = useParams();
+  const tenantSlug = useTenantSlug();
   const today     = new Date(); today.setHours(0, 0, 0, 0);
   const todayKey  = toKey(today);
 
@@ -317,7 +319,7 @@ const ProjectCalendarView = () => {
                   {t.assignee && (
                     <div
                       title={t.assignee.fullName || t.assignee.name || t.assignee.email}
-                      className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
+                      className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
                       {initials(t.assignee.fullName || t.assignee.name || t.assignee.email || '?')}
                     </div>
                   )}

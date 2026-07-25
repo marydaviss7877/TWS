@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  ClockIcon, 
-  PlusIcon, 
+  ClockIcon,
+  PlusIcon,
   CalendarIcon,
   DocumentArrowDownIcon,
   FunnelIcon,
   ChartBarIcon,
   PlayIcon,
   PauseIcon,
-  StopIcon
+  StopIcon,
+  FolderIcon,
+  UserIcon
 } from '@heroicons/react/24/outline';
 import tenantProjectApiService from './services/tenantProjectApiService';
 import { TIMESHEET_STATUS } from './constants/projectConstants';
@@ -201,7 +203,7 @@ const ProjectTimesheets = () => {
         {activeTimer ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center animate-pulse">
+              <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center animate-pulse">
                 <ClockIcon className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -354,11 +356,20 @@ const ProjectTimesheets = () => {
                       <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{entry.description}</p>
                     )}
                     <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
-                      <span>📁 {entry.projectId?.name || entry.project || 'Unknown Project'}</span>
+                      <span className="inline-flex items-center gap-1">
+                        <FolderIcon className="w-3.5 h-3.5" />
+                        {entry.projectId?.name || entry.project || 'Unknown Project'}
+                      </span>
                       {entry.memberId?.name || entry.member && (
-                        <span>👤 {entry.memberId?.name || entry.member}</span>
+                        <span className="inline-flex items-center gap-1">
+                          <UserIcon className="w-3.5 h-3.5" />
+                          {entry.memberId?.name || entry.member}
+                        </span>
                       )}
-                      <span>📅 {entry.date ? new Date(entry.date).toLocaleDateString() : 'No date'}</span>
+                      <span className="inline-flex items-center gap-1">
+                        <CalendarIcon className="w-3.5 h-3.5" />
+                        {entry.date ? new Date(entry.date).toLocaleDateString() : 'No date'}
+                      </span>
                     </div>
                   </div>
                   <div className="text-right ml-4">

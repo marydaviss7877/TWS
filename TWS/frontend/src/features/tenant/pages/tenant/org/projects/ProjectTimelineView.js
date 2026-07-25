@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import {
   ClockIcon,
   ChevronLeftIcon,
@@ -102,7 +103,8 @@ function MonthBands({ windowStart, windowDays }) {
 
 /* ─── Main component ─────────────────────────────────────────────────────────── */
 const ProjectTimelineView = () => {
-  const { tenantSlug, projectId } = useParams();
+  const { projectId } = useParams();
+  const tenantSlug = useTenantSlug();
 
   const [tasks,      setTasks]      = useState([]);
   const [milestones, setMilestones] = useState([]);

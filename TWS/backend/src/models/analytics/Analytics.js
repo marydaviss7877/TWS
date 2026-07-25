@@ -422,7 +422,7 @@ analyticsSchema.statics.getSummary = function(orgId, periodStart, periodEnd) {
   return this.aggregate([
     {
       $match: {
-        orgId: mongoose.Types.ObjectId(orgId),
+        orgId: new mongoose.Types.ObjectId(orgId),
         periodStart: { $gte: periodStart },
         periodEnd: { $lte: periodEnd },
         status: 'active'

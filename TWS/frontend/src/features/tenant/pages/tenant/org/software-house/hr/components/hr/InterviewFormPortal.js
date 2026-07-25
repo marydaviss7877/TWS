@@ -478,15 +478,15 @@ const InterviewFormPortal = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Scheduled', value: interviews.filter(i => i.status === 'scheduled').length, icon: ClockIcon, color: 'blue' },
-          { label: 'Completed', value: interviews.filter(i => i.status === 'completed').length, icon: CheckCircleIcon, color: 'green' },
+          { label: 'Scheduled', value: interviews.filter(i => i.status === 'scheduled').length, icon: ClockIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400' },
+          { label: 'Completed', value: interviews.filter(i => i.status === 'completed').length, icon: CheckCircleIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
           { label: 'This Week', value: interviews.filter(i => {
             const interviewDate = new Date(i.scheduledAt);
             const now = new Date();
             const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
             return interviewDate >= now && interviewDate <= weekFromNow;
-          }).length, icon: CalendarIcon, color: 'purple' },
-          { label: 'Total Interviews', value: interviews.length, icon: UserIcon, color: 'gray' }
+          }).length, icon: CalendarIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' },
+          { label: 'Total Interviews', value: interviews.length, icon: UserIcon, iconBg: 'bg-gray-100 dark:bg-gray-800', iconColor: 'text-gray-600 dark:text-gray-400' }
         ].map((stat, index) => (
           <div key={index} className="glass-card-premium p-6 hover-glow">
             <div className="flex items-center justify-between">
@@ -494,8 +494,8 @@ const InterviewFormPortal = () => {
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.label}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
               </div>
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-${stat.color}-500 to-${stat.color}-600 flex items-center justify-center`}>
-                <stat.icon className="w-6 h-6 text-white" />
+              <div className={`w-12 h-12 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
+                <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
               </div>
             </div>
           </div>
@@ -571,7 +571,7 @@ const InterviewFormPortal = () => {
           <div key={interview.id} className="glass-card-premium p-6 hover-glow group">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-4 flex-1">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-primary-600 flex items-center justify-center flex-shrink-0">
                   <UserIcon className="w-6 h-6 text-white" />
                 </div>
                 

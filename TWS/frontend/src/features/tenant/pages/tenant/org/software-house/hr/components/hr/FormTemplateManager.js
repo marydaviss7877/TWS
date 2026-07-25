@@ -247,7 +247,7 @@ const FormTemplateManager = ({ onSelectTemplate, onEditTemplate, onDeleteTemplat
         <div key={template.id} className="glass-card-premium p-6 hover-glow group">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center flex-shrink-0">
                 <DocumentTextIcon className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -343,7 +343,7 @@ const FormTemplateManager = ({ onSelectTemplate, onEditTemplate, onDeleteTemplat
         <div key={template.id} className="glass-card-premium p-6 hover-glow group">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 flex-1">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-primary-600 flex items-center justify-center flex-shrink-0">
                 <DocumentTextIcon className="w-6 h-6 text-white" />
               </div>
               

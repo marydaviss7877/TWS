@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthContext';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
@@ -25,7 +26,7 @@ const inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-70
 const sectionDividerClass = 'h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent transition-opacity';
 
 const EmployeeProfileView = ({ tenantSlug: tenantSlugProp }) => {
-  const { tenantSlug: tenantSlugParam } = useParams();
+  const tenantSlugParam = useTenantSlug();
   const tenantSlug = tenantSlugProp || tenantSlugParam;
   const { user, updateUser } = useTenantAuth();
   const [employee, setEmployee] = useState(null);
@@ -245,7 +246,7 @@ const EmployeeProfileView = ({ tenantSlug: tenantSlugProp }) => {
         {/* Profile Picture and Basic Info */}
         <div className="flex flex-col sm:flex-row sm:items-start gap-5 mb-1">
           <div className="flex flex-col items-start gap-2">
-            <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md overflow-hidden">
+            <div className="h-24 w-24 rounded-2xl bg-indigo-600 flex items-center justify-center overflow-hidden">
               {getProfilePicApiUrl(profilePicUrl) ? (
                 <img
                   src={getProfilePicApiUrl(profilePicUrl)}

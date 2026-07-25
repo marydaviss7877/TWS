@@ -743,7 +743,7 @@ const FormBuilder = ({ onSave, onPreview, initialForm = null }) => {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center flex-shrink-0">
                           {React.createElement(fieldTypes.find(ft => ft.type === field.type)?.icon || DocumentTextIcon, { className: "w-4 h-4 text-white" })}
                         </div>
                         <div>

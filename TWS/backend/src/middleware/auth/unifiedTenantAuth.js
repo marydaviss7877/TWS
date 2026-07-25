@@ -222,7 +222,7 @@ const unifiedTenantAuth = (options = {}) => {
       let userObjectId;
       try {
         userObjectId = mongoose.Types.ObjectId.isValid(userId) 
-          ? mongoose.Types.ObjectId(userId) 
+          ? new mongoose.Types.ObjectId(userId) 
           : userId;
       } catch (error) {
         await logSecurityEvent('AUTH_FAILED', userId, {
@@ -247,7 +247,7 @@ const unifiedTenantAuth = (options = {}) => {
       if (tenantSlug) {
         const isObjectId = /^[0-9a-f]{24}$/i.test(tenantSlug);
         if (isObjectId) {
-          tenantMatchConditions.push({ $eq: ['$_id', mongoose.Types.ObjectId(tenantSlug)] });
+          tenantMatchConditions.push({ $eq: ['$_id', new mongoose.Types.ObjectId(tenantSlug)] });
         } else {
           tenantMatchConditions.push({ $eq: ['$slug', tenantSlug] });
         }

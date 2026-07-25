@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import AdminPageTemplate from '../../../../../../components/AdminPageTemplate/AdminPageTemplate';
+import PageHeader from '../../../../../../components/PageHeader/PageHeader';
 import {
   ChartPieIcon,
   CurrencyDollarIcon,
@@ -27,10 +27,10 @@ const FinanceBudgeting = () => {
   });
 
   const stats = [
-    { label: 'Total Budget', value: '$2.4M', icon: CurrencyDollarIcon, iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600' },
-    { label: 'Allocated', value: '$1.8M', icon: ChartPieIcon, iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600' },
-    { label: 'Available', value: '$600K', icon: ArrowTrendingUpIcon, iconBg: 'bg-gradient-to-br from-purple-500 to-pink-600' },
-    { label: 'Departments', value: '8', icon: CheckCircleIcon, iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600' }
+    { label: 'Total Budget', value: '$2.4M', icon: CurrencyDollarIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400' },
+    { label: 'Allocated', value: '$1.8M', icon: ChartPieIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
+    { label: 'Available', value: '$600K', icon: ArrowTrendingUpIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' },
+    { label: 'Departments', value: '8', icon: CheckCircleIcon, iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600 dark:text-amber-400' }
   ];
 
   const budgetByDepartment = [
@@ -179,7 +179,7 @@ const FinanceBudgeting = () => {
   );
 
   return (
-    <AdminPageTemplate
+    <PageHeader
       title="Budgeting"
       description="Manage departmental budgets and allocations"
       stats={stats}
@@ -253,7 +253,7 @@ const FinanceBudgeting = () => {
           </div>
         </div>
       </div>
-    </AdminPageTemplate>
+    </PageHeader>
   );
 };
 

@@ -4,6 +4,7 @@
 
 import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import {
   ChartBarIcon,
   FlagIcon,
@@ -122,15 +123,15 @@ function KpiCard({
   );
 }
 
-function NavTile({ icon: Icon, label, sub, onClick, accent = 'from-primary-500 to-accent-500' }) {
+function NavTile({ icon: Icon, label, sub, onClick, accent = 'bg-primary-50 dark:bg-primary-900/20', iconColor = 'text-primary-600 dark:text-primary-400' }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className="group glass-card-premium rounded-2xl p-6 text-left transition-all duration-200 flex items-center gap-4 border border-transparent hover:shadow-md hover:border-white/20 dark:hover:border-white/10"
     >
-      <div className={`p-3 rounded-xl bg-gradient-to-br ${accent} shrink-0`}>
-        <Icon className="w-4 h-4 text-white" />
+      <div className={`p-3 rounded-xl ${accent} shrink-0`}>
+        <Icon className={`w-4 h-4 ${iconColor}`} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-gray-900 dark:text-white">{label}</p>
@@ -144,7 +145,8 @@ function NavTile({ icon: Icon, label, sub, onClick, accent = 'from-primary-500 t
 /* ─── main component ──────────────────────────────────────────────────────── */
 
 const ProjectDashboard = () => {
-  const { tenantSlug, projectId } = useParams();
+  const { projectId } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const {
     dashboard,
@@ -656,13 +658,13 @@ const ProjectDashboard = () => {
 
             <div className="space-y-4">
               <NavTile icon={UsersIcon} label="Resources" sub="Team & allocation"
-                accent="from-violet-500 to-violet-600"
+                accent="bg-violet-50 dark:bg-violet-900/20" iconColor="text-violet-600 dark:text-violet-400"
                 onClick={() => navigate(`/${tenantSlug}/org/projects/${projectId}/team`)} />
               <NavTile icon={DocumentTextIcon} label="Deliverables" sub="Track deliverables"
-                accent="from-indigo-500 to-indigo-600"
+                accent="bg-indigo-50 dark:bg-indigo-900/20" iconColor="text-indigo-600 dark:text-indigo-400"
                 onClick={() => navigate(`/${tenantSlug}/org/projects/deliverables?projectId=${projectId}`)} />
               <NavTile icon={ExclamationTriangleIcon} label="Change Requests" sub="Scope changes"
-                accent="from-orange-500 to-orange-600"
+                accent="bg-orange-50 dark:bg-orange-900/20" iconColor="text-orange-600 dark:text-orange-400"
                 onClick={() => navigate(`/${tenantSlug}/org/projects/change-requests?projectId=${projectId}`)} />
             </div>
           </div>
@@ -719,13 +721,13 @@ const ProjectDashboard = () => {
 
           <div className="space-y-4">
             <NavTile icon={UsersIcon} label="Resources" sub="Team & allocation"
-              accent="from-violet-500 to-violet-600"
+              accent="bg-violet-50 dark:bg-violet-900/20" iconColor="text-violet-600 dark:text-violet-400"
               onClick={() => navigate(`/${tenantSlug}/org/projects/${projectId}/team`)} />
             <NavTile icon={DocumentTextIcon} label="Deliverables" sub="Track deliverables"
-              accent="from-indigo-500 to-indigo-600"
+              accent="bg-indigo-50 dark:bg-indigo-900/20" iconColor="text-indigo-600 dark:text-indigo-400"
               onClick={() => navigate(`/${tenantSlug}/org/projects/deliverables?projectId=${projectId}`)} />
             <NavTile icon={ExclamationTriangleIcon} label="Change Requests" sub="Scope changes"
-              accent="from-orange-500 to-orange-600"
+              accent="bg-orange-50 dark:bg-orange-900/20" iconColor="text-orange-600 dark:text-orange-400"
               onClick={() => navigate(`/${tenantSlug}/org/projects/change-requests?projectId=${projectId}`)} />
           </div>
         </div>

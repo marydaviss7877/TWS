@@ -373,7 +373,7 @@ portalSubscriptionSchema.statics.findActive = function(orgId) {
 portalSubscriptionSchema.statics.getStatistics = function(orgId) {
   return this.aggregate([
     {
-      $match: { orgId: mongoose.Types.ObjectId(orgId) }
+      $match: { orgId: new mongoose.Types.ObjectId(orgId) }
     },
     {
       $group: {

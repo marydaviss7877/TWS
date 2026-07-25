@@ -15,6 +15,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import {
   ClipboardDocumentCheckIcon,
   ClockIcon,
@@ -224,7 +225,7 @@ const TaskCard = ({ task, onStatusChange, statusMenuId, onToggleStatusMenu, upda
 
 // ── Main Component ────────────────────────────────────────────────────────────
 const MyWork = () => {
-  const { tenantSlug }  = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate        = useNavigate();
   const { user, tenant } = useTenantAuth();
   const isSH            = tenant?.erpCategory === 'software_house';

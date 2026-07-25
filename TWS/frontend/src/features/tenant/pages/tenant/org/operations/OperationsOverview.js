@@ -1,7 +1,9 @@
 import React from 'react';
 import FeatureUnavailable from '../../../../../../shared/components/feedback/FeatureUnavailable';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 const OperationsOverview = () => {
+  const tenantSlug = useTenantSlug();
   return (
     <div>
       <div className="mb-6">
@@ -14,6 +16,8 @@ const OperationsOverview = () => {
       <FeatureUnavailable
         title="Operations management unavailable"
         description="Operations management is not available in this release yet."
+        actionLabel="Go to dashboard"
+        actionTo={`/${tenantSlug}/org/dashboard`}
       />
     </div>
   );

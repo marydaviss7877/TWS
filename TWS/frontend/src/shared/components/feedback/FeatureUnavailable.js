@@ -1,8 +1,11 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const FeatureUnavailable = ({
   title = 'Feature unavailable',
   description = 'This module is not available yet.',
+  actionLabel,
+  actionTo,
   className = ''
 }) => {
   return (
@@ -13,6 +16,14 @@ const FeatureUnavailable = ({
       <p className="mt-1 text-sm text-amber-800 dark:text-amber-300">
         {description}
       </p>
+      {actionLabel && actionTo && (
+        <Link
+          to={actionTo}
+          className="mt-3 inline-flex items-center text-sm font-medium text-amber-900 dark:text-amber-200 underline underline-offset-2 hover:text-amber-700 dark:hover:text-amber-100"
+        >
+          {actionLabel} →
+        </Link>
+      )}
     </div>
   );
 };

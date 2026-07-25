@@ -724,8 +724,9 @@ const ProjectsOverviewContent = () => {
       label: 'Total Projects', 
       value: metrics.totalProjects, 
       change: `${metrics.activeProjects} active`,
-      icon: FolderIcon, 
-      iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+      icon: FolderIcon,
+      iconBg: 'bg-blue-50 dark:bg-blue-900/20',
+      iconColor: 'text-blue-600 dark:text-blue-400',
       trend: 'up',
       onClick: () => navigate(`/${tenantSlug}/org/projects`)
     },
@@ -733,47 +734,52 @@ const ProjectsOverviewContent = () => {
       label: 'Active Projects', 
       value: metrics.activeProjects, 
       change: `${metrics.completedProjects} completed · ${metrics.planningProjects} planning`,
-      icon: ClipboardDocumentListIcon, 
-      iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600',
+      icon: ClipboardDocumentListIcon,
+      iconBg: 'bg-green-50 dark:bg-green-900/20',
+      iconColor: 'text-green-600 dark:text-green-400',
       trend: 'up'
     },
-    { 
-      label: 'Team Members', 
+    {
+      label: 'Team Members',
       value: metrics.totalTeamMembers || 0, 
       change:
         metrics.totalTeamMembers > 0
           ? `${metrics.portfolioActivePct}% of projects are active`
           : 'Distinct people on projects',
-      icon: UsersIcon, 
-      iconBg: 'bg-gradient-to-br from-purple-500 to-pink-600',
+      icon: UsersIcon,
+      iconBg: 'bg-purple-50 dark:bg-purple-900/20',
+      iconColor: 'text-purple-600 dark:text-purple-400',
       trend: 'up'
     },
-    { 
-      label: 'Total Budget', 
+    {
+      label: 'Total Budget',
       value: metrics.totalBudget > 0 ? `$${(metrics.totalBudget / 1000).toFixed(0)}K` : '$0K', 
       change: metrics.spentBudget > 0 ? `$${(metrics.spentBudget / 1000).toFixed(0)}K spent` : 'No spending',
-      icon: CurrencyDollarIcon, 
-      iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
+      icon: CurrencyDollarIcon,
+      iconBg: 'bg-amber-50 dark:bg-amber-900/20',
+      iconColor: 'text-amber-600 dark:text-amber-400',
       trend: 'up'
     },
-    { 
-      label: 'On Track', 
+    {
+      label: 'On Track',
       value: metrics.onTrackProjects, 
       change: `${metrics.activeProjects > 0 ? ((metrics.onTrackProjects / metrics.activeProjects) * 100).toFixed(0) : 0}% of active`,
-      icon: CheckCircleIcon, 
-      iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600',
+      icon: CheckCircleIcon,
+      iconBg: 'bg-green-50 dark:bg-green-900/20',
+      iconColor: 'text-green-600 dark:text-green-400',
       trend: 'up'
     },
-    { 
-      label: 'At Risk', 
+    {
+      label: 'At Risk',
       value: metrics.atRiskProjects, 
       change: `${metrics.activeProjects > 0 ? ((metrics.atRiskProjects / metrics.activeProjects) * 100).toFixed(0) : 0}% of active`,
-      icon: ExclamationTriangleIcon, 
-      iconBg: 'bg-gradient-to-br from-yellow-500 to-amber-600',
+      icon: ExclamationTriangleIcon,
+      iconBg: 'bg-yellow-50 dark:bg-yellow-900/20',
+      iconColor: 'text-yellow-600 dark:text-yellow-400',
       trend: metrics.atRiskProjects > 0 ? 'down' : 'up'
     },
-    { 
-      label: 'Total Hours', 
+    {
+      label: 'Total Hours',
       value: formatHoursSummary(metrics.totalHours), 
       change:
         metrics.hoursUtilizationPct != null
@@ -781,16 +787,18 @@ const ProjectsOverviewContent = () => {
           : metrics.totalHours > 0
             ? 'Log time to measure utilization'
             : 'Set timeline estimates on projects',
-      icon: ClockIcon, 
-      iconBg: 'bg-gradient-to-br from-indigo-500 to-blue-600',
+      icon: ClockIcon,
+      iconBg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      iconColor: 'text-indigo-600 dark:text-indigo-400',
       trend: 'up'
     },
-    { 
-      label: 'Budget Remaining', 
+    {
+      label: 'Budget Remaining',
       value: metrics.totalBudget > 0 ? `$${((metrics.totalBudget - metrics.spentBudget) / 1000).toFixed(0)}K` : '$0K', 
       change: `${metrics.totalBudget > 0 ? (((metrics.totalBudget - metrics.spentBudget) / metrics.totalBudget) * 100).toFixed(0) : 0}% remaining`,
-      icon: CurrencyDollarIcon, 
-      iconBg: 'bg-gradient-to-br from-teal-500 to-cyan-600',
+      icon: CurrencyDollarIcon,
+      iconBg: 'bg-teal-50 dark:bg-teal-900/20',
+      iconColor: 'text-teal-600 dark:text-teal-400',
       trend: (metrics.totalBudget - metrics.spentBudget) > (metrics.totalBudget * 0.3) ? 'up' : 'down'
     }
   ];
@@ -921,8 +929,8 @@ const ProjectsOverviewContent = () => {
             onClick={stat.onClick}
           >
             <div className="flex items-center justify-between mb-3">
-              <div className={`p-2.5 rounded-lg ${stat.iconBg} shadow-lg`}>
-                <stat.icon className="w-5 h-5 text-white" />
+              <div className={`p-2.5 rounded-lg ${stat.iconBg}`}>
+                <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
               </div>
               <div className="flex items-center gap-1">
                 {stat.trend === 'up' ? (

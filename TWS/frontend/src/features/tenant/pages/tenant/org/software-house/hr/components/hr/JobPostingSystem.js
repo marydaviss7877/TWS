@@ -271,10 +271,10 @@ const JobPostingSystem = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Active Jobs', value: jobPostings.filter(j => j.status === 'active').length, icon: BriefcaseIcon, color: 'green' },
-          { label: 'Total Applicants', value: jobPostings.reduce((sum, job) => sum + job.applicants, 0), icon: UsersIcon, color: 'blue' },
-          { label: 'Total Views', value: jobPostings.reduce((sum, job) => sum + job.views, 0), icon: EyeIcon, color: 'purple' },
-          { label: 'Draft Jobs', value: jobPostings.filter(j => j.status === 'draft').length, icon: DocumentTextIcon, color: 'gray' }
+          { label: 'Active Jobs', value: jobPostings.filter(j => j.status === 'active').length, icon: BriefcaseIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
+          { label: 'Total Applicants', value: jobPostings.reduce((sum, job) => sum + job.applicants, 0), icon: UsersIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400' },
+          { label: 'Total Views', value: jobPostings.reduce((sum, job) => sum + job.views, 0), icon: EyeIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' },
+          { label: 'Draft Jobs', value: jobPostings.filter(j => j.status === 'draft').length, icon: DocumentTextIcon, iconBg: 'bg-gray-100 dark:bg-gray-800', iconColor: 'text-gray-600 dark:text-gray-400' }
         ].map((stat, index) => (
           <div key={index} className="glass-card-premium p-6 hover-glow">
             <div className="flex items-center justify-between">
@@ -282,8 +282,8 @@ const JobPostingSystem = () => {
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.label}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
               </div>
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-${stat.color}-500 to-${stat.color}-600 flex items-center justify-center`}>
-                <stat.icon className="w-6 h-6 text-white" />
+              <div className={`w-12 h-12 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
+                <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
               </div>
             </div>
           </div>
@@ -378,7 +378,7 @@ const JobPostingSystem = () => {
           <div key={job.id} className="glass-card-premium p-6 hover-glow group">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-4 flex-1">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-primary-600 flex items-center justify-center flex-shrink-0">
                   <BriefcaseIcon className="w-6 h-6 text-white" />
                 </div>
                 

@@ -221,7 +221,7 @@ const CashFlow = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
-                Cash Flow & Forecasting 💸
+                Cash Flow & Forecasting
               </h1>
               <p className="mt-2 text-sm xl:text-base text-gray-600 dark:text-gray-300">
                 Track cash inflows, outflows, and forecast future cash positions
@@ -236,8 +236,8 @@ const CashFlow = () => {
               </div>
             </div>
             <div className="hidden sm:block">
-              <div className="w-16 h-16 bg-gradient-to-br from-teal-500 via-cyan-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-lg">
-                <BanknotesIcon className="h-8 w-8 text-white" />
+              <div className="w-16 h-16 bg-teal-50 dark:bg-teal-900/20 rounded-2xl flex items-center justify-center">
+                <BanknotesIcon className="h-8 w-8 text-teal-600 dark:text-teal-400" />
               </div>
             </div>
           </div>
@@ -272,8 +272,8 @@ const CashFlow = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-glow-lg">
-              <ArrowTrendingUpIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
+              <ArrowTrendingUpIcon className="w-6 h-6 xl:w-7 xl:h-7 text-green-600 dark:text-green-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -287,8 +287,8 @@ const CashFlow = () => {
         </div>
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-glow-lg">
-              <ArrowTrendingDownIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center">
+              <ArrowTrendingDownIcon className="w-6 h-6 xl:w-7 xl:h-7 text-rose-600 dark:text-rose-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -302,8 +302,8 @@ const CashFlow = () => {
         </div>
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-glow-lg">
-              <BanknotesIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+              <BanknotesIcon className="w-6 h-6 xl:w-7 xl:h-7 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -317,8 +317,8 @@ const CashFlow = () => {
         </div>
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-glow-lg">
-              <ChartBarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
+              <ChartBarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">

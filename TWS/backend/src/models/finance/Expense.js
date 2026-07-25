@@ -334,7 +334,7 @@ expenseSchema.statics.getMonthlyTrends = function(userId, months = 12) {
   const pipeline = [
     {
       $match: {
-        userId: mongoose.Types.ObjectId(userId),
+        userId: new mongoose.Types.ObjectId(userId),
         date: { $gte: startDate }
       }
     },
@@ -382,7 +382,7 @@ expenseSchema.statics.getCategoryInsights = function(userId, period = 'month') {
   const pipeline = [
     {
       $match: {
-        userId: mongoose.Types.ObjectId(userId),
+        userId: new mongoose.Types.ObjectId(userId),
         date: { $gte: startDate, $lte: now }
       }
     },
@@ -419,8 +419,8 @@ expenseSchema.statics.getBudgetComparison = function(userId, budgetId) {
   const pipeline = [
     {
       $match: {
-        userId: mongoose.Types.ObjectId(userId),
-        budgetId: mongoose.Types.ObjectId(budgetId)
+        userId: new mongoose.Types.ObjectId(userId),
+        budgetId: new mongoose.Types.ObjectId(budgetId)
       }
     },
     {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../shared/hooks/useTenantSlug';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon,
@@ -27,6 +28,7 @@ import tenantApiService from '../../../../../shared/services/tenant/tenant-api.s
 import { useTenantAuth } from '../../../../../app/providers/TenantAuthContext';
 import ConfirmDialog from '../../../../../components/ConfirmDialog/ConfirmDialog';
 import ErrorBoundary from '../../../../../shared/components/ErrorBoundary';
+import { Dialog, DialogContent } from '../../../../../components/ui/Dialog/Dialog';
 import toast from 'react-hot-toast';
 
 // Enhanced Client Metrics Component - Premium Wolfstack Style
@@ -52,8 +54,8 @@ const ClientMetrics = ({ metrics }) => {
         {/* Total Clients */}
         <div className="glass-card p-6 hover-scale group">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg group-hover:shadow-xl transition-all">
-              <BuildingOfficeIcon className="h-6 w-6 text-white" />
+            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
+              <BuildingOfficeIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
             </div>
             <span className="text-2xl font-bold text-gray-900 dark:text-white">
               {metrics.total || 0}
@@ -66,8 +68,8 @@ const ClientMetrics = ({ metrics }) => {
         {/* Active Clients */}
         <div className="glass-card p-6 hover-scale group">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg group-hover:shadow-xl transition-all">
-              <CheckCircleIcon className="h-6 w-6 text-white" />
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+              <CheckCircleIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
             </div>
             <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               {metrics.active || 0}
@@ -80,8 +82,8 @@ const ClientMetrics = ({ metrics }) => {
         {/* Prospects */}
         <div className="glass-card p-6 hover-scale group">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg group-hover:shadow-xl transition-all">
-              <ExclamationTriangleIcon className="h-6 w-6 text-white" />
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+              <ExclamationTriangleIcon className="h-6 w-6 text-amber-600 dark:text-amber-400" />
             </div>
             <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
               {metrics.prospect || 0}
@@ -94,8 +96,8 @@ const ClientMetrics = ({ metrics }) => {
         {/* Revenue */}
         <div className="glass-card p-6 hover-scale group">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg group-hover:shadow-xl transition-all">
-              <CurrencyDollarIcon className="h-6 w-6 text-white" />
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+              <CurrencyDollarIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               ${(metrics.totalRevenue || 0).toLocaleString()}
@@ -176,8 +178,8 @@ const ClientCard = ({ client, onEdit, onDelete, onView, deletingClientId }) => {
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-3 mb-2">
-            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <BuildingOfficeIcon className="h-6 w-6 text-white" />
+            <div className="flex-shrink-0 w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center">
+              <BuildingOfficeIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
@@ -314,7 +316,8 @@ const ClientCard = ({ client, onEdit, onDelete, onView, deletingClientId }) => {
 };
 
 const Clients = () => {
-  const { tenantSlug, clientId } = useParams();
+  const { clientId } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, loading: authLoading } = useTenantAuth();
@@ -695,8 +698,7 @@ const Clients = () => {
   return (
     <ErrorBoundary message="Failed to load clients. Please refresh the page.">
       <div className="space-y-8">
-        {!isFormPage && (
-          <>
+        <>
             {/* Header Section - Premium Wolfstack Style */}
             <div className="glass-card-premium p-8 text-center wolfstack-animate-fadeIn">
               <h1 className="text-4xl font-bold font-heading text-gray-900 dark:text-white tracking-tight mb-4">
@@ -811,8 +813,8 @@ const Clients = () => {
             </div>
           ) : (
             <div className="glass-card-premium p-16 text-center wolfstack-animate-fadeIn">
-              <div className="p-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full w-24 h-24 mx-auto mb-8 flex items-center justify-center shadow-xl">
-                <BuildingOfficeIcon className="h-12 w-12 text-white" />
+              <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-full w-24 h-24 mx-auto mb-8 flex items-center justify-center">
+                <BuildingOfficeIcon className="h-12 w-12 text-indigo-600 dark:text-indigo-400" />
               </div>
               <h3 className="text-2xl font-bold font-heading text-gray-900 dark:text-white mb-4">
                 No clients found
@@ -836,11 +838,11 @@ const Clients = () => {
           )}
             </div>
           </>
-        )}
 
-        {/* Add/Edit Client Full Page View */}
-        {isFormPage && (
-          <div className="glass-card-premium p-8 wolfstack-animate-fadeIn">
+        {/* Add/Edit Client Modal */}
+        <Dialog open={isFormPage} onOpenChange={(open) => !open && closeClientFormPage()}>
+          <DialogContent showClose={false} className="max-w-3xl max-h-[85vh] overflow-y-auto">
+            <div className="glass-card-premium p-8 wolfstack-animate-fadeIn">
             <div className="sticky top-0 glass-card border-b border-gray-200/50 dark:border-white/10 p-6 flex items-center justify-between backdrop-blur-xl z-10 rounded-xl mb-6">
               <div className="flex items-center gap-3">
                 <button
@@ -1321,8 +1323,9 @@ const Clients = () => {
                 </div>
 
             </form>
-          </div>
-        )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Confirmation Dialog */}
         <ConfirmDialog

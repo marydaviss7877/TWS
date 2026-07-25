@@ -363,17 +363,17 @@ const AttendanceManagement = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
         {[
-          { label: 'Present', value: kpis.present, icon: CheckCircleIcon, cls: 'from-green-500 to-emerald-600' },
-          { label: 'Absent', value: kpis.absent, icon: XCircleIcon, cls: 'from-red-500 to-pink-600' },
-          { label: 'Late', value: kpis.late, icon: ClockIcon, cls: 'from-amber-500 to-orange-600' },
-          { label: 'Checked-In Now', value: kpis.checkedInNow, icon: BriefcaseIcon, cls: 'from-indigo-500 to-blue-600' },
-          { label: 'Corrections Pending', value: kpis.correctionPending, icon: ExclamationTriangleIcon, cls: 'from-violet-500 to-purple-600' },
-          { label: 'Attendance Rate', value: `${kpis.attendanceRate}%`, icon: CalendarIcon, cls: 'from-cyan-500 to-blue-600' }
+          { label: 'Present', value: kpis.present, icon: CheckCircleIcon, cls: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
+          { label: 'Absent', value: kpis.absent, icon: XCircleIcon, cls: 'bg-rose-50 dark:bg-rose-900/20', iconColor: 'text-rose-600 dark:text-rose-400' },
+          { label: 'Late', value: kpis.late, icon: ClockIcon, cls: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600 dark:text-amber-400' },
+          { label: 'Checked-In Now', value: kpis.checkedInNow, icon: BriefcaseIcon, cls: 'bg-indigo-50 dark:bg-indigo-900/20', iconColor: 'text-indigo-600 dark:text-indigo-400' },
+          { label: 'Corrections Pending', value: kpis.correctionPending, icon: ExclamationTriangleIcon, cls: 'bg-violet-50 dark:bg-violet-900/20', iconColor: 'text-violet-600 dark:text-violet-400' },
+          { label: 'Attendance Rate', value: `${kpis.attendanceRate}%`, icon: CalendarIcon, cls: 'bg-cyan-50 dark:bg-cyan-900/20', iconColor: 'text-cyan-600 dark:text-cyan-400' }
         ].map((card) => (
           <div key={card.label} className="glass-card-premium p-4 hover-lift">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.cls} flex items-center justify-center`}>
-                <card.icon className="w-5 h-5 text-white" />
+              <div className={`w-10 h-10 rounded-xl ${card.cls} flex items-center justify-center`}>
+                <card.icon className={`w-5 h-5 ${card.iconColor}`} />
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{card.label}</p>

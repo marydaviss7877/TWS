@@ -133,8 +133,8 @@ const HROverview = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-glow-lg">
-              <UsersIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+              <UsersIcon className="w-6 h-6 xl:w-7 xl:h-7 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Total Employees</p>
@@ -145,8 +145,8 @@ const HROverview = () => {
 
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-glow-lg">
-              <UserIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
+              <UserIcon className="w-6 h-6 xl:w-7 xl:h-7 text-green-600 dark:text-green-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Departments</p>
@@ -157,8 +157,8 @@ const HROverview = () => {
 
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-glow-lg">
-              <ClockIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
+              <ClockIcon className="w-6 h-6 xl:w-7 xl:h-7 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Attendance Rate</p>
@@ -169,8 +169,8 @@ const HROverview = () => {
 
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-glow-lg">
-              <CurrencyDollarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+              <CurrencyDollarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Monthly Payroll</p>
@@ -243,8 +243,8 @@ const HROverview = () => {
             className="glass-card p-4 hover-lift text-left group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-glow">
-                <UsersIcon className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <UsersIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900 dark:text-white">Manage Employees</p>
@@ -258,8 +258,8 @@ const HROverview = () => {
             className="glass-card p-4 hover-lift text-left group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-glow">
-                <CurrencyDollarIcon className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <CurrencyDollarIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900 dark:text-white">Payroll</p>
@@ -273,8 +273,8 @@ const HROverview = () => {
             className="glass-card p-4 hover-lift text-left group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-glow">
-                <ClockIcon className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <ClockIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900 dark:text-white">Attendance</p>
@@ -288,8 +288,8 @@ const HROverview = () => {
             className="glass-card p-4 hover-lift text-left group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-glow">
-                <EyeIcon className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <EyeIcon className="w-6 h-6 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900 dark:text-white">Analytics</p>
@@ -306,12 +306,12 @@ const HROverview = () => {
 // Helper function to get attendance status colors
 const getAttendanceColor = (status) => {
   const colors = {
-    present: 'bg-green-100 text-green-800',
-    absent: 'bg-red-100 text-red-800',
-    late: 'bg-orange-100 text-orange-800',
-    half_day: 'bg-blue-100 text-blue-800'
+    present: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
+    absent: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300',
+    late: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300',
+    half_day: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
   };
-  return colors[status] || 'bg-gray-100 text-gray-800';
+  return colors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300';
 };
 
 export default HROverview;

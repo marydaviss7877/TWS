@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../../../shared/hooks/useTenantSlug';
 import GanttChartHeader from './GanttChartHeader';
 import GanttTimeline from './GanttTimeline';
 import GanttTaskRow from './GanttTaskRow';
@@ -14,7 +15,8 @@ import tenantProjectApiService from '../../services/tenantProjectApiService';
 import { handleApiError } from '../../utils/errorHandler';
 
 const GanttChart = ({ projectId: propProjectId }) => {
-  const { tenantSlug, projectId: routeProjectId } = useParams();
+  const { projectId: routeProjectId } = useParams();
+  const tenantSlug = useTenantSlug();
   const projectId = propProjectId || routeProjectId;
   
   const [tasks, setTasks] = useState([]);

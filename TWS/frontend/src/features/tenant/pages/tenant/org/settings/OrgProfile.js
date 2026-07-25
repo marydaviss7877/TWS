@@ -356,7 +356,7 @@ const OrgProfile = () => {
                   <div className="h-14 w-14 rounded-xl overflow-hidden ring-2 ring-gray-200 dark:ring-gray-700">
                     {logoPreview || logoUrl
                       ? <img src={logoPreview || logoUrl} alt="" className="h-full w-full object-contain bg-white" />
-                      : <div className="h-full w-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-bold">{initial}</div>
+                      : <div className="h-full w-full bg-primary-600 flex items-center justify-center text-white font-bold">{initial}</div>
                     }
                   </div>
                   {isAdmin && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -10,6 +10,11 @@ import {
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import toast from 'react-hot-toast';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../../../components/ui/Dialog/Dialog';
+import { Button } from '../../../../../../components/ui/Button/Button';
+import { Input } from '../../../../../../components/ui/Input/Input';
+
+const EMPTY_PERMISSION_FORM = { code: '', permissionGroup: '', description: '' };
 
 const emptyCatalog = {
   softwareHouse: { title: '', description: '', roleSystem: '', entries: [] },
@@ -92,12 +97,16 @@ function CatalogSection({ section, searchTerm }) {
 const PermissionsList = () => {
   const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
+  const location = useLocation();
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalog, setCatalog] = useState(emptyCatalog);
   const [legacyLoading, setLegacyLoading] = useState(true);
   const [legacyPermissions, setLegacyPermissions] = useState([]);
   const [catalogSyncing, setCatalogSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [permissionForm, setPermissionForm] = useState(EMPTY_PERMISSION_FORM);
+  const [creatingPermission, setCreatingPermission] = useState(false);
 
   const fetchCatalog = useCallback(async () => {
     try {
@@ -139,6 +148,58 @@ const PermissionsList = () => {
     fetchCatalog();
     fetchLegacyPermissions();
   }, [fetchCatalog, fetchLegacyPermissions]);
+
+  // Quick Create / command palette lands here as ?create=permission
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('create') === 'permission') {
+      openCreateModal();
+      params.delete('create');
+      const next = params.toString();
+      navigate({ pathname: location.pathname, search: next ? `?${next}` : '' }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
+  const openCreateModal = () => setShowCreateModal(true);
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
+    setPermissionForm(EMPTY_PERMISSION_FORM);
+  };
+
+  const handlePermissionFormChange = (e) => {
+    const { name, value } = e.target;
+    setPermissionForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreatePermission = async (e) => {
+    e.preventDefault();
+    if (!permissionForm.code || !permissionForm.description) {
+      toast.error('Code and description are required');
+      return;
+    }
+    try {
+      setCreatingPermission(true);
+      const response = await fetch(`/api/tenant/${tenantSlug}/permissions`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(permissionForm)
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create permission');
+      }
+      toast.success('Permission created successfully');
+      closeCreateModal();
+      fetchLegacyPermissions();
+    } catch (error) {
+      console.error('Error creating permission:', error);
+      toast.error(error.message || 'Failed to create permission');
+    } finally {
+      setCreatingPermission(false);
+    }
+  };
 
   const handleSyncCatalogToPermissions = async () => {
     try {
@@ -216,25 +277,21 @@ const PermissionsList = () => {
             meaningful if your deployment wires them into role checks and APIs.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => fetchCatalog()}
-          className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-        >
+        <Button type="button" variant="outline" onClick={() => fetchCatalog()}>
           Refresh catalog
-        </button>
+        </Button>
       </div>
 
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
         </div>
-        <input
+        <Input
           type="text"
           placeholder="Search code, module, or roles…"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-800 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+          className="pl-10"
         />
       </div>
 
@@ -257,22 +314,13 @@ const PermissionsList = () => {
               can assign them. This does not change Software House API enforcement by itself.
             </p>
             <div className="flex flex-wrap gap-2 justify-end">
-              <button
-                type="button"
-                disabled={catalogSyncing}
-                onClick={() => handleSyncCatalogToPermissions()}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <Button type="button" variant="outline" disabled={catalogSyncing} onClick={() => handleSyncCatalogToPermissions()}>
                 {catalogSyncing ? 'Importing…' : 'Import catalog'}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(`/${tenantSlug}/org/permissions/create`)}
-                className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-              >
-                <PlusIcon className="h-5 w-5 mr-2" />
+              </Button>
+              <Button type="button" onClick={openCreateModal} className="gap-2">
+                <PlusIcon className="h-5 w-5" />
                 Create permission
-              </button>
+              </Button>
             </div>
           </div>
           {legacyLoading ? (
@@ -336,6 +384,80 @@ const PermissionsList = () => {
           )}
         </div>
       </details>
+
+      <Dialog open={showCreateModal} onOpenChange={(open) => !open && closeCreateModal()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create permission</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreatePermission} className="space-y-5 pt-2">
+            <div>
+              <label htmlFor="perm-code" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Code <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="text"
+                id="perm-code"
+                name="code"
+                value={permissionForm.code}
+                onChange={handlePermissionFormChange}
+                placeholder="Enter code"
+                required
+                className="mt-1"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Unique identifier for the permission (e.g., create_user, get_department)
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="perm-group" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Permission Group
+              </label>
+              <Input
+                type="text"
+                id="perm-group"
+                name="permissionGroup"
+                value={permissionForm.permissionGroup}
+                onChange={handlePermissionFormChange}
+                placeholder="Enter permission group"
+                className="mt-1"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Optional grouping for the permission
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="perm-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Description <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="perm-description"
+                name="description"
+                value={permissionForm.description}
+                onChange={handlePermissionFormChange}
+                placeholder="Enter description"
+                required
+                rows={3}
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Brief description of what this permission allows
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-2">
+              <Button type="button" variant="outline" onClick={closeCreateModal}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={creatingPermission}>
+                {creatingPermission ? 'Submitting...' : 'Submit'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

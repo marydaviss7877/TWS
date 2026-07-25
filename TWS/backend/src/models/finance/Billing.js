@@ -280,7 +280,7 @@ billingSchema.statics.getBillingSummary = function(tenantId, period = 'current')
   return this.aggregate([
     {
       $match: {
-        tenantId: mongoose.Types.ObjectId(tenantId),
+        tenantId: new mongoose.Types.ObjectId(tenantId),
         billingPeriodStart: { $gte: startDate, $lte: endDate },
         status: 'active'
       }

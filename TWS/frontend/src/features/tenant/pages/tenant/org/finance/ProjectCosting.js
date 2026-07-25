@@ -252,7 +252,7 @@ const ProjectCosting = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
-                Project Costing & Profitability 📊
+                Project Costing & Profitability
               </h1>
               <p className="mt-2 text-sm xl:text-base text-gray-600 dark:text-gray-300">
                 Track budgets, actual costs, and margins for all your software house projects
@@ -270,8 +270,8 @@ const ProjectCosting = () => {
               </div>
             </div>
             <div className="hidden sm:block">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 rounded-2xl flex items-center justify-center shadow-lg">
-                <ChartBarIcon className="h-8 w-8 text-white" />
+              <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center">
+                <ChartBarIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </div>
@@ -291,8 +291,8 @@ const ProjectCosting = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-glow-lg">
-              <ChartBarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+              <ChartBarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -306,8 +306,8 @@ const ProjectCosting = () => {
         </div>
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-glow-lg">
-              <CurrencyDollarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
+              <CurrencyDollarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-green-600 dark:text-green-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -321,8 +321,8 @@ const ProjectCosting = () => {
         </div>
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-glow-lg">
-              <ArrowTrendingUpIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
+              <ArrowTrendingUpIcon className="w-6 h-6 xl:w-7 xl:h-7 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -336,8 +336,8 @@ const ProjectCosting = () => {
         </div>
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-glow-lg">
-              <ClockIcon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
+              <ClockIcon className="w-6 h-6 xl:w-7 xl:h-7 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">

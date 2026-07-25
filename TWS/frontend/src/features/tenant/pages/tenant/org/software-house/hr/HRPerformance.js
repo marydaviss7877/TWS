@@ -46,10 +46,10 @@ const HRPerformance = () => {
   };
 
   const statsData = [
-    { label: 'Average Rating', value: stats.averageRating.toFixed(1), icon: StarIcon, iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600' },
-    { label: 'Reviews Due', value: stats.reviewsDue.toString(), icon: ChartBarIcon, iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600' },
-    { label: 'Top Performers', value: stats.topPerformers.toString(), icon: TrophyIcon, iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600' },
-    { label: 'Improvement Plans', value: stats.improvementPlans.toString(), icon: ArrowTrendingUpIcon, iconBg: 'bg-gradient-to-br from-purple-500 to-pink-600' }
+    { label: 'Average Rating', value: stats.averageRating.toFixed(1), icon: StarIcon, iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600 dark:text-amber-400' },
+    { label: 'Reviews Due', value: stats.reviewsDue.toString(), icon: ChartBarIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400' },
+    { label: 'Top Performers', value: stats.topPerformers.toString(), icon: TrophyIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
+    { label: 'Improvement Plans', value: stats.improvementPlans.toString(), icon: ArrowTrendingUpIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' }
   ];
 
   if (loading) {
@@ -82,8 +82,8 @@ const HRPerformance = () => {
         {statsData.map((stat, index) => (
           <div key={index} className="glass-card-premium p-5 xl:p-6 hover-lift">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 xl:w-14 xl:h-14 rounded-2xl ${stat.iconBg} flex items-center justify-center shadow-glow-lg`}>
-                <stat.icon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+              <div className={`w-12 h-12 xl:w-14 xl:h-14 rounded-2xl ${stat.iconBg} flex items-center justify-center`}>
+                <stat.icon className={`w-6 h-6 xl:w-7 xl:h-7 ${stat.iconColor}`} />
               </div>
               <div>
                 <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -129,7 +129,7 @@ const HRPerformance = () => {
                   <tr key={index} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow">
+                        <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center">
                           <span className="text-white font-bold text-sm">{employee.name.charAt(0)}</span>
                         </div>
                         <span className="text-sm font-bold text-gray-900 dark:text-white">{employee.name}</span>

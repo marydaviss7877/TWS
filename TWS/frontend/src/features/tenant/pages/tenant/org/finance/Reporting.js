@@ -27,7 +27,7 @@ const REPORT_CATALOG = [
     description: 'Revenue, expenses, and net income for the selected period',
     icon: ChartBarIcon,
     category: 'Financial Statements',
-    color: 'from-blue-500 to-indigo-600'
+    color: { bg: 'bg-blue-50 dark:bg-blue-900/20', icon: 'text-blue-600 dark:text-blue-400' }
   },
   {
     id: 'balance-sheet',
@@ -35,7 +35,7 @@ const REPORT_CATALOG = [
     description: 'Assets, liabilities, and equity at a specific point in time',
     icon: DocumentTextIcon,
     category: 'Financial Statements',
-    color: 'from-emerald-500 to-teal-600'
+    color: { bg: 'bg-emerald-50 dark:bg-emerald-900/20', icon: 'text-emerald-600 dark:text-emerald-400' }
   },
   {
     id: 'cash-flow',
@@ -43,7 +43,7 @@ const REPORT_CATALOG = [
     description: 'Cash inflows and outflows from operating activities with forecasts',
     icon: CurrencyDollarIcon,
     category: 'Financial Statements',
-    color: 'from-cyan-500 to-blue-600'
+    color: { bg: 'bg-cyan-50 dark:bg-cyan-900/20', icon: 'text-cyan-600 dark:text-cyan-400' }
   },
   {
     id: 'project-profitability',
@@ -51,7 +51,7 @@ const REPORT_CATALOG = [
     description: 'Revenue, costs, and margin analysis per project',
     icon: ChartPieIcon,
     category: 'Project Reports',
-    color: 'from-violet-500 to-purple-600'
+    color: { bg: 'bg-violet-50 dark:bg-violet-900/20', icon: 'text-violet-600 dark:text-violet-400' }
   },
   {
     id: 'client-analysis',
@@ -59,7 +59,7 @@ const REPORT_CATALOG = [
     description: 'Revenue, invoicing, and payment breakdown by client',
     icon: UserGroupIcon,
     category: 'Client Reports',
-    color: 'from-pink-500 to-rose-600'
+    color: { bg: 'bg-pink-50 dark:bg-pink-900/20', icon: 'text-pink-600 dark:text-pink-400' }
   },
   {
     id: 'time-tracking',
@@ -67,7 +67,7 @@ const REPORT_CATALOG = [
     description: 'Hours logged by employee and project for the period',
     icon: ClockIcon,
     category: 'HR & Operations',
-    color: 'from-amber-500 to-orange-600'
+    color: { bg: 'bg-amber-50 dark:bg-amber-900/20', icon: 'text-amber-600 dark:text-amber-400' }
   },
   {
     id: 'expense-analysis',
@@ -75,7 +75,7 @@ const REPORT_CATALOG = [
     description: 'Expense breakdown by category with percentage share',
     icon: ArrowTrendingDownIcon,
     category: 'Expense Reports',
-    color: 'from-red-500 to-rose-600'
+    color: { bg: 'bg-rose-50 dark:bg-rose-900/20', icon: 'text-rose-600 dark:text-rose-400' }
   },
   {
     id: 'revenue-trends',
@@ -83,7 +83,7 @@ const REPORT_CATALOG = [
     description: 'Monthly revenue growth and trend analysis over the period',
     icon: ArrowTrendingUpIcon,
     category: 'Trend Reports',
-    color: 'from-green-500 to-emerald-600'
+    color: { bg: 'bg-green-50 dark:bg-green-900/20', icon: 'text-green-600 dark:text-green-400' }
   }
 ];
 
@@ -104,8 +104,8 @@ const fmtN = (n, dp = 0) => (+n || 0).toFixed(dp);
 const ReportHeader = ({ title, period, onPrint }) => (
   <div className="flex items-start justify-between flex-wrap gap-4 mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
     <div className="flex items-center gap-4">
-      <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow">
-        <BuildingOffice2Icon className="w-6 h-6 text-white" />
+      <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center">
+        <BuildingOffice2Icon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
       </div>
       <div>
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
@@ -652,8 +652,8 @@ const Reporting = () => {
                 Generate, review, and export professional financial statements and analytics
               </p>
             </div>
-            <div className="hidden sm:block w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <ChartPieIcon className="h-7 w-7 text-white" />
+            <div className="hidden sm:block w-14 h-14 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center">
+              <ChartPieIcon className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
             </div>
           </div>
 
@@ -696,8 +696,8 @@ const Reporting = () => {
                   className={`glass-card-premium rounded-xl p-5 border-2 transition-all duration-200 ${isActive ? 'border-indigo-500 dark:border-indigo-400' : 'border-transparent hover:border-gray-200 dark:hover:border-gray-600'}`}
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-10 h-10 bg-gradient-to-br ${report.color} rounded-lg flex items-center justify-center shadow-sm`}>
-                      <Icon className="w-5 h-5 text-white" />
+                    <div className={`w-10 h-10 ${report.color.bg} rounded-lg flex items-center justify-center`}>
+                      <Icon className={`w-5 h-5 ${report.color.icon}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">{report.name}</h3>
@@ -742,8 +742,8 @@ const Reporting = () => {
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 {activeReportMeta && (
-                  <div className={`w-9 h-9 bg-gradient-to-br ${activeReportMeta.color} rounded-lg flex items-center justify-center`}>
-                    {React.createElement(activeReportMeta.icon, { className: 'w-5 h-5 text-white' })}
+                  <div className={`w-9 h-9 ${activeReportMeta.color.bg} rounded-lg flex items-center justify-center`}>
+                    {React.createElement(activeReportMeta.icon, { className: `w-5 h-5 ${activeReportMeta.color.icon}` })}
                   </div>
                 )}
                 <div>

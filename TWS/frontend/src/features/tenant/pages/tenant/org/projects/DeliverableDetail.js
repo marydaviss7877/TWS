@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import {
   ArrowLeftIcon,
   PencilIcon,
@@ -31,7 +32,8 @@ import { ChangeRequestAuditTrail } from './components/changeRequests';
 import DeliverableCardSkeleton from './components/deliverables/DeliverableCardSkeleton';
 
 const DeliverableDetail = () => {
-  const { tenantSlug, deliverableId } = useParams();
+  const { deliverableId } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [deliverable, setDeliverable] = useState(null);
   const [loading, setLoading] = useState(true);

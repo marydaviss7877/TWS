@@ -142,7 +142,7 @@ function Avatar({ user, size = 'sm' }) {
   const name = user?.fullName || user?.name || user?.email || '';
   const sz = size === 'sm' ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs';
   return (
-    <div className={`${sz} rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white font-bold shrink-0`} title={name}>
+    <div className={`${sz} rounded-full bg-primary-600 flex items-center justify-center text-white font-bold shrink-0`} title={name}>
       {initials(name)}
     </div>
   );

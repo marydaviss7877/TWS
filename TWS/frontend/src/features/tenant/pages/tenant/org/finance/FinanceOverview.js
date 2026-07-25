@@ -297,15 +297,15 @@ const FinanceOverview = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
-                Finance Ecosystem 💰
+                Finance Ecosystem
               </h1>
               <p className="mt-2 text-sm xl:text-base text-gray-600 dark:text-gray-300">
                 Profit, predict, and pay with confidence — designed for software houses
               </p>
             </div>
             <div className="hidden sm:block">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 rounded-2xl flex items-center justify-center shadow-lg">
-                <CurrencyDollarIcon className="h-8 w-8 text-white" />
+              <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
+                <CurrencyDollarIcon className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
           </div>
@@ -351,8 +351,8 @@ const FinanceOverview = () => {
             <div className="flex-1">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <CurrencyDollarIcon className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center">
+                    <CurrencyDollarIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
                   </div>
                 </div>
                 <div className="ml-4">
@@ -360,7 +360,6 @@ const FinanceOverview = () => {
                   <p className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
                     {formatCurrency(totalRevenue)}
                   </p>
-                  <p className="text-xs text-green-600 dark:text-green-400">+12.5% from last month</p>
                 </div>
               </div>
             </div>
@@ -372,8 +371,8 @@ const FinanceOverview = () => {
             <div className="flex-1">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <ChartBarIcon className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center">
+                    <ChartBarIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
                 <div className="ml-4">
@@ -381,7 +380,6 @@ const FinanceOverview = () => {
                   <p className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
                     {formatCurrency(netIncome)}
                   </p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400">+8.2% from last month</p>
                 </div>
               </div>
             </div>
@@ -393,8 +391,8 @@ const FinanceOverview = () => {
             <div className="flex-1">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <ArrowTrendingUpIcon className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-xl flex items-center justify-center">
+                    <ArrowTrendingUpIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
                 </div>
                 <div className="ml-4">
@@ -402,7 +400,6 @@ const FinanceOverview = () => {
                   <p className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
                     {grossMargin || profitMargin.toFixed(1)}%
                   </p>
-                  <p className="text-xs text-purple-600 dark:text-purple-400">+2.1% from last month</p>
                 </div>
               </div>
             </div>
@@ -414,8 +411,8 @@ const FinanceOverview = () => {
             <div className="flex-1">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <BanknotesIcon className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center">
+                    <BanknotesIcon className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                   </div>
                 </div>
                 <div className="ml-4">
@@ -423,7 +420,6 @@ const FinanceOverview = () => {
                   <p className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
                     {formatCurrency(cashBalance)}
                   </p>
-                  <p className="text-xs text-yellow-600 dark:text-yellow-400">+5.3% from last month</p>
                 </div>
               </div>
             </div>
@@ -700,13 +696,13 @@ const FinanceOverview = () => {
                 <div key={transaction._id} className="glass-card p-4 rounded-xl">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${
-                        transaction.type === 'income' ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-gradient-to-br from-red-500 to-rose-600'
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        transaction.type === 'income' ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'
                       }`}>
                         {transaction.type === 'income' ? (
-                          <ArrowUpIcon className="h-5 w-5 text-white" />
+                          <ArrowUpIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
                         ) : (
-                          <ArrowDownIcon className="h-5 w-5 text-white" />
+                          <ArrowDownIcon className="h-5 w-5 text-red-600 dark:text-red-400" />
                         )}
                       </div>
                       <div className="ml-4">

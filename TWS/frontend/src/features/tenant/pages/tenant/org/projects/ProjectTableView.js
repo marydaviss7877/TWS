@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import {
   TableCellsIcon,
   MagnifyingGlassIcon,
@@ -96,7 +97,8 @@ function InlineSelect({ value, options, onChange, renderTrigger }) {
 
 /* ─── Main component ─────────────────────────────────────────────────────────── */
 const ProjectTableView = () => {
-  const { tenantSlug, projectId } = useParams();
+  const { projectId } = useParams();
+  const tenantSlug = useTenantSlug();
 
   const [tasks,    setTasks]    = useState([]);
   const [loading,  setLoading]  = useState(true);

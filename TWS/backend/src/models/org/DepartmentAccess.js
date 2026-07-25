@@ -276,7 +276,7 @@ departmentAccessSchema.statics.getDepartmentAccessSummary = function(tenantId) {
   return this.aggregate([
     {
       $match: {
-        tenantId: mongoose.Types.ObjectId(tenantId),
+        tenantId: new mongoose.Types.ObjectId(tenantId),
         status: 'active',
         $or: [
           { expiresAt: { $exists: false } },

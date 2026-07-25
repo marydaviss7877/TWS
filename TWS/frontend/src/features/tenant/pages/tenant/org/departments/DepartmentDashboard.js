@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import {
   BuildingOfficeIcon,
   ClipboardDocumentListIcon,
@@ -16,7 +17,8 @@ import LoadingSpinner from '../../../../../../shared/components/feedback/Loading
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 
 const DepartmentDashboard = () => {
-  const { tenantSlug, departmentId } = useParams();
+  const { departmentId } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
@@ -167,8 +169,8 @@ const DepartmentDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="glass-card-premium p-5 hover-glow">
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
-              <BuildingOfficeIcon className="w-5 h-5 text-white" />
+            <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+              <BuildingOfficeIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
@@ -180,8 +182,8 @@ const DepartmentDashboard = () => {
 
         <div className="glass-card-premium p-5 hover-glow">
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg">
-              <ClipboardDocumentListIcon className="w-5 h-5 text-white" />
+            <div className="p-2.5 rounded-lg bg-green-50 dark:bg-green-900/20">
+              <ClipboardDocumentListIcon className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
           </div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
@@ -193,8 +195,8 @@ const DepartmentDashboard = () => {
 
         <div className="glass-card-premium p-5 hover-glow">
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg">
-              <ChartBarIcon className="w-5 h-5 text-white" />
+            <div className="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+              <ChartBarIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">

@@ -239,8 +239,8 @@ export default function AuditLogPage() {
       {/* Compact title bar */}
       <div className="glass-card-premium rounded-xl px-3 py-2 sm:px-4 flex flex-wrap items-center justify-between gap-2 border border-gray-200/60 dark:border-gray-700/50 shadow-sm">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
-            <ClipboardDocumentListIcon className="w-5 h-5" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
+            <ClipboardDocumentListIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div className="min-w-0">
             <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold truncate">

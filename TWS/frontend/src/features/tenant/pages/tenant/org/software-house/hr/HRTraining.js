@@ -47,10 +47,10 @@ const HRTraining = () => {
   };
 
   const statsData = [
-    { label: 'Active Programs', value: stats.activePrograms.toString(), icon: AcademicCapIcon, iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600' },
-    { label: 'Total Courses', value: stats.totalCourses.toString(), icon: BookOpenIcon, iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600' },
-    { label: 'Enrolled Employees', value: stats.enrolledEmployees.toString(), icon: VideoCameraIcon, iconBg: 'bg-gradient-to-br from-purple-500 to-pink-600' },
-    { label: 'Completed This Month', value: stats.completedThisMonth.toString(), icon: CheckCircleIcon, iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600' }
+    { label: 'Active Programs', value: stats.activePrograms.toString(), icon: AcademicCapIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400' },
+    { label: 'Total Courses', value: stats.totalCourses.toString(), icon: BookOpenIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
+    { label: 'Enrolled Employees', value: stats.enrolledEmployees.toString(), icon: VideoCameraIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' },
+    { label: 'Completed This Month', value: stats.completedThisMonth.toString(), icon: CheckCircleIcon, iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600 dark:text-amber-400' }
   ];
 
   if (loading) {
@@ -87,8 +87,8 @@ const HRTraining = () => {
         {statsData.map((stat, index) => (
           <div key={index} className="glass-card-premium p-5 xl:p-6 hover-lift">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 xl:w-14 xl:h-14 rounded-2xl ${stat.iconBg} flex items-center justify-center shadow-glow-lg`}>
-                <stat.icon className="w-6 h-6 xl:w-7 xl:h-7 text-white" />
+              <div className={`w-12 h-12 xl:w-14 xl:h-14 rounded-2xl ${stat.iconBg} flex items-center justify-center`}>
+                <stat.icon className={`w-6 h-6 xl:w-7 xl:h-7 ${stat.iconColor}`} />
               </div>
               <div>
                 <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -118,7 +118,7 @@ const HRTraining = () => {
             trainingPrograms.map((program, index) => (
               <div key={index} className="glass-card p-4 hover-lift">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center flex-shrink-0 shadow-glow">
+                  <div className="w-12 h-12 rounded-xl bg-primary-600 flex items-center justify-center flex-shrink-0">
                     <AcademicCapIcon className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">

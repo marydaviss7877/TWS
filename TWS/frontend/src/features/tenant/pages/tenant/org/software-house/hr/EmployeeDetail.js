@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -41,7 +42,8 @@ const SectionHeading = ({ children }) => (
    Main component
 ───────────────────────────────────────────────────────────────────────────── */
 const EmployeeDetail = () => {
-  const { tenantSlug, id } = useParams();
+  const { id } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
