@@ -120,10 +120,6 @@ import DocumentsHub from './features/tenant/pages/tenant/org/documents/Documents
 import DocumentEditor from './features/tenant/pages/tenant/org/documents/DocumentEditor';
 import ApprovalQueue from './features/tenant/pages/tenant/org/documents/ApprovalQueue';
 import DocumentAuditView from './features/tenant/pages/tenant/org/documents/DocumentAuditView';
-// Sheets pulls in the Univer spreadsheet engine (a large canvas-rendered bundle) — lazy-load
-// so it isn't added to the main app bundle for users who never open Sheets.
-const SheetsHub = lazy(() => import('./features/tenant/pages/tenant/org/sheets/SheetsHub'));
-const SheetEditor = lazy(() => import('./features/tenant/pages/tenant/org/sheets/SheetEditor'));
 
 // ── Tenant Org — Software House ───────────────────────────────────────────────
 import TimeTracking from './features/tenant/pages/tenant/org/software-house/TimeTracking';
@@ -159,6 +155,10 @@ import {
 // ── SupraAdmin layout + pages ─────────────────────────────────────────────────
 // Lazy-loaded as one boundary: this subtree pulls in antd (~120KB gzipped), which should
 // never ship to tenant-portal or Software-House-Admin sessions that can't reach these routes.
+// Sheets pulls in the Univer spreadsheet engine (a large canvas-rendered bundle) — lazy-load
+// so it isn't added to the main app bundle for users who never open Sheets.
+const SheetsHub = lazy(() => import('./features/tenant/pages/tenant/org/sheets/SheetsHub'));
+const SheetEditor = lazy(() => import('./features/tenant/pages/tenant/org/sheets/SheetEditor'));
 const SupraAdmin = lazy(() => import('./features/admin/pages/SupraAdmin/SupraAdmin'));
 const SupraAdminDashboard = lazy(() => import('./features/admin/pages/SupraAdmin/dashboard/SupraAdminDashboard'));
 const TenantManagement = lazy(() => import('./features/admin/pages/SupraAdmin/tenants/TenantManagement'));
