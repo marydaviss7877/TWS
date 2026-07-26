@@ -322,3 +322,19 @@ export function toMongoIdString(value) {
   return undefined;
 }
 
+/**
+ * Normalize a project reference for API calls. Unlike toMongoIdString, this also accepts a
+ * project slug (e.g. "acme-website-redesign-a1b2c3") — project routes resolve either server-side,
+ * since project URLs now show the readable slug instead of the raw ObjectId.
+ */
+export function toProjectRef(value) {
+  if (value == null || value === '') return undefined;
+  if (typeof value === 'object') {
+    const inner = value._id ?? value.id ?? value.slug ?? value.$oid;
+    if (inner != null) return toProjectRef(inner);
+    return undefined;
+  }
+  const s = String(value).trim();
+  return s || undefined;
+}
+

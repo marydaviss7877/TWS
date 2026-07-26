@@ -18,6 +18,18 @@
 
 :root {
   /* ============================================
+     SURFACE TOKENS
+     Consumed via var(--tenant-*) across Sheets and Documents pages.
+     Values mirror the shared Card/index.css palette (bg-white/dark:bg-gray-900 etc.)
+     so those pages stay visually consistent with the rest of the org portal.
+     ============================================ */
+  --tenant-bg: #F9FAFB;
+  --tenant-bg-elevated: #FFFFFF;
+  --tenant-border: #E5E7EB;
+  --tenant-text: #111827;
+  --tenant-muted: #6B7280;
+
+  /* ============================================
      BUTTON TOKENS
      ============================================ */
   
@@ -126,14 +138,18 @@
 }
 
 /* ============================================
-   DARK MODE TOKENS (Future Implementation)
+   DARK MODE TOKENS
+   Keyed off the .dark class (see ThemeContext.js), not prefers-color-scheme —
+   the app's light/dark toggle is manual and independent of the OS setting,
+   so these must follow the same switch or they'll drift out of sync.
    ============================================ */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Dark mode tokens will be added in Phase 5 */
-    /* For now, components will use light mode tokens */
-  }
+.dark {
+  --tenant-bg: #030712;
+  --tenant-bg-elevated: #111827;
+  --tenant-border: #1F2937;
+  --tenant-text: #FFFFFF;
+  --tenant-muted: #9CA3AF;
 }
 
 /* ============================================

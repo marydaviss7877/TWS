@@ -311,7 +311,7 @@ const SheetsHub = () => {
   const hasFilters = search || typeFilter || folderId || selectedTags.length > 0;
 
   return (
-    <div className="min-h-full bg-slate-50 text-[var(--tenant-text)]">
+    <div className="min-h-full bg-[var(--tenant-bg)] text-[var(--tenant-text)]">
       <header className="border-b border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -364,7 +364,7 @@ const SheetsHub = () => {
       <div className="flex max-w-6xl mx-auto px-4 sm:px-6 py-6">
         <aside className="flex-shrink-0 w-56 mr-6 sm:mr-8 hidden sm:block">
           <div className="sticky top-4 space-y-3">
-            <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="rounded-xl border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] p-3 shadow-sm">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--tenant-muted)] px-2 py-1.5 flex items-center gap-2">
                 <FolderIcon className="h-4 w-4" />
                 Folders
@@ -373,7 +373,7 @@ const SheetsHub = () => {
                 <button
                   type="button"
                   onClick={() => setFolderId('')}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${!folderId ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-text)] hover:bg-slate-50'}`}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${!folderId ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-text)] hover:bg-[var(--tenant-bg)]'}`}
                 >
                   <TableCellsIcon className="h-4 w-4 flex-shrink-0" />
                   All Sheets
@@ -383,7 +383,7 @@ const SheetsHub = () => {
                     <button
                       type="button"
                       onClick={() => setFolderId(f._id)}
-                      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition truncate ${folderId === f._id ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-text)] hover:bg-slate-50'}`}
+                      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition truncate ${folderId === f._id ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-text)] hover:bg-[var(--tenant-bg)]'}`}
                       title={f.name}
                     >
                       <FolderIcon className="h-4 w-4 flex-shrink-0 text-[var(--tenant-muted)]" />
@@ -415,7 +415,7 @@ const SheetsHub = () => {
 
         <main className="flex-1 min-w-0 py-2">
           <div className="mb-6 space-y-4">
-            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] p-3 shadow-sm">
               <div className="relative flex-1 min-w-[200px] max-w-md">
                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--tenant-muted)]" />
                 <input
@@ -423,7 +423,7 @@ const SheetsHub = () => {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search sheets..."
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-[var(--tenant-text)] placeholder-[var(--tenant-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30 focus:border-[var(--tenant-primary)] transition"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-sm text-[var(--tenant-text)] placeholder-[var(--tenant-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30 focus:border-[var(--tenant-primary)] transition"
                 />
                 {search && (
                   <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-[var(--tenant-muted)] hover:bg-[var(--tenant-bg)]" aria-label="Clear search">
@@ -434,7 +434,7 @@ const SheetsHub = () => {
               <button
                 type="button"
                 onClick={() => setShowFilters((v) => !v)}
-                className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-xl border transition ${showFilters ? 'border-[var(--tenant-primary)] bg-[var(--tenant-primary)]/10 text-[var(--tenant-primary)]' : 'border-slate-200 bg-white text-[var(--tenant-text)] hover:bg-slate-50'}`}
+                className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-xl border transition ${showFilters ? 'border-[var(--tenant-primary)] bg-[var(--tenant-primary)]/10 text-[var(--tenant-primary)]' : 'border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] hover:bg-[var(--tenant-bg)]'}`}
               >
                 <FunnelIcon className="h-5 w-5" />
                 Filters
@@ -444,18 +444,18 @@ const SheetsHub = () => {
                   Clear filters
                 </button>
               )}
-              <div className="flex items-center gap-1 border border-slate-200 rounded-xl overflow-hidden bg-white">
-                <button type="button" onClick={() => setViewMode('grid')} className={`p-2.5 transition-colors ${viewMode === 'grid' ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-muted)] hover:bg-slate-50 hover:text-[var(--tenant-text)]'}`} aria-label="Grid view"><Squares2X2Icon className="h-5 w-5" /></button>
-                <button type="button" onClick={() => setViewMode('list')} className={`p-2.5 transition-colors ${viewMode === 'list' ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-muted)] hover:bg-slate-50 hover:text-[var(--tenant-text)]'}`} aria-label="List view"><ListBulletIcon className="h-5 w-5" /></button>
-                <button type="button" onClick={() => setViewMode('table')} className={`p-2.5 transition-colors ${viewMode === 'table' ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-muted)] hover:bg-slate-50 hover:text-[var(--tenant-text)]'}`} aria-label="Table view"><TableCellsIcon className="h-5 w-5" /></button>
+              <div className="flex items-center gap-1 border border-[var(--tenant-border)] rounded-xl overflow-hidden bg-[var(--tenant-bg-elevated)]">
+                <button type="button" onClick={() => setViewMode('grid')} className={`p-2.5 transition-colors ${viewMode === 'grid' ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-muted)] hover:bg-[var(--tenant-bg)] hover:text-[var(--tenant-text)]'}`} aria-label="Grid view"><Squares2X2Icon className="h-5 w-5" /></button>
+                <button type="button" onClick={() => setViewMode('list')} className={`p-2.5 transition-colors ${viewMode === 'list' ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-muted)] hover:bg-[var(--tenant-bg)] hover:text-[var(--tenant-text)]'}`} aria-label="List view"><ListBulletIcon className="h-5 w-5" /></button>
+                <button type="button" onClick={() => setViewMode('table')} className={`p-2.5 transition-colors ${viewMode === 'table' ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-muted)] hover:bg-[var(--tenant-bg)] hover:text-[var(--tenant-text)]'}`} aria-label="Table view"><TableCellsIcon className="h-5 w-5" /></button>
               </div>
             </div>
             {showFilters && (
-              <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
-                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-lg border border-slate-200 bg-white text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
+              <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] shadow-sm">
+                <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
                   {TYPE_OPTIONS.map((o) => <option key={o.value || 'all'} value={o.value}>{o.label}</option>)}
                 </select>
-                <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className="rounded-lg border border-slate-200 bg-white text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
+                <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
                   <option value="">All folders</option>
                   {folders.map((f) => <option key={f._id} value={f._id}>{f.name}</option>)}
                 </select>
@@ -467,7 +467,7 @@ const SheetsHub = () => {
                       const values = Array.from(e.target.selectedOptions, (opt) => opt.value);
                       setSelectedTags(values);
                     }}
-                    className="rounded-lg border border-slate-200 bg-white text-[var(--tenant-text)] px-3 py-2 text-sm min-w-[160px] max-h-32 overflow-y-auto focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30"
+                    className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] px-3 py-2 text-sm min-w-[160px] max-h-32 overflow-y-auto focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30"
                     size={Math.min(tags.length + 1, 4)}
                   >
                     <option value="" disabled>Filter by tags</option>
@@ -486,25 +486,25 @@ const SheetsHub = () => {
                     </button>
                   )}
                 </div>
-                <select value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-lg border border-slate-200 bg-white text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
+                <select value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
                   {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
-                <button type="button" onClick={() => setOrder((o) => (o === 'desc' ? 'asc' : 'desc'))} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50 transition-colors">
+                <button type="button" onClick={() => setOrder((o) => (o === 'desc' ? 'asc' : 'desc'))} className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] px-3 py-2 text-sm hover:bg-[var(--tenant-bg)] transition-colors">
                   {order === 'desc' ? 'Newest first' : 'Oldest first'}
                 </button>
                 <div className="flex items-center gap-3 border-l border-[var(--tenant-border)] pl-4 ml-2 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <input type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="New folder name" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30" onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()} />
+                    <input type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="New folder name" className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30" onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()} />
                     <button type="button" onClick={handleCreateFolder} disabled={!newFolderName.trim() || creatingFolder} className="rounded-lg px-3 py-2 text-sm font-medium bg-[var(--tenant-primary)] text-white disabled:opacity-50">Add folder</button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <input type="text" value={newTagName} onChange={(e) => setNewTagName(e.target.value)} placeholder="New tag" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30" onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()} />
+                    <input type="text" value={newTagName} onChange={(e) => setNewTagName(e.target.value)} placeholder="New tag" className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] px-3 py-2 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30" onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()} />
                     <button type="button" onClick={handleCreateTag} disabled={!newTagName.trim() || creatingTag} className="rounded-lg px-3 py-2 text-sm font-medium border border-[var(--tenant-primary)] text-[var(--tenant-primary)] disabled:opacity-50">Add tag</button>
                   </div>
                   {tags.length > 0 && (
                     <div className="flex items-center gap-1 flex-wrap">
                       {tags.map((t) => (
-                        <span key={t._id} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-white border border-slate-200">
+                        <span key={t._id} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-[var(--tenant-bg-elevated)] border border-[var(--tenant-border)]">
                           <span>{t.name}</span>
                           <button
                             type="button"
@@ -566,15 +566,15 @@ const SheetsHub = () => {
               </div>
             </div>
           ) : viewMode === 'table' ? (
-            <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-sm">
+            <div className="rounded-2xl border border-[var(--tenant-border)] overflow-hidden bg-[var(--tenant-bg-elevated)] shadow-sm">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-slate-300/80 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-                    <th className="sticky top-0 z-10 w-10 p-3"><input type="checkbox" checked={selectedIds.size === sheets.length && sheets.length > 0} onChange={toggleSelectAll} className="rounded border-slate-300" aria-label="Select all" /></th>
-                    <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700">Title</th>
-                    <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700 hidden sm:table-cell">Type</th>
-                    <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700 hidden lg:table-cell">Tags</th>
-                    <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700 hidden md:table-cell">Updated</th>
+                  <tr className="border-b border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)]">
+                    <th className="sticky top-0 z-10 w-10 p-3"><input type="checkbox" checked={selectedIds.size === sheets.length && sheets.length > 0} onChange={toggleSelectAll} className="rounded border-[var(--tenant-border)]" aria-label="Select all" /></th>
+                    <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-gray-300">Title</th>
+                    <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-gray-300 hidden sm:table-cell">Type</th>
+                    <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-gray-300 hidden lg:table-cell">Tags</th>
+                    <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700 dark:text-gray-300 hidden md:table-cell">Updated</th>
                     <th className="sticky top-0 z-10 w-24 p-3" aria-label="Actions" />
                   </tr>
                 </thead>
@@ -582,7 +582,7 @@ const SheetsHub = () => {
                   {sheets.map((sheet) => (
                     <tr
                       key={sheet._id}
-                      className={`group border-b border-slate-100 last:border-0 cursor-pointer transition-colors ${selectedIds.has(sheet._id) ? 'bg-blue-50/70' : 'hover:bg-slate-50/70'}`}
+                      className={`group border-b border-[var(--tenant-border)] last:border-0 cursor-pointer transition-colors ${selectedIds.has(sheet._id) ? 'bg-blue-50/70 dark:bg-blue-900/20' : 'hover:bg-[var(--tenant-bg)]'}`}
                       onClick={() => handleOpen(sheet._id)}
                       onKeyDown={(e) => handleKeyboardOpen(e, () => handleOpen(sheet._id))}
                       tabIndex={0}
@@ -590,14 +590,14 @@ const SheetsHub = () => {
                       aria-label={`Open sheet ${sheet.title || 'Untitled'}`}
                     >
                       <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                        <input type="checkbox" checked={selectedIds.has(sheet._id)} onChange={() => toggleSelect(sheet._id)} className="rounded border-slate-300" />
+                        <input type="checkbox" checked={selectedIds.has(sheet._id)} onChange={() => toggleSelect(sheet._id)} className="rounded border-[var(--tenant-border)]" />
                       </td>
                       <td className="p-3 text-sm font-medium text-[var(--tenant-text)]">{sheet.title || 'Untitled'}</td>
-                      <td className="p-3 text-sm text-slate-700 hidden sm:table-cell">{sheet.type === 'uploaded' ? 'Uploaded' : 'Created'}</td>
+                      <td className="p-3 text-sm text-slate-700 dark:text-gray-300 hidden sm:table-cell">{sheet.type === 'uploaded' ? 'Uploaded' : 'Created'}</td>
                       <td className="p-3 hidden lg:table-cell">
                         <SheetTags tags={sheet.tags} allTags={tags} />
                       </td>
-                      <td className="p-3 text-sm text-slate-700 hidden md:table-cell">{sheet.updatedAt ? new Date(sheet.updatedAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'}</td>
+                      <td className="p-3 text-sm text-slate-700 dark:text-gray-300 hidden md:table-cell">{sheet.updatedAt ? new Date(sheet.updatedAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'}</td>
                       <td className="p-3" onClick={(e) => e.stopPropagation()}>
                         <button type="button" onClick={(e) => handleDelete(e, sheet._id)} className="p-2 rounded-lg text-[var(--tenant-muted)] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-red-500 hover:bg-red-500/10 focus-visible:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition-opacity" aria-label="Delete"><TrashIcon className="h-5 w-5" /></button>
                       </td>
@@ -611,7 +611,7 @@ const SheetsHub = () => {
               {sheets.map((sheet) => (
                 <article
                   key={sheet._id}
-                  className={`group flex items-center gap-4 p-4 rounded-xl border bg-white cursor-pointer transition-all shadow-sm ${selectedIds.has(sheet._id) ? 'border-blue-200 bg-blue-50/40' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/40'}`}
+                  className={`group flex items-center gap-4 p-4 rounded-xl border bg-[var(--tenant-bg-elevated)] cursor-pointer transition-all shadow-sm ${selectedIds.has(sheet._id) ? 'border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-blue-900/20' : 'border-[var(--tenant-border)] hover:border-slate-300 dark:hover:border-gray-700 hover:bg-[var(--tenant-bg)]'}`}
                   onClick={() => handleOpen(sheet._id)}
                   onKeyDown={(e) => handleKeyboardOpen(e, () => handleOpen(sheet._id))}
                   tabIndex={0}
@@ -621,12 +621,12 @@ const SheetsHub = () => {
                   <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={selectedIds.has(sheet._id)} onChange={() => toggleSelect(sheet._id)} className="rounded border-[var(--tenant-border)]" />
                   </div>
-                  <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-[var(--tenant-primary)]">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-100 dark:bg-gray-800 flex items-center justify-center text-[var(--tenant-primary)]">
                     {sheet.type === 'uploaded' ? <DocumentTextIcon className="h-5 w-5" /> : <TableCellsIcon className="h-5 w-5" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-[var(--tenant-text)] truncate">{sheet.title || 'Untitled'}</h3>
-                    <p className="text-xs text-slate-700 flex items-center gap-2 mt-0.5 flex-wrap">
+                    <p className="text-xs text-slate-700 dark:text-gray-300 flex items-center gap-2 mt-0.5 flex-wrap">
                       <span>{sheet.type === 'uploaded' ? 'Uploaded' : 'Created'}</span>
                       <CalendarIcon className="h-3.5 w-3.5" />
                       {sheet.updatedAt ? new Date(sheet.updatedAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'}
@@ -645,7 +645,7 @@ const SheetsHub = () => {
               {sheets.map((sheet) => (
                 <article
                   key={sheet._id}
-                  className={`group flex items-center gap-4 p-4 sm:p-5 rounded-xl border bg-white cursor-pointer transition-all shadow-sm ${selectedIds.has(sheet._id) ? 'border-blue-200 bg-blue-50/40' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/40 hover:shadow-md'}`}
+                  className={`group flex items-center gap-4 p-4 sm:p-5 rounded-xl border bg-[var(--tenant-bg-elevated)] cursor-pointer transition-all shadow-sm ${selectedIds.has(sheet._id) ? 'border-blue-200 dark:border-blue-800 bg-blue-50/40 dark:bg-blue-900/20' : 'border-[var(--tenant-border)] hover:border-slate-300 dark:hover:border-gray-700 hover:bg-[var(--tenant-bg)] hover:shadow-md'}`}
                   onClick={() => handleOpen(sheet._id)}
                   onKeyDown={(e) => handleKeyboardOpen(e, () => handleOpen(sheet._id))}
                   tabIndex={0}
@@ -655,13 +655,13 @@ const SheetsHub = () => {
                   <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={selectedIds.has(sheet._id)} onChange={() => toggleSelect(sheet._id)} className="rounded border-[var(--tenant-border)]" />
                   </div>
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-[var(--tenant-primary)]">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-slate-100 dark:bg-gray-800 flex items-center justify-center text-[var(--tenant-primary)]">
                     {sheet.type === 'uploaded' ? <DocumentTextIcon className="h-6 w-6" /> : <TableCellsIcon className="h-6 w-6" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-[var(--tenant-text)] truncate">{sheet.title || 'Untitled'}</h3>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className="text-xs text-slate-700 flex items-center gap-1.5">
+                      <span className="text-xs text-slate-700 dark:text-gray-300 flex items-center gap-1.5">
                         <CalendarIcon className="h-3.5 w-3.5 flex-shrink-0" />
                         {sheet.updatedAt ? new Date(sheet.updatedAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'}
                       </span>

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import tenantProjectApiService from '../services/tenantProjectApiService';
 import { handleApiError } from '../utils/errorHandler';
-import { toMongoIdString } from '../utils/validation';
+import { toMongoIdString, toProjectRef } from '../utils/validation';
 import { PROJECT_PRIORITY, CARD_TYPE, CARD_STATUS } from '../constants/projectConstants';
 import { showSuccess, showError } from '../utils/toastNotifications';
 import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
@@ -183,7 +183,7 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, boardId = 
       }
       // If still missing, the backend will auto-resolve from the project — don't block the user
 
-      const pid = toMongoIdString(formData.projectId || projectId);
+      const pid = toProjectRef(formData.projectId || projectId);
       if (!pid) {
         showError('Select a project');
         setErrors({ projectId: 'Project is required' });
@@ -359,7 +359,7 @@ const CreateTaskModal = ({ isOpen, onClose, onTaskCreated, projectId, boardId = 
                 {projectId ? (
                   <div className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-800/60 dark:text-gray-200">
                     {(() => {
-                      const p = projects.find((x) => String(x._id || x.id) === String(projectId));
+                      const p = projects.find((x) => String(x._id || x.id) === String(projectId) || x.slug === projectId);
                       return p?.name || p?.title || 'Current project (from board)';
                     })()}
                   </div>

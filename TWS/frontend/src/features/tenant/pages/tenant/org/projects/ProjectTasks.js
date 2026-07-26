@@ -25,7 +25,7 @@ import CreateTaskModal from './components/CreateTaskModal';
 import QuickAddTask from './components/QuickAddTask';
 import { showSuccess, showError } from './utils/toastNotifications';
 import { PROJECT_WORKSPACE_EVENTS } from '../../../../components/ProjectWorkspaceLayout';
-import { toMongoIdString } from './utils/validation';
+import { toMongoIdString, toProjectRef } from './utils/validation';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
@@ -861,13 +861,13 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
   /* ── task actions ── */
   const handleQuickAddTask = async (taskData) => {
     const rawProject = scopeProjectId || (filterProject !== 'all' ? filterProject : null);
-    const projectId = toMongoIdString(rawProject);
+    const projectId = toProjectRef(rawProject);
     if (!projectId) {
       showError('Select a project first.');
       throw new Error('no project');
     }
     let departmentId;
-    const cached = projects.find((p) => String(p._id || p.id) === String(projectId));
+    const cached = projects.find((p) => String(p._id || p.id) === String(projectId) || p.slug === projectId);
     if (cached) {
       const fd = cached?.departments?.[0];
       const rawDept =
@@ -988,8 +988,11 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
     const term = searchTerm.toLowerCase();
     const matchSearch   = (task.title || task.name || '').toLowerCase().includes(term) ||
                           (task.description || '').toLowerCase().includes(term);
+    const taskProjectRef  = task.projectId?._id || task.projectId?.id || task.projectId;
+    const taskProjectSlug = task.projectId?.slug;
     const matchProject  = filterProject === 'all' ||
-                          (task.projectId?._id || task.projectId?.id || task.projectId) === filterProject;
+                          String(taskProjectRef) === String(filterProject) ||
+                          (taskProjectSlug && taskProjectSlug === filterProject);
     const matchPriority = filterPriority === 'all' || (task.priority || 'medium') === filterPriority;
     const matchDept     = filterDepartment === 'all' ||
                           (task.departmentId?._id || task.departmentId?.id || task.departmentId) === filterDepartment;

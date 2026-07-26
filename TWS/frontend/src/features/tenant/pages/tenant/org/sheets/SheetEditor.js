@@ -365,9 +365,9 @@ const SheetEditor = () => {
   if (initError) {
     return (
       <div className="min-h-full flex flex-col items-center justify-center text-center p-8">
-        <TableCellsIcon className="h-10 w-10 text-slate-400 mb-3" />
-        <h2 className="text-lg font-semibold text-slate-900">Couldn&apos;t load the spreadsheet editor</h2>
-        <p className="mt-2 text-sm text-slate-600 max-w-sm">
+        <TableCellsIcon className="h-10 w-10 text-[var(--tenant-muted)] mb-3" />
+        <h2 className="text-lg font-semibold text-[var(--tenant-text)]">Couldn&apos;t load the spreadsheet editor</h2>
+        <p className="mt-2 text-sm text-[var(--tenant-muted)] max-w-sm">
           This can happen on older browsers or when the device is low on memory. Try reloading the page, or use a different browser.
         </p>
         <button type="button" onClick={() => window.location.reload()} className="mt-4 px-4 py-2 rounded-lg bg-[var(--tenant-primary)] text-white text-sm font-medium">
@@ -378,10 +378,10 @@ const SheetEditor = () => {
   }
 
   return (
-    <div className="sheet-editor-page bg-slate-50">
+    <div className="sheet-editor-page bg-[var(--tenant-bg)]">
       <header className="flex-shrink-0 border-b border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] px-4 sm:px-6 py-3">
         <div className="flex items-center gap-3">
-          <button type="button" onClick={() => navigate(`/${tenantSlug}/org/sheets`)} className="p-2 rounded-lg text-[var(--tenant-muted)] hover:bg-slate-100" aria-label="Back to Sheets">
+          <button type="button" onClick={() => navigate(`/${tenantSlug}/org/sheets`)} className="p-2 rounded-lg text-[var(--tenant-muted)] hover:bg-[var(--tenant-bg)]" aria-label="Back to Sheets">
             <ArrowLeftIcon className="h-5 w-5" />
           </button>
           <input
@@ -393,7 +393,7 @@ const SheetEditor = () => {
             className="flex-1 min-w-0 text-lg font-semibold bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30 rounded-lg px-2 py-1 text-[var(--tenant-text)]"
           />
           {effectivePermission === 'view' && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200 bg-slate-100 text-slate-600 flex-shrink-0">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--tenant-border)] bg-[var(--tenant-bg)] text-[var(--tenant-muted)] flex-shrink-0">
               <EyeIcon className="h-3.5 w-3.5" />
               View only
             </span>
@@ -406,7 +406,7 @@ const SheetEditor = () => {
               type="button"
               onClick={handleDownloadXlsx}
               disabled={downloadingXlsx}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-[var(--tenant-border)] hover:bg-slate-50 flex-shrink-0 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-[var(--tenant-border)] hover:bg-[var(--tenant-bg)] flex-shrink-0 disabled:opacity-50"
             >
               <ArrowDownTrayIcon className="h-4 w-4" />
               <span className="hidden sm:inline">{downloadingXlsx ? 'Preparing…' : 'Download .xlsx'}</span>
@@ -416,7 +416,7 @@ const SheetEditor = () => {
             <button
               type="button"
               onClick={() => { setVersionDrawerOpen(true); fetchVersions(); }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-[var(--tenant-border)] hover:bg-slate-50 flex-shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-[var(--tenant-border)] hover:bg-[var(--tenant-bg)] flex-shrink-0"
             >
               <ClockIcon className="h-4 w-4" />
               <span className="hidden sm:inline">History</span>
@@ -426,7 +426,7 @@ const SheetEditor = () => {
             <button
               type="button"
               onClick={() => setSharePanelOpen((v) => !v)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-[var(--tenant-border)] hover:bg-slate-50 flex-shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-[var(--tenant-border)] hover:bg-[var(--tenant-bg)] flex-shrink-0"
             >
               <UserPlusIcon className="h-4 w-4" />
               <span className="hidden sm:inline">Share</span>
@@ -446,13 +446,13 @@ const SheetEditor = () => {
 
       {conflict && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-slate-900">This sheet changed elsewhere</h2>
-            <p className="mt-2 text-sm text-slate-600">
+          <div className="w-full max-w-md rounded-2xl bg-[var(--tenant-bg-elevated)] p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-[var(--tenant-text)]">This sheet changed elsewhere</h2>
+            <p className="mt-2 text-sm text-[var(--tenant-muted)]">
               Someone else saved changes to this sheet after you opened it. Reload to see the latest version — any unsaved changes you made since then will be lost.
             </p>
             <div className="mt-6 flex justify-end gap-3">
-              <button type="button" onClick={() => setConflict(null)} className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-200 hover:bg-slate-50">
+              <button type="button" onClick={() => setConflict(null)} className="px-4 py-2 rounded-lg text-sm font-medium border border-[var(--tenant-border)] text-[var(--tenant-text)] hover:bg-[var(--tenant-bg)]">
                 Keep editing (won&apos;t save)
               </button>
               <button type="button" onClick={() => window.location.reload()} className="px-4 py-2 rounded-lg text-sm font-medium bg-[var(--tenant-primary)] text-white">
@@ -465,10 +465,10 @@ const SheetEditor = () => {
 
       {versionDrawerOpen && (
         <div className="fixed inset-0 z-[9999] flex justify-end bg-black/20" onClick={() => setVersionDrawerOpen(false)}>
-          <div className="h-full w-full max-w-sm bg-white shadow-xl p-5 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="h-full w-full max-w-sm bg-[var(--tenant-bg-elevated)] shadow-xl p-5 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-slate-900">Version history</h2>
-              <button type="button" onClick={() => setVersionDrawerOpen(false)} className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100" aria-label="Close">
+              <h2 className="text-base font-semibold text-[var(--tenant-text)]">Version history</h2>
+              <button type="button" onClick={() => setVersionDrawerOpen(false)} className="p-1.5 rounded-lg text-[var(--tenant-muted)] hover:bg-[var(--tenant-bg)]" aria-label="Close">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
@@ -482,14 +482,14 @@ const SheetEditor = () => {
               </button>
             )}
             {versions.length === 0 ? (
-              <p className="text-sm text-slate-500">No earlier versions yet. A version is saved periodically as you edit, or when you restore an older one.</p>
+              <p className="text-sm text-[var(--tenant-muted)]">No earlier versions yet. A version is saved periodically as you edit, or when you restore an older one.</p>
             ) : (
               <ul className="space-y-2">
                 {versions.map((v) => (
-                  <li key={v._id} className="p-3 rounded-lg border border-slate-200 flex items-center justify-between gap-2">
+                  <li key={v._id} className="p-3 rounded-lg border border-[var(--tenant-border)] flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">{v.title}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm font-medium text-[var(--tenant-text)] truncate">{v.title}</p>
+                      <p className="text-xs text-[var(--tenant-muted)]">
                         {v.createdAt ? new Date(v.createdAt).toLocaleString() : ''} · {v.createdBy?.fullName || 'Unknown'}
                       </p>
                     </div>
@@ -508,21 +508,21 @@ const SheetEditor = () => {
 
       {sharePanelOpen && sheetId && (
         <div className="fixed inset-0 z-[9999] flex justify-end bg-black/20" onClick={() => setSharePanelOpen(false)}>
-          <div className="h-full w-full max-w-sm bg-white shadow-xl p-5 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="h-full w-full max-w-sm bg-[var(--tenant-bg-elevated)] shadow-xl p-5 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-slate-900">Share sheet</h2>
-              <button type="button" onClick={() => setSharePanelOpen(false)} className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100" aria-label="Close">
+              <h2 className="text-base font-semibold text-[var(--tenant-text)]">Share sheet</h2>
+              <button type="button" onClick={() => setSharePanelOpen(false)} className="p-1.5 rounded-lg text-[var(--tenant-muted)] hover:bg-[var(--tenant-bg)]" aria-label="Close">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
 
             <div className="mb-5">
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Assignee</label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-[var(--tenant-muted)]">Assignee</label>
               <select
                 value={sheetMeta?.assigneeId?._id || sheetMeta?.assigneeId || ''}
                 onChange={(e) => handleAssign(e.target.value || null)}
                 disabled={updatingAssign}
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] px-3 py-2 text-sm"
               >
                 <option value="">Unassigned</option>
                 {orgUsers.map((u) => (
@@ -532,13 +532,13 @@ const SheetEditor = () => {
             </div>
 
             <div className="mb-3 flex items-center gap-2">
-              <select value={shareUserId} onChange={(e) => setShareUserId(e.target.value)} className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm">
+              <select value={shareUserId} onChange={(e) => setShareUserId(e.target.value)} className="flex-1 rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] px-3 py-2 text-sm">
                 <option value="">Select a person…</option>
                 {availableShareUsers.map((u) => (
                   <option key={u._id} value={u._id}>{u.fullName || u.email}</option>
                 ))}
               </select>
-              <select value={sharePermission} onChange={(e) => setSharePermission(e.target.value)} className="rounded-lg border border-slate-200 px-2 py-2 text-sm">
+              <select value={sharePermission} onChange={(e) => setSharePermission(e.target.value)} className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] px-2 py-2 text-sm">
                 <option value="view">View</option>
                 <option value="edit">Edit</option>
               </select>
@@ -549,17 +549,17 @@ const SheetEditor = () => {
 
             <ul className="space-y-2 mt-4">
               {shares.map((s) => (
-                <li key={s._id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-200">
+                <li key={s._id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-[var(--tenant-border)]">
                   <div className="min-w-0">
-                    <p className="text-sm text-slate-900 truncate">{s.userId?.fullName || s.userId?.email || 'Unknown'}</p>
-                    <p className="text-xs text-slate-500">{s.permission === 'edit' ? 'Can edit' : 'Can view'}</p>
+                    <p className="text-sm text-[var(--tenant-text)] truncate">{s.userId?.fullName || s.userId?.email || 'Unknown'}</p>
+                    <p className="text-xs text-[var(--tenant-muted)]">{s.permission === 'edit' ? 'Can edit' : 'Can view'}</p>
                   </div>
-                  <button type="button" onClick={() => handleRemoveShare(s.userId?._id || s.userId)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50" aria-label="Remove share">
+                  <button type="button" onClick={() => handleRemoveShare(s.userId?._id || s.userId)} className="p-1.5 rounded-lg text-[var(--tenant-muted)] hover:text-red-500 hover:bg-red-500/10" aria-label="Remove share">
                     <XMarkIcon className="h-4 w-4" />
                   </button>
                 </li>
               ))}
-              {shares.length === 0 && <p className="text-sm text-slate-500">Not shared with anyone yet.</p>}
+              {shares.length === 0 && <p className="text-sm text-[var(--tenant-muted)]">Not shared with anyone yet.</p>}
             </ul>
           </div>
         </div>

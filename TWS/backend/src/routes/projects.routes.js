@@ -132,10 +132,16 @@ const { injectOwnership, injectUpdateOwnership } = require('../middleware/valida
 const { validateResourceAccess } = require('../middleware/security/resourceAccessCheck');
 // Resolves a project param that is a slug (not an ObjectId) to the real ObjectId, org-scoped
 const resolveProjectIdParam = require('../middleware/project/resolveProjectIdParam');
+const { resolveProjectIdInQueryAndBody } = resolveProjectIdParam;
 
 // The :projectId param name is unique to this router's gantt/dashboard/members/logo routes below,
 // so a single router.param covers all of them without touching :id used by sibling resources (tasks/:id etc.)
 router.param('projectId', (req, res, next) => resolveProjectIdParam('projectId')(req, res, next));
+
+// Most sub-resources (tasks, milestones, sprints, resources, timesheets, boards) take projectId
+// as a query string value (GET) or JSON body field (POST), not a route param — resolve those too,
+// for every request through this router, before any route-level validators run.
+router.use(resolveProjectIdInQueryAndBody);
 
 const projectLogoStorage = multer.diskStorage({
   destination: async (req, file, cb) => {
