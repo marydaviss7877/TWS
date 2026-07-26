@@ -1,0 +1,15 @@
+/* Sheet editor page – Univer grid needs full-bleed width/height, not a prose column */
+.sheet-editor-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.sheet-editor-univer-container {
+  flex: 1;
+  min-height: 480px;
+  width: 100%;
+  position: relative;
+  background: var(--tenant-bg-elevated);
+}

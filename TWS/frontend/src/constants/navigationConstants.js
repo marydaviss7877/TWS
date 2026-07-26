@@ -11,6 +11,7 @@ import {
   ClockIcon,
   PencilSquareIcon,
   BookOpenIcon,
+  TableCellsIcon,
 } from '@heroicons/react/24/outline';
 
 // ---------------------------------------------------------------------------
@@ -34,6 +35,7 @@ export const getNavigationActions = (tenantSlug, userRole = '') => {
     { id: 'finance',      label: 'Finance',         icon: CurrencyDollarIcon,        category: 'Navigate', path: `/${tenantSlug}/org/finance` },
     { id: 'analytics',    label: 'Analytics',       icon: ChartBarIcon,              category: 'Navigate', path: `/${tenantSlug}/org/analytics` },
     { id: 'documents',    label: 'Documents',       icon: PencilSquareIcon,          category: 'Navigate', path: `/${tenantSlug}/org/documents` },
+    { id: 'sheets',       label: 'Sheets',          icon: TableCellsIcon,            category: 'Navigate', path: `/${tenantSlug}/org/sheets` },
     { id: 'employee-profile', label: 'My Profile',  icon: UserIcon,                  category: 'Navigate', path: `/${tenantSlug}/org/employee/profile` },
     { id: 'employee-attendance', label: 'Attendance', icon: ClockIcon,               category: 'Navigate', path: `/${tenantSlug}/org/employee/attendance` },
     { id: 'employee-leave', label: 'Leave Requests', icon: BriefcaseIcon,            category: 'Navigate', path: `/${tenantSlug}/org/employee/leave` },
@@ -47,6 +49,7 @@ export const getNavigationActions = (tenantSlug, userRole = '') => {
     { id: 'add-user',       label: 'Add User',         icon: UserIcon,                  category: 'Quick Create', path: `/${tenantSlug}/org/users?create=user` },
     { id: 'log-time',       label: 'Log Time',         icon: ClockIcon,                 category: 'Quick Create', path: `/${tenantSlug}/org/software-house/time-tracking` },
     { id: 'new-document',   label: 'New Document',     icon: PencilSquareIcon,          category: 'Quick Create', path: `/${tenantSlug}/org/documents/new` },
+    { id: 'new-sheet',      label: 'New Sheet',        icon: TableCellsIcon,            category: 'Quick Create', path: `/${tenantSlug}/org/sheets/new` },
   ];
   if (isAdminUser) {
     const nonEmployeeActions = actions.filter((action) => !action.id.startsWith('employee-'));
@@ -151,7 +154,7 @@ export const SIDEBAR_SECTIONS = [
   { label: 'People',   keys: ['hr', 'users', 'departments', 'roles', 'permissions'] },
   { label: 'Finance',  keys: ['finance', 'payroll'] },
   { label: 'Insights', keys: ['analytics', 'audit'] },
-  { label: 'Content',  keys: ['documents'] },
+  { label: 'Content',  keys: ['documents', 'sheets'] },
   { label: 'Settings', keys: ['settings', 'rulebook'] },
 ];
 
@@ -166,6 +169,7 @@ export const APP_METADATA = {
   hr:                 { gradient: 'from-amber-500 to-orange-500',    description: 'People & payroll' },
   analytics:          { gradient: 'from-cyan-500 to-sky-600',        description: 'Reports & insights' },
   documents:          { gradient: 'from-slate-500 to-slate-600',     description: 'Files & approvals' },
+  sheets:             { gradient: 'from-lime-500 to-green-600',      description: 'Spreadsheets & Excel files' },
   clients:            { gradient: 'from-sky-500 to-blue-600',        description: 'Client management' },
   users:              { gradient: 'from-pink-500 to-rose-500',       description: 'Team members' },
   departments:        { gradient: 'from-orange-500 to-amber-500',    description: 'Org structure' },
@@ -194,6 +198,7 @@ export const MENU_KEY_PERMISSION_MODULE = {
   projects:     'projects',
   payroll:      'payroll',
   documents:    'documents',
+  sheets:       'sheets',
   analytics:    'analytics',
   nucleus:      'nucleus',
   clients:      'clients',

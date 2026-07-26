@@ -34,7 +34,8 @@
   FlagIcon,
   ExclamationCircleIcon,
   FolderIcon,
-  PencilSquareIcon
+  PencilSquareIcon,
+  TableCellsIcon
 } from '@heroicons/react/24/outline';
 
 /**
@@ -207,6 +208,20 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
           label: 'Audit Log',
           path: `/documents/audit`,
           icon: ClipboardDocumentListIcon
+        }
+      ]
+    },
+    {
+      key: 'sheets',
+      icon: TableCellsIcon,
+      label: 'Sheets',
+      path: `/sheets`,
+      description: 'Excel-like spreadsheets - create, edit, and export .xlsx files',
+      children: [
+        {
+          key: 'sheets-list',
+          label: 'Sheets',
+          path: `/sheets`
         }
       ]
     },

@@ -12,6 +12,7 @@ const Project = require('../models/project-delivery/Project');
 const Workspace = require('../models/org/Workspace');
 const Client = require('../models/industry/Client');
 const OrgDocument = require('../models/documents/OrgDocument');
+const OrgSheet = require('../models/sheets/OrgSheet');
 
 class UsageTrackerService {
   constructor() {
@@ -72,11 +73,20 @@ class UsageTrackerService {
         return n;
       }
       case 'storage': {
-        const result = await OrgDocument.aggregate([
-          { $match: { tenantId: id } },
-          { $group: { _id: null, total: { $sum: { $ifNull: ['$fileSize', 0] } } } }
+        const [documentTotal, sheetTotal] = await Promise.all([
+          OrgDocument.aggregate([
+            { $match: { tenantId: id } },
+            { $group: { _id: null, total: { $sum: { $ifNull: ['$fileSize', 0] } } } }
+          ]),
+          // Sheets: uploaded files (fileSize) + in-app editable content persisted to S3 (contentSize)
+          OrgSheet.aggregate([
+            { $match: { tenantId: id } },
+            { $group: { _id: null, total: { $sum: { $add: [{ $ifNull: ['$fileSize', 0] }, { $ifNull: ['$contentSize', 0] }] } } } }
+          ])
         ]);
-        return (result[0] && result[0].total) ? result[0].total : 0;
+        const documentBytes = (documentTotal[0] && documentTotal[0].total) ? documentTotal[0].total : 0;
+        const sheetBytes = (sheetTotal[0] && sheetTotal[0].total) ? sheetTotal[0].total : 0;
+        return documentBytes + sheetBytes;
       }
       default:
         return 0;

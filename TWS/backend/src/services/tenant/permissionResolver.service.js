@@ -18,6 +18,7 @@ const BASE_ROLE_PERMISSIONS = {
   owner: ['*:*'],
   admin: [
     'projects:read', 'projects:write', 'tasks:read', 'tasks:write', 'documents:read', 'documents:write',
+    'sheets:read', 'sheets:write',
     'hr:read', 'hr:write', 'employees:read', 'employees:write', 'attendance:read', 'attendance:write',
     'leave:read', 'leave:write', 'payroll:read', 'payroll:write',
     'finance:read', 'finance:write',
@@ -26,31 +27,34 @@ const BASE_ROLE_PERMISSIONS = {
   ],
   manager: [
     'projects:read', 'tasks:read', 'tasks:write', 'documents:read', 'documents:write',
+    'sheets:read', 'sheets:write',
     'attendance:read', 'leave:read', 'leave:write', 'analytics:read', 'nucleus:read', 'nucleus:write',
     'teams:read', 'teams:write',
     'finance:read'
   ],
   project_manager: [
     'projects:read', 'projects:write', 'tasks:read', 'tasks:write', 'documents:read', 'documents:write',
+    'sheets:read', 'sheets:write',
     'nucleus:read', 'nucleus:write', 'clients:read', 'analytics:read', 'teams:read', 'teams:write',
     'finance:read'
   ],
   hr: [], // resolved via HR_SUBROLE_PERMISSIONS when hrSubRole is set
   finance: [], // resolved via FINANCE_SUBROLE_PERMISSIONS when financeSubRole is set
   employee: [
-    'projects:read', 'tasks:read', 'documents:read', 'attendance:read', 'attendance:write_own', 'leave:read', 'leave:write',
+    'projects:read', 'tasks:read', 'documents:read', 'sheets:read', 'attendance:read', 'attendance:write_own', 'leave:read', 'leave:write',
     'nucleus:read', 'payroll:read_own', 'teams:read',
     // Employee portal: own HR profile only (GET /hr/employees?userId=<self>); not full roster
     'employees:read_own',
     'finance:read'
   ],
   contractor: [
-    'tasks:read', 'tasks:write', 'documents:read', 'nucleus:read', 'attendance:read', 'attendance:write',
+    'tasks:read', 'tasks:write', 'documents:read', 'sheets:read', 'nucleus:read', 'attendance:read', 'attendance:write',
     'employees:read_own',
     'finance:read'
   ],
   client: [
     'projects:read', 'nucleus:read', 'documents:read'
+    // No default sheets:read for client — spreadsheets skew toward internal financial data, no client-portal Sheets view planned.
   ]
 };
 
@@ -107,7 +111,7 @@ function deptPermsToModuleActions(permissions, _departmentId) {
   if (!Array.isArray(permissions)) return [];
   const out = [];
   const modules = [
-    'projects', 'hr', 'finance', 'payroll', 'documents', 'analytics', 'audit', 'clients', 'settings', 'nucleus',
+    'projects', 'hr', 'finance', 'payroll', 'documents', 'sheets', 'analytics', 'audit', 'clients', 'settings', 'nucleus',
     'attendance', 'leave', 'teams'
   ];
   for (const p of permissions) {

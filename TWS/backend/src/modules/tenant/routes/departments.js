@@ -20,7 +20,7 @@ const { injectOwnership, injectUpdateOwnership } = require('../../../middleware/
 const { validateResourceAccess } = require('../../../middleware/security/resourceAccessCheck');
 
 const VALID_MODULE_KEYS = new Set([
-  'projects', 'hr', 'finance', 'payroll', 'documents', 'analytics', 'nucleus',
+  'projects', 'hr', 'finance', 'payroll', 'documents', 'sheets', 'analytics', 'nucleus',
   'clients', 'deals', 'audit', 'attendance', 'leave', 'notifications', 'settings'
 ]);
 

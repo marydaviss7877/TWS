@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo } from 'react';
 import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from './app/providers/AuthContext';
 import { ThemeProvider } from './app/providers/ThemeContext';
@@ -7,7 +7,6 @@ import { setupGlobalErrorHandling } from './shared/utils/errorHandler';
 import { tenantPath } from './shared/utils/tenantRoutes';
 import { getSubdomainSlug, getTenantWorkspaceUrl } from './shared/utils/subdomain';
 
-import './assets/tws-premium-design-system.css';
 import './assets/software-house-premium.css';
 
 // ── Auth pages ────────────────────────────────────────────────────────────────
@@ -31,22 +30,6 @@ import AccessDenied from './shared/components/feedback/AccessDenied';
 // ── Tenant shell ──────────────────────────────────────────────────────────────
 import TenantDashboard from './features/tenant/pages/TenantDashboard';
 import TenantOrg from './features/tenant/pages/tenant/org/TenantOrg';
-
-// ── SupraAdmin layout + pages ─────────────────────────────────────────────────
-import SupraAdmin from './features/admin/pages/SupraAdmin/SupraAdmin';
-import SupraAdminDashboard from './features/admin/pages/SupraAdmin/dashboard/SupraAdminDashboard';
-import TenantManagement from './features/admin/pages/SupraAdmin/tenants/TenantManagement';
-import TenantUsers from './features/admin/pages/SupraAdmin/tenants/TenantUsers';
-import BillingManagement from './features/admin/pages/SupraAdmin/billing/BillingManagement';
-import Analytics from './features/admin/pages/SupraAdmin/analytics/Analytics';
-import SupraUsers from './features/admin/pages/SupraAdmin/users/Users';
-import SessionManagement from './features/admin/pages/SupraAdmin/sessions/SessionManagement';
-import SessionAnalytics from './features/admin/pages/SupraAdmin/analytics/SessionAnalytics';
-import SystemHealth from './features/admin/pages/SupraAdmin/monitoring/SystemHealth';
-import Infrastructure from './features/admin/pages/SupraAdmin/infrastructure/Infrastructure';
-import SupraSettings from './features/admin/pages/SupraAdmin/settings/Settings';
-import DepartmentManagement from './features/admin/pages/SupraAdmin/departments/DepartmentManagement';
-import ERPManagement from './features/admin/pages/SupraAdmin/erp/ERPManagement';
 
 // ── Tenant Org — Dashboard ────────────────────────────────────────────────────
 import DashboardAnalytics from './features/tenant/pages/tenant/org/dashboard/DashboardAnalytics';
@@ -137,6 +120,10 @@ import DocumentsHub from './features/tenant/pages/tenant/org/documents/Documents
 import DocumentEditor from './features/tenant/pages/tenant/org/documents/DocumentEditor';
 import ApprovalQueue from './features/tenant/pages/tenant/org/documents/ApprovalQueue';
 import DocumentAuditView from './features/tenant/pages/tenant/org/documents/DocumentAuditView';
+// Sheets pulls in the Univer spreadsheet engine (a large canvas-rendered bundle) — lazy-load
+// so it isn't added to the main app bundle for users who never open Sheets.
+const SheetsHub = lazy(() => import('./features/tenant/pages/tenant/org/sheets/SheetsHub'));
+const SheetEditor = lazy(() => import('./features/tenant/pages/tenant/org/sheets/SheetEditor'));
 
 // ── Tenant Org — Software House ───────────────────────────────────────────────
 import TimeTracking from './features/tenant/pages/tenant/org/software-house/TimeTracking';
@@ -168,6 +155,24 @@ import {
   AdminOnlySettingsRoute,
   AuditAccessRoute,
 } from './features/tenant/guards/TenantOrgGuards';
+
+// ── SupraAdmin layout + pages ─────────────────────────────────────────────────
+// Lazy-loaded as one boundary: this subtree pulls in antd (~120KB gzipped), which should
+// never ship to tenant-portal or Software-House-Admin sessions that can't reach these routes.
+const SupraAdmin = lazy(() => import('./features/admin/pages/SupraAdmin/SupraAdmin'));
+const SupraAdminDashboard = lazy(() => import('./features/admin/pages/SupraAdmin/dashboard/SupraAdminDashboard'));
+const TenantManagement = lazy(() => import('./features/admin/pages/SupraAdmin/tenants/TenantManagement'));
+const TenantUsers = lazy(() => import('./features/admin/pages/SupraAdmin/tenants/TenantUsers'));
+const BillingManagement = lazy(() => import('./features/admin/pages/SupraAdmin/billing/BillingManagement'));
+const Analytics = lazy(() => import('./features/admin/pages/SupraAdmin/analytics/Analytics'));
+const SupraUsers = lazy(() => import('./features/admin/pages/SupraAdmin/users/Users'));
+const SessionManagement = lazy(() => import('./features/admin/pages/SupraAdmin/sessions/SessionManagement'));
+const SessionAnalytics = lazy(() => import('./features/admin/pages/SupraAdmin/analytics/SessionAnalytics'));
+const SystemHealth = lazy(() => import('./features/admin/pages/SupraAdmin/monitoring/SystemHealth'));
+const Infrastructure = lazy(() => import('./features/admin/pages/SupraAdmin/infrastructure/Infrastructure'));
+const SupraSettings = lazy(() => import('./features/admin/pages/SupraAdmin/settings/Settings'));
+const DepartmentManagement = lazy(() => import('./features/admin/pages/SupraAdmin/departments/DepartmentManagement'));
+const ERPManagement = lazy(() => import('./features/admin/pages/SupraAdmin/erp/ERPManagement'));
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -314,33 +319,38 @@ function App() {
           } />
 
           {/* ── SupraAdmin ────────────────────────────────────────────────── */}
+          {/* Outer Suspense covers SupraAdmin's own lazy load (the layout/sidebar shell);
+              each child route below has its own Suspense so navigating between admin pages
+              only re-suspends the content area, not the whole layout. */}
           <Route
             path="/supra-admin"
             element={
-              user && user.role === 'super_admin'
-                ? <SupraAdmin />
-                : <Navigate to="/supra-admin-login" replace />
+              <Suspense fallback={<LoadingSpinner />}>
+                {user && user.role === 'super_admin'
+                  ? <SupraAdmin />
+                  : <Navigate to="/supra-admin-login" replace />}
+              </Suspense>
             }
           >
-            <Route index element={<SupraAdminDashboard />} />
-            <Route path="tenants" element={<TenantManagement />} />
-            <Route path="tenants/users" element={<TenantUsers />} />
-            <Route path="billing" element={<BillingManagement />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="users" element={<SupraUsers />} />
-            <Route path="session-management" element={<SessionManagement />} />
+            <Route index element={<Suspense fallback={<LoadingSpinner />}><SupraAdminDashboard /></Suspense>} />
+            <Route path="tenants" element={<Suspense fallback={<LoadingSpinner />}><TenantManagement /></Suspense>} />
+            <Route path="tenants/users" element={<Suspense fallback={<LoadingSpinner />}><TenantUsers /></Suspense>} />
+            <Route path="billing" element={<Suspense fallback={<LoadingSpinner />}><BillingManagement /></Suspense>} />
+            <Route path="analytics" element={<Suspense fallback={<LoadingSpinner />}><Analytics /></Suspense>} />
+            <Route path="users" element={<Suspense fallback={<LoadingSpinner />}><SupraUsers /></Suspense>} />
+            <Route path="session-management" element={<Suspense fallback={<LoadingSpinner />}><SessionManagement /></Suspense>} />
             {/* Departments and Department Access were merged into Department Management —
                 the only one of the three that was ever more than a read-only duplicate.
                 Redirects keep any existing bookmarks/links working. */}
             <Route path="department-access" element={<Navigate to="/supra-admin/department-management" replace />} />
             <Route path="departments" element={<Navigate to="/supra-admin/department-management" replace />} />
-            <Route path="session-analytics" element={<SessionAnalytics />} />
-            <Route path="department-management" element={<DepartmentManagement />} />
-            <Route path="erp-management" element={<ERPManagement />} />
-            <Route path="erp-management/:category" element={<ERPManagement />} />
-            <Route path="system-health" element={<SystemHealth />} />
-            <Route path="infrastructure" element={<Infrastructure />} />
-            <Route path="settings" element={<SupraSettings />} />
+            <Route path="session-analytics" element={<Suspense fallback={<LoadingSpinner />}><SessionAnalytics /></Suspense>} />
+            <Route path="department-management" element={<Suspense fallback={<LoadingSpinner />}><DepartmentManagement /></Suspense>} />
+            <Route path="erp-management" element={<Suspense fallback={<LoadingSpinner />}><ERPManagement /></Suspense>} />
+            <Route path="erp-management/:category" element={<Suspense fallback={<LoadingSpinner />}><ERPManagement /></Suspense>} />
+            <Route path="system-health" element={<Suspense fallback={<LoadingSpinner />}><SystemHealth /></Suspense>} />
+            <Route path="infrastructure" element={<Suspense fallback={<LoadingSpinner />}><Infrastructure /></Suspense>} />
+            <Route path="settings" element={<Suspense fallback={<LoadingSpinner />}><SupraSettings /></Suspense>} />
           </Route>
 
           {/* ── /org/:slug — entry point from School ERP's SlugRouter redirect ── */}
@@ -501,6 +511,11 @@ function App() {
             <Route path="documents/audit" element={<DocumentAuditView />} />
             <Route path="documents/new" element={<DocumentEditor />} />
             <Route path="documents/:id" element={<DocumentEditor />} />
+
+            {/* Sheets */}
+            <Route path="sheets" element={<Suspense fallback={<LoadingSpinner />}><SheetsHub /></Suspense>} />
+            <Route path="sheets/new" element={<Suspense fallback={<LoadingSpinner />}><SheetEditor /></Suspense>} />
+            <Route path="sheets/:id" element={<Suspense fallback={<LoadingSpinner />}><SheetEditor /></Suspense>} />
 
             {/* Profile */}
             <Route path="profile" element={<UserProfile />} />

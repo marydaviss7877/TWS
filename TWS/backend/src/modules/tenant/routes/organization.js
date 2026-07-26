@@ -3799,10 +3799,12 @@ const approvalsRoutes = require('./approvals');
 const changeRequestsRoutes = require('./changeRequests');
 const deliverablesRoutes = require('./deliverables');
 const documentsRoutes = require('./documents');
+const sheetsRoutes = require('./sheets');
 router.use('/approvals', tokenVerificationLimiter, verifyERPToken, approvalsRoutes);
 router.use('/change-requests', tokenVerificationLimiter, verifyERPToken, changeRequestsRoutes);
 router.use('/deliverables', tokenVerificationLimiter, verifyERPToken, deliverablesRoutes);
 router.use('/documents', tokenVerificationLimiter, verifyERPToken, documentsRoutes);
+router.use('/sheets', tokenVerificationLimiter, verifyERPToken, sheetsRoutes);
 
 // Note: The routes below are legacy routes that may still be used by older frontend code
 // The new routes above provide comprehensive CRUD operations

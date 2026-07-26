@@ -1,5 +1,5 @@
 const MODULES = [
-  'projects', 'hr', 'finance', 'payroll', 'documents', 'analytics', 'nucleus',
+  'projects', 'hr', 'finance', 'payroll', 'documents', 'sheets', 'analytics', 'nucleus',
   'audit', 'clients', 'settings', 'attendance', 'leave', 'reports', 'tasks'
 ];
 

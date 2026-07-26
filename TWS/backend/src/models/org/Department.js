@@ -89,7 +89,7 @@ const departmentSchema = new mongoose.Schema({
     type: String,
     enum: [
       null,
-      'projects', 'hr', 'finance', 'payroll', 'documents', 'analytics', 'nucleus',
+      'projects', 'hr', 'finance', 'payroll', 'documents', 'sheets', 'analytics', 'nucleus',
       'clients', 'deals', 'audit', 'attendance', 'leave', 'notifications', 'settings'
     ],
     required: false,
