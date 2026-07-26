@@ -15,8 +15,6 @@ import { useTenantSlug } from '../../../shared/hooks/useTenantSlug';
 import {
   MagnifyingGlassIcon,
   BellIcon,
-  SunIcon,
-  MoonIcon,
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon,
   UserIcon,
@@ -33,6 +31,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '../../../components/ui/DropdownMenu/DropdownMenu';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/Avatar/Avatar';
+import ThemeToggle from '../../../shared/components/ui/ThemeToggle';
 import { APP_METADATA } from '../../../constants/navigationConstants';
 import { cn } from '../../../lib/utils';
 
@@ -70,8 +69,6 @@ const OdooTopBar = ({
   onSearch,
   isFullscreen  = false,
   onFullscreenToggle,
-  isDarkMode    = false,
-  onToggleTheme,
 
   // Mobile
   onMobileMenu,  // opens the mobile sheet sidebar
@@ -278,18 +275,7 @@ const OdooTopBar = ({
         </Button>
 
         {/* Theme toggle */}
-        {typeof onToggleTheme === 'function' && (
-          <Button
-            variant="ghost" size="icon" className="hidden sm:inline-flex h-7 w-7"
-            onClick={onToggleTheme}
-            title={isDarkMode ? 'Light mode' : 'Dark mode'}
-          >
-            {isDarkMode
-              ? <SunIcon  className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-              : <MoonIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            }
-          </Button>
-        )}
+        <ThemeToggle size="sm" className="hidden sm:inline-flex" />
 
         {/* Fullscreen */}
         {typeof onFullscreenToggle === 'function' && (

@@ -1,43 +1,48 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { 
-  Card, 
-  Row, 
-  Col, 
-  Statistic, 
-  Spin, 
-  Alert, 
-  Progress, 
-  Tag, 
-  Table, 
-  Typography,
-  Space,
-  Button,
-  Tooltip,
-  Badge,
-  Descriptions,
-  message
-} from 'antd';
-import { 
-  HeartOutlined, 
-  DatabaseOutlined, 
-  CloudOutlined,
-  HddOutlined,
-  ReloadOutlined,
-  CloudServerOutlined,
-  ApiOutlined,
-  SafetyCertificateOutlined,
-  ThunderboltOutlined,
-  InfoCircleOutlined
-} from '@ant-design/icons';
+import toast from 'react-hot-toast';
+import {
+  HeartIcon,
+  CircleStackIcon,
+  CloudIcon,
+  ServerIcon,
+  ArrowPathIcon,
+  ServerStackIcon,
+  SignalIcon,
+  ShieldCheckIcon,
+  CpuChipIcon,
+  InformationCircleIcon,
+} from '@heroicons/react/24/outline';
+import { Card, CardHeader, CardTitle, CardContent } from '../../../../../components/ui/Card/Card';
+import { Badge } from '../../../../../components/ui/Badge/Badge';
+import { Progress } from '../../../../../components/ui/Progress/Progress';
+import { Alert, AlertTitle, AlertDescription } from '../../../../../components/ui/Alert/Alert';
+import { Spinner } from '../../../../../components/ui/Spinner/Spinner';
+import { Button } from '../../../../../components/ui/Button/Button';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../../../components/ui/Table/Table';
 import moment from 'moment';
 import { get } from '../../../../../shared/utils/apiClient';
 import { createLogger } from '../../../../../shared/utils/logger';
-import { getStatusColor, getStatusIcon, formatBytes, getPercentageColor } from '../../../../../shared/utils/statusUtils';
+import { getStatusIcon, formatBytes, getPercentageColor } from '../../../../../shared/utils/statusUtils';
 
-const { Title, Text } = Typography;
 const logger = createLogger('SystemHealth');
 
 const REFRESH_INTERVAL = 30000; // 30 seconds
+
+// getPercentageColor returns a hex string (green/orange/red) for inline style use —
+// this maps the same thresholds to Tailwind text-color classes for the Statistic numbers.
+const percentTextClass = (value) => {
+  const hex = getPercentageColor(value);
+  if (hex === '#52c41a') return 'text-green-600 dark:text-green-400';
+  if (hex === '#faad14') return 'text-amber-600 dark:text-amber-400';
+  return 'text-red-600 dark:text-red-400';
+};
+
+const percentBarClass = (value) => {
+  const hex = getPercentageColor(value);
+  if (hex === '#52c41a') return 'bg-green-500';
+  if (hex === '#faad14') return 'bg-amber-500';
+  return 'bg-red-500';
+};
 
 const SystemHealth = () => {
   const [loading, setLoading] = useState(true);
@@ -58,9 +63,9 @@ const SystemHealth = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    
+
     abortControllerRef.current = new AbortController();
-    
+
     try {
       setError(null);
       setLoading(true);
@@ -84,11 +89,11 @@ const SystemHealth = () => {
       if (err.name === 'AbortError') {
         return;
       }
-      
+
       const errorMessage = err.message || 'Failed to fetch system health data. Please try again.';
       setError(errorMessage);
       logger.error('Failed to fetch health data', err);
-      message.error(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
       abortControllerRef.current = null;
@@ -98,7 +103,7 @@ const SystemHealth = () => {
   // Setup interval with proper cleanup
   useEffect(() => {
     fetchHealthData();
-    
+
     intervalRef.current = setInterval(() => {
       fetchHealthData();
     }, REFRESH_INTERVAL);
@@ -123,47 +128,11 @@ const SystemHealth = () => {
     }));
   }, [healthData]);
 
-  const serviceColumns = [
-    {
-      title: 'Service',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text, record) => (
-        <Space>
-          {getStatusIcon(record.status)}
-          <Text strong>{text}</Text>
-        </Space>
-      )
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {status.toUpperCase()}
-        </Tag>
-      )
-    },
-    {
-      title: 'Response Time',
-      dataIndex: 'responseTime',
-      key: 'responseTime',
-      render: (time) => `${time}ms`
-    },
-    {
-      title: 'Uptime',
-      dataIndex: 'uptime',
-      key: 'uptime'
-    }
-  ];
-
   // Loading state
   if (loading && !healthData) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
-        <p>Loading system health data...</p>
+      <div className="flex flex-col items-center justify-center py-24">
+        <Spinner size="lg" label="Loading system health data…" />
       </div>
     );
   }
@@ -171,276 +140,314 @@ const SystemHealth = () => {
   // Error state
   if (error && !healthData) {
     return (
-      <Alert
-        message="Error Loading Health Data"
-        description={
-          <div>
-            <p>{error}</p>
-            <Button 
-              type="primary" 
-              size="small" 
-              onClick={fetchHealthData}
-              style={{ marginTop: '8px' }}
-            >
-              Retry
-            </Button>
-          </div>
-        }
-        type="error"
-        showIcon
-        style={{ margin: '20px' }}
-      />
+      <Alert variant="destructive" className="m-5">
+        <AlertTitle>Error Loading Health Data</AlertTitle>
+        <AlertDescription>
+          <p>{error}</p>
+          <Button size="sm" className="mt-2" onClick={fetchHealthData}>
+            Retry
+          </Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 
   // No data state
   if (!healthData) {
     return (
-      <Alert
-        message="No Data Available"
-        description="Unable to fetch system health data. Please check your connection and try again."
-        type="info"
-        showIcon
-        style={{ margin: '20px' }}
-        action={
-          <Button size="small" onClick={fetchHealthData}>
-            Refresh
-          </Button>
-        }
-      />
+      <Alert className="m-5">
+        <AlertTitle>No Data Available</AlertTitle>
+        <AlertDescription className="flex items-center justify-between gap-4">
+          <span>Unable to fetch system health data. Please check your connection and try again.</span>
+          <Button size="sm" onClick={fetchHealthData}>Refresh</Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 
+  const cpuUsage = healthData.system?.cpu?.usage || 0;
+  const memoryUsage = healthData.system?.memory
+    ? (healthData.system.memory.used / healthData.system.memory.total * 100)
+    : 0;
+  const diskUsage = healthData.system?.disk
+    ? (healthData.system.disk.used / healthData.system.disk.total * 100)
+    : 0;
+  const networkTotal = healthData.system?.network
+    ? (healthData.system.network.bytesIn + healthData.system.network.bytesOut)
+    : 0;
+
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="p-6">
       {/* Header */}
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <Title level={2} style={{ margin: 0 }}>
-            <HeartOutlined style={{ marginRight: '8px' }} />
+          <h2 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
+            <HeartIcon className="h-6 w-6" />
             System Health
-          </Title>
-          <Text type="secondary">
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Overall system status and performance metrics
-          </Text>
+          </p>
         </div>
-        <Space>
-          <Badge 
-            status={systemStatus === 'healthy' ? 'processing' : 'error'} 
-            text={lastUpdate ? `Last updated: ${moment(lastUpdate).fromNow()}` : 'Never updated'} 
-          />
-          <Button 
-            icon={<ReloadOutlined />} 
-            onClick={fetchHealthData} 
-            loading={loading}
-            disabled={loading}
-          >
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <span className={`h-2 w-2 rounded-full ${systemStatus === 'healthy' ? 'bg-blue-500 animate-pulse' : 'bg-red-500'}`} />
+            {lastUpdate ? `Last updated: ${moment(lastUpdate).fromNow()}` : 'Never updated'}
+          </span>
+          <Button onClick={fetchHealthData} disabled={loading}>
+            <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-        </Space>
+        </div>
       </div>
 
       {/* Overall Status */}
-      <Alert
-        message={`System Status: ${healthData.overall.status.toUpperCase()}`}
-        description={`Uptime: ${healthData.overall.uptime} | Version: ${healthData.overall.version} | Environment: ${healthData.overall.environment}`}
-        type={healthData.overall.status === 'healthy' ? 'success' : 'warning'}
-        showIcon
-        style={{ marginBottom: '24px' }}
-      />
+      <Alert variant={healthData.overall.status === 'healthy' ? 'success' : 'warning'} className="mb-6">
+        <AlertTitle>System Status: {healthData.overall.status.toUpperCase()}</AlertTitle>
+        <AlertDescription>
+          Uptime: {healthData.overall.uptime} | Version: {healthData.overall.version} | Environment: {healthData.overall.environment}
+        </AlertDescription>
+      </Alert>
 
       {/* System Metrics */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="CPU Usage"
-              value={healthData.system?.cpu?.usage || 0}
-              precision={1}
-              suffix="%"
-              prefix={<ThunderboltOutlined />}
-              valueStyle={{ color: getPercentageColor(healthData.system?.cpu?.usage || 0) }}
-            />
-            <Progress 
-              percent={healthData.system?.cpu?.usage || 0} 
-              strokeColor={getPercentageColor(healthData.system?.cpu?.usage || 0)}
-              showInfo={false}
-              size="small"
-            />
-            <Text type="secondary" style={{ fontSize: '12px' }}>
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>CPU Usage</span>
+              <CpuChipIcon className="h-4 w-4" />
+            </div>
+            <p className={`text-2xl font-bold ${percentTextClass(cpuUsage)}`}>{cpuUsage.toFixed(1)}%</p>
+            <Progress value={cpuUsage} className="h-1.5 mt-2" indicatorClassName={percentBarClass(cpuUsage)} />
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
               {healthData.system?.cpu?.cores || 0} cores | Load: {healthData.system?.cpu?.loadAverage?.join(', ') || 'N/A'}
-            </Text>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Memory Usage"
-              value={healthData.system?.memory ? (healthData.system.memory.used / healthData.system.memory.total * 100) : 0}
-              precision={1}
-              suffix="%"
-              prefix={<HddOutlined />}
-              valueStyle={{ color: getPercentageColor(healthData.system?.memory ? (healthData.system.memory.used / healthData.system.memory.total * 100) : 0) }}
-            />
-            <Progress 
-              percent={healthData.system?.memory ? (healthData.system.memory.used / healthData.system.memory.total * 100) : 0} 
-              strokeColor={getPercentageColor(healthData.system?.memory ? (healthData.system.memory.used / healthData.system.memory.total * 100) : 0)}
-              showInfo={false}
-              size="small"
-            />
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {healthData.system?.memory ? `${formatBytes(healthData.system.memory.used)} / ${formatBytes(healthData.system.memory.total)}` : 'N/A'}
-            </Text>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Disk Usage"
-              value={healthData.system?.disk ? (healthData.system.disk.used / healthData.system.disk.total * 100) : 0}
-              precision={1}
-              suffix="%"
-              prefix={<DatabaseOutlined />}
-              valueStyle={{ color: getPercentageColor(healthData.system?.disk ? (healthData.system.disk.used / healthData.system.disk.total * 100) : 0) }}
-            />
-            <Progress 
-              percent={healthData.system?.disk ? (healthData.system.disk.used / healthData.system.disk.total * 100) : 0} 
-              strokeColor={getPercentageColor(healthData.system?.disk ? (healthData.system.disk.used / healthData.system.disk.total * 100) : 0)}
-              showInfo={false}
-              size="small"
-            />
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {healthData.system?.disk ? `${formatBytes(healthData.system.disk.used * 1024 * 1024 * 1024)} / ${formatBytes(healthData.system.disk.total * 1024 * 1024 * 1024)}` : 'N/A'}
-            </Text>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Network I/O"
-              value={healthData.system?.network ? (healthData.system.network.bytesIn + healthData.system.network.bytesOut) : 0}
-              formatter={(value) => formatBytes(value)}
-              prefix={<CloudOutlined />}
-            />
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {healthData.system?.network ? `In: ${formatBytes(healthData.system.network.bytesIn)} | Out: ${formatBytes(healthData.system.network.bytesOut)}` : 'N/A'}
-            </Text>
-          </Card>
-        </Col>
-      </Row>
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Memory Usage</span>
+              <ServerIcon className="h-4 w-4" />
+            </div>
+            <p className={`text-2xl font-bold ${percentTextClass(memoryUsage)}`}>{memoryUsage.toFixed(1)}%</p>
+            <Progress value={memoryUsage} className="h-1.5 mt-2" indicatorClassName={percentBarClass(memoryUsage)} />
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              {healthData.system?.memory
+                ? `${formatBytes(healthData.system.memory.used)} / ${formatBytes(healthData.system.memory.total)}`
+                : 'N/A'}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Disk Usage</span>
+              <CircleStackIcon className="h-4 w-4" />
+            </div>
+            <p className={`text-2xl font-bold ${percentTextClass(diskUsage)}`}>{diskUsage.toFixed(1)}%</p>
+            <Progress value={diskUsage} className="h-1.5 mt-2" indicatorClassName={percentBarClass(diskUsage)} />
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              {healthData.system?.disk
+                ? `${formatBytes(healthData.system.disk.used * 1024 * 1024 * 1024)} / ${formatBytes(healthData.system.disk.total * 1024 * 1024 * 1024)}`
+                : 'N/A'}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Network I/O</span>
+              <CloudIcon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatBytes(networkTotal)}</p>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              {healthData.system?.network
+                ? `In: ${formatBytes(healthData.system.network.bytesIn)} | Out: ${formatBytes(healthData.system.network.bytesOut)}`
+                : 'N/A'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Services Status */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} lg={16}>
-          <Card title="Services Status" extra={<CloudServerOutlined />}>
-            <Table
-              dataSource={servicesData}
-              columns={serviceColumns}
-              pagination={false}
-              size="small"
-            />
-          </Card>
-        </Col>
-        <Col xs={24} lg={8}>
-          <Card title="Performance Metrics" extra={<ApiOutlined />}>
-            <Descriptions column={1} size="small">
-              <Descriptions.Item label="Avg Response Time">
-                {healthData.performance?.responseTime?.avg ? `${healthData.performance.responseTime.avg.toFixed(1)}ms` : 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="95th Percentile">
-                {healthData.performance?.responseTime?.p95 ? `${healthData.performance.responseTime.p95.toFixed(1)}ms` : 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="99th Percentile">
-                {healthData.performance?.responseTime?.p99 ? `${healthData.performance.responseTime.p99.toFixed(1)}ms` : 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Requests/sec">
-                {healthData.performance?.throughput?.requestsPerSecond ? healthData.performance.throughput.requestsPerSecond.toFixed(0) : 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Errors/sec">
-                {healthData.performance?.throughput?.errorsPerSecond ? healthData.performance.throughput.errorsPerSecond.toFixed(2) : 'N/A'}
-              </Descriptions.Item>
-            </Descriptions>
-          </Card>
-        </Col>
-      </Row>
+      <div className="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle>Services Status</CardTitle>
+            <ServerStackIcon className="h-4 w-4 text-gray-400" />
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Response Time</TableHead>
+                  <TableHead>Uptime</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {servicesData.length ? servicesData.map((service) => (
+                  <TableRow key={service.key}>
+                    <TableCell>
+                      <span className="inline-flex items-center gap-2 font-medium">
+                        {getStatusIcon(service.status)}
+                        {service.name}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          ['healthy', 'active', 'running'].includes(service.status?.toLowerCase())
+                            ? 'success'
+                            : ['warning', 'idle', 'pending'].includes(service.status?.toLowerCase())
+                              ? 'warning'
+                              : 'destructive'
+                        }
+                      >
+                        {service.status?.toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{service.responseTime}ms</TableCell>
+                    <TableCell>{service.uptime}</TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-20 text-center text-gray-500 dark:text-gray-400">
+                      No services reported
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle>Performance Metrics</CardTitle>
+            <SignalIcon className="h-4 w-4 text-gray-400" />
+          </CardHeader>
+          <CardContent>
+            <dl className="space-y-2 text-sm">
+              {[
+                ['Avg Response Time', healthData.performance?.responseTime?.avg != null ? `${healthData.performance.responseTime.avg.toFixed(1)}ms` : 'N/A'],
+                ['95th Percentile', healthData.performance?.responseTime?.p95 != null ? `${healthData.performance.responseTime.p95.toFixed(1)}ms` : 'N/A'],
+                ['99th Percentile', healthData.performance?.responseTime?.p99 != null ? `${healthData.performance.responseTime.p99.toFixed(1)}ms` : 'N/A'],
+                ['Requests/sec', healthData.performance?.throughput?.requestsPerSecond != null ? healthData.performance.throughput.requestsPerSecond.toFixed(0) : 'N/A'],
+                ['Errors/sec', healthData.performance?.throughput?.errorsPerSecond != null ? healthData.performance.throughput.errorsPerSecond.toFixed(2) : 'N/A'],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between border-b border-dashed border-gray-200 dark:border-gray-700 pb-2 last:border-0 last:pb-0">
+                  <dt className="text-gray-500 dark:text-gray-400">{label}</dt>
+                  <dd className="font-medium text-gray-900 dark:text-white">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Security Status */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={12}>
-          <Card title="Security Status" extra={<SafetyCertificateOutlined />}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text>SSL Certificate</Text>
-                {healthData.security?.sslCertificate?.expiresAt ? (
-                  <Tag color="green">Valid until {moment(healthData.security.sslCertificate.expiresAt).format('MMM DD, YYYY')}</Tag>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle>Security Status</CardTitle>
+            <ShieldCheckIcon className="h-4 w-4 text-gray-400" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700 dark:text-gray-300">SSL Certificate</span>
+              {healthData.security?.sslCertificate?.expiresAt ? (
+                <Badge variant="success">Valid until {moment(healthData.security.sslCertificate.expiresAt).format('MMM DD, YYYY')}</Badge>
+              ) : (
+                <Badge variant="secondary">N/A</Badge>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700 dark:text-gray-300">Firewall</span>
+              {healthData.security?.firewall ? (
+                <Badge className="border-transparent bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                  Active ({healthData.security.firewall.blockedRequests || 0} blocked)
+                </Badge>
+              ) : (
+                <Badge variant="secondary">N/A</Badge>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700 dark:text-gray-300">Vulnerabilities</span>
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                {healthData.security?.vulnerabilities ? (
+                  <>
+                    {healthData.security.vulnerabilities.critical > 0 && (
+                      <Badge variant="destructive">Critical: {healthData.security.vulnerabilities.critical}</Badge>
+                    )}
+                    {healthData.security.vulnerabilities.high > 0 && (
+                      <Badge className="border-transparent bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
+                        High: {healthData.security.vulnerabilities.high}
+                      </Badge>
+                    )}
+                    {healthData.security.vulnerabilities.medium > 0 && (
+                      <Badge variant="warning">Medium: {healthData.security.vulnerabilities.medium}</Badge>
+                    )}
+                    {healthData.security.vulnerabilities.low > 0 && (
+                      <Badge className="border-transparent bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                        Low: {healthData.security.vulnerabilities.low}
+                      </Badge>
+                    )}
+                    {Object.values(healthData.security.vulnerabilities).every((v) => v === 0) && (
+                      <Badge variant="success">No vulnerabilities</Badge>
+                    )}
+                  </>
                 ) : (
-                  <Tag color="default">N/A</Tag>
+                  <Badge variant="secondary">N/A</Badge>
                 )}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text>Firewall</Text>
-                {healthData.security?.firewall ? (
-                  <Tag color="blue">Active ({healthData.security.firewall.blockedRequests || 0} blocked)</Tag>
-                ) : (
-                  <Tag color="default">N/A</Tag>
-                )}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle>System Information</CardTitle>
+            <InformationCircleIcon className="h-4 w-4 text-gray-400" />
+          </CardHeader>
+          <CardContent>
+            <dl className="space-y-2 text-sm">
+              <div className="flex items-center justify-between border-b border-dashed border-gray-200 dark:border-gray-700 pb-2">
+                <dt className="text-gray-500 dark:text-gray-400">Version</dt>
+                <dd className="font-medium text-gray-900 dark:text-white">{healthData.overall?.version || 'N/A'}</dd>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text>Vulnerabilities</Text>
-                <Space>
-                  {healthData.security?.vulnerabilities ? (
-                    <>
-                      {healthData.security.vulnerabilities.critical > 0 && (
-                        <Tag color="red">Critical: {healthData.security.vulnerabilities.critical}</Tag>
-                      )}
-                      {healthData.security.vulnerabilities.high > 0 && (
-                        <Tag color="orange">High: {healthData.security.vulnerabilities.high}</Tag>
-                      )}
-                      {healthData.security.vulnerabilities.medium > 0 && (
-                        <Tag color="yellow">Medium: {healthData.security.vulnerabilities.medium}</Tag>
-                      )}
-                      {healthData.security.vulnerabilities.low > 0 && (
-                        <Tag color="blue">Low: {healthData.security.vulnerabilities.low}</Tag>
-                      )}
-                      {Object.values(healthData.security.vulnerabilities).every(v => v === 0) && (
-                        <Tag color="green">No vulnerabilities</Tag>
-                      )}
-                    </>
-                  ) : (
-                    <Tag color="default">N/A</Tag>
-                  )}
-                </Space>
+              <div className="flex items-center justify-between border-b border-dashed border-gray-200 dark:border-gray-700 pb-2">
+                <dt className="text-gray-500 dark:text-gray-400">Environment</dt>
+                <dd>
+                  <Badge variant={healthData.overall?.environment === 'production' ? 'destructive' : 'secondary'}>
+                    {healthData.overall?.environment || 'N/A'}
+                  </Badge>
+                </dd>
               </div>
-            </Space>
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card title="System Information" extra={<InfoCircleOutlined />}>
-            <Descriptions column={1} size="small">
-              <Descriptions.Item label="Version">
-                {healthData.overall?.version || 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Environment">
-                <Tag color={healthData.overall?.environment === 'production' ? 'red' : 'blue'}>
-                  {healthData.overall?.environment || 'N/A'}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Uptime">
-                {healthData.overall?.uptime || 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Last Restart">
-                {healthData.overall?.lastRestart ? moment(healthData.overall.lastRestart).fromNow() : 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="CPU Cores">
-                {healthData.system?.cpu?.cores || 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Total Memory">
-                {healthData.system?.memory?.total ? formatBytes(healthData.system.memory.total) : 'N/A'}
-              </Descriptions.Item>
-            </Descriptions>
-          </Card>
-        </Col>
-      </Row>
+              <div className="flex items-center justify-between border-b border-dashed border-gray-200 dark:border-gray-700 pb-2">
+                <dt className="text-gray-500 dark:text-gray-400">Uptime</dt>
+                <dd className="font-medium text-gray-900 dark:text-white">{healthData.overall?.uptime || 'N/A'}</dd>
+              </div>
+              <div className="flex items-center justify-between border-b border-dashed border-gray-200 dark:border-gray-700 pb-2">
+                <dt className="text-gray-500 dark:text-gray-400">Last Restart</dt>
+                <dd className="font-medium text-gray-900 dark:text-white">
+                  {healthData.overall?.lastRestart ? moment(healthData.overall.lastRestart).fromNow() : 'N/A'}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between border-b border-dashed border-gray-200 dark:border-gray-700 pb-2">
+                <dt className="text-gray-500 dark:text-gray-400">CPU Cores</dt>
+                <dd className="font-medium text-gray-900 dark:text-white">{healthData.system?.cpu?.cores || 'N/A'}</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-gray-500 dark:text-gray-400">Total Memory</dt>
+                <dd className="font-medium text-gray-900 dark:text-white">
+                  {healthData.system?.memory?.total ? formatBytes(healthData.system.memory.total) : 'N/A'}
+                </dd>
+              </div>
+            </dl>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

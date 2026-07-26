@@ -1,56 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  Row, 
-  Col, 
-  Statistic, 
-  Typography, 
-  Select, 
-  DatePicker, 
-  Space, 
-  Button, 
-  Table, 
-  Tag, 
-  Progress, 
-  Tooltip, 
-  Alert, 
-  Spin,
-  Tabs,
-  List,
-  Avatar,
-  Badge,
-  Divider,
-  message
-} from 'antd';
-import { 
-  BarChartOutlined,
-  LineChartOutlined,
-  PieChartOutlined,
-  RiseOutlined,
-  FallOutlined,
-  UserOutlined,
-  DollarOutlined,
-  EyeOutlined,
-  GlobalOutlined,
-  TeamOutlined,
-  ShoppingCartOutlined,
-  TrophyOutlined,
-  ThunderboltOutlined,
-  ReloadOutlined,
-  DownloadOutlined,
-  FilterOutlined
-} from '@ant-design/icons';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
-  ResponsiveContainer, 
-  BarChart, 
+import toast from 'react-hot-toast';
+import {
+  ChartBarIcon,
+  ArrowTrendingUpIcon,
+  ChartPieIcon,
+  ArrowTrendingDownIcon,
+  UserIcon,
+  CurrencyDollarIcon,
+  UserGroupIcon,
+  TrophyIcon,
+  BoltIcon,
+  ArrowPathIcon,
+  ArrowDownTrayIcon,
+} from '@heroicons/react/24/outline';
+import { Card, CardHeader, CardTitle, CardContent } from '../../../../../components/ui/Card/Card';
+import { Badge } from '../../../../../components/ui/Badge/Badge';
+import { Progress } from '../../../../../components/ui/Progress/Progress';
+import { Alert, AlertTitle, AlertDescription } from '../../../../../components/ui/Alert/Alert';
+import { Spinner } from '../../../../../components/ui/Spinner/Spinner';
+import { Button } from '../../../../../components/ui/Button/Button';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../../../components/ui/Table/Table';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../../../components/ui/Tabs/Tabs';
+import { Avatar, AvatarFallback } from '../../../../../components/ui/Avatar/Avatar';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../../../../../components/ui/Select/Select';
+import { DateRangePicker } from '../../../../../components/ui/DatePicker/DateRangePicker';
+import {
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  BarChart,
   Bar,
-  AreaChart,
   Area,
   PieChart,
   Pie,
@@ -60,9 +42,12 @@ import {
 import axios from 'axios';
 import moment from 'moment';
 
-const { Title, Text } = Typography;
-const { Option } = Select;
-const { RangePicker } = DatePicker;
+const PERIOD_OPTIONS = [
+  { value: '7d', label: 'Last 7 days' },
+  { value: '30d', label: 'Last 30 days' },
+  { value: '90d', label: 'Last 90 days' },
+  { value: '1y', label: 'Last year' },
+];
 
 const Analytics = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -70,7 +55,6 @@ const Analytics = () => {
   const [error, setError] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('30d');
   const [dateRange, setDateRange] = useState([moment().subtract(30, 'days'), moment()]);
-  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -79,9 +63,9 @@ const Analytics = () => {
   // Update date range when period changes
   useEffect(() => {
     if (selectedPeriod && !dateRange) {
-      const days = selectedPeriod === '7d' ? 7 : 
-                   selectedPeriod === '30d' ? 30 : 
-                   selectedPeriod === '90d' ? 90 : 
+      const days = selectedPeriod === '7d' ? 7 :
+                   selectedPeriod === '30d' ? 30 :
+                   selectedPeriod === '90d' ? 90 :
                    selectedPeriod === '1y' ? 365 : 30;
       setDateRange([moment().subtract(days, 'days'), moment()]);
     }
@@ -112,8 +96,6 @@ const Analytics = () => {
       const days = getDaysFromPeriod(selectedPeriod);
       const startDate = dateRange?.[0] ? moment(dateRange[0]) : moment().subtract(days, 'days');
       const endDate = dateRange?.[1] ? moment(dateRange[1]) : moment();
-      const previousStartDate = moment(startDate).subtract(days, 'days');
-      const previousEndDate = moment(startDate);
 
       // Build query parameters for filtered data
       const periodParam = selectedPeriod;
@@ -137,22 +119,22 @@ const Analytics = () => {
       ]);
 
       // Extract data from responses and ensure proper structure
-      const dashboardData = dashboardRes.status === 'fulfilled' 
-        ? (dashboardRes.value.data?.data || dashboardRes.value.data) 
+      const dashboardData = dashboardRes.status === 'fulfilled'
+        ? (dashboardRes.value.data?.data || dashboardRes.value.data)
         : null;
-      const tenantsData = tenantsRes.status === 'fulfilled' 
-        ? (tenantsRes.value.data?.data || tenantsRes.value.data) 
+      const tenantsData = tenantsRes.status === 'fulfilled'
+        ? (tenantsRes.value.data?.data || tenantsRes.value.data)
         : null;
-      const billingData = billingRes.status === 'fulfilled' 
-        ? (billingRes.value.data?.data || billingRes.value.data) 
+      const billingData = billingRes.status === 'fulfilled'
+        ? (billingRes.value.data?.data || billingRes.value.data)
         : null;
-      const usersData = usersRes.status === 'fulfilled' 
-        ? (usersRes.value.data?.data || usersRes.value.data) 
+      const usersData = usersRes.status === 'fulfilled'
+        ? (usersRes.value.data?.data || usersRes.value.data)
         : null;
-      const systemHealthData = systemHealthRes.status === 'fulfilled' 
-        ? (systemHealthRes.value.data?.data || systemHealthRes.value.data) 
+      const systemHealthData = systemHealthRes.status === 'fulfilled'
+        ? (systemHealthRes.value.data?.data || systemHealthRes.value.data)
         : null;
-      
+
       // Check if billingData contains revenueByMonth with count field (from backend)
       // If so, transform it to match our expected structure
       if (billingData?.revenueByMonth && Array.isArray(billingData.revenueByMonth)) {
@@ -171,7 +153,7 @@ const Analytics = () => {
 
       // Process tenants data - filter by date range
       let tenants = tenantsData?.tenants || tenantsData?.data?.tenants || [];
-      
+
       // Filter tenants by date range if dateRange is provided
       if (dateRange && dateRange[0] && dateRange[1]) {
         const filterStartDate = moment(startDate).subtract(1, 'day');
@@ -182,17 +164,17 @@ const Analytics = () => {
           return tenantDate.isAfter(filterStartDate) && tenantDate.isBefore(filterEndDate);
         });
       }
-      
+
       const totalTenants = tenants.length;
       const activeTenants = tenants.filter(t => t.status === 'active').length;
-      
+
       // Calculate tenant distribution by category
       const categoryCounts = {};
       tenants.forEach(tenant => {
         const category = tenant.erpCategory || tenant.category || 'Other';
         categoryCounts[category] = (categoryCounts[category] || 0) + 1;
       });
-      
+
       const categoryColors = {
         'software_house': '#8884d8',
         'business': '#82ca9d',
@@ -200,7 +182,7 @@ const Analytics = () => {
         'warehouse': '#0088FE',
         'Other': '#FF8042'
       };
-      
+
       const byCategory = Object.entries(categoryCounts).map(([name, value]) => ({
         name: name.charAt(0).toUpperCase() + name.slice(1).replace('_', ' '),
         value,
@@ -237,7 +219,7 @@ const Analytics = () => {
 
       // Process users data
       const allUsers = usersData?.users || usersData?.data?.users || [];
-      
+
       // Filter users by date range for period-specific analytics
       let users = allUsers;
       if (dateRange && dateRange[0] && dateRange[1]) {
@@ -249,11 +231,11 @@ const Analytics = () => {
           return userDate.isAfter(filterStartDate) && userDate.isBefore(filterEndDate);
         });
       }
-      
+
       // For analytics, use filtered users for period-specific metrics
       const totalUsers = users.length;
       const activeUsers = users.filter(u => u.status === 'active').length;
-      
+
       // Calculate users by role from filtered users
       const roleCounts = {};
       users.forEach(user => {
@@ -284,7 +266,7 @@ const Analytics = () => {
           if (!u.createdAt) return false;
           return moment(u.createdAt).isSame(currentDate, 'day');
         }).length;
-        
+
         return {
           date: currentDate.format('MMM DD'),
           activeUsers: Math.floor(activeUsers * (0.8 + Math.random() * 0.4)),
@@ -295,21 +277,21 @@ const Analytics = () => {
 
       // Process revenue data - filter by period
       const overview = dashboardData?.overview || dashboardData || {};
-      const totalRevenue = billingData?.summary?.totalRevenue || 
-                          billingData?.totalRevenue || 
-                          overview.totalRevenue || 
-                          overview.revenueStats?.total || 
+      const totalRevenue = billingData?.summary?.totalRevenue ||
+                          billingData?.totalRevenue ||
+                          overview.totalRevenue ||
+                          overview.revenueStats?.total ||
                           0;
-      const monthlyRevenue = billingData?.summary?.monthlyRevenue || 
-                            billingData?.monthlyRevenue || 
-                            overview.monthlyRevenue || 
-                            overview.revenueStats?.current || 
+      const monthlyRevenue = billingData?.summary?.monthlyRevenue ||
+                            billingData?.monthlyRevenue ||
+                            overview.monthlyRevenue ||
+                            overview.revenueStats?.current ||
                             0;
-      
+
       // Generate revenue by month based on selected period
       // First check if billingData already has revenueByMonth from backend
       let revenueByMonth = [];
-      
+
       if (billingData?.revenueByMonth && Array.isArray(billingData.revenueByMonth) && billingData.revenueByMonth.length > 0) {
         // Use backend data if available, but ensure proper structure
         revenueByMonth = billingData.revenueByMonth.map(item => {
@@ -331,7 +313,7 @@ const Analytics = () => {
         else if (selectedPeriod === '30d') monthsToShow = 1;
         else if (selectedPeriod === '90d') monthsToShow = 3;
         else if (selectedPeriod === '1y') monthsToShow = 12;
-        
+
         revenueByMonth = Array.from({ length: monthsToShow }, (_, i) => {
           const monthDate = moment(endDate).subtract(monthsToShow - 1 - i, 'months');
           // Filter tenants created in this month
@@ -339,7 +321,7 @@ const Analytics = () => {
             if (!t.createdAt) return false;
             return moment(t.createdAt).isSame(monthDate, 'month');
           }).length;
-          
+
           // Ensure all values are primitives, not objects
           return {
             month: String(monthDate.format('MMM')),
@@ -375,27 +357,27 @@ const Analytics = () => {
       let previousPeriodTenants = 0;
       let previousPeriodUsers = 0;
       let previousPeriodRevenue = 0;
-      
+
       try {
         const prevStartDate = moment(startDate).subtract(days, 'days');
         const prevEndDate = moment(startDate);
-        
+
         const [prevTenantsRes, prevUsersRes, prevBillingRes] = await Promise.allSettled([
           axios.get(`/api/supra-admin/tenants?limit=1000&startDate=${prevStartDate.format('YYYY-MM-DD')}&endDate=${prevEndDate.format('YYYY-MM-DD')}`, { headers }),
           axios.get(`/api/supra-admin/users?limit=1000&startDate=${prevStartDate.format('YYYY-MM-DD')}&endDate=${prevEndDate.format('YYYY-MM-DD')}`, { headers }).catch(() => null),
           axios.get(`/api/supra-admin/billing/overview?startDate=${prevStartDate.format('YYYY-MM-DD')}&endDate=${prevEndDate.format('YYYY-MM-DD')}`, { headers }).catch(() => null)
         ]);
-        
-        const prevTenants = prevTenantsRes.status === 'fulfilled' 
+
+        const prevTenants = prevTenantsRes.status === 'fulfilled'
           ? (prevTenantsRes.value.data?.tenants || prevTenantsRes.value.data?.data?.tenants || [])
           : [];
         previousPeriodTenants = prevTenants.length;
-        
+
         const prevUsers = prevUsersRes.status === 'fulfilled' && prevUsersRes.value
           ? (prevUsersRes.value.data?.users || prevUsersRes.value.data?.data?.users || [])
           : [];
         previousPeriodUsers = prevUsers.length;
-        
+
         const prevBilling = prevBillingRes.status === 'fulfilled' && prevBillingRes.value
           ? (prevBillingRes.value.data?.summary || prevBillingRes.value.data || {})
           : {};
@@ -408,7 +390,7 @@ const Analytics = () => {
         previousPeriodRevenue = Math.floor(monthlyRevenue * 0.9);
       }
 
-      const tenantsGrowth = previousPeriodTenants > 0 
+      const tenantsGrowth = previousPeriodTenants > 0
         ? (((totalTenants - previousPeriodTenants) / previousPeriodTenants) * 100).toFixed(1)
         : totalTenants > 0 ? 100 : 0;
       const usersGrowth = previousPeriodUsers > 0
@@ -532,73 +514,17 @@ const Analytics = () => {
     return new Intl.NumberFormat('en-US').format(value);
   };
 
-  const getGrowthIcon = (growth) => {
-    return growth >= 0 ? <RiseOutlined style={{ color: '#52c41a' }} /> : <FallOutlined style={{ color: '#ff4d4f' }} />;
+  const GrowthBadge = ({ growth }) => {
+    const g = growth || 0;
+    const positive = g >= 0;
+    const Icon = positive ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
+    return (
+      <span className={`inline-flex items-center gap-1 text-sm font-medium ${positive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+        <Icon className="h-3.5 w-3.5" />
+        {g}%
+      </span>
+    );
   };
-
-  const getGrowthColor = (growth) => {
-    return growth >= 0 ? '#52c41a' : '#ff4d4f';
-  };
-
-  const tenantColumns = [
-    {
-      title: 'Tenant',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text) => <Text strong>{text}</Text>
-    },
-    {
-      title: 'Users',
-      dataIndex: 'users',
-      key: 'users',
-      render: (users) => formatNumber(users)
-    },
-    {
-      title: 'Revenue',
-      dataIndex: 'revenue',
-      key: 'revenue',
-      render: (revenue) => formatCurrency(revenue)
-    },
-    {
-      title: 'Plan',
-      dataIndex: 'plan',
-      key: 'plan',
-      render: (plan) => (
-        <Tag color={plan === 'Enterprise' ? 'gold' : plan === 'Professional' ? 'blue' : 'green'}>
-          {plan}
-        </Tag>
-      )
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Badge status={status === 'active' ? 'processing' : 'default'} text={status} />
-      )
-    }
-  ];
-
-  const endpointColumns = [
-    {
-      title: 'Endpoint',
-      dataIndex: 'endpoint',
-      key: 'endpoint',
-      render: (text) => <Text code>{text}</Text>
-    },
-    {
-      title: 'Requests',
-      dataIndex: 'requests',
-      key: 'requests',
-      render: (requests) => formatNumber(requests)
-    },
-    {
-      title: 'Avg Time',
-      dataIndex: 'avgTime',
-      key: 'avgTime',
-      render: (time) => `${time}ms`
-    }
-  ];
 
   const handleExportAnalytics = () => {
     try {
@@ -629,84 +555,82 @@ const Analytics = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      message.success('Analytics exported to CSV successfully');
+      toast.success('Analytics exported to CSV successfully');
     } catch (err) {
       console.error('Error exporting analytics:', err);
-      message.error('Failed to export analytics');
+      toast.error('Failed to export analytics');
     }
   };
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-        <Spin size="large" />
+      <div className="flex items-center justify-center h-[400px]">
+        <Spinner size="lg" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <Alert
-        message="Error Loading Analytics"
-        description={error}
-        type="error"
-        showIcon
-        action={
-          <Button size="small" onClick={fetchAnalyticsData}>
-            Retry
-          </Button>
-        }
-      />
+      <Alert variant="destructive">
+        <AlertTitle>Error Loading Analytics</AlertTitle>
+        <AlertDescription className="flex items-center justify-between gap-4">
+          <span>{error}</span>
+          <Button size="sm" onClick={fetchAnalyticsData}>Retry</Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 
   if (!analyticsData) {
     return (
-      <Alert
-        message="No Analytics Data"
-        description="No analytics data available"
-        type="info"
-        showIcon
-      />
+      <Alert>
+        <AlertTitle>No Analytics Data</AlertTitle>
+        <AlertDescription>No analytics data available</AlertDescription>
+      </Alert>
     );
   }
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="p-6">
       {/* Header */}
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-          <Title level={2} style={{ margin: 0 }}>
-            <BarChartOutlined style={{ marginRight: '8px' }} />
-                  Analytics Dashboard
-          </Title>
-          <Text type="secondary">Comprehensive platform analytics and insights</Text>
-              </div>
-        <Space>
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
+            <ChartBarIcon className="h-6 w-6" />
+            Analytics Dashboard
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Comprehensive platform analytics and insights</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
           <Select
             value={selectedPeriod}
-            onChange={(value) => {
+            onValueChange={(value) => {
               setSelectedPeriod(value);
               // Auto-update date range when period changes
-              const days = value === '7d' ? 7 : 
-                          value === '30d' ? 30 : 
-                          value === '90d' ? 90 : 
+              const days = value === '7d' ? 7 :
+                          value === '30d' ? 30 :
+                          value === '90d' ? 90 :
                           value === '1y' ? 365 : 30;
               setDateRange([moment().subtract(days, 'days'), moment()]);
             }}
-            style={{ width: 120 }}
           >
-            <Option value="7d">Last 7 days</Option>
-            <Option value="30d">Last 30 days</Option>
-            <Option value="90d">Last 90 days</Option>
-            <Option value="1y">Last year</Option>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PERIOD_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
           </Select>
-          <RangePicker
-            value={dateRange}
-            onChange={(dates) => {
-              setDateRange(dates);
-              // If custom date range is selected, set period to custom
-              if (dates && dates[0] && dates[1]) {
+          <DateRangePicker
+            value={dateRange && dateRange[0] && dateRange[1] ? { from: dateRange[0].toDate(), to: dateRange[1].toDate() } : undefined}
+            onChange={(range) => {
+              if (range?.from && range?.to) {
+                const dates = [moment(range.from), moment(range.to)];
+                setDateRange(dates);
+                // If custom date range is selected, set period to custom
                 const daysDiff = dates[1].diff(dates[0], 'days');
                 if (daysDiff <= 7) setSelectedPeriod('7d');
                 else if (daysDiff <= 30) setSelectedPeriod('30d');
@@ -714,309 +638,352 @@ const Analytics = () => {
                 else setSelectedPeriod('1y');
               }
             }}
-            format="MMM DD, YYYY"
-            allowClear
           />
-          <Button icon={<ReloadOutlined />} onClick={fetchAnalyticsData} loading={loading}>
-              Refresh
+          <Button variant="outline" onClick={fetchAnalyticsData} disabled={loading}>
+            <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
           </Button>
-          <Button icon={<DownloadOutlined />} type="primary" onClick={handleExportAnalytics}>
+          <Button onClick={handleExportAnalytics}>
+            <ArrowDownTrayIcon className="h-4 w-4" />
             Export
           </Button>
-        </Space>
+        </div>
       </div>
 
       {/* Overview Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Total Tenants"
-              value={analyticsData?.overview?.totalTenants || 0}
-              prefix={<TeamOutlined />}
-              suffix={
-                <div style={{ fontSize: '14px', color: getGrowthColor(analyticsData?.growth?.tenantsGrowth || 0) }}>
-                  {getGrowthIcon(analyticsData?.growth?.tenantsGrowth || 0)} {analyticsData?.growth?.tenantsGrowth || 0}%
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Total Tenants</span>
+              <UserGroupIcon className="h-4 w-4" />
             </div>
-              }
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Total Users"
-              value={analyticsData?.overview?.totalUsers || 0}
-              prefix={<UserOutlined />}
-              suffix={
-                <div style={{ fontSize: '14px', color: getGrowthColor(analyticsData?.growth?.usersGrowth || 0) }}>
-                  {getGrowthIcon(analyticsData?.growth?.usersGrowth || 0)} {analyticsData?.growth?.usersGrowth || 0}%
-              </div>
-              }
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Monthly Revenue"
-              value={analyticsData?.overview?.monthlyRevenue || 0}
-              formatter={formatCurrency}
-              prefix={<DollarOutlined />}
-              suffix={
-                <div style={{ fontSize: '14px', color: getGrowthColor(analyticsData?.growth?.revenueGrowth || 0) }}>
-                  {getGrowthIcon(analyticsData?.growth?.revenueGrowth || 0)} {analyticsData?.growth?.revenueGrowth || 0}%
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{analyticsData?.overview?.totalTenants || 0}</p>
+              <GrowthBadge growth={analyticsData?.growth?.tenantsGrowth} />
             </div>
-              }
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="System Uptime"
-              value={analyticsData?.overview?.systemUptime || 0}
-              precision={1}
-              suffix="%"
-              prefix={<ThunderboltOutlined />}
-              valueStyle={{ color: (analyticsData?.overview?.systemUptime || 0) > 99 ? '#52c41a' : '#faad14' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Total Users</span>
+              <UserIcon className="h-4 w-4" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{analyticsData?.overview?.totalUsers || 0}</p>
+              <GrowthBadge growth={analyticsData?.growth?.usersGrowth} />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Monthly Revenue</span>
+              <CurrencyDollarIcon className="h-4 w-4" />
+            </div>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(analyticsData?.overview?.monthlyRevenue || 0)}</p>
+              <GrowthBadge growth={analyticsData?.growth?.revenueGrowth} />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>System Uptime</span>
+              <BoltIcon className="h-4 w-4" />
+            </div>
+            <p className={`text-2xl font-bold ${(analyticsData?.overview?.systemUptime || 0) > 99 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+              {(analyticsData?.overview?.systemUptime || 0).toFixed(1)}%
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Main Analytics Tabs */}
-      <Tabs 
-        activeKey={activeTab} 
-        onChange={setActiveTab}
-        items={[
-          {
-            key: 'overview',
-            label: 'Overview',
-            children: (
-              <Row gutter={[16, 16]}>
-                <Col xs={24} lg={12}>
-                  <Card title="Tenant Distribution by Category" extra={<PieChartOutlined />}>
-                    {analyticsData?.tenantAnalytics?.byCategory?.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={analyticsData.tenantAnalytics.byCategory}
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={100}
-                            fill="#8884d8"
-                            dataKey="value"
-                            label={({ name, value }) => `${name}: ${value}`}
-                          >
-                            {analyticsData.tenantAnalytics.byCategory.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color || '#8884d8'} />
-                            ))}
-                          </Pie>
-                          <RechartsTooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
+      <Tabs defaultValue="overview">
+        <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="tenants">Tenants</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="revenue">Revenue</TabsTrigger>
+          <TabsTrigger value="system">System</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="flex-row items-center justify-between space-y-0">
+                <CardTitle>Tenant Distribution by Category</CardTitle>
+                <ChartPieIcon className="h-4 w-4 text-gray-400" />
+              </CardHeader>
+              <CardContent>
+                {analyticsData?.tenantAnalytics?.byCategory?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={analyticsData.tenantAnalytics.byCategory}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, value }) => `${name}: ${value}`}
+                      >
+                        {analyticsData.tenantAnalytics.byCategory.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color || '#8884d8'} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-center py-10 text-sm text-gray-500 dark:text-gray-400">No tenant category data available</p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex-row items-center justify-between space-y-0">
+                <CardTitle>Revenue by Plan</CardTitle>
+                <ChartBarIcon className="h-4 w-4 text-gray-400" />
+              </CardHeader>
+              <CardContent>
+                {analyticsData?.revenueAnalytics?.revenueByPlan?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={analyticsData.revenueAnalytics.revenueByPlan}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="plan" />
+                      <YAxis />
+                      <RechartsTooltip formatter={(value) => formatCurrency(value)} />
+                      <Bar dataKey="revenue" fill="#8884d8" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-center py-10 text-sm text-gray-500 dark:text-gray-400">No revenue data available</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tenants">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card className="lg:col-span-2">
+              <CardHeader className="flex-row items-center justify-between space-y-0">
+                <CardTitle>Top Performing Tenants</CardTitle>
+                <TrophyIcon className="h-4 w-4 text-gray-400" />
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tenant</TableHead>
+                      <TableHead>Users</TableHead>
+                      <TableHead>Revenue</TableHead>
+                      <TableHead>Plan</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(analyticsData?.tenantAnalytics?.topTenants || []).length ? (
+                      analyticsData.tenantAnalytics.topTenants.map((t, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-semibold">{t.name}</TableCell>
+                          <TableCell>{formatNumber(t.users)}</TableCell>
+                          <TableCell>{formatCurrency(t.revenue)}</TableCell>
+                          <TableCell>
+                            <Badge className={
+                              t.plan === 'Enterprise'
+                                ? 'border-transparent bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                                : t.plan === 'Professional'
+                                  ? 'border-transparent bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                  : 'border-transparent bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                            }>
+                              {t.plan}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center gap-1.5 text-xs">
+                              <span className={`h-1.5 w-1.5 rounded-full ${t.status === 'active' ? 'bg-blue-500 animate-pulse' : 'bg-gray-400'}`} />
+                              {t.status}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     ) : (
-                      <div style={{ textAlign: 'center', padding: '40px' }}>
-                        <Text type="secondary">No tenant category data available</Text>
-                      </div>
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-20 text-center text-gray-500 dark:text-gray-400">No tenant data available</TableCell>
+                      </TableRow>
                     )}
-                  </Card>
-                </Col>
-                <Col xs={24} lg={12}>
-                  <Card title="Revenue by Plan" extra={<BarChartOutlined />}>
-                    {analyticsData?.revenueAnalytics?.revenueByPlan?.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={analyticsData.revenueAnalytics.revenueByPlan}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="plan" />
-                          <YAxis />
-                          <RechartsTooltip formatter={(value) => formatCurrency(value)} />
-                          <Bar dataKey="revenue" fill="#8884d8" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: '40px' }}>
-                        <Text type="secondary">No revenue data available</Text>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Tenant Plans Distribution</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                {(analyticsData?.tenantAnalytics?.byPlan || []).length ? (
+                  analyticsData.tenantAnalytics.byPlan.map((item) => {
+                    const pct = analyticsData?.overview?.totalTenants > 0
+                      ? ((item.value || 0) / analyticsData.overview.totalTenants) * 100
+                      : 0;
+                    return (
+                      <div key={item.name}>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{item.value || 0} tenants • {formatCurrency(item.revenue || 0)}</p>
+                        <Progress value={pct} className="h-1.5" />
                       </div>
-                    )}
-                  </Card>
-                </Col>
-              </Row>
-            )
-          },
-          {
-            key: 'tenants',
-            label: 'Tenants',
-            children: (
-              <Row gutter={[16, 16]}>
-                <Col xs={24} lg={16}>
-                  <Card title="Top Performing Tenants" extra={<TrophyOutlined />}>
-                    <Table
-                      dataSource={analyticsData?.tenantAnalytics?.topTenants || []}
-                      columns={tenantColumns}
-                      pagination={false}
-                      size="small"
-                      locale={{ emptyText: 'No tenant data available' }}
+                    );
+                  })
+                ) : (
+                  <p className="text-center py-6 text-sm text-gray-500 dark:text-gray-400">No plan data available</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card className="lg:col-span-2">
+              <CardHeader className="flex-row items-center justify-between space-y-0">
+                <CardTitle>User Activity Trend</CardTitle>
+                <ArrowTrendingUpIcon className="h-4 w-4 text-gray-400" />
+              </CardHeader>
+              <CardContent>
+                {analyticsData?.userAnalytics?.activityTrend?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ComposedChart data={analyticsData.userAnalytics.activityTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <RechartsTooltip />
+                      <Area type="monotone" dataKey="sessions" fill="#8884d8" stroke="#8884d8" fillOpacity={0.6} />
+                      <Line type="monotone" dataKey="activeUsers" stroke="#82ca9d" />
+                      <Line type="monotone" dataKey="newUsers" stroke="#ffc658" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-center py-10 text-sm text-gray-500 dark:text-gray-400">No activity data available</p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Users by Role</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                {(analyticsData?.userAnalytics?.usersByRole || []).length ? (
+                  analyticsData.userAnalytics.usersByRole.map((item) => (
+                    <div key={item.role} className="flex items-start gap-2">
+                      <Avatar className="h-8 w-8 mt-0.5">
+                        <AvatarFallback><UserIcon className="h-4 w-4" /></AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{item.role}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{formatNumber(item.count || 0)} users ({item.percentage || 0}%)</p>
+                        <Progress value={parseFloat(item.percentage || 0)} className="h-1.5" indicatorClassName="bg-green-500" />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center py-6 text-sm text-gray-500 dark:text-gray-400">No user role data available</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="revenue">
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+              <CardTitle>Revenue Trend (12 months)</CardTitle>
+              <CurrencyDollarIcon className="h-4 w-4 text-gray-400" />
+            </CardHeader>
+            <CardContent>
+              {analyticsData?.revenueAnalytics?.revenueByMonth?.length > 0 ? (
+                <ResponsiveContainer width="100%" height={400}>
+                  <ComposedChart data={analyticsData.revenueAnalytics.revenueByMonth}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <RechartsTooltip
+                      formatter={(value, name) => {
+                        if (name === 'Revenue') {
+                          return [formatCurrency(value), name];
+                        }
+                        return [formatNumber(value), name];
+                      }}
                     />
-                  </Card>
-                </Col>
-                <Col xs={24} lg={8}>
-                  <Card title="Tenant Plans Distribution">
-                    <List
-                      dataSource={analyticsData?.tenantAnalytics?.byPlan || []}
-                      renderItem={item => (
-                        <List.Item>
-                          <List.Item.Meta
-                            title={item.name}
-                            description={`${item.value || 0} tenants • ${formatCurrency(item.revenue || 0)}`}
-                          />
-                          <Progress
-                            percent={analyticsData?.overview?.totalTenants > 0 
-                              ? ((item.value || 0) / analyticsData.overview.totalTenants) * 100 
-                              : 0}
-                            showInfo={false}
-                            strokeColor="#1890ff"
-                          />
-                        </List.Item>
-                      )}
-                      locale={{ emptyText: 'No plan data available' }}
-                    />
-                  </Card>
-                </Col>
-              </Row>
-            )
-          },
-          {
-            key: 'users',
-            label: 'Users',
-            children: (
-              <Row gutter={[16, 16]}>
-                <Col xs={24} lg={16}>
-                  <Card title="User Activity Trend" extra={<LineChartOutlined />}>
-                    {analyticsData?.userAnalytics?.activityTrend?.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={300}>
-                        <ComposedChart data={analyticsData.userAnalytics.activityTrend}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
-                          <YAxis />
-                          <RechartsTooltip />
-                          <Area type="monotone" dataKey="sessions" fill="#8884d8" stroke="#8884d8" fillOpacity={0.6} />
-                          <Line type="monotone" dataKey="activeUsers" stroke="#82ca9d" />
-                          <Line type="monotone" dataKey="newUsers" stroke="#ffc658" />
-                        </ComposedChart>
-                      </ResponsiveContainer>
+                    <Bar yAxisId="left" dataKey="revenue" fill="#8884d8" name="Revenue" />
+                    <Line yAxisId="right" type="monotone" dataKey="tenants" stroke="#82ca9d" name="Tenants" />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-center py-10 text-sm text-gray-500 dark:text-gray-400">No revenue trend data available</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="system">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card className="lg:col-span-2">
+              <CardHeader className="flex-row items-center justify-between space-y-0">
+                <CardTitle>System Performance (24h)</CardTitle>
+                <BoltIcon className="h-4 w-4 text-gray-400" />
+              </CardHeader>
+              <CardContent>
+                {analyticsData?.systemAnalytics?.performanceMetrics?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ComposedChart data={analyticsData.systemAnalytics.performanceMetrics}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="hour" />
+                      <YAxis yAxisId="left" />
+                      <YAxis yAxisId="right" orientation="right" />
+                      <RechartsTooltip />
+                      <Bar yAxisId="right" dataKey="requests" fill="#8884d8" name="Requests" />
+                      <Line yAxisId="left" type="monotone" dataKey="responseTime" stroke="#82ca9d" name="Response Time (ms)" />
+                      <Line yAxisId="right" type="monotone" dataKey="errors" stroke="#ff7300" name="Errors" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-center py-10 text-sm text-gray-500 dark:text-gray-400">No performance data available</p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Top API Endpoints</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Endpoint</TableHead>
+                      <TableHead>Requests</TableHead>
+                      <TableHead>Avg Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(analyticsData?.systemAnalytics?.topEndpoints || []).length ? (
+                      analyticsData.systemAnalytics.topEndpoints.map((e, i) => (
+                        <TableRow key={i}>
+                          <TableCell><code className="text-xs">{e.endpoint}</code></TableCell>
+                          <TableCell>{formatNumber(e.requests)}</TableCell>
+                          <TableCell>{e.avgTime}ms</TableCell>
+                        </TableRow>
+                      ))
                     ) : (
-                      <div style={{ textAlign: 'center', padding: '40px' }}>
-                        <Text type="secondary">No activity data available</Text>
-                      </div>
+                      <TableRow>
+                        <TableCell colSpan={3} className="h-20 text-center text-gray-500 dark:text-gray-400">No endpoint data available</TableCell>
+                      </TableRow>
                     )}
-                  </Card>
-                </Col>
-                <Col xs={24} lg={8}>
-                  <Card title="Users by Role">
-                    <List
-                      dataSource={analyticsData?.userAnalytics?.usersByRole || []}
-                      renderItem={item => (
-                        <List.Item>
-                          <List.Item.Meta
-                            avatar={<Avatar icon={<UserOutlined />} />}
-                            title={item.role}
-                            description={`${formatNumber(item.count || 0)} users (${item.percentage || 0}%)`}
-                          />
-                          <Progress
-                            percent={parseFloat(item.percentage || 0)}
-                            showInfo={false}
-                            strokeColor="#52c41a"
-                          />
-                        </List.Item>
-                      )}
-                      locale={{ emptyText: 'No user role data available' }}
-                    />
-                  </Card>
-                </Col>
-              </Row>
-            )
-          },
-          {
-            key: 'revenue',
-            label: 'Revenue',
-            children: (
-              <Row gutter={[16, 16]}>
-                <Col xs={24}>
-                  <Card title="Revenue Trend (12 months)" extra={<DollarOutlined />}>
-                    {analyticsData?.revenueAnalytics?.revenueByMonth?.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={400}>
-                        <ComposedChart data={analyticsData.revenueAnalytics.revenueByMonth}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis yAxisId="left" />
-                          <YAxis yAxisId="right" orientation="right" />
-                          <RechartsTooltip 
-                            formatter={(value, name) => {
-                              if (name === 'Revenue') {
-                                return [formatCurrency(value), name];
-                              }
-                              return [formatNumber(value), name];
-                            }}
-                          />
-                          <Bar yAxisId="left" dataKey="revenue" fill="#8884d8" name="Revenue" />
-                          <Line yAxisId="right" type="monotone" dataKey="tenants" stroke="#82ca9d" name="Tenants" />
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: '40px' }}>
-                        <Text type="secondary">No revenue trend data available</Text>
-                      </div>
-                    )}
-                  </Card>
-                </Col>
-              </Row>
-            )
-          },
-          {
-            key: 'system',
-            label: 'System',
-            children: (
-              <Row gutter={[16, 16]}>
-                <Col xs={24} lg={16}>
-                  <Card title="System Performance (24h)" extra={<ThunderboltOutlined />}>
-                    {analyticsData?.systemAnalytics?.performanceMetrics?.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={300}>
-                        <ComposedChart data={analyticsData.systemAnalytics.performanceMetrics}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="hour" />
-                          <YAxis yAxisId="left" />
-                          <YAxis yAxisId="right" orientation="right" />
-                          <RechartsTooltip />
-                          <Bar yAxisId="right" dataKey="requests" fill="#8884d8" name="Requests" />
-                          <Line yAxisId="left" type="monotone" dataKey="responseTime" stroke="#82ca9d" name="Response Time (ms)" />
-                          <Line yAxisId="right" type="monotone" dataKey="errors" stroke="#ff7300" name="Errors" />
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: '40px' }}>
-                        <Text type="secondary">No performance data available</Text>
-                      </div>
-                    )}
-                  </Card>
-                </Col>
-                <Col xs={24} lg={8}>
-                  <Card title="Top API Endpoints">
-                    <Table
-                      dataSource={analyticsData?.systemAnalytics?.topEndpoints || []}
-                      columns={endpointColumns}
-                      pagination={false}
-                      size="small"
-                      locale={{ emptyText: 'No endpoint data available' }}
-                    />
-                  </Card>
-                </Col>
-              </Row>
-            )
-          }
-        ]}
-      />
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

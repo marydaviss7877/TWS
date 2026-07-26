@@ -13,9 +13,6 @@ import {
   Bars3Icon,
   XMarkIcon,
   ArrowRightOnRectangleIcon,
-  SunIcon,
-  MoonIcon,
-  ComputerDesktopIcon,
   ClockIcon,
   ServerIcon,
   CloudIcon,
@@ -32,12 +29,11 @@ import {
   ArrowsPointingInIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
-import { useTheme } from '../app/providers/ThemeContext';
 import { useAuth } from '../app/providers/AuthContext';
+import ThemeToggle from '../shared/components/ui/ThemeToggle';
 
 const SupraAdminLayout = ({ children }) => {
   const location = useLocation();
-  const { isDarkMode, toggleTheme, setTheme, theme } = useTheme();
   const { user, logout } = useAuth();
   
   // Define navigation array first (before useState that uses it)
@@ -102,7 +98,6 @@ const SupraAdminLayout = ({ children }) => {
   ];
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   // Initialize expanded menus - expand all by default for better visibility
@@ -119,7 +114,6 @@ const SupraAdminLayout = ({ children }) => {
   // useFullscreen hook — replaces 95-line copy-pasted fullscreen boilerplate
   const { isFullscreen, requestFullscreen, exitFullscreen, toggleFullscreen } = useFullscreen();
   const [searchQuery, setSearchQuery] = useState('');
-  const themeMenuRef = useRef(null);
   const searchInputRef = useRef(null);
 
   // Keyboard shortcuts
@@ -140,9 +134,6 @@ const SupraAdminLayout = ({ children }) => {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target)) {
-        setShowThemeMenu(false);
-      }
       if (showUserMenu && !event.target.closest('.user-menu-container')) {
         setShowUserMenu(false);
       }
@@ -485,53 +476,7 @@ const SupraAdminLayout = ({ children }) => {
               </button>
 
               {/* Theme Toggle */}
-              <div className="relative" ref={themeMenuRef}>
-                <button
-                  onClick={() => setShowThemeMenu(!showThemeMenu)}
-                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  title="Theme Settings"
-                >
-                  {isDarkMode ? (
-                    <SunIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                  ) : (
-                    <MoonIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                  )}
-                </button>
-                
-                {showThemeMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
-                    <div className="py-2">
-                      <button
-                        onClick={() => { setTheme('light'); setShowThemeMenu(false); }}
-                        className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                          !isDarkMode ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30' : 'text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        <SunIcon className="h-4 w-4" />
-                        <span>Light Mode</span>
-                      </button>
-                      <button
-                        onClick={() => { setTheme('dark'); setShowThemeMenu(false); }}
-                        className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                          isDarkMode ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30' : 'text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        <MoonIcon className="h-4 w-4" />
-                        <span>Dark Mode</span>
-                      </button>
-                      <button
-                        onClick={() => { setTheme('system'); setShowThemeMenu(false); }}
-                        className={`w-full text-left px-4 py-2 text-sm flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                          theme === 'system' ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30' : 'text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        <ComputerDesktopIcon className="h-4 w-4" />
-                        <span>System</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ThemeToggle />
 
               {/* Notifications */}
               <div className="relative notifications-container">

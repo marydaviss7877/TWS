@@ -71,7 +71,7 @@ export const getNavigationActions = (tenantSlug, userRole = '') => {
 };
 
 // ---------------------------------------------------------------------------
-// QUICK-ADD ACTIONS — used by TenantTopBar "Add" dropdown
+// QUICK-ADD ACTIONS — used by OdooTopBar "Add" dropdown
 // ---------------------------------------------------------------------------
 export const QUICK_ADD_ACTIONS = [
   { id: 'task',    label: 'Add Task',       icon: ClipboardDocumentListIcon },

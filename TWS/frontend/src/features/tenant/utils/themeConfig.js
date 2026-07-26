@@ -148,6 +148,82 @@ export const AVAILABLE_FONTS = {
   ]
 };
 
+// Fonts self-hosted as variable fonts in src/assets/fonts.css (imported once, globally) —
+// never fetch these over the network, they're already loaded.
+const SELF_HOSTED_FONTS = new Set([
+  'Inter', 'Geist', 'JetBrains Mono', 'DM Sans', 'Sora', 'Space Grotesk',
+]);
+
+// Query params for the remaining picker fonts, lazy-loaded one at a time only when a
+// tenant actually selects them — matches the weights previously blanket-loaded upfront.
+const GOOGLE_FONT_PARAMS = {
+  'Poppins': 'wght@100;200;300;400;500;600;700;800;900',
+  'Montserrat': 'wght@100;200;300;400;500;600;700;800;900',
+  'Roboto': 'wght@100;300;400;500;700;900',
+  'Open Sans': 'wght@300;400;500;600;700;800',
+  'Lato': 'wght@100;300;400;700;900',
+  'Raleway': 'wght@100;200;300;400;500;600;700;800;900',
+  'Nunito': 'wght@200;300;400;500;600;700;800;900',
+  'Source Sans Pro': 'wght@200;300;400;600;700;900',
+  'Ubuntu': 'wght@300;400;500;700',
+  'Oswald': 'wght@200;300;400;500;600;700',
+  'Work Sans': 'wght@100;200;300;400;500;600;700;800;900',
+  'Fira Sans': 'wght@100;200;300;400;500;600;700;800;900',
+  'Manrope': 'wght@200;300;400;500;600;700;800',
+  'Plus Jakarta Sans': 'wght@200;300;400;500;600;700;800',
+  'Outfit': 'wght@100;200;300;400;500;600;700;800;900',
+  'Epilogue': 'wght@100;200;300;400;500;600;700;800;900',
+  'Bricolage Grotesque': 'wght@200;300;400;500;600;700;800',
+  'Figtree': 'wght@300;400;500;600;700;800;900',
+  'Syne': 'wght@400;500;600;700;800',
+  'IBM Plex Sans': 'wght@100;200;300;400;500;600;700',
+  'Atkinson Hyperlegible': 'wght@400;700',
+  'Noto Sans': 'wght@100;200;300;400;500;600;700;800;900',
+  'Rubik': 'wght@300;400;500;600;700;800;900',
+  'Quicksand': 'wght@300;400;500;600;700',
+  'Comfortaa': 'wght@300;400;500;600;700',
+  'Mulish': 'wght@200;300;400;500;600;700;800;900',
+  'Red Hat Display': 'wght@300;400;500;600;700;800;900',
+  'Public Sans': 'wght@100;200;300;400;500;600;700;800;900',
+  'Playfair Display': 'wght@400;500;600;700;800;900',
+  'Merriweather': 'wght@300;400;700;900',
+  'Lora': 'wght@400;500;600;700',
+  'Crimson Text': 'wght@400;600;700',
+};
+
+// The 3 Fontshare (non-Google) picker fonts, same lazy-load treatment.
+const FONTSHARE_SLUGS = {
+  'Cabinet Grotesk': 'cabinet-grotesk@100,200,300,400,500,600,700,800,900',
+  'Satoshi': 'satoshi@300,400,500,700,900',
+  'Clash Display': 'clash-display@200,300,400,500,600,700',
+};
+
+/**
+ * Lazy-loads a single picker font by injecting one <link> tag, the first time it's ever
+ * needed (self-hosted fonts and already-injected fonts are no-ops). Replaces the old
+ * approach of blanket `@import`-ing all ~35 picker fonts on every single page load.
+ */
+export const loadFontOnDemand = (fontFamily) => {
+  if (typeof document === 'undefined' || !fontFamily || SELF_HOSTED_FONTS.has(fontFamily)) return;
+
+  const id = `tenant-font-${fontFamily.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}`;
+  if (document.getElementById(id)) return;
+
+  let href = null;
+  if (GOOGLE_FONT_PARAMS[fontFamily]) {
+    href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily).replace(/%20/g, '+')}:${GOOGLE_FONT_PARAMS[fontFamily]}&display=swap`;
+  } else if (FONTSHARE_SLUGS[fontFamily]) {
+    href = `https://api.fontshare.com/v2/css?f[]=${FONTSHARE_SLUGS[fontFamily]}&display=swap`;
+  }
+  if (!href) return; // Unknown font name — nothing to load.
+
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = href;
+  document.head.appendChild(link);
+};
+
 // Default theme
 export const DEFAULT_THEME = {
   name: 'default',

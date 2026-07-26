@@ -1,84 +1,162 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
-  Card,
-  Table,
-  Button,
-  Modal,
-  Form,
-  Input,
-  Select,
-  Space,
-  Tag,
-  Popconfirm,
-  message,
-  Row,
-  Col,
-  Statistic,
-  Typography,
-  Divider,
-  Tooltip,
-  Badge,
-  Avatar,
-  Dropdown,
-  Menu,
-  Tabs,
-  Tree,
-  Switch,
-  InputNumber,
-  Progress
-} from 'antd';
+  PlusIcon,
+  PencilSquareIcon,
+  EyeIcon,
+  UserGroupIcon,
+  UserIcon,
+  Cog6ToothIcon,
+  BuildingOffice2Icon,
+  LockClosedIcon,
+  MagnifyingGlassIcon,
+  ArrowUpTrayIcon,
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
+  EllipsisHorizontalIcon,
+  CheckCircleIcon,
+  CurrencyDollarIcon,
+  TrashIcon,
+  ChevronRightIcon,
+} from '@heroicons/react/24/outline';
+import { Card, CardHeader, CardTitle, CardContent } from '../../../../../components/ui/Card/Card';
+import { Badge } from '../../../../../components/ui/Badge/Badge';
+import { Button } from '../../../../../components/ui/Button/Button';
+import { Input, Textarea } from '../../../../../components/ui/Input';
+import { DataTable } from '../../../../../components/ui/DataTable/DataTable';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../../../../../components/ui/Select/Select';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../../../../../components/ui/Tooltip/Tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from '../../../../../components/ui/Dialog/Dialog';
+import { ConfirmDialog } from '../../../../../components/ui/ConfirmDialog/ConfirmDialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../../../components/ui/Tabs/Tabs';
+import { Checkbox } from '../../../../../components/ui/Checkbox/Checkbox';
+import { Progress } from '../../../../../components/ui/Progress/Progress';
+import { Avatar, AvatarFallback } from '../../../../../components/ui/Avatar/Avatar';
 import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  TeamOutlined,
-  UserOutlined,
-  SettingOutlined,
-  ApartmentOutlined,
-  LockOutlined,
-  SearchOutlined,
-  ExportOutlined,
-  ImportOutlined,
-  ReloadOutlined,
-  MoreOutlined,
-  CheckCircleOutlined,
-  DollarOutlined
-} from '@ant-design/icons';
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+} from '../../../../../components/ui/DropdownMenu/DropdownMenu';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '../../../../../components/ui/Form/Form';
 import { get, post, put, del } from '../../../../../shared/utils/apiClient';
 import '../styles/DepartmentManagement.css';
 
-const { Title, Text } = Typography;
-const { Option } = Select;
-const { TextArea } = Input;
+const PERMISSIONS = [
+  { value: 'read', label: 'Read Only', badge: 'border-transparent bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
+  { value: 'write', label: 'Read & Write', badge: 'border-transparent bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' },
+  { value: 'admin', label: 'Full Admin', badge: 'border-transparent bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' },
+];
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All Status' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'pending', label: 'Pending' },
+];
+
+const STATUS_BADGE_VARIANT = (status) => {
+  const s = (status || '').toLowerCase();
+  if (s === 'active') return 'success';
+  if (s === 'pending') return 'warning';
+  if (s === 'inactive') return 'destructive';
+  return 'secondary';
+};
+
+const permissionBadgeClass = (permission) =>
+  PERMISSIONS.find((p) => p.value === permission)?.badge ||
+  'border-transparent bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
+
+// Sentinel used because Radix Select items can't have an empty string value.
+const NO_PARENT = '__none__';
+
+const departmentFormSchema = z.object({
+  name: z.string().min(1, 'Please enter department name'),
+  code: z.string().min(1, 'Please enter department code'),
+  description: z.string().min(1, 'Please enter description'),
+  managerId: z.string().min(1, 'Please select manager'),
+  parentId: z.string().optional(),
+  budget: z.coerce.number({ invalid_type_error: 'Please enter budget' }).min(0, 'Please enter budget'),
+  location: z.string().min(1, 'Please enter location'),
+  contact: z.string().min(1, 'Please enter contact'),
+  status: z.string().min(1, 'Please select status'),
+  permissions: z.array(z.string()).min(1, 'Please select permissions'),
+  color: z.string().optional(),
+});
+
+const resolveSelectedIds = (selectionState, rows) => {
+  const ids = [];
+  Object.keys(selectionState).forEach((key) => {
+    if (!selectionState[key]) return;
+    const path = key.split('.').map(Number);
+    let row = rows[path[0]];
+    for (let i = 1; i < path.length && row; i++) {
+      row = row.children?.[path[i]];
+    }
+    if (row) ids.push(row.id);
+  });
+  return ids;
+};
+
+const HierarchyNode = ({ dept, depth = 0 }) => {
+  const [expanded, setExpanded] = useState(true);
+  const hasChildren = dept.children && dept.children.length > 0;
+
+  return (
+    <div className={depth > 0 ? 'ml-6 border-l border-gray-200 dark:border-gray-700 pl-4' : ''}>
+      <div className="flex items-center gap-2 py-2">
+        {hasChildren ? (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          >
+            <ChevronRightIcon className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+          </button>
+        ) : (
+          <span className="w-3.5" />
+        )}
+        <Avatar className="h-6 w-6" style={{ backgroundColor: dept.color }}>
+          <AvatarFallback className="bg-transparent text-white">
+            <Cog6ToothIcon className="h-3.5 w-3.5" />
+          </AvatarFallback>
+        </Avatar>
+        <span className="font-semibold text-sm text-gray-900 dark:text-white">{dept.name}</span>
+        <Badge variant={STATUS_BADGE_VARIANT(dept.status)}>{dept.status}</Badge>
+        <Badge variant="secondary">{dept.employees || 0} employees</Badge>
+      </div>
+      {hasChildren && expanded && (
+        <div>
+          {dept.children.map((child) => (
+            <HierarchyNode key={child.id} dept={child} depth={depth + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const DepartmentManagement = () => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState(null);
-  const [form] = Form.useForm();
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [rowSelectionState, setRowSelectionState] = useState({});
   const [activeTab, setActiveTab] = useState('departments');
-  const [expandedRowKeys, setExpandedRowKeys] = useState([]);
   const [users, setUsers] = useState([]);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
-  const [permissions] = useState([
-    { value: 'read', label: 'Read Only', color: 'blue' },
-    { value: 'write', label: 'Read & Write', color: 'orange' },
-    { value: 'admin', label: 'Full Admin', color: 'red' }
-  ]);
+  const form = useForm({
+    resolver: zodResolver(departmentFormSchema),
+    defaultValues: {
+      name: '', code: '', description: '', managerId: '', parentId: NO_PARENT,
+      budget: 0, location: '', contact: '', status: 'active', permissions: ['read'], color: '#1890ff',
+    },
+  });
 
-  const [statusOptions] = useState([
-    { value: 'all', label: 'All Status' },
-    { value: 'active', label: 'Active', color: 'green' },
-    { value: 'inactive', label: 'Inactive', color: 'red' },
-    { value: 'pending', label: 'Pending', color: 'orange' }
-  ]);
-
-  // Fetch departments from API
   useEffect(() => {
     fetchDepartments();
     fetchUsers();
@@ -89,8 +167,7 @@ const DepartmentManagement = () => {
       setLoading(true);
       const response = await get('/api/supra-admin/departments');
       if (response.success && response.data) {
-        // Transform API data to match component structure
-        const transformedDepartments = response.data.map(dept => ({
+        const transformedDepartments = response.data.map((dept) => ({
           id: dept._id || dept.id,
           name: dept.name,
           code: dept.code,
@@ -101,7 +178,7 @@ const DepartmentManagement = () => {
             id: dept.departmentHead._id || dept.departmentHead.id,
             name: dept.departmentHead.fullName || dept.departmentHead.name,
             email: dept.departmentHead.email,
-            role: dept.departmentHead.role
+            role: dept.departmentHead.role,
           } : null,
           budget: dept.budget || dept.metadata?.budget || 0,
           employees: dept.employees || dept.employeeCount || dept.stats?.totalUsers || 0,
@@ -112,13 +189,13 @@ const DepartmentManagement = () => {
           location: dept.location || dept.metadata?.location || '',
           contact: dept.contact || dept.metadata?.contact || '',
           color: dept.color || '#1890ff',
-          children: Array.isArray(dept.children) ? dept.children : []
+          children: Array.isArray(dept.children) ? dept.children : [],
         }));
         setDepartments(transformedDepartments);
       }
     } catch (error) {
       console.error('Error fetching departments:', error);
-      message.error('Failed to load departments');
+      toast.error('Failed to load departments');
     } finally {
       setLoading(false);
     }
@@ -128,123 +205,65 @@ const DepartmentManagement = () => {
     try {
       const response = await get('/api/supra-admin/users');
       if (response.success && response.data) {
-        const transformedUsers = (response.data.users || response.data || []).map(user => ({
+        const transformedUsers = (response.data.users || response.data || []).map((user) => ({
           id: user._id || user.id,
           name: user.fullName || user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
           email: user.email,
-          role: user.role || 'User'
+          role: user.role || 'User',
         }));
         setUsers(transformedUsers);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
-      // Don't show error for users, just use empty array
     }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'green';
-      case 'inactive': return 'red';
-      case 'pending': return 'orange';
-      default: return 'default';
-    }
-  };
-
-  const getPermissionColor = (permission) => {
-    const perm = permissions.find(p => p.value === permission);
-    return perm ? perm.color : 'default';
   };
 
   const handleAddDepartment = () => {
     setEditingDepartment(null);
-    form.resetFields();
-    setModalVisible(true);
-  };
-
-  const handleEditDepartment = (record) => {
-    setEditingDepartment(record);
-    form.setFieldsValue({
-      ...record,
-      managerId: record.manager?.id,
-      parentId: record.parentId || undefined
+    form.reset({
+      name: '', code: '', description: '', managerId: '', parentId: NO_PARENT,
+      budget: 0, location: '', contact: '', status: 'active', permissions: ['read'], color: '#1890ff',
     });
     setModalVisible(true);
   };
+
+  const handleEditDepartment = useCallback((record) => {
+    setEditingDepartment(record);
+    form.reset({
+      name: record.name,
+      code: record.code,
+      description: record.description,
+      managerId: record.manager?.id || '',
+      parentId: record.parentId || NO_PARENT,
+      budget: record.budget || 0,
+      location: record.location || '',
+      contact: record.contact || '',
+      status: record.status || 'active',
+      permissions: record.permissions?.length ? record.permissions : ['read'],
+      color: record.color || '#1890ff',
+    });
+    setModalVisible(true);
+  }, [form]);
 
   const handleDeleteDepartment = async (id) => {
     try {
       setLoading(true);
       await del(`/api/supra-admin/departments/${id}`);
-      message.success('Department deleted successfully!');
+      toast.success('Department deleted successfully!');
       await fetchDepartments();
     } catch (error) {
       console.error('Error deleting department:', error);
-      message.error('Failed to delete department');
+      toast.error('Failed to delete department');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBulkDelete = async () => {
-    try {
-      setLoading(true);
-      await Promise.all(selectedRowKeys.map(id => del(`/api/supra-admin/departments/${id}`)));
-      message.success(`${selectedRowKeys.length} departments deleted successfully!`);
-      setSelectedRowKeys([]);
-      await fetchDepartments();
-    } catch (error) {
-      console.error('Error deleting departments:', error);
-      message.error('Failed to delete departments');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleModalOk = async () => {
-    try {
-      const values = await form.validateFields();
-      setLoading(true);
-
-      const departmentData = {
-        name: values.name,
-        code: values.code,
-        description: values.description,
-        managerId: values.managerId,
-        parentId: values.parentId || null,
-        budget: values.budget || 0,
-        location: values.location || '',
-        contact: values.contact || '',
-        status: values.status || 'active',
-        permissions: values.permissions || ['read'],
-        color: values.color || '#1890ff'
-      };
-
-      if (editingDepartment) {
-        // Update existing department
-        await put(`/api/supra-admin/departments/${editingDepartment.id}`, departmentData);
-        message.success('Department updated successfully!');
-      } else {
-        // Add new department
-        await post('/api/supra-admin/departments', departmentData);
-        message.success('Department created successfully!');
-      }
-
-      setModalVisible(false);
-      await fetchDepartments();
-    } catch (error) {
-      console.error('Error saving department:', error);
-      message.error(error.message || 'Failed to save department');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getFilteredDepartments = () => {
+  const filteredDepartments = useMemo(() => {
     let filtered = departments;
 
     if (searchText) {
-      filtered = filtered.filter(dept =>
+      filtered = filtered.filter((dept) =>
         dept.name.toLowerCase().includes(searchText.toLowerCase()) ||
         dept.code.toLowerCase().includes(searchText.toLowerCase()) ||
         dept.description.toLowerCase().includes(searchText.toLowerCase())
@@ -252,38 +271,94 @@ const DepartmentManagement = () => {
     }
 
     if (filterStatus !== 'all') {
-      filtered = filtered.filter(dept => dept.status === filterStatus);
+      filtered = filtered.filter((dept) => dept.status === filterStatus);
     }
 
     return filtered;
+  }, [departments, searchText, filterStatus]);
+
+  const selectedIds = useMemo(
+    () => resolveSelectedIds(rowSelectionState, filteredDepartments),
+    [rowSelectionState, filteredDepartments]
+  );
+
+  const handleBulkDelete = async () => {
+    try {
+      setLoading(true);
+      await Promise.all(selectedIds.map((id) => del(`/api/supra-admin/departments/${id}`)));
+      toast.success(`${selectedIds.length} departments deleted successfully!`);
+      setRowSelectionState({});
+      await fetchDepartments();
+    } catch (error) {
+      console.error('Error deleting departments:', error);
+      toast.error('Failed to delete departments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSubmit = async (values) => {
+    try {
+      setLoading(true);
+
+      const departmentData = {
+        name: values.name,
+        code: values.code,
+        description: values.description,
+        managerId: values.managerId,
+        parentId: values.parentId === NO_PARENT ? null : values.parentId,
+        budget: values.budget || 0,
+        location: values.location || '',
+        contact: values.contact || '',
+        status: values.status || 'active',
+        permissions: values.permissions || ['read'],
+        color: values.color || '#1890ff',
+      };
+
+      if (editingDepartment) {
+        await put(`/api/supra-admin/departments/${editingDepartment.id}`, departmentData);
+        toast.success('Department updated successfully!');
+      } else {
+        await post('/api/supra-admin/departments', departmentData);
+        toast.success('Department created successfully!');
+      }
+
+      setModalVisible(false);
+      await fetchDepartments();
+    } catch (error) {
+      console.error('Error saving department:', error);
+      toast.error(error.message || 'Failed to save department');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getTotalStats = () => {
     const totalDepartments = departments.length;
     const totalEmployees = departments.reduce((sum, dept) => sum + dept.employees, 0);
     const totalBudget = departments.reduce((sum, dept) => sum + dept.budget, 0);
-    const activeDepartments = departments.filter(dept => dept.status === 'active').length;
+    const activeDepartments = departments.filter((dept) => dept.status === 'active').length;
 
     return { totalDepartments, totalEmployees, totalBudget, activeDepartments };
   };
 
   const handleExportDepartments = () => {
     try {
-      const rows = getFilteredDepartments();
+      const rows = filteredDepartments;
       const headers = ['Name', 'Code', 'Manager', 'Employees', 'Budget', 'Status', 'Location'];
-      const csvRows = rows.map(dept => [
+      const csvRows = rows.map((dept) => [
         dept.name || 'N/A',
         dept.code || 'N/A',
         dept.manager?.name || dept.manager?.fullName || 'Not assigned',
         dept.employees || 0,
         (dept.budget || 0).toFixed(2),
         dept.status || 'N/A',
-        dept.location || 'N/A'
+        dept.location || 'N/A',
       ]);
 
       const csvContent = [
         headers.join(','),
-        ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ...csvRows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
       ].join('\n');
 
       const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -295,615 +370,515 @@ const DepartmentManagement = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      message.success('Departments exported to CSV successfully');
+      toast.success('Departments exported to CSV successfully');
     } catch (error) {
       console.error('Error exporting departments:', error);
-      message.error('Failed to export departments');
+      toast.error('Failed to export departments');
     }
   };
 
-  const departmentMenu = (record) => ({
-    items: [
-      {
-        key: 'view',
-        icon: <EyeOutlined />,
-        label: 'View Details'
-      },
-      {
-        key: 'edit',
-        icon: <EditOutlined />,
-        label: 'Edit',
-        onClick: () => handleEditDepartment(record)
-      },
-      {
-        key: 'permissions',
-        icon: <LockOutlined />,
-        label: 'Manage Permissions'
-      },
-      {
-        key: 'employees',
-        icon: <TeamOutlined />,
-        label: 'View Employees'
-      },
-      {
-        type: 'divider'
-      },
-      {
-        key: 'delete',
-        icon: <DeleteOutlined />,
-        label: 'Delete',
-        danger: true,
-        onClick: () => handleDeleteDepartment(record.id)
-      }
-    ]
-  });
-
-  const columns = [
+  const columns = useMemo(() => [
     {
-      title: 'Department',
-      dataIndex: 'name',
-      key: 'name',
-      width: 200,
-      render: (text, record) => (
-        <Space>
-          <Avatar 
-            size="small" 
-            style={{ backgroundColor: record.color }}
-            icon={<SettingOutlined />}
-          />
+      accessorKey: 'name',
+      header: 'Department',
+      enableSorting: true,
+      sortingFn: (a, b) => a.original.name.localeCompare(b.original.name),
+      cell: ({ row: { original: r } }) => (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-8 w-8" style={{ backgroundColor: r.color }}>
+            <AvatarFallback className="bg-transparent text-white">
+              <Cog6ToothIcon className="h-4 w-4" />
+            </AvatarFallback>
+          </Avatar>
           <div>
-            <Text strong>{text}</Text>
-            <br />
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {record.code}
-            </Text>
+            <div className="font-semibold text-sm text-gray-900 dark:text-white">{r.name}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{r.code}</div>
           </div>
-        </Space>
+        </div>
       ),
-      sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: 'Manager',
-      dataIndex: 'manager',
-      key: 'manager',
-      width: 150,
-      render: (manager) => {
-        if (!manager) {
-          return <Text type="secondary">Not assigned</Text>;
-        }
+      id: 'manager',
+      header: 'Manager',
+      cell: ({ row: { original: r } }) => {
+        if (!r.manager) return <span className="text-sm text-gray-400 dark:text-gray-500">Not assigned</span>;
         return (
-          <Space>
-            <Avatar size="small" icon={<UserOutlined />} />
+          <div className="flex items-center gap-2">
+            <Avatar className="h-7 w-7">
+              <AvatarFallback><UserIcon className="h-3.5 w-3.5" /></AvatarFallback>
+            </Avatar>
             <div>
-              <Text>{manager?.name || manager?.fullName || 'Unknown'}</Text>
-              <br />
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                {manager?.email || ''}
-              </Text>
+              <div className="text-sm text-gray-900 dark:text-white">{r.manager?.name || r.manager?.fullName || 'Unknown'}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{r.manager?.email || ''}</div>
             </div>
-          </Space>
+          </div>
         );
       },
     },
     {
-      title: 'Employees',
-      dataIndex: 'employees',
-      key: 'employees',
-      width: 100,
-      render: (count) => (
-        <Badge count={count || 0} showZero color="#1890ff" />
-      ),
-      sorter: (a, b) => (a.employees || 0) - (b.employees || 0),
+      accessorKey: 'employees',
+      header: 'Employees',
+      enableSorting: true,
+      sortingFn: (a, b) => (a.original.employees || 0) - (b.original.employees || 0),
+      cell: ({ getValue }) => <Badge variant="secondary">{getValue() || 0}</Badge>,
     },
     {
-      title: 'Budget',
-      dataIndex: 'budget',
-      key: 'budget',
-      width: 120,
-      render: (amount) => (
-        <Text>${(amount || 0).toLocaleString()}</Text>
-      ),
-      sorter: (a, b) => (a.budget || 0) - (b.budget || 0),
+      accessorKey: 'budget',
+      header: 'Budget',
+      enableSorting: true,
+      sortingFn: (a, b) => (a.original.budget || 0) - (b.original.budget || 0),
+      cell: ({ getValue }) => <span className="text-sm text-gray-900 dark:text-white">${(getValue() || 0).toLocaleString()}</span>,
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      width: 100,
-      render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {status.toUpperCase()}
-        </Tag>
-      ),
-      filters: statusOptions.filter(opt => opt.value !== 'all').map(opt => ({
-        text: opt.label,
-        value: opt.value,
-      })),
-      onFilter: (value, record) => record.status === value,
+      accessorKey: 'status',
+      header: 'Status',
+      enableColumnFilter: true,
+      cell: ({ getValue }) => <Badge variant={STATUS_BADGE_VARIANT(getValue())}>{(getValue() || '').toUpperCase()}</Badge>,
     },
     {
-      title: 'Permissions',
-      dataIndex: 'permissions',
-      key: 'permissions',
-      width: 150,
-      render: (perms) => {
-        const permissions = Array.isArray(perms) ? perms : ['read'];
-        return (
-          <Space wrap>
-            {permissions.map(perm => (
-              <Tag key={perm} color={getPermissionColor(perm)} size="small">
-                {perm}
-              </Tag>
-            ))}
-          </Space>
-        );
-      },
-    },
-    {
-      title: 'Location',
-      dataIndex: 'location',
-      key: 'location',
-      width: 120,
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      width: 100,
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="View Details">
-            <Button type="text" icon={<EyeOutlined />} size="small" />
-          </Tooltip>
-          <Tooltip title="Edit">
-            <Button 
-              type="text" 
-              icon={<EditOutlined />} 
-              size="small"
-              onClick={() => handleEditDepartment(record)}
-            />
-          </Tooltip>
-          <Dropdown menu={departmentMenu(record)} trigger={['click']}>
-            <Button type="text" icon={<MoreOutlined />} size="small" />
-          </Dropdown>
-        </Space>
+      accessorKey: 'permissions',
+      header: 'Permissions',
+      cell: ({ getValue }) => (
+        <div className="flex flex-wrap gap-1">
+          {(Array.isArray(getValue()) ? getValue() : ['read']).map((perm) => (
+            <Badge key={perm} className={permissionBadgeClass(perm)}>{perm}</Badge>
+          ))}
+        </div>
       ),
     },
-  ];
-
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: setSelectedRowKeys,
-    selections: [
-      Table.SELECTION_ALL,
-      Table.SELECTION_INVERT,
-      Table.SELECTION_NONE,
-    ],
-  };
+    {
+      accessorKey: 'location',
+      header: 'Location',
+      cell: ({ getValue }) => <span className="text-sm text-gray-700 dark:text-gray-300">{getValue()}</span>,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row: { original: r } }) => (
+        <TooltipProvider>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7"><EyeIcon className="h-4 w-4" /></Button>
+              </TooltipTrigger>
+              <TooltipContent>View Details</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditDepartment(r)}>
+                  <PencilSquareIcon className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Edit</TooltipContent>
+            </Tooltip>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7"><EllipsisHorizontalIcon className="h-4 w-4" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem><EyeIcon className="h-4 w-4" />View Details</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleEditDepartment(r)}><PencilSquareIcon className="h-4 w-4" />Edit</DropdownMenuItem>
+                <DropdownMenuItem><LockClosedIcon className="h-4 w-4" />Manage Permissions</DropdownMenuItem>
+                <DropdownMenuItem><UserGroupIcon className="h-4 w-4" />View Employees</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-red-600 dark:text-red-400 focus:text-red-700"
+                  onSelect={() => setDeleteConfirmId(r.id)}
+                >
+                  <TrashIcon className="h-4 w-4" />Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </TooltipProvider>
+      ),
+    },
+  ], [handleEditDepartment]);
 
   const stats = getTotalStats();
-  const filteredDepartments = getFilteredDepartments();
+  const topLevelParents = departments.filter((dept) => !dept.parentId);
 
   return (
-    <div className="department-management">
-      <div className="page-header">
-        <Title level={2} className="page-title">
-          <ApartmentOutlined /> Department Management
-        </Title>
-        <div className="header-actions">
-          <Space>
-            <Tooltip title="Bulk import isn't available yet">
-              <Button icon={<ImportOutlined />} disabled>
-                Import
-              </Button>
-            </Tooltip>
-            <Button icon={<ExportOutlined />} onClick={handleExportDepartments}>
-              Export
-            </Button>
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />}
-              onClick={handleAddDepartment}
-            >
-              Add Department
-            </Button>
-          </Space>
+    <div className="department-management p-6">
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <BuildingOffice2Icon className="h-6 w-6" /> Department Management
+        </h2>
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button variant="outline" disabled>
+                  <ArrowUpTrayIcon className="h-4 w-4" />
+                  Import
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>Bulk import isn't available yet</TooltipContent>
+          </Tooltip>
+          <Button variant="outline" onClick={handleExportDepartments}>
+            <ArrowDownTrayIcon className="h-4 w-4" />
+            Export
+          </Button>
+          <Button onClick={handleAddDepartment}>
+            <PlusIcon className="h-4 w-4" />
+            Add Department
+          </Button>
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Total Departments"
-              value={stats.totalDepartments}
-              prefix={<ApartmentOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Total Employees"
-              value={stats.totalEmployees}
-              prefix={<TeamOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Total Budget"
-              value={stats.totalBudget}
-              prefix={<DollarOutlined />}
-              formatter={(value) => `$${value.toLocaleString()}`}
-              valueStyle={{ color: '#13c2c2' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Active Departments"
-              value={stats.activeDepartments}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Total Departments</span>
+              <BuildingOffice2Icon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalDepartments}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Total Employees</span>
+              <UserGroupIcon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.totalEmployees}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Total Budget</span>
+              <CurrencyDollarIcon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">${stats.totalBudget.toLocaleString()}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Active Departments</span>
+              <CheckCircleIcon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.activeDepartments}</p>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Main Content */}
       <Card>
-        <Tabs 
-          activeKey={activeTab} 
-          onChange={setActiveTab}
-          items={[
-            {
-              key: 'departments',
-              label: 'Departments',
-              children: (
-                <>
-                  {/* Filters and Search */}
-                  <div className="table-filters">
-                    <Row gutter={[16, 16]} align="middle">
-                      <Col xs={24} sm={12} md={8}>
-                        <Input
-                          placeholder="Search departments..."
-                          prefix={<SearchOutlined />}
-                          value={searchText}
-                          onChange={(e) => setSearchText(e.target.value)}
-                          allowClear
-                        />
-                      </Col>
-                      <Col xs={24} sm={12} md={4}>
-                        <Select
-                          value={filterStatus}
-                          onChange={setFilterStatus}
-                          style={{ width: '100%' }}
-                        >
-                          {statusOptions.map(option => (
-                            <Option key={option.value} value={option.value}>
-                              {option.label}
-                            </Option>
-                          ))}
-                        </Select>
-                      </Col>
-                      <Col xs={24} sm={12} md={4}>
-                        <Button icon={<ReloadOutlined />} onClick={fetchDepartments} loading={loading}>
-                          Refresh
-                        </Button>
-                      </Col>
-                      <Col xs={24} sm={12} md={8}>
-                        <Space>
-                          {selectedRowKeys.length > 0 && (
-                            <Popconfirm
-                              title={`Are you sure you want to delete ${selectedRowKeys.length} departments?`}
-                              onConfirm={handleBulkDelete}
-                              okText="Yes"
-                              cancelText="No"
-                            >
-                              <Button danger icon={<DeleteOutlined />}>
-                                Delete Selected ({selectedRowKeys.length})
-                              </Button>
-                            </Popconfirm>
-                          )}
-                        </Space>
-                      </Col>
-                    </Row>
-                  </div>
+        <CardContent className="p-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="departments">Departments</TabsTrigger>
+              <TabsTrigger value="hierarchy">Hierarchy</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            </TabsList>
 
-                  <Divider />
-
-                  {/* Department Table */}
-                  <Table
-                    columns={columns}
-                    dataSource={filteredDepartments}
-                    rowKey="id"
-                    loading={loading}
-                    rowSelection={rowSelection}
-                    pagination={{
-                      total: filteredDepartments.length,
-                      pageSize: 10,
-                      showSizeChanger: true,
-                      showQuickJumper: true,
-                      showTotal: (total, range) => 
-                        `${range[0]}-${range[1]} of ${total} departments`,
-                    }}
-                    expandable={{
-                      expandedRowKeys,
-                      onExpandedRowsChange: setExpandedRowKeys,
-                      childrenColumnName: 'children',
-                      defaultExpandAllRows: false,
-                    }}
-                    scroll={{ x: 1200 }}
-                  />
-                </>
-              )
-            },
-            {
-              key: 'hierarchy',
-              label: 'Hierarchy',
-              children: (
-                <div className="hierarchy-view">
-                  <Tree
-                    showLine
-                    showIcon
-                    defaultExpandAll
-                    treeData={departments.map(dept => ({
-                      title: (
-                        <Space>
-                          <Avatar size="small" style={{ backgroundColor: dept.color }}>
-                            <SettingOutlined />
-                          </Avatar>
-                          <Text strong>{dept.name}</Text>
-                          <Tag color={getStatusColor(dept.status)} size="small">
-                            {dept.status}
-                          </Tag>
-                          <Badge count={dept.employees} showZero />
-                        </Space>
-                      ),
-                      key: dept.id,
-                      children: dept.children?.map(child => ({
-                        title: (
-                          <Space>
-                            <Avatar size="small" style={{ backgroundColor: child.color }}>
-                              <SettingOutlined />
-                            </Avatar>
-                            <Text>{child.name}</Text>
-                            <Tag color={getStatusColor(child.status)} size="small">
-                              {child.status}
-                            </Tag>
-                            <Badge count={child.employees} showZero />
-                          </Space>
-                        ),
-                        key: child.id,
-                      })),
-                    }))}
-                  />
+            <TabsContent value="departments">
+              <div className="mb-4 flex items-center gap-3 flex-wrap">
+                <div className="relative w-[240px]">
+                  <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input placeholder="Search departments..." value={searchText} onChange={(e) => setSearchText(e.target.value)} className="pl-8" />
                 </div>
-              )
-            },
-            {
-              key: 'analytics',
-              label: 'Analytics',
-              children: (
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} md={12}>
-                    <Card title="Department Budget Distribution">
-                      <div className="budget-chart">
-                        {departments.map(dept => (
-                          <div key={dept.id} className="budget-item">
-                            <div className="budget-header">
-                              <Text strong>{dept.name}</Text>
-                              <Text>${dept.budget.toLocaleString()}</Text>
-                            </div>
-                            <Progress
-                              percent={(dept.budget / stats.totalBudget) * 100}
-                              strokeColor={dept.color}
-                              showInfo={false}
-                            />
-                          </div>
-                        ))}
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={fetchDepartments} disabled={loading}>
+                  <ArrowPathIcon className="h-4 w-4" />
+                  Refresh
+                </Button>
+                {selectedIds.length > 0 && (
+                  <Button variant="destructive" onClick={() => setBulkDeleteConfirm(true)}>
+                    <TrashIcon className="h-4 w-4" />
+                    Delete Selected ({selectedIds.length})
+                  </Button>
+                )}
+              </div>
+
+              <DataTable
+                columns={columns}
+                data={filteredDepartments}
+                getSubRows={(row) => row.children}
+                enableRowSelection
+                onRowSelectionChange={setRowSelectionState}
+                pageSize={10}
+                emptyMessage="No departments found"
+              />
+            </TabsContent>
+
+            <TabsContent value="hierarchy">
+              <div className="hierarchy-view">
+                {topLevelParents.map((dept) => (
+                  <HierarchyNode key={dept.id} dept={dept} />
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader><CardTitle>Department Budget Distribution</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    {departments.map((dept) => (
+                      <div key={dept.id}>
+                        <div className="flex items-center justify-between text-sm mb-1">
+                          <span className="font-semibold text-gray-900 dark:text-white">{dept.name}</span>
+                          <span className="text-gray-700 dark:text-gray-300">${dept.budget.toLocaleString()}</span>
+                        </div>
+                        <Progress
+                          value={stats.totalBudget ? (dept.budget / stats.totalBudget) * 100 : 0}
+                          indicatorClassName="bg-current"
+                          style={{ color: dept.color }}
+                          className="h-1.5"
+                        />
                       </div>
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={12}>
-                    <Card title="Employee Distribution">
-                      <div className="employee-chart">
-                        {departments.map(dept => (
-                          <div key={dept.id} className="employee-item">
-                            <div className="employee-header">
-                              <Text strong>{dept.name}</Text>
-                              <Badge count={dept.employees} showZero />
-                            </div>
-                            <Progress
-                              percent={(dept.employees / stats.totalEmployees) * 100}
-                              strokeColor={dept.color}
-                              showInfo={false}
-                            />
-                          </div>
-                        ))}
+                    ))}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader><CardTitle>Employee Distribution</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    {departments.map((dept) => (
+                      <div key={dept.id}>
+                        <div className="flex items-center justify-between text-sm mb-1">
+                          <span className="font-semibold text-gray-900 dark:text-white">{dept.name}</span>
+                          <Badge variant="secondary">{dept.employees}</Badge>
+                        </div>
+                        <Progress
+                          value={stats.totalEmployees ? (dept.employees / stats.totalEmployees) * 100 : 0}
+                          indicatorClassName="bg-current"
+                          style={{ color: dept.color }}
+                          className="h-1.5"
+                        />
                       </div>
-                    </Card>
-                  </Col>
-                </Row>
-              )
-            }
-          ]}
-        />
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
       </Card>
 
-      {/* Add/Edit Department Modal */}
-      <Modal
-        title={editingDepartment ? 'Edit Department' : 'Add New Department'}
-        open={modalVisible}
-        onOk={handleModalOk}
-        onCancel={() => setModalVisible(false)}
-        confirmLoading={loading}
-        width={600}
-        destroyOnHidden
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          initialValues={{
-            status: 'active',
-            permissions: ['read']
-          }}
-        >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="name"
-                label="Department Name"
-                rules={[{ required: true, message: 'Please enter department name!' }]}
-              >
-                <Input placeholder="Enter department name" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="code"
-                label="Department Code"
-                rules={[{ required: true, message: 'Please enter department code!' }]}
-              >
-                <Input placeholder="Enter department code" />
-              </Form.Item>
-            </Col>
-          </Row>
+      <ConfirmDialog
+        open={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        title="Delete this department?"
+        description="This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={async () => { await handleDeleteDepartment(deleteConfirmId); setDeleteConfirmId(null); }}
+      />
+      <ConfirmDialog
+        open={bulkDeleteConfirm}
+        onOpenChange={setBulkDeleteConfirm}
+        title={`Are you sure you want to delete ${selectedIds.length} departments?`}
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={async () => { await handleBulkDelete(); setBulkDeleteConfirm(false); }}
+      />
 
-          <Form.Item
-            name="description"
-            label="Description"
-            rules={[{ required: true, message: 'Please enter description!' }]}
-          >
-            <TextArea rows={3} placeholder="Enter department description" />
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="managerId"
-                label="Manager"
-                rules={[{ required: true, message: 'Please select manager!' }]}
-              >
-                <Select
-                  placeholder="Select manager"
-                  showSearch
-                  filterOption={(input, option) =>
-                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                  }
-                >
-                  {users.map(user => (
-                    <Option key={user.id} value={user.id}>
-                      <Space>
-                        <Avatar size="small" icon={<UserOutlined />} />
-                        {user.name} ({user.role})
-                      </Space>
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="parentId"
-                label="Parent Department"
-              >
-                <Select
-                  placeholder="Select parent department (optional)"
-                  allowClear
-                >
-                  {departments.filter(dept => !dept.parentId).map(dept => (
-                    <Option key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="budget"
-                label="Budget"
-                rules={[{ required: true, message: 'Please enter budget!' }]}
-              >
-                <InputNumber
-                  style={{ width: '100%' }}
-                  placeholder="Enter budget"
-                  formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={value => value.replace(/\$\s?|(,*)/g, '')}
+      <Dialog open={modalVisible} onOpenChange={setModalVisible}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingDepartment ? 'Edit Department' : 'Add New Department'}</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Department Name</FormLabel>
+                      <FormControl><Input placeholder="Enter department name" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="location"
-                label="Location"
-                rules={[{ required: true, message: 'Please enter location!' }]}
-              >
-                <Input placeholder="Enter location" />
-              </Form.Item>
-            </Col>
-          </Row>
+                <FormField
+                  control={form.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Department Code</FormLabel>
+                      <FormControl><Input placeholder="Enter department code" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="contact"
-                label="Contact"
-                rules={[{ required: true, message: 'Please enter contact!' }]}
-              >
-                <Input placeholder="Enter contact information" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="status"
-                label="Status"
-                rules={[{ required: true, message: 'Please select status!' }]}
-              >
-                <Select>
-                  <Option value="active">Active</Option>
-                  <Option value="inactive">Inactive</Option>
-                  <Option value="pending">Pending</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl><Textarea rows={3} placeholder="Enter department description" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <Form.Item
-            name="permissions"
-            label="Permissions"
-            rules={[{ required: true, message: 'Please select permissions!' }]}
-          >
-            <Select
-              mode="multiple"
-              placeholder="Select permissions"
-            >
-              {permissions.map(perm => (
-                <Option key={perm.value} value={perm.value}>
-                  <Tag color={perm.color}>{perm.label}</Tag>
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="managerId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Manager</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Select manager" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {users.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>{user.name} ({user.role})</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="parentId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Parent Department</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Select parent department (optional)" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value={NO_PARENT}>— None —</SelectItem>
+                          {departments.filter((dept) => !dept.parentId && dept.id !== editingDepartment?.id).map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-          <Form.Item
-            name="color"
-            label="Department Color"
-            initialValue="#1890ff"
-          >
-            <Input type="color" />
-          </Form.Item>
-        </Form>
-      </Modal>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="budget"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Budget</FormLabel>
+                      <FormControl><Input type="number" placeholder="Enter budget" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl><Input placeholder="Enter location" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="contact"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact</FormLabel>
+                      <FormControl><Input placeholder="Enter contact information" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="permissions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Permissions</FormLabel>
+                    <FormControl>
+                      <div className="flex flex-wrap gap-x-4 gap-y-2">
+                        {PERMISSIONS.map((perm) => (
+                          <label key={perm.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox
+                              checked={(field.value || []).includes(perm.value)}
+                              onCheckedChange={(checked) => {
+                                const next = new Set(field.value || []);
+                                if (checked) next.add(perm.value); else next.delete(perm.value);
+                                field.onChange([...next]);
+                              }}
+                            />
+                            <Badge className={perm.badge}>{perm.label}</Badge>
+                          </label>
+                        ))}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department Color</FormLabel>
+                    <FormControl><Input type="color" className="h-10 w-20 p-1" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setModalVisible(false)}>Cancel</Button>
+                <Button type="submit" disabled={loading}>{editingDepartment ? 'Save Changes' : 'Create Department'}</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

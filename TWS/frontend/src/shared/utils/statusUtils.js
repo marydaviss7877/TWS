@@ -4,13 +4,11 @@
  */
 
 import {
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  CloseCircleOutlined,
-  WarningOutlined,
-  ClockCircleOutlined,
-  InfoCircleOutlined
-} from '@ant-design/icons';
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon
+} from '@heroicons/react/24/outline';
 
 /**
  * Get status color based on status string
@@ -55,20 +53,20 @@ export const getStatusIcon = (status) => {
     case 'valid':
     case 'success':
     case 'connected':
-      return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
+      return <CheckCircleIcon className="h-4 w-4 text-green-500" />;
     case 'warning':
     case 'idle':
     case 'pending':
-      return <WarningOutlined style={{ color: '#faad14' }} />;
+      return <ExclamationTriangleIcon className="h-4 w-4 text-amber-500" />;
     case 'error':
     case 'unhealthy':
     case 'stopped':
     case 'critical':
     case 'failed':
     case 'disconnected':
-      return <CloseCircleOutlined style={{ color: '#ff4d4f' }} />;
+      return <XCircleIcon className="h-4 w-4 text-red-500" />;
     default:
-      return <InfoCircleOutlined style={{ color: '#d9d9d9' }} />;
+      return <InformationCircleIcon className="h-4 w-4 text-gray-400" />;
   }
 };
 

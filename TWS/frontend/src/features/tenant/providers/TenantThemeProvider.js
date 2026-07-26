@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { DEFAULT_THEME, generateColorShades } from '../utils/themeConfig';
+import { DEFAULT_THEME, generateColorShades, loadFontOnDemand } from '../utils/themeConfig';
 
 const TenantThemeContext = createContext();
 
@@ -55,9 +55,12 @@ const applyThemeToDOMSync = (themeData) => {
   });
   root.style.setProperty('--tenant-accent', accentColor);
 
-  // Apply fonts to :root
+  // Apply fonts to :root — load whichever picker font this tenant actually chose (a no-op
+  // for the 6 self-hosted fonts, and for any font already lazy-loaded this session).
   const headingFont = themeData.fonts?.heading || DEFAULT_THEME.fonts.heading;
   const bodyFont = themeData.fonts?.body || DEFAULT_THEME.fonts.body;
+  loadFontOnDemand(headingFont);
+  loadFontOnDemand(bodyFont);
   root.style.setProperty('--tenant-heading-font', headingFont);
   root.style.setProperty('--tenant-body-font', bodyFont);
 };

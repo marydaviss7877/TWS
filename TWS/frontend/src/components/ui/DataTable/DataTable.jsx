@@ -23,6 +23,9 @@ import { cn } from '../../../lib/utils';
  *
  * Expandable subrows: pass `getSubRows={(row) => row.children}` — a chevron column is
  * added automatically for any row with children.
+ *
+ * `enableRowSelection` also accepts a predicate `(row) => boolean` to disable selection
+ * on individual rows (e.g. cancelled invoices).
  */
 const DataTable = ({
   columns,
@@ -55,6 +58,7 @@ const DataTable = ({
         cell: ({ row }) => (
           <Checkbox
             checked={row.getIsSelected()}
+            disabled={!row.getCanSelect()}
             onCheckedChange={(v) => row.toggleSelected(!!v)}
             onClick={(e) => e.stopPropagation()}
             aria-label="Select row"
@@ -71,6 +75,7 @@ const DataTable = ({
     data,
     columns: tableColumns,
     state: { sorting, columnFilters, rowSelection, expanded },
+    enableRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: (updater) => {

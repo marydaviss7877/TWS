@@ -1,44 +1,67 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { 
-  Card, 
-  Row, 
-  Col, 
-  Table, 
-  Button, 
-  Tag, 
-  Space, 
-  Modal, 
-  message, 
-  Tooltip, 
-  Progress, 
-  Statistic, 
-  Tabs, 
-  Typography, 
-  Descriptions,
-  Spin,
-  Alert
-} from 'antd';
-import { 
-  EyeOutlined, 
-  SettingOutlined, 
-  CloudServerOutlined, 
-  DatabaseOutlined, 
-  ApiOutlined, 
-  SecurityScanOutlined, 
-  MonitorOutlined, 
-  ExportOutlined,
-  ReloadOutlined,
-  PlayCircleOutlined,
-  StopOutlined,
-  GlobalOutlined
-} from '@ant-design/icons';
+import toast from 'react-hot-toast';
+import {
+  EyeIcon,
+  Cog6ToothIcon,
+  ServerStackIcon,
+  CircleStackIcon,
+  SignalIcon,
+  ShieldExclamationIcon,
+  ComputerDesktopIcon,
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
+  PlayCircleIcon,
+  StopCircleIcon,
+  GlobeAltIcon,
+} from '@heroicons/react/24/outline';
+import { Card, CardHeader, CardTitle, CardContent } from '../../../../../components/ui/Card/Card';
+import { Badge } from '../../../../../components/ui/Badge/Badge';
+import { Progress } from '../../../../../components/ui/Progress/Progress';
+import { Alert, AlertTitle, AlertDescription } from '../../../../../components/ui/Alert/Alert';
+import { Spinner } from '../../../../../components/ui/Spinner/Spinner';
+import { Button } from '../../../../../components/ui/Button/Button';
+import { DataTable } from '../../../../../components/ui/DataTable/DataTable';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../../../components/ui/Tabs/Tabs';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../../../../../components/ui/Tooltip/Tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../../components/ui/Dialog/Dialog';
 import moment from 'moment';
 import { get } from '../../../../../shared/utils/apiClient';
 import { createLogger } from '../../../../../shared/utils/logger';
-import { getStatusColor, getStatusIcon, formatNumber, formatBytes } from '../../../../../shared/utils/statusUtils';
+import { getStatusIcon, formatNumber } from '../../../../../shared/utils/statusUtils';
 
-const { Title, Text } = Typography;
 const logger = createLogger('Infrastructure');
+
+const STATUS_BADGE_VARIANT = (status) => {
+  const s = (status || '').toLowerCase();
+  if (['healthy', 'active', 'running', 'valid', 'success', 'connected'].includes(s)) return 'success';
+  if (['warning', 'idle', 'pending'].includes(s)) return 'warning';
+  if (['error', 'unhealthy', 'stopped', 'critical', 'failed', 'disconnected'].includes(s)) return 'destructive';
+  return 'secondary';
+};
+
+// Shared status-card shell for the Security / Monitoring / Networks tabs — each renders a
+// Card with a status-icon + name header, a status Badge, and a set of dt/dd rows.
+const DetailCard = ({ item, rows }) => (
+  <Card>
+    <CardHeader className="flex-row items-center justify-between space-y-0">
+      <CardTitle className="flex items-center gap-2 text-sm">
+        {getStatusIcon(item.status)}
+        {item.name}
+      </CardTitle>
+      <Badge variant={STATUS_BADGE_VARIANT(item.status)}>{item.status}</Badge>
+    </CardHeader>
+    <CardContent>
+      <dl className="space-y-1.5 text-sm">
+        {rows.filter(Boolean).map(([label, value]) => (
+          <div key={label} className="flex items-center justify-between border-b border-dashed border-gray-200 dark:border-gray-700 pb-1.5 last:border-0 last:pb-0">
+            <dt className="text-gray-500 dark:text-gray-400">{label}</dt>
+            <dd className="font-medium text-gray-900 dark:text-white">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </CardContent>
+  </Card>
+);
 
 const Infrastructure = () => {
   const [loading, setLoading] = useState(true);
@@ -49,7 +72,6 @@ const Infrastructure = () => {
   const [security, setSecurity] = useState([]);
   const [monitoring, setMonitoring] = useState([]);
   const [networks, setNetworks] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview');
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [infrastructureStats, setInfrastructureStats] = useState({});
@@ -61,9 +83,9 @@ const Infrastructure = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    
+
     abortControllerRef.current = new AbortController();
-    
+
     try {
       setLoading(true);
       setError(null);
@@ -128,11 +150,11 @@ const Infrastructure = () => {
       if (error.name === 'AbortError') {
         return;
       }
-      
+
       const errorMessage = error.message || 'Failed to fetch infrastructure data. Please try again.';
       setError(errorMessage);
       logger.error('Failed to fetch infrastructure data', error);
-      message.error(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
       abortControllerRef.current = null;
@@ -141,7 +163,7 @@ const Infrastructure = () => {
 
   useEffect(() => {
     fetchInfrastructureData();
-    
+
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -161,15 +183,15 @@ const Infrastructure = () => {
       status: item.status,
       // Include only safe, serializable properties
     };
-    
+
     // Remove functions and complex objects that might cause issues
     Object.keys(safeItem).forEach(key => {
-      if (typeof safeItem[key] === 'function' || 
+      if (typeof safeItem[key] === 'function' ||
           (typeof safeItem[key] === 'object' && safeItem[key] !== null && !Array.isArray(safeItem[key]) && safeItem[key].constructor !== Object)) {
         delete safeItem[key];
       }
     });
-    
+
     setSelectedItem(safeItem);
     setModalVisible(true);
   }, []);
@@ -177,558 +199,403 @@ const Infrastructure = () => {
   // Memoized table columns to prevent recreation on every render
   const serverColumns = useMemo(() => [
     {
-      title: 'Server',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text, record) => (
-        <Space>
-          {getStatusIcon(record.status)}
+      accessorKey: 'name',
+      header: 'Server',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          {getStatusIcon(row.original.status)}
           <div>
-            <Text strong>{text}</Text>
-            <br />
-            <Text type="secondary" style={{ fontSize: '12px' }}>{record.type}</Text>
+            <p className="font-semibold text-gray-900 dark:text-white">{row.original.name}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{row.original.type}</p>
           </div>
-        </Space>
-      )
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {(status || 'unknown').toUpperCase()}
-        </Tag>
-      )
-    },
-    {
-      title: 'CPU',
-      dataIndex: 'cpu',
-      key: 'cpu',
-      render: (cpu) => (
-        <div>
-          <Progress percent={cpu || 0} size="small" />
-          <Text style={{ fontSize: '12px' }}>{cpu || 0}%</Text>
         </div>
       )
     },
     {
-      title: 'Memory',
-      dataIndex: 'memory',
-      key: 'memory',
-      render: (memory) => (
-        <div>
-          <Progress percent={memory || 0} size="small" strokeColor="#52c41a" />
-          <Text style={{ fontSize: '12px' }}>{memory || 0}%</Text>
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ getValue }) => <Badge variant={STATUS_BADGE_VARIANT(getValue())}>{(getValue() || 'unknown').toUpperCase()}</Badge>
+    },
+    {
+      accessorKey: 'cpu',
+      header: 'CPU',
+      cell: ({ getValue }) => (
+        <div className="min-w-[6rem]">
+          <Progress value={getValue() || 0} className="h-1.5" />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{getValue() || 0}%</p>
         </div>
       )
     },
     {
-      title: 'IP Address',
-      dataIndex: 'ip',
-      key: 'ip',
-      render: (ip) => <Text code>{ip}</Text>
+      accessorKey: 'memory',
+      header: 'Memory',
+      cell: ({ getValue }) => (
+        <div className="min-w-[6rem]">
+          <Progress value={getValue() || 0} className="h-1.5" indicatorClassName="bg-green-500" />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{getValue() || 0}%</p>
+        </div>
+      )
     },
     {
-      title: 'Uptime',
-      dataIndex: 'uptime',
-      key: 'uptime'
+      accessorKey: 'ip',
+      header: 'IP Address',
+      cell: ({ getValue }) => <code className="text-xs">{getValue()}</code>
     },
+    { accessorKey: 'uptime', header: 'Uptime' },
     {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="View Details">
-            <Button icon={<EyeOutlined />} size="small" onClick={() => handleViewDetails(record)} />
-          </Tooltip>
-          <Tooltip title="Settings">
-            <Button icon={<SettingOutlined />} size="small" />
-          </Tooltip>
-          <Tooltip title="Server power controls aren't available yet">
-            <Button
-              icon={record.status === 'running' ? <StopOutlined /> : <PlayCircleOutlined />}
-              size="small"
-              danger={record.status === 'running'}
-              disabled
-            />
-          </Tooltip>
-        </Space>
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => (
+        <TooltipProvider>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleViewDetails(row.original)}>
+                  <EyeIcon className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>View Details</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <Cog6ToothIcon className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Settings</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" disabled>
+                  {row.original.status === 'running'
+                    ? <StopCircleIcon className="h-4 w-4 text-red-500" />
+                    : <PlayCircleIcon className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Server power controls aren't available yet</TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       )
     }
   ], [handleViewDetails]);
 
   const databaseColumns = useMemo(() => [
     {
-      title: 'Database',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text, record) => (
-        <Space>
-          <DatabaseOutlined />
+      accessorKey: 'name',
+      header: 'Database',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <CircleStackIcon className="h-4 w-4 text-gray-400" />
           <div>
-            <Text strong>{text}</Text>
-            <br />
-            <Text type="secondary" style={{ fontSize: '12px' }}>{record.type} {record.version}</Text>
+            <p className="font-semibold text-gray-900 dark:text-white">{row.original.name}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{row.original.type} {row.original.version}</p>
           </div>
-        </Space>
+        </div>
       )
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {(status || 'unknown').toUpperCase()}
-        </Tag>
-      )
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ getValue }) => <Badge variant={STATUS_BADGE_VARIANT(getValue())}>{(getValue() || 'unknown').toUpperCase()}</Badge>
     },
     {
-      title: 'Connections',
-      dataIndex: 'connections',
-      key: 'connections',
-      render: (connections, record) => {
-        const maxConnections = record.maxConnections || 1;
-        const connectionPercent = connections ? (connections / maxConnections) * 100 : 0;
+      accessorKey: 'connections',
+      header: 'Connections',
+      cell: ({ row }) => {
+        const { connections, maxConnections = 1 } = row.original;
+        const pct = connections ? (connections / maxConnections) * 100 : 0;
         return (
-          <div>
-            <Progress 
-              percent={connectionPercent} 
-              size="small" 
-              format={() => `${connections || 0}/${maxConnections}`}
-            />
+          <div className="min-w-[7rem]">
+            <Progress value={pct} className="h-1.5" />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{connections || 0}/{maxConnections}</p>
           </div>
         );
       }
     },
+    { accessorKey: 'size', header: 'Size' },
     {
-      title: 'Size',
-      dataIndex: 'size',
-      key: 'size'
+      accessorKey: 'queries',
+      header: 'Queries/min',
+      cell: ({ getValue }) => formatNumber(getValue())
     },
     {
-      title: 'Queries/min',
-      dataIndex: 'queries',
-      key: 'queries',
-      render: (queries) => formatNumber(queries)
-    },
-    {
-      title: 'Replication',
-      dataIndex: 'replication',
-      key: 'replication',
-      render: (replication) => (
-        <Tag color="blue">{replication}</Tag>
-      )
+      accessorKey: 'replication',
+      header: 'Replication',
+      cell: ({ getValue }) => <Badge className="border-transparent bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">{getValue()}</Badge>
     }
   ], []);
 
   const apiColumns = useMemo(() => [
     {
-      title: 'API',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text, record) => (
+      accessorKey: 'name',
+      header: 'API',
+      cell: ({ row }) => (
         <div>
-          <Text strong>{text}</Text>
-          <br />
-          <Text code style={{ fontSize: '12px' }}>{record.endpoint}</Text>
+          <p className="font-semibold text-gray-900 dark:text-white">{row.original.name}</p>
+          <code className="text-xs text-gray-500 dark:text-gray-400">{row.original.endpoint}</code>
         </div>
       )
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {(status || 'unknown').toUpperCase()}
-        </Tag>
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ getValue }) => <Badge variant={STATUS_BADGE_VARIANT(getValue())}>{(getValue() || 'unknown').toUpperCase()}</Badge>
+    },
+    {
+      accessorKey: 'responseTime',
+      header: 'Response Time',
+      cell: ({ getValue }) => (getValue() ? `${getValue()}ms` : 'N/A')
+    },
+    {
+      accessorKey: 'requests',
+      header: 'Requests',
+      cell: ({ getValue }) => formatNumber(getValue())
+    },
+    {
+      accessorKey: 'errors',
+      header: 'Errors',
+      cell: ({ getValue }) => (
+        <span className={(getValue() || 0) > 10 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}>
+          {getValue() || 0}
+        </span>
       )
     },
+    { accessorKey: 'uptime', header: 'Uptime' },
     {
-      title: 'Response Time',
-      dataIndex: 'responseTime',
-      key: 'responseTime',
-      render: (time) => time ? `${time}ms` : 'N/A'
-    },
-    {
-      title: 'Requests',
-      dataIndex: 'requests',
-      key: 'requests',
-      render: (requests) => formatNumber(requests)
-    },
-    {
-      title: 'Errors',
-      dataIndex: 'errors',
-      key: 'errors',
-      render: (errors) => (
-        <Text type={(errors || 0) > 10 ? 'danger' : 'secondary'}>{errors || 0}</Text>
-      )
-    },
-    {
-      title: 'Uptime',
-      dataIndex: 'uptime',
-      key: 'uptime'
-    },
-    {
-      title: 'Version',
-      dataIndex: 'version',
-      key: 'version',
-      render: (version) => <Tag>{version}</Tag>
+      accessorKey: 'version',
+      header: 'Version',
+      cell: ({ getValue }) => <Badge variant="secondary">{getValue()}</Badge>
     }
   ], []);
 
   if (loading && servers.length === 0 && databases.length === 0) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-        <Spin size="large" />
-        <Text style={{ marginLeft: '16px' }}>Loading infrastructure data...</Text>
+      <div className="flex items-center justify-center gap-4 h-[400px]">
+        <Spinner size="lg" />
+        <p className="text-gray-600 dark:text-gray-400">Loading infrastructure data...</p>
       </div>
     );
   }
 
   if (error && servers.length === 0 && databases.length === 0) {
     return (
-      <div style={{ padding: '24px' }}>
-        <Alert
-          message="Error Loading Infrastructure Data"
-          description={
-            <div>
-              <p>{error}</p>
-              <Button 
-                type="primary" 
-                size="small" 
-                onClick={fetchInfrastructureData}
-                style={{ marginTop: '8px' }}
-              >
-                Retry
-              </Button>
-            </div>
-          }
-          type="error"
-          showIcon
-        />
+      <div className="p-6">
+        <Alert variant="destructive">
+          <AlertTitle>Error Loading Infrastructure Data</AlertTitle>
+          <AlertDescription>
+            <p>{error}</p>
+            <Button size="sm" className="mt-2" onClick={fetchInfrastructureData}>Retry</Button>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="p-6">
       {/* Header */}
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <Title level={2} style={{ margin: 0 }}>
-            <CloudServerOutlined style={{ marginRight: '8px' }} />
+          <h2 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
+            <ServerStackIcon className="h-6 w-6" />
             Infrastructure Management
-          </Title>
-          <Text type="secondary">Monitor and manage your infrastructure components</Text>
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Monitor and manage your infrastructure components</p>
         </div>
-        <Space>
-          <Button 
-            icon={<ReloadOutlined />} 
-            onClick={fetchInfrastructureData} 
-            loading={loading}
-            disabled={loading}
-          >
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={fetchInfrastructureData} disabled={loading}>
+            <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button icon={<ExportOutlined />} type="primary">
+          <Button>
+            <ArrowDownTrayIcon className="h-4 w-4" />
             Export Report
           </Button>
-        </Space>
+        </div>
       </div>
 
       {/* Overview Stats */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Servers"
-              value={infrastructureStats.activeServers || 0}
-              suffix={`/ ${infrastructureStats.totalServers || 0}`}
-              prefix={<CloudServerOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Databases"
-              value={infrastructureStats.activeDatabases || 0}
-              suffix={`/ ${infrastructureStats.totalDatabases || 0}`}
-              prefix={<DatabaseOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="APIs"
-              value={infrastructureStats.activeAPIs || 0}
-              suffix={`/ ${infrastructureStats.totalAPIs || 0}`}
-              prefix={<ApiOutlined />}
-              valueStyle={{ color: '#722ed1' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Security Alerts"
-              value={infrastructureStats.securityAlerts || 0}
-              prefix={<SecurityScanOutlined />}
-              valueStyle={{ color: (infrastructureStats.securityAlerts || 0) > 0 ? '#ff4d4f' : '#52c41a' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Servers</span>
+              <ServerStackIcon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {infrastructureStats.activeServers || 0} <span className="text-sm text-gray-400 font-normal">/ {infrastructureStats.totalServers || 0}</span>
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Databases</span>
+              <CircleStackIcon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {infrastructureStats.activeDatabases || 0} <span className="text-sm text-gray-400 font-normal">/ {infrastructureStats.totalDatabases || 0}</span>
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>APIs</span>
+              <SignalIcon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+              {infrastructureStats.activeAPIs || 0} <span className="text-sm text-gray-400 font-normal">/ {infrastructureStats.totalAPIs || 0}</span>
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Security Alerts</span>
+              <ShieldExclamationIcon className="h-4 w-4" />
+            </div>
+            <p className={`text-2xl font-bold ${(infrastructureStats.securityAlerts || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+              {infrastructureStats.securityAlerts || 0}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Main Content Tabs */}
-      <Tabs 
-        activeKey={activeTab} 
-        onChange={setActiveTab}
-        items={[
-          {
-            key: 'servers',
-            label: <span><CloudServerOutlined />Servers</span>,
-            children: (
-              <Card>
-                <Table
-                  dataSource={servers}
-                  columns={serverColumns}
-                  pagination={{ 
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                    showTotal: (total) => `Total ${total} servers`
-                  }}
-                  scroll={{ x: 1200 }}
-                  loading={loading}
+      <Tabs defaultValue="servers">
+        <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="servers"><ServerStackIcon className="h-4 w-4 mr-1" />Servers</TabsTrigger>
+          <TabsTrigger value="databases"><CircleStackIcon className="h-4 w-4 mr-1" />Databases</TabsTrigger>
+          <TabsTrigger value="apis"><SignalIcon className="h-4 w-4 mr-1" />APIs</TabsTrigger>
+          <TabsTrigger value="security"><ShieldExclamationIcon className="h-4 w-4 mr-1" />Security</TabsTrigger>
+          <TabsTrigger value="monitoring"><ComputerDesktopIcon className="h-4 w-4 mr-1" />Monitoring</TabsTrigger>
+          <TabsTrigger value="networks"><GlobeAltIcon className="h-4 w-4 mr-1" />Networks</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="servers">
+          <Card>
+            <CardContent className="p-4">
+              <DataTable columns={serverColumns} data={servers} pageSize={10} emptyMessage="No servers found" />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="databases">
+          <Card>
+            <CardContent className="p-4">
+              <DataTable columns={databaseColumns} data={databases} pageSize={10} emptyMessage="No databases found" />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="apis">
+          <Card>
+            <CardContent className="p-4">
+              <DataTable columns={apiColumns} data={apis} pageSize={10} emptyMessage="No APIs found" />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="security">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {security.map((item) => (
+              <DetailCard
+                key={item.id}
+                item={item}
+                rows={[
+                  ['Type', item.type],
+                  item.expiresAt && ['Expires', moment(item.expiresAt).format('MMM DD, YYYY')],
+                  item.rules !== undefined && ['Rules', item.rules],
+                  item.threats !== undefined && ['Threats', item.threats],
+                  item.lastScan && ['Last Scan', moment(item.lastScan).fromNow()],
+                  item.blocked !== undefined && ['Blocked Requests', item.blocked],
+                  item.allowed !== undefined && ['Allowed Requests', item.allowed],
+                ]}
+              />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="monitoring">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {monitoring.map((item) => (
+              <DetailCard
+                key={item.id}
+                item={item}
+                rows={[
+                  ['Type', item.type],
+                  item.checks && ['Checks', `${item.passed}/${item.checks} passed`],
+                  item.avgResponseTime && ['Avg Response', `${item.avgResponseTime}ms`],
+                  item.logsPerMinute !== undefined && ['Logs/min', formatNumber(item.logsPerMinute)],
+                  item.threshold !== undefined && ['Threshold', `${item.threshold}ms`],
+                  item.alerts !== undefined && ['Alerts', item.alerts],
+                  item.lastCheck && ['Last Check', moment(item.lastCheck).fromNow()],
+                ]}
+              />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="networks">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {networks.map((item) => {
+              const hasBandwidthObj = item.bandwidth && typeof item.bandwidth === 'object';
+              const utilizationPct = hasBandwidthObj && item.bandwidth.total
+                ? Math.round(((item.bandwidth.used || 0) / item.bandwidth.total) * 100)
+                : item.utilization;
+              return (
+                <DetailCard
+                  key={item.id}
+                  item={item}
+                  rows={[
+                    ['Type', item.type],
+                    ['Subnet', item.subnet || 'N/A'],
+                    ['Devices', item.devices || 0],
+                    ['Bandwidth', hasBandwidthObj
+                      ? `${item.bandwidth.used || 0} / ${item.bandwidth.total || 0} ${item.bandwidth.unit || 'Mbps'}`
+                      : (item.bandwidth || 'N/A')],
+                    ['Utilization', utilizationPct != null
+                      ? <Progress value={utilizationPct} className="h-1.5 w-24" />
+                      : 'N/A'],
+                  ]}
                 />
-              </Card>
-            )
-          },
-          {
-            key: 'databases',
-            label: <span><DatabaseOutlined />Databases</span>,
-            children: (
-              <Card>
-                <Table
-                  dataSource={databases}
-                  columns={databaseColumns}
-                  pagination={{ 
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                    showTotal: (total) => `Total ${total} databases`
-                  }}
-                  loading={loading}
-                />
-              </Card>
-            )
-          },
-          {
-            key: 'apis',
-            label: <span><ApiOutlined />APIs</span>,
-            children: (
-              <Card>
-                <Table
-                  dataSource={apis}
-                  columns={apiColumns}
-                  pagination={{ 
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                    showTotal: (total) => `Total ${total} APIs`
-                  }}
-                  loading={loading}
-                />
-              </Card>
-            )
-          },
-          {
-            key: 'security',
-            label: <span><SecurityScanOutlined />Security</span>,
-            children: (
-              <Row gutter={[16, 16]}>
-                {security.map(item => (
-                  <Col xs={24} sm={12} md={8} lg={6} key={item.id}>
-                    <Card
-                      title={
-                        <Space>
-                          {getStatusIcon(item.status)}
-                          {item.name}
-                        </Space>
-                      }
-                      extra={<Tag color={getStatusColor(item.status)}>{item.status}</Tag>}
-                    >
-                      <Descriptions column={1} size="small">
-                        <Descriptions.Item label="Type">{item.type}</Descriptions.Item>
-                        {item.expiresAt && (
-                          <Descriptions.Item label="Expires">
-                            {moment(item.expiresAt).format('MMM DD, YYYY')}
-                          </Descriptions.Item>
-                        )}
-                        {item.rules !== undefined && (
-                          <Descriptions.Item label="Rules">{item.rules}</Descriptions.Item>
-                        )}
-                        {item.threats !== undefined && (
-                          <Descriptions.Item label="Threats">{item.threats}</Descriptions.Item>
-                        )}
-                        {item.lastScan && (
-                          <Descriptions.Item label="Last Scan">
-                            {moment(item.lastScan).fromNow()}
-                          </Descriptions.Item>
-                        )}
-                        {item.blocked !== undefined && (
-                          <Descriptions.Item label="Blocked Requests">{item.blocked}</Descriptions.Item>
-                        )}
-                        {item.allowed !== undefined && (
-                          <Descriptions.Item label="Allowed Requests">{item.allowed}</Descriptions.Item>
-                        )}
-                      </Descriptions>
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            )
-          },
-          {
-            key: 'monitoring',
-            label: <span><MonitorOutlined />Monitoring</span>,
-            children: (
-              <Row gutter={[16, 16]}>
-                {monitoring.map(item => (
-                  <Col xs={24} sm={12} md={8} key={item.id}>
-                    <Card
-                      title={
-                        <Space>
-                          {getStatusIcon(item.status)}
-                          {item.name}
-                        </Space>
-                      }
-                      extra={<Tag color={getStatusColor(item.status)}>{item.status}</Tag>}
-                    >
-                      <Descriptions column={1} size="small">
-                        <Descriptions.Item label="Type">{item.type}</Descriptions.Item>
-                        {item.checks && (
-                          <Descriptions.Item label="Checks">
-                            {item.passed}/{item.checks} passed
-                          </Descriptions.Item>
-                        )}
-                        {item.avgResponseTime && (
-                          <Descriptions.Item label="Avg Response">
-                            {item.avgResponseTime}ms
-                          </Descriptions.Item>
-                        )}
-                        {item.logsPerMinute !== undefined && (
-                          <Descriptions.Item label="Logs/min">
-                            {formatNumber(item.logsPerMinute)}
-                          </Descriptions.Item>
-                        )}
-                        {item.avgResponseTime !== undefined && (
-                          <Descriptions.Item label="Avg Response Time">
-                            {item.avgResponseTime}ms
-                          </Descriptions.Item>
-                        )}
-                        {item.threshold !== undefined && (
-                          <Descriptions.Item label="Threshold">
-                            {item.threshold}ms
-                          </Descriptions.Item>
-                        )}
-                        {item.alerts !== undefined && (
-                          <Descriptions.Item label="Alerts">
-                            {item.alerts}
-                          </Descriptions.Item>
-                        )}
-                        {item.lastCheck && (
-                          <Descriptions.Item label="Last Check">
-                            {moment(item.lastCheck).fromNow()}
-                          </Descriptions.Item>
-                        )}
-                      </Descriptions>
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            )
-          },
-          {
-            key: 'networks',
-            label: <span><GlobalOutlined />Networks</span>,
-            children: (
-              <Row gutter={[16, 16]}>
-                {networks.map(item => (
-                  <Col xs={24} sm={12} md={8} key={item.id}>
-                    <Card
-                      title={
-                        <Space>
-                          {getStatusIcon(item.status)}
-                          {item.name}
-                        </Space>
-                      }
-                      extra={<Tag color={getStatusColor(item.status)}>{item.status}</Tag>}
-                    >
-                      <Descriptions column={1} size="small">
-                        <Descriptions.Item label="Type">{item.type}</Descriptions.Item>
-                        <Descriptions.Item label="Subnet">{item.subnet || 'N/A'}</Descriptions.Item>
-                        <Descriptions.Item label="Devices">{item.devices || 0}</Descriptions.Item>
-                        <Descriptions.Item label="Bandwidth">
-                          {item.bandwidth && typeof item.bandwidth === 'object' 
-                            ? `${item.bandwidth.used || 0} / ${item.bandwidth.total || 0} ${item.bandwidth.unit || 'Mbps'}`
-                            : item.bandwidth || 'N/A'}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Utilization">
-                          {item.bandwidth && typeof item.bandwidth === 'object' && item.bandwidth.total
-                            ? <Progress 
-                                percent={Math.round(((item.bandwidth.used || 0) / item.bandwidth.total) * 100)} 
-                                size="small" 
-                              />
-                            : item.utilization 
-                              ? <Progress percent={item.utilization} size="small" />
-                              : <Text type="secondary">N/A</Text>
-                          }
-                        </Descriptions.Item>
-                      </Descriptions>
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            )
-          }
-        ]}
-      />
+              );
+            })}
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Details Modal */}
-      <Modal
-        title={selectedItem?.name}
-        open={modalVisible}
-        onCancel={() => setModalVisible(false)}
-        footer={null}
-        width={800}
-      >
-        {selectedItem && (
-          <Descriptions bordered column={2}>
-            {Object.entries(selectedItem)
-              .filter(([key]) => !key.startsWith('_') && key !== 'id') // Filter out internal fields
-              .map(([key, value]) => (
-                <Descriptions.Item label={key.charAt(0).toUpperCase() + key.slice(1)} key={key}>
-                  {value === null || value === undefined ? 'N/A' :
-                   typeof value === 'boolean' ? (value ? 'Yes' : 'No') :
-                   key === 'bandwidth' && typeof value === 'object' && !Array.isArray(value) ?
-                     `${value.used || 0} / ${value.total || 0} ${value.unit || 'Mbps'}` :
-                   typeof value === 'object' && !Array.isArray(value) ? 
-                     (value.toString ? value.toString() : JSON.stringify(value, null, 2)) :
-                   Array.isArray(value) ? value.join(', ') :
-                   String(value)}
-                </Descriptions.Item>
-              ))}
-          </Descriptions>
-        )}
-      </Modal>
+      <Dialog open={modalVisible} onOpenChange={setModalVisible}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedItem?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedItem && (
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              {Object.entries(selectedItem)
+                .filter(([key]) => !key.startsWith('_') && key !== 'id')
+                .map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between border-b border-dashed border-gray-200 dark:border-gray-700 pb-1.5">
+                    <dt className="text-gray-500 dark:text-gray-400">{key.charAt(0).toUpperCase() + key.slice(1)}</dt>
+                    <dd className="font-medium text-gray-900 dark:text-white">
+                      {value === null || value === undefined ? 'N/A' :
+                       typeof value === 'boolean' ? (value ? 'Yes' : 'No') :
+                       key === 'bandwidth' && typeof value === 'object' && !Array.isArray(value) ?
+                         `${value.used || 0} / ${value.total || 0} ${value.unit || 'Mbps'}` :
+                       typeof value === 'object' && !Array.isArray(value) ?
+                         (value.toString ? value.toString() : JSON.stringify(value, null, 2)) :
+                       Array.isArray(value) ? value.join(', ') :
+                       String(value)}
+                    </dd>
+                  </div>
+                ))}
+            </dl>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

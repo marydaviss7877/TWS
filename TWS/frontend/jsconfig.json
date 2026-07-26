@@ -23,7 +23,8 @@
       "@constants/*": ["constants/*"],
       "@hooks/*": ["shared/hooks/*"],
       "@utils/*": ["shared/utils/*"],
-      "@services/*": ["shared/services/*"]
+      "@services/*": ["shared/services/*"],
+      "@/*": ["*"]
     }
   },
   "include": ["src/**/*"],

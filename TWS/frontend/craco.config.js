@@ -49,6 +49,9 @@ module.exports = {
           '@services': path.resolve(__dirname, 'src/shared/services'),
           // Force prosemirror-view to frontend's 1.33.11 (has __serializeForClipboard; 1.34+ removed it)
           'prosemirror-view': path.resolve(__dirname, 'node_modules/prosemirror-view'),
+          // '@' = src root, for the shadcn CLI (components.json) — kept last so the more
+          // specific aliases above are matched first.
+          '@': path.resolve(__dirname, 'src'),
         },
         fallback: {
           ...webpackConfig.resolve.fallback,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTenantTheme } from '../providers/TenantThemeProvider';
-import { PREDEFINED_THEMES, AVAILABLE_FONTS, isValidColor } from '../utils/themeConfig';
+import { PREDEFINED_THEMES, AVAILABLE_FONTS, isValidColor, loadFontOnDemand } from '../utils/themeConfig';
 import toast from 'react-hot-toast';
 import {
   PaintBrushIcon,
@@ -19,9 +19,14 @@ const ThemeSelector = () => {
     secondary: theme?.customColors?.secondary || theme?.colors?.secondary || '#10B981',
     accent: theme?.customColors?.accent || theme?.colors?.accent || '#A855F7'
   });
-  const [selectedFonts, setSelectedFonts] = useState({
-    heading: theme?.fonts?.heading || 'Geist',
-    body: theme?.fonts?.body || 'Inter'
+  const [selectedFonts, setSelectedFonts] = useState(() => {
+    const initial = {
+      heading: theme?.fonts?.heading || 'Geist',
+      body: theme?.fonts?.body || 'Inter'
+    };
+    loadFontOnDemand(initial.heading);
+    loadFontOnDemand(initial.body);
+    return initial;
   });
   const [isCustomMode, setIsCustomMode] = useState(theme?.name === 'custom');
   const [saving, setSaving] = useState(false);
@@ -36,10 +41,13 @@ const ThemeSelector = () => {
         secondary: theme.customColors?.secondary || theme.colors?.secondary || '#10B981',
         accent: theme.customColors?.accent || theme.colors?.accent || '#A855F7'
       });
-      setSelectedFonts({
+      const nextFonts = {
         heading: theme.fonts?.heading || 'Geist',
         body: theme.fonts?.body || 'Inter'
-      });
+      };
+      loadFontOnDemand(nextFonts.heading);
+      loadFontOnDemand(nextFonts.body);
+      setSelectedFonts(nextFonts);
       setIsCustomMode(theme.name === 'custom');
     }
   }, [theme]);
@@ -95,6 +103,7 @@ const ThemeSelector = () => {
   };
 
   const handleFontChange = (fontType, value) => {
+    loadFontOnDemand(value);
     setSelectedFonts(prev => ({
       ...prev,
       [fontType]: value

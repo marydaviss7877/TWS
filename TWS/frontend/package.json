@@ -4,7 +4,6 @@
   "description": "Frontend React application for The Wolf Stack Management Portal",
   "private": true,
   "dependencies": {
-    "@ant-design/icons": "^6.1.0",
     "@blocknote/core": "^0.51.4",
     "@blocknote/mantine": "^0.51.4",
     "@blocknote/react": "^0.51.4",
@@ -38,7 +37,6 @@
     "@univerjs/presets": "0.25.1",
     "@use-gesture/react": "^10.3.1",
     "ajv": "^8.0.0",
-    "antd": "^5.27.6",
     "autoprefixer": "^10.4.16",
     "axios": "^1.6.0",
     "chart.js": "^4.5.0",
@@ -87,6 +85,7 @@
     "jest-axe": "^7.0.0",
     "jest-watch-typeahead": "^2.2.2",
     "prop-types": "^15.8.1",
+    "source-map-explorer": "^2.5.3",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4",
     "webpack": "^5.102.0"
@@ -102,7 +101,8 @@
     "test:coverage": "craco test --coverage",
     "test:a11y": "craco test --testPathPattern=accessibility",
     "eject": "react-scripts eject",
-    "test:all": "npm run test"
+    "test:all": "npm run test",
+    "analyze": "source-map-explorer 'build/static/js/*.js' --no-border-checks --gzip --html build/bundle-report.html"
   },
   "eslintConfig": {
     "extends": [

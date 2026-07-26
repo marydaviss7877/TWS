@@ -52,7 +52,7 @@ const TenantOrgLayout = ({ children }) => {
     const normalizedRole = String(user?.role || '').toLowerCase();
     const isAdminUser = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner']
         .includes(normalizedRole);
-    const { isDarkMode, themeTransition, toggleTheme } = useTheme();
+    const { isDarkMode, themeTransition } = useTheme();
     const themeStyles   = useThemeStyles();
     const { isFullscreen, toggleFullscreen, exitFullscreen } = useFullscreen();
 
@@ -218,8 +218,6 @@ const TenantOrgLayout = ({ children }) => {
                     onSearch={() => setCommandPaletteOpen(true)}
                     isFullscreen={isFullscreen}
                     onFullscreenToggle={toggleFullscreen}
-                    isDarkMode={isDarkMode}
-                    onToggleTheme={toggleTheme}
                     onMobileMenu={() => setMobileMenuOpen(true)}
                 />
             </div>
