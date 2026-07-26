@@ -15,6 +15,7 @@ const logger = require('../utils/logger');
 const { Invoice } = require('../models/finance/Finance');
 const NotificationService = require('../services/notifications/notification.service');
 const documentHubService = require('../services/documentHub/documentHub.service');
+const sheetsHubService = require('../services/sheetsHub/sheetsHub.service');
 
 /**
  * Resolve the Organization ObjectIds that belong to a tenant.
@@ -81,6 +82,7 @@ class JobScheduler {
     this.scheduleDataCleanup();
     this.scheduleNotificationJobs();
     this.scheduleDocumentReviewTimeout();
+    this.scheduleSheetVersionPruning();
     this.scheduleReadOnlyEnforcement();
     this.scheduleContractorAccessExpiry();
 
@@ -298,6 +300,28 @@ class JobScheduler {
     this.jobs.set('documentReviewTimeout', job);
     job.start();
     logger.info('Scheduled document review timeout job (daily 08:00 UTC)');
+  }
+
+  /**
+   * Schedule sheet version pruning (see sheetsHub.service.js hardening #2): keeps the last
+   * 50 versions or 90 days per sheet, whichever is larger, deleting both the Mongo row and
+   * its S3 blob. Run daily, offset from the document review job to spread load.
+   */
+  scheduleSheetVersionPruning() {
+    const job = cron.schedule('0 9 * * *', async () => {
+      await this.runExclusive('sheetVersionPruning', async () => {
+        try {
+          logger.info('Starting sheet version pruning job...');
+          const result = await sheetsHubService.pruneOldSheetVersions();
+          logger.info(`Sheet version pruning job completed: deleted ${result.deletedCount}`);
+        } catch (error) {
+          logger.error('Sheet version pruning job failed:', error);
+        }
+      });
+    }, { scheduled: false, timezone: 'UTC' });
+    this.jobs.set('sheetVersionPruning', job);
+    job.start();
+    logger.info('Scheduled sheet version pruning job (daily 09:00 UTC)');
   }
 
   /**

@@ -180,6 +180,33 @@ export async function uploadSheet(tenantSlug, file, options = {}) {
   return data.data?.sheet ?? null;
 }
 
+/** Uploads an existing .xlsx and parses it into a new, fully editable sheet. */
+export async function importXlsx(tenantSlug, file, options = {}) {
+  const form = new FormData();
+  form.append('file', file);
+  if (options.title) form.append('title', options.title);
+  if (options.folderId) form.append('folderId', options.folderId);
+  if (options.tags && options.tags.length) options.tags.forEach((t) => form.append('tags', t));
+  const res = await fetch(`${base(tenantSlug)}/import`, getOptions('POST', form));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.message || 'Import failed');
+    err.code = data.code;
+    throw err;
+  }
+  return data.data?.sheet ?? null;
+}
+
+/** Downloads a created sheet as a real .xlsx file. */
+export async function exportXlsx(tenantSlug, id) {
+  const res = await fetch(`${base(tenantSlug)}/${id}/export.xlsx`, getOptions('GET'));
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'Export failed');
+  }
+  return res.blob();
+}
+
 export async function listFolders(tenantSlug, scope = 'org') {
   const res = await fetch(`${base(tenantSlug)}/folders/list?scope=${scope}`, getOptions('GET'));
   if (!res.ok) {

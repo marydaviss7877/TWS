@@ -669,6 +669,57 @@ async function createUploadedSheet({ orgId, tenantId, userId, fileKey, fileName,
   return doc.toObject ? doc.toObject() : doc;
 }
 
+/**
+ * Create a sheet from a parsed .xlsx workbook (POST /import). Content is already-validated
+ * IWorkbookData JSON from xlsxConverter.xlsxBufferToWorkbookData — this just persists it as a
+ * new, fully editable sheet (distinct from createUploadedSheet, which archives the raw file
+ * un-parsed). Returns { error, code: 'CONTENT_TOO_LARGE' } instead of throwing, matching
+ * createSheet/updateSheet's error-shape convention.
+ */
+async function createSheetFromXlsx({ orgId, tenantId, userId, title, workbookData, folderId, tags }) {
+  const doc = new OrgSheet({
+    orgId,
+    tenantId,
+    type: 'created',
+    title: title || 'Imported Sheet',
+    folderId: folderId || null,
+    tags: tags || [],
+    createdBy: userId,
+    ownerId: userId
+  });
+
+  const key = contentKeyFor(tenantId, orgId, doc._id);
+  let sizeBytes;
+  try {
+    ({ sizeBytes } = await putSheetContent(key, workbookData));
+  } catch (err) {
+    if (err.code === 'CONTENT_TOO_LARGE') {
+      return { error: err.message, code: 'CONTENT_TOO_LARGE' };
+    }
+    throw err;
+  }
+  doc.contentKey = key;
+  doc.contentSize = sizeBytes;
+  await doc.save();
+
+  await OrgSheetAudit.create({
+    sheetId: doc._id,
+    orgId,
+    action: 'imported_xlsx',
+    userId,
+    metadata: { sheetCount: (workbookData.sheetOrder || []).length }
+  });
+
+  const result = doc.toObject ? doc.toObject() : doc;
+  result.content = workbookData;
+  return result;
+}
+
+/** Records an audit event that isn't tied to a CRUD mutation above (e.g. exported_xlsx). */
+async function recordAudit(sheetId, orgId, userId, action, metadata) {
+  await OrgSheetAudit.create({ sheetId, orgId, action, userId, metadata: metadata || null });
+}
+
 module.exports = {
   listSheets,
   getSheet,
@@ -691,5 +742,7 @@ module.exports = {
   listShares,
   addShare,
   removeShare,
-  createUploadedSheet
+  createUploadedSheet,
+  createSheetFromXlsx,
+  recordAudit
 };

@@ -8,6 +8,7 @@ import UniverPresetSheetsCoreEnUS from '@univerjs/preset-sheets-core/locales/en-
 import '@univerjs/preset-sheets-core/lib/index.css';
 import {
   ArrowLeftIcon,
+  ArrowDownTrayIcon,
   TableCellsIcon,
   ClockIcon,
   UserPlusIcon,
@@ -47,6 +48,7 @@ const SheetEditor = () => {
   const [shareUserId, setShareUserId] = useState('');
   const [sharePermission, setSharePermission] = useState('view');
   const [addingShare, setAddingShare] = useState(false);
+  const [downloadingXlsx, setDownloadingXlsx] = useState(false);
   const [updatingAssign, setUpdatingAssign] = useState(false);
 
   const containerRef = useRef(null);
@@ -228,6 +230,28 @@ const SheetEditor = () => {
     fetchVersions();
   };
 
+  const handleDownloadXlsx = async () => {
+    if (!sheetId) {
+      toast.error('Save the sheet first');
+      return;
+    }
+    setDownloadingXlsx(true);
+    try {
+      const blob = await sheetsHubApi.exportXlsx(tenantSlug, sheetId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(title.trim() || 'Untitled').replace(/[^a-z0-9-_]/gi, '_')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Downloaded as .xlsx');
+    } catch (e) {
+      toast.error(e.message || 'Download failed');
+    } finally {
+      setDownloadingXlsx(false);
+    }
+  };
+
   const fetchShares = useCallback(async () => {
     if (!tenantSlug || !sheetId) return;
     try {
@@ -377,6 +401,17 @@ const SheetEditor = () => {
           <span className="text-xs text-[var(--tenant-muted)] flex-shrink-0 hidden sm:inline">
             {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Save failed' : ''}
           </span>
+          {sheetId && (
+            <button
+              type="button"
+              onClick={handleDownloadXlsx}
+              disabled={downloadingXlsx}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-[var(--tenant-border)] hover:bg-slate-50 flex-shrink-0 disabled:opacity-50"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">{downloadingXlsx ? 'Preparing…' : 'Download .xlsx'}</span>
+            </button>
+          )}
           {sheetId && (
             <button
               type="button"

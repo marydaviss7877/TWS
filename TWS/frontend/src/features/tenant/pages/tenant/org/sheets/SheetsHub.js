@@ -10,6 +10,7 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
   ArrowUpTrayIcon,
+  ArrowDownTrayIcon,
   FunnelIcon,
   Squares2X2Icon,
   ListBulletIcon,
@@ -75,6 +76,8 @@ const SheetsHub = () => {
   const [error, setError] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadInputKey, setUploadInputKey] = useState(0);
+  const [importing, setImporting] = useState(false);
+  const [importInputKey, setImportInputKey] = useState(0);
 
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || '');
@@ -200,6 +203,22 @@ const SheetsHub = () => {
     }
   };
 
+  const handleImportXlsx = async (e) => {
+    const file = e.target?.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const sheet = await sheetsHubApi.importXlsx(tenantSlug, file, { title: file.name.replace(/\.[^.]+$/, '') });
+      setImportInputKey((k) => k + 1);
+      toast.success('Imported — opening editor…');
+      if (sheet && sheet._id) navigate(`/${tenantSlug}/org/sheets/${sheet._id}`);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const toggleSelect = (id) => {
     setSelectedIds((s) => {
       const n = new Set(s);
@@ -301,7 +320,7 @@ const SheetsHub = () => {
                 Sheets
               </h1>
               <p className="mt-2 text-sm text-[var(--tenant-muted)]">
-                Create and edit spreadsheets in-app, or archive an existing Excel file.
+                Create and edit spreadsheets in-app, import an existing Excel file to keep editing it, or archive a file as-is.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -316,6 +335,18 @@ const SheetsHub = () => {
                 />
                 <ArrowUpTrayIcon className="h-5 w-5" />
                 {uploading ? 'Uploading…' : 'Upload file'}
+              </label>
+              <label className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium border border-[var(--tenant-border)] bg-[var(--tenant-bg)] hover:bg-[var(--tenant-bg-elevated)] transition cursor-pointer disabled:opacity-50">
+                <input
+                  type="file"
+                  key={importInputKey}
+                  className="sr-only"
+                  accept=".xlsx,.xls"
+                  onChange={handleImportXlsx}
+                  disabled={importing}
+                />
+                <ArrowDownTrayIcon className="h-5 w-5" />
+                {importing ? 'Importing…' : 'Import from Excel'}
               </label>
               <button
                 type="button"

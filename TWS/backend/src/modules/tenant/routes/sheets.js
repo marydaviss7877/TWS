@@ -2,16 +2,15 @@
  * Sheets Hub – tenant org routes
  * Base path: /api/tenant/:tenantSlug/organization/sheets
  * Auth: verifyERPToken applied here so routes are protected even if mounted elsewhere
- *
- * Phase 1a: CRUD/folders/tags/shares/versions/audit. `/import` and `/export.xlsx` land in
- * Phase 1b once core editing (the higher-uncertainty Univer integration) is verified working.
  */
 const express = require('express');
+const multer = require('multer');
 const { body, query, param } = require('express-validator');
 const router = express.Router({ mergeParams: true });
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ValidationMiddleware = require('../../../middleware/validation/validation');
 const sheetsHubService = require('../../../services/sheetsHub/sheetsHub.service');
+const xlsxConverter = require('../../../services/sheetsHub/xlsxConverter.service');
 const { uploadToS3, isS3Configured } = require('../../../config/s3');
 const User = require('../../../models/users-auth/User');
 const Tenant = require('../../../models/tenant/Tenant');
@@ -20,6 +19,22 @@ const usageTrackerService = require('../../../services/usageTrackerService');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { checkReadOnlySoftwareHouseOnly, getEffectiveUsageLimit } = require('../../../middleware/common/featureGate');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
+const logger = require('../../../utils/logger');
+
+// Raw upload cap tighter than the generic upload route's 10MB — this buffer gets fully parsed
+// into JSON in-process (hardening #5), not just streamed to S3.
+const importUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => {
+    const allowed = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only .xlsx/.xls files are allowed'));
+  }
+});
 
 const sheetsReadAccess = requireErpAccess({ module: 'sheets', action: ['read', 'write', 'admin'] });
 const sheetsWriteAccess = requireErpAccess({ module: 'sheets', action: ['write', 'admin'] });
@@ -210,6 +225,74 @@ router.post('/upload',
       folderId: req.body.folderId,
       tags: req.body.tags || []
     });
+    res.status(201).json({ success: true, data: { sheet } });
+  })
+);
+
+// Import an existing .xlsx as a new, fully editable sheet (must be before /:id)
+router.post('/import',
+  verifyERPToken,
+  checkReadOnlySoftwareHouseOnly,
+  sheetsWriteAccess,
+  (req, res, next) => {
+    importUpload.single('file')(req, res, (err) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ success: false, message: 'File too large (max 15MB)' });
+        return res.status(400).json({ success: false, message: err.message || 'Upload failed' });
+      }
+      next();
+    });
+  },
+  (req, _res, next) => {
+    if (req.body && req.body.tags !== undefined && !Array.isArray(req.body.tags)) {
+      req.body.tags = [req.body.tags].filter(Boolean);
+    }
+    next();
+  },
+  [
+    body('title').optional().trim().isLength({ max: 500 }),
+    body('folderId').optional().isMongoId(),
+    body('tags').optional().isArray(),
+    body('tags.*').optional().isMongoId()
+  ],
+  ValidationMiddleware.handleValidationErrors,
+  ErrorHandler.asyncHandler(async (req, res) => {
+    if (!req.file || !req.file.buffer) return res.status(400).json({ success: false, message: 'No file uploaded' });
+    const orgId = getOrgId(req);
+    const tenantId = req.tenantId || req.tenant?._id;
+    const userId = getUserId(req);
+    if (!orgId || !userId) return res.status(400).json({ success: false, message: 'Organization and user context required' });
+
+    let workbookData;
+    try {
+      workbookData = await xlsxConverter.xlsxBufferToWorkbookData(req.file.buffer);
+    } catch (err) {
+      if (['MACRO_ENABLED_NOT_ALLOWED', 'WORKBOOK_TOO_LARGE', 'INVALID_XLSX'].includes(err.code)) {
+        return res.status(400).json({ success: false, message: err.message, code: err.code });
+      }
+      if (err.code === 'XLSX_UNAVAILABLE') {
+        return res.status(501).json({ success: false, message: err.message });
+      }
+      logger.error('xlsx import failed', { error: err.message });
+      return res.status(400).json({ success: false, message: 'Failed to parse the uploaded file' });
+    }
+
+    const incomingBytes = Buffer.byteLength(JSON.stringify(workbookData), 'utf8');
+    const proceed = await checkStorageQuotaOrRespond(req, res, tenantId, incomingBytes);
+    if (!proceed) return;
+
+    const sheet = await sheetsHubService.createSheetFromXlsx({
+      orgId,
+      tenantId,
+      userId,
+      title: req.body.title || req.file.originalname?.replace(/\.[^./\\]+$/, '') || 'Imported Sheet',
+      workbookData,
+      folderId: req.body.folderId,
+      tags: req.body.tags || []
+    });
+    if (sheet && sheet.error) {
+      return res.status(sheet.code === 'CONTENT_TOO_LARGE' ? 400 : 500).json({ success: false, message: sheet.error, code: sheet.code });
+    }
     res.status(201).json({ success: true, data: { sheet } });
   })
 );
@@ -412,6 +495,42 @@ router.delete('/:id/shares/:userId',
     });
     if (result === null) return res.status(404).json({ success: false, message: 'Sheet not found' });
     res.json({ success: true, data: result });
+  })
+);
+
+// Export a created (in-app) sheet as a real .xlsx file (must be before the bare /:id route)
+router.get('/:id/export.xlsx',
+  [param('id').isMongoId()],
+  ValidationMiddleware.handleValidationErrors,
+  verifyERPToken,
+  sheetsReadAccess,
+  ErrorHandler.asyncHandler(async (req, res) => {
+    const orgId = getOrgId(req);
+    const userId = getUserId(req);
+    if (!orgId) return res.status(400).json({ success: false, message: 'Organization context required' });
+
+    const sheet = await sheetsHubService.getSheet(req.params.id, orgId, { userId, role: req.user?.role });
+    if (!sheet) return res.status(404).json({ success: false, message: 'Sheet not found' });
+    if (sheet.type !== 'created') {
+      return res.status(400).json({ success: false, message: 'Only in-app created sheets can be exported to Excel' });
+    }
+
+    let buffer;
+    try {
+      buffer = await xlsxConverter.workbookDataToXlsxBuffer(sheet.content || {});
+    } catch (err) {
+      if (err.code === 'XLSX_UNAVAILABLE') return res.status(501).json({ success: false, message: err.message });
+      if (err.code === 'WORKBOOK_TOO_LARGE') return res.status(400).json({ success: false, message: err.message, code: err.code });
+      logger.error('xlsx export failed', { sheetId: req.params.id, error: err.message });
+      return res.status(500).json({ success: false, message: 'Failed to generate Excel file' });
+    }
+
+    await sheetsHubService.recordAudit(req.params.id, orgId, userId, 'exported_xlsx');
+
+    const filename = (sheet.title || 'Untitled').replace(/[^a-z0-9-_]/gi, '_');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}.xlsx"`);
+    res.send(buffer);
   })
 );
 
