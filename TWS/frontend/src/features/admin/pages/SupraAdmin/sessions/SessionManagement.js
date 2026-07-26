@@ -1,154 +1,153 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { 
-  Card, 
-  Row, 
-  Col, 
-  Table, 
-  Button, 
-  Input, 
-  Select, 
-  Tag, 
-  Space, 
-  Modal, 
-  Form, 
-  InputNumber, 
-  Switch, 
-  DatePicker, 
-  message, 
-  Popconfirm, 
-  Tooltip, 
-  Badge, 
-  Progress, 
-  Statistic, 
-  Tabs, 
-  List, 
-  Avatar, 
-  Typography, 
-  Divider,
-  Alert,
-  Timeline,
-  Descriptions,
-  Transfer,
-  Checkbox,
-  Radio
-} from 'antd';
-import { 
-  PlusOutlined, 
-  SearchOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
-  EyeOutlined, 
-  SettingOutlined, 
-  UserOutlined, 
-  DollarOutlined, 
-  TeamOutlined, 
-  DatabaseOutlined, 
-  CloudOutlined, 
-  SecurityScanOutlined, 
-  BellOutlined, 
-  TrophyOutlined, 
-  RiseOutlined,
-  ExportOutlined,
-  ImportOutlined,
-  ReloadOutlined,
-  StopOutlined,
-  PlayCircleOutlined,
-  PauseCircleOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  WarningOutlined,
-  InfoCircleOutlined,
-  LockOutlined,
-  UnlockOutlined,
-  UserSwitchOutlined,
-  ApartmentOutlined,
-  GlobalOutlined,
-  MonitorOutlined,
-  MobileOutlined,
-  DesktopOutlined,
-  TabletOutlined
-} from '@ant-design/icons';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
-  ResponsiveContainer, 
-  BarChart, 
+import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import {
+  PlusIcon,
+  MagnifyingGlassIcon,
+  PencilSquareIcon,
+  EyeIcon,
+  UserIcon,
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
+  StopCircleIcon,
+  XCircleIcon,
+  BuildingOffice2Icon,
+  GlobeAltIcon,
+  ComputerDesktopIcon,
+  DevicePhoneMobileIcon,
+  DeviceTabletIcon,
+} from '@heroicons/react/24/outline';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../../../../../components/ui/Card/Card';
+import { Badge } from '../../../../../components/ui/Badge/Badge';
+import { Button } from '../../../../../components/ui/Button/Button';
+import { Input, Textarea } from '../../../../../components/ui/Input';
+import { DataTable } from '../../../../../components/ui/DataTable/DataTable';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../../../../../components/ui/Select/Select';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../../../../../components/ui/Tooltip/Tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from '../../../../../components/ui/Dialog/Dialog';
+import { ConfirmDialog } from '../../../../../components/ui/ConfirmDialog/ConfirmDialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../../../components/ui/Tabs/Tabs';
+import { RadioGroup, RadioGroupItem } from '../../../../../components/ui/RadioGroup/RadioGroup';
+import { Checkbox } from '../../../../../components/ui/Checkbox/Checkbox';
+import { DatePicker } from '../../../../../components/ui/DatePicker/DatePicker';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '../../../../../components/ui/Form/Form';
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  BarChart,
   Bar,
   PieChart,
   Pie,
   Cell,
-  AreaChart,
-  Area
 } from 'recharts';
 import moment from 'moment';
 import { get, post, del } from '../../../../../shared/utils/apiClient';
 import { createLogger } from '../../../../../shared/utils/logger';
-import { getStatusColor, getStatusIcon } from '../../../../../shared/utils/statusUtils';
 import { TableSkeleton } from '../../../../../shared/components/ui/SkeletonLoader';
-
-const { Option } = Select;
-const { Title, Text } = Typography;
-const { Search } = Input;
-const { RangePicker } = DatePicker;
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 const logger = createLogger('SessionManagement');
 
+const STATUS_BADGE_VARIANT = (status) => {
+  const s = (status || '').toLowerCase();
+  if (['active', 'healthy', 'valid'].includes(s)) return 'success';
+  if (['suspended', 'warning'].includes(s)) return 'warning';
+  if (['terminated', 'expired', 'error'].includes(s)) return 'destructive';
+  return 'secondary';
+};
+
+const ACCESS_LEVEL_BADGE = {
+  viewer: 'border-transparent bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+  contributor: 'border-transparent bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300',
+  editor: 'border-transparent bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
+  admin: 'border-transparent bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+  owner: 'border-transparent bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+};
+
+const PERMISSION_OPTIONS = [
+  { value: 'read', label: 'Read' },
+  { value: 'write', label: 'Write' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'delete', label: 'Delete' },
+  { value: 'manage_users', label: 'Manage Users' },
+  { value: 'view_analytics', label: 'View Analytics' },
+  { value: 'export_data', label: 'Export Data' },
+];
+
+const accessFormSchema = z.object({
+  userId: z.string().min(1, 'Please select a user'),
+  department: z.string().min(1, 'Please select a department'),
+  accessLevel: z.string().min(1, 'Please select access level'),
+  permissions: z.array(z.string()).min(1, 'Please select permissions'),
+  expiresAt: z.date().optional(),
+});
+
+const departmentFormSchema = z.object({
+  name: z.string().min(1, 'Please enter department name'),
+  code: z.string().min(1, 'Please enter department code'),
+  description: z.string().optional(),
+  departmentHead: z.string().optional(),
+});
+
 const SessionManagement = () => {
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('sessions');
-  
+
   // Sessions state
   const [sessions, setSessions] = useState([]);
   const [filteredSessions, setFilteredSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
-  const [sessionModalVisible, setSessionModalVisible] = useState(false);
   const [sessionDetailsModalVisible, setSessionDetailsModalVisible] = useState(false);
-  
+
   // Department Access state
   const [departmentAccess, setDepartmentAccess] = useState([]);
   const [filteredDepartmentAccess, setFilteredDepartmentAccess] = useState([]);
-  const [selectedAccess, setSelectedAccess] = useState(null);
   const [accessModalVisible, setAccessModalVisible] = useState(false);
-  const [accessDetailsModalVisible, setAccessDetailsModalVisible] = useState(false);
-  
+
   // Departments state
   const [departments, setDepartments] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [departmentModalVisible, setDepartmentModalVisible] = useState(false);
-  
+
   // Tenants state
   const [tenants, setTenants] = useState([]);
-  
+
   // Filters
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
   const [tenantFilter, setTenantFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
-  
+
+  // Confirm dialogs (Popconfirm replacements)
+  const [terminateConfirm, setTerminateConfirm] = useState(null); // sessionId | null
+  const [revokeConfirm, setRevokeConfirm] = useState(null); // accessId | null
+
   // Performance optimizations - debounce search text
   const [debouncedSearchText, setDebouncedSearchText] = useState('');
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchText(searchText || '');
     }, 300);
     return () => clearTimeout(timer);
   }, [searchText]);
-  
+
   // Forms
-  const [sessionForm] = Form.useForm();
-  const [accessForm] = Form.useForm();
-  const [departmentForm] = Form.useForm();
-  
+  const accessForm = useForm({
+    resolver: zodResolver(accessFormSchema),
+    defaultValues: { userId: '', department: '', accessLevel: '', permissions: [], expiresAt: undefined },
+  });
+  const departmentForm = useForm({
+    resolver: zodResolver(departmentFormSchema),
+    defaultValues: { name: '', code: '', description: '', departmentHead: '' },
+  });
+
   // Analytics
   const [sessionAnalytics, setSessionAnalytics] = useState({});
-  const [departmentAnalytics, setDepartmentAnalytics] = useState({});
 
   useEffect(() => {
     fetchInitialData();
@@ -165,7 +164,7 @@ const SessionManagement = () => {
         fetchAnalytics()
       ]);
     } catch (error) {
-      message.error('Failed to fetch initial data');
+      toast.error('Failed to fetch initial data');
       console.error('Error fetching initial data:', error);
     } finally {
       setLoading(false);
@@ -183,7 +182,7 @@ const SessionManagement = () => {
       }
     } catch (error) {
       logger.error('Error fetching tenants', error);
-      message.error('Failed to fetch tenants');
+      toast.error('Failed to fetch tenants');
     }
   };
 
@@ -192,7 +191,7 @@ const SessionManagement = () => {
       const params = new URLSearchParams();
       if (statusFilter) params.append('status', statusFilter);
       if (tenantFilter !== 'all') params.append('tenantId', tenantFilter);
-      
+
       const response = await get(`/api/supra-admin/sessions/sessions?${params.toString()}`);
       if (response.success && response.sessions) {
         // Transform sessions to match frontend expectations
@@ -217,7 +216,7 @@ const SessionManagement = () => {
       }
     } catch (error) {
       logger.error('Error fetching sessions', error);
-      message.error('Failed to fetch sessions');
+      toast.error('Failed to fetch sessions');
       setSessions([]);
     }
   };
@@ -227,7 +226,7 @@ const SessionManagement = () => {
       const params = new URLSearchParams();
       if (statusFilter) params.append('status', statusFilter);
       if (tenantFilter !== 'all') params.append('tenantId', tenantFilter);
-      
+
       const response = await get(`/api/supra-admin/sessions/department-access?${params.toString()}`);
       if (response.success && response.departmentAccess) {
         // Transform to match frontend expectations
@@ -244,7 +243,7 @@ const SessionManagement = () => {
       }
     } catch (error) {
       logger.error('Error fetching department access', error);
-      message.error('Failed to fetch department access records');
+      toast.error('Failed to fetch department access records');
       setDepartmentAccess([]);
     }
   };
@@ -261,7 +260,7 @@ const SessionManagement = () => {
       }
     } catch (error) {
       logger.error('Error fetching departments', error);
-      message.error('Failed to fetch departments');
+      toast.error('Failed to fetch departments');
       setDepartments([]);
     }
   };
@@ -271,24 +270,19 @@ const SessionManagement = () => {
       const params = new URLSearchParams();
       if (tenantFilter !== 'all') params.append('tenantId', tenantFilter);
       params.append('timeRange', '7d');
-      
-      const [sessionResponse, departmentResponse] = await Promise.all([
+
+      const [sessionResponse] = await Promise.all([
         get(`/api/supra-admin/sessions/analytics/sessions?${params.toString()}`),
         get(`/api/supra-admin/sessions/analytics/department-access?${params.toString()}`)
       ]);
-      
+
       if (sessionResponse.success && sessionResponse.analytics) {
         setSessionAnalytics(sessionResponse.analytics);
       }
-      
-      if (departmentResponse.success && departmentResponse.analytics) {
-        setDepartmentAnalytics(departmentResponse.analytics);
-      }
     } catch (error) {
       logger.error('Error fetching analytics', error);
-      message.error('Failed to fetch analytics data');
+      toast.error('Failed to fetch analytics data');
       setSessionAnalytics({});
-      setDepartmentAnalytics([]);
     }
   };
 
@@ -305,7 +299,7 @@ const SessionManagement = () => {
         session.userId?.email?.toLowerCase().includes(searchLower) ||
         session.ipAddress?.toLowerCase().includes(searchLower)
       );
-      
+
       filteredAccessData = filteredAccessData.filter(access =>
         access.userId?.fullName?.toLowerCase().includes(searchLower) ||
         access.userId?.email?.toLowerCase().includes(searchLower) ||
@@ -335,16 +329,16 @@ const SessionManagement = () => {
       const response = await del(`/api/supra-admin/sessions/sessions/${sessionId}`, {
         reason: 'Terminated by SupraAdmin'
       });
-      
+
       if (response.success) {
-        message.success('Session terminated successfully');
+        toast.success('Session terminated successfully');
         fetchSessions();
       } else {
         throw new Error(response.message || 'Failed to terminate session');
       }
     } catch (error) {
       logger.error('Failed to terminate session', error);
-      message.error(error.message || 'Failed to terminate session');
+      toast.error(error.message || 'Failed to terminate session');
     }
   };
 
@@ -354,18 +348,18 @@ const SessionManagement = () => {
         ...values,
         tenantId: selectedTenant
       });
-      
+
       if (response.success) {
-        message.success('Department access granted successfully');
+        toast.success('Department access granted successfully');
         setAccessModalVisible(false);
-        accessForm.resetFields();
+        accessForm.reset();
         fetchDepartmentAccess();
       } else {
         throw new Error(response.message || 'Failed to grant department access');
       }
     } catch (error) {
       logger.error('Failed to grant department access', error);
-      message.error(error.message || 'Failed to grant department access');
+      toast.error(error.message || 'Failed to grant department access');
     }
   };
 
@@ -374,16 +368,16 @@ const SessionManagement = () => {
       const response = await post(`/api/supra-admin/sessions/department-access/${accessId}/revoke`, {
         reason: 'Revoked by SupraAdmin'
       });
-      
+
       if (response.success) {
-        message.success('Department access revoked successfully');
+        toast.success('Department access revoked successfully');
         fetchDepartmentAccess();
       } else {
         throw new Error(response.message || 'Failed to revoke department access');
       }
     } catch (error) {
       logger.error('Failed to revoke department access', error);
-      message.error(error.message || 'Failed to revoke department access');
+      toast.error(error.message || 'Failed to revoke department access');
     }
   };
 
@@ -393,793 +387,693 @@ const SessionManagement = () => {
         ...values,
         tenantId: selectedTenant
       });
-      
+
       if (response.success) {
-        message.success('Department created successfully');
+        toast.success('Department created successfully');
         setDepartmentModalVisible(false);
-        departmentForm.resetFields();
+        departmentForm.reset();
         fetchDepartments();
       } else {
         throw new Error(response.message || 'Failed to create department');
       }
     } catch (error) {
       logger.error('Failed to create department', error);
-      message.error(error.message || 'Failed to create department');
+      toast.error(error.message || 'Failed to create department');
     }
   };
 
   const getDeviceIcon = (userAgent) => {
-    if (userAgent?.includes('Mobile')) return <MobileOutlined />;
-    if (userAgent?.includes('Tablet')) return <TabletOutlined />;
-    return <DesktopOutlined />;
+    if (userAgent?.includes('Mobile')) return <DevicePhoneMobileIcon className="h-4 w-4" />;
+    if (userAgent?.includes('Tablet')) return <DeviceTabletIcon className="h-4 w-4" />;
+    return <ComputerDesktopIcon className="h-4 w-4" />;
   };
 
-  const getAccessLevelColor = (level) => {
-    const colors = {
-      'viewer': 'blue',
-      'contributor': 'cyan',
-      'editor': 'orange',
-      'admin': 'red',
-      'owner': 'purple'
-    };
-    return colors[level] || 'default';
-  };
-
-  // Memoized responsive table columns with mobile optimization
+  // Memoized responsive table columns
   const sessionColumns = useMemo(() => [
     {
-      title: 'User',
-      dataIndex: 'userId',
-      key: 'userId',
-      responsive: ['xs', 'sm', 'md', 'lg', 'xl'],
-      render: (user) => (
+      accessorKey: 'userId',
+      header: 'User',
+      enableSorting: true,
+      sortingFn: (a, b) => (a.original.userId?.fullName || '').localeCompare(b.original.userId?.fullName || ''),
+      cell: ({ row: { original: r } }) => (
         <div>
-          <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{user?.fullName}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>{user?.email}</div>
-          <div style={{ fontSize: '11px', color: '#999' }}>{user?.department}</div>
-        </div>
-      ),
-      sorter: (a, b) => a.userId?.fullName?.localeCompare(b.userId?.fullName),
-    },
-    {
-      title: 'Tenant',
-      dataIndex: 'tenantId',
-      key: 'tenantId',
-      responsive: ['sm', 'md', 'lg', 'xl'],
-      render: (tenant) => (
-        <div>
-          <div style={{ fontWeight: 'bold' }}>{tenant?.name}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>/{tenant?.slug}</div>
+          <div className="font-semibold text-sm text-gray-900 dark:text-white">{r.userId?.fullName}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{r.userId?.email}</div>
+          <div className="text-[11px] text-gray-400 dark:text-gray-500">{r.userId?.department}</div>
         </div>
       ),
     },
     {
-      title: 'Device',
-      dataIndex: 'userAgent',
-      key: 'userAgent',
-      responsive: ['md', 'lg', 'xl'],
-      render: (userAgent) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {getDeviceIcon(userAgent)}
-          <span style={{ fontSize: '12px' }}>
-            {userAgent?.includes('Chrome') ? 'Chrome' : 
-             userAgent?.includes('Firefox') ? 'Firefox' : 
+      id: 'tenantId',
+      header: 'Tenant',
+      cell: ({ row: { original: r } }) => (
+        <div>
+          <div className="font-medium text-gray-900 dark:text-white">{r.tenantId?.name}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">/{r.tenantId?.slug}</div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'userAgent',
+      header: 'Device',
+      cell: ({ getValue }) => {
+        const userAgent = getValue();
+        return (
+          <div className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
+            {getDeviceIcon(userAgent)}
+            {userAgent?.includes('Chrome') ? 'Chrome' :
+             userAgent?.includes('Firefox') ? 'Firefox' :
              userAgent?.includes('Safari') ? 'Safari' : 'Unknown'}
-          </span>
-        </div>
-      ),
+          </div>
+        );
+      },
     },
     {
-      title: 'IP Address',
-      dataIndex: 'ipAddress',
-      key: 'ipAddress',
-      responsive: ['lg', 'xl'],
-      render: (ip) => <Text code style={{ fontSize: '12px' }}>{ip}</Text>,
+      accessorKey: 'ipAddress',
+      header: 'IP Address',
+      cell: ({ getValue }) => <code className="text-xs">{getValue()}</code>,
     },
     {
-      title: 'Department Access',
-      dataIndex: 'departmentAccess',
-      key: 'departmentAccess',
-      responsive: ['md', 'lg', 'xl'],
-      render: (access) => (
-        <div>
-          {access?.filter(da => da.isActive).map(da => (
-            <Tag key={da.department} color="blue" size="small" style={{ marginBottom: '2px' }}>
+      id: 'departmentAccess',
+      header: 'Department Access',
+      cell: ({ row: { original: r } }) => (
+        <div className="flex flex-wrap gap-1">
+          {(r.departmentAccess || []).filter((da) => da.isActive).map((da) => (
+            <Badge key={da.department} className="border-transparent bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
               {da.department}
-            </Tag>
+            </Badge>
           ))}
         </div>
       ),
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      responsive: ['xs', 'sm', 'md', 'lg', 'xl'],
-      render: (status) => <Tag color={getStatusColor(status)} size="small">{(status || 'unknown').toUpperCase()}</Tag>,
-      filters: [
-        { text: 'Active', value: 'active' },
-        { text: 'Suspended', value: 'suspended' },
-        { text: 'Terminated', value: 'terminated' },
-        { text: 'Expired', value: 'expired' },
-      ],
-      onFilter: (value, record) => record.status === value,
+      accessorKey: 'status',
+      header: 'Status',
+      enableColumnFilter: true,
+      filterFn: (row, columnId, value) => !value || row.getValue(columnId) === value,
+      cell: ({ getValue }) => <Badge variant={STATUS_BADGE_VARIANT(getValue())}>{(getValue() || 'unknown').toUpperCase()}</Badge>,
     },
     {
-      title: 'Last Activity',
-      dataIndex: 'lastActivity',
-      key: 'lastActivity',
-      responsive: ['sm', 'md', 'lg', 'xl'],
-      render: (date) => <span style={{ fontSize: '12px' }}>{moment(date).fromNow()}</span>,
-      sorter: (a, b) => new Date(a.lastActivity) - new Date(b.lastActivity),
+      accessorKey: 'lastActivity',
+      header: 'Last Activity',
+      enableSorting: true,
+      sortingFn: (a, b) => new Date(a.original.lastActivity || 0) - new Date(b.original.lastActivity || 0),
+      cell: ({ getValue }) => <span className="text-xs text-gray-500 dark:text-gray-400">{moment(getValue()).fromNow()}</span>,
     },
     {
-      title: 'Actions',
-      key: 'actions',
-      responsive: ['xs', 'sm', 'md', 'lg', 'xl'],
-      width: 120,
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="View Details">
-            <Button 
-              type="text" 
-              size="small"
-              icon={<EyeOutlined />} 
-              onClick={() => {
-                setSelectedSession(record);
-                setSessionDetailsModalVisible(true);
-              }}
-              style={{ minWidth: '32px', height: '32px' }}
-            />
-          </Tooltip>
-          {record.status === 'active' && (
-            <Popconfirm
-              title="Are you sure you want to terminate this session?"
-              onConfirm={() => handleTerminateSession(record._id)}
-              okText="Yes"
-              cancelText="No"
-            >
-              <Tooltip title="Terminate Session">
-                <Button 
-                  type="text" 
-                  size="small"
-                  danger 
-                  icon={<StopOutlined />}
-                  style={{ minWidth: '32px', height: '32px' }}
-                />
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row: { original: r } }) => (
+        <TooltipProvider>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => { setSelectedSession(r); setSessionDetailsModalVisible(true); }}
+                >
+                  <EyeIcon className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>View Details</TooltipContent>
+            </Tooltip>
+            {r.status === 'active' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-red-600 dark:text-red-400 hover:text-red-700"
+                    onClick={() => setTerminateConfirm(r._id)}
+                  >
+                    <StopCircleIcon className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Terminate Session</TooltipContent>
               </Tooltip>
-            </Popconfirm>
-          )}
-        </Space>
+            )}
+          </div>
+        </TooltipProvider>
       ),
     },
   ], []);
 
   const departmentAccessColumns = useMemo(() => [
     {
-      title: 'User',
-      dataIndex: 'userId',
-      key: 'userId',
-      responsive: ['xs', 'sm', 'md', 'lg', 'xl'],
-      render: (user) => (
+      id: 'userId',
+      header: 'User',
+      cell: ({ row: { original: r } }) => (
         <div>
-          <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{user?.fullName}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>{user?.email}</div>
-          <div style={{ fontSize: '11px', color: '#999' }}>{user?.role}</div>
+          <div className="font-semibold text-sm text-gray-900 dark:text-white">{r.userId?.fullName}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">{r.userId?.email}</div>
+          <div className="text-[11px] text-gray-400 dark:text-gray-500">{r.userId?.role}</div>
         </div>
       ),
     },
     {
-      title: 'Department',
-      dataIndex: 'department',
-      key: 'department',
-      responsive: ['xs', 'sm', 'md', 'lg', 'xl'],
-      render: (department) => (
-        <Tag icon={<ApartmentOutlined />} color="blue" size="small">
-          {department}
-        </Tag>
+      accessorKey: 'department',
+      header: 'Department',
+      cell: ({ getValue }) => (
+        <Badge className="border-transparent bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 gap-1">
+          <BuildingOffice2Icon className="h-3 w-3" />
+          {getValue()}
+        </Badge>
       ),
     },
     {
-      title: 'Access Level',
-      dataIndex: 'accessLevel',
-      key: 'accessLevel',
-      responsive: ['sm', 'md', 'lg', 'xl'],
-      render: (level) => <Tag color={getAccessLevelColor(level)} size="small">{level.toUpperCase()}</Tag>,
+      accessorKey: 'accessLevel',
+      header: 'Access Level',
+      cell: ({ getValue }) => <Badge className={ACCESS_LEVEL_BADGE[getValue()] || 'border-transparent bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}>{(getValue() || '').toUpperCase()}</Badge>,
     },
     {
-      title: 'Permissions',
-      dataIndex: 'permissions',
-      key: 'permissions',
-      responsive: ['md', 'lg', 'xl'],
-      render: (permissions) => (
-        <div>
-          {permissions?.map(permission => (
-            <Tag key={permission} size="small" style={{ marginBottom: '2px' }}>
-              {permission}
-            </Tag>
+      accessorKey: 'permissions',
+      header: 'Permissions',
+      cell: ({ getValue }) => (
+        <div className="flex flex-wrap gap-1">
+          {(getValue() || []).map((permission) => (
+            <Badge key={permission} variant="secondary">{permission}</Badge>
           ))}
         </div>
       ),
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      responsive: ['xs', 'sm', 'md', 'lg', 'xl'],
-      render: (status) => <Tag color={getStatusColor(status)} size="small">{(status || 'unknown').toUpperCase()}</Tag>,
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ getValue }) => <Badge variant={STATUS_BADGE_VARIANT(getValue())}>{(getValue() || 'unknown').toUpperCase()}</Badge>,
     },
     {
-      title: 'Last Accessed',
-      dataIndex: 'lastAccessed',
-      key: 'lastAccessed',
-      responsive: ['sm', 'md', 'lg', 'xl'],
-      render: (date) => <span style={{ fontSize: '12px' }}>{moment(date).fromNow()}</span>,
-      sorter: (a, b) => new Date(a.lastAccessed) - new Date(b.lastAccessed),
+      accessorKey: 'lastAccessed',
+      header: 'Last Accessed',
+      enableSorting: true,
+      sortingFn: (a, b) => new Date(a.original.lastAccessed || 0) - new Date(b.original.lastAccessed || 0),
+      cell: ({ getValue }) => <span className="text-xs text-gray-500 dark:text-gray-400">{moment(getValue()).fromNow()}</span>,
     },
     {
-      title: 'Expires',
-      dataIndex: 'expiresAt',
-      key: 'expiresAt',
-      responsive: ['lg', 'xl'],
-      render: (date) => <span style={{ fontSize: '12px' }}>{date ? moment(date).format('MMM DD, YYYY') : 'Never'}</span>,
+      accessorKey: 'expiresAt',
+      header: 'Expires',
+      cell: ({ getValue }) => <span className="text-xs text-gray-500 dark:text-gray-400">{getValue() ? moment(getValue()).format('MMM DD, YYYY') : 'Never'}</span>,
     },
     {
-      title: 'Actions',
-      key: 'actions',
-      responsive: ['xs', 'sm', 'md', 'lg', 'xl'],
-      width: 120,
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="View Details">
-            <Button 
-              type="text" 
-              size="small"
-              icon={<EyeOutlined />} 
-              onClick={() => {
-                setSelectedAccess(record);
-                setAccessDetailsModalVisible(true);
-              }}
-              style={{ minWidth: '32px', height: '32px' }}
-            />
-          </Tooltip>
-          {record.status === 'active' && (
-            <Popconfirm
-              title="Are you sure you want to revoke this access?"
-              onConfirm={() => handleRevokeDepartmentAccess(record._id)}
-              okText="Yes"
-              cancelText="No"
-            >
-              <Tooltip title="Revoke Access">
-                <Button 
-                  type="text" 
-                  size="small"
-                  danger 
-                  icon={<CloseCircleOutlined />}
-                  style={{ minWidth: '32px', height: '32px' }}
-                />
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row: { original: r } }) => (
+        <TooltipProvider>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedSession(null); }}>
+                  <EyeIcon className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>View Details</TooltipContent>
+            </Tooltip>
+            {r.status === 'active' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-red-600 dark:text-red-400 hover:text-red-700"
+                    onClick={() => setRevokeConfirm(r._id)}
+                  >
+                    <XCircleIcon className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Revoke Access</TooltipContent>
               </Tooltip>
-            </Popconfirm>
-          )}
-        </Space>
+            )}
+          </div>
+        </TooltipProvider>
       ),
     },
   ], []);
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="p-6">
       {/* Header */}
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <Title level={2} style={{ margin: 0 }}>Session Management</Title>
-          <Text type="secondary">Manage tenant sessions and department access control</Text>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Session Management</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Manage tenant sessions and department access control</p>
         </div>
-        <Space>
-          <Button icon={<ReloadOutlined />} onClick={fetchInitialData}>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={fetchInitialData}>
+            <ArrowPathIcon className="h-4 w-4" />
             Refresh
           </Button>
-          <Button icon={<ExportOutlined />}>
+          <Button variant="outline">
+            <ArrowDownTrayIcon className="h-4 w-4" />
             Export
           </Button>
-        </Space>
+        </div>
       </div>
 
       {/* Statistics Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} sm={6}>
-          <Card>
-            <Statistic
-              title="Active Sessions"
-              value={sessionAnalytics.activeSessions || 0}
-              prefix={<MonitorOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={6}>
-          <Card>
-            <Statistic
-              title="Total Sessions"
-              value={sessionAnalytics.totalSessions || 0}
-              prefix={<GlobalOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={6}>
-          <Card>
-            <Statistic
-              title="Unique Users"
-              value={sessionAnalytics.uniqueUsers || 0}
-              prefix={<UserOutlined />}
-              valueStyle={{ color: '#722ed1' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={6}>
-          <Card>
-            <Statistic
-              title="Departments"
-              value={departments.length}
-              prefix={<ApartmentOutlined />}
-              valueStyle={{ color: '#fa8c16' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Active Sessions</span>
+              <ComputerDesktopIcon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{sessionAnalytics.activeSessions || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Total Sessions</span>
+              <GlobeAltIcon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{sessionAnalytics.totalSessions || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Unique Users</span>
+              <UserIcon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{sessionAnalytics.uniqueUsers || 0}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <span>Departments</span>
+              <BuildingOffice2Icon className="h-4 w-4" />
+            </div>
+            <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{departments.length}</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Filters */}
-      <Card style={{ marginBottom: '24px' }}>
-        <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} sm={6}>
-            <Search
-              placeholder="Search users, emails, IPs..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              prefix={<SearchOutlined />}
-            />
-          </Col>
-          <Col xs={24} sm={4}>
-            <Select
-              placeholder="Status"
-              value={statusFilter}
-              onChange={setStatusFilter}
-              style={{ width: '100%' }}
-            >
-              <Option value="active">Active</Option>
-              <Option value="suspended">Suspended</Option>
-              <Option value="terminated">Terminated</Option>
-              <Option value="expired">Expired</Option>
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative w-[220px]">
+              <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input placeholder="Search users, emails, IPs..." value={searchText} onChange={(e) => setSearchText(e.target.value)} className="pl-8" />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[130px]"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="terminated">Terminated</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
             </Select>
-          </Col>
-          <Col xs={24} sm={4}>
-            <Select
-              placeholder="Tenant"
-              value={tenantFilter}
-              onChange={setTenantFilter}
-              style={{ width: '100%' }}
-            >
-              <Option value="all">All Tenants</Option>
-              {tenants.map(tenant => (
-                <Option key={tenant._id} value={tenant._id}>{tenant.name}</Option>
-              ))}
+            <Select value={tenantFilter} onValueChange={setTenantFilter}>
+              <SelectTrigger className="w-[160px]"><SelectValue placeholder="Tenant" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tenants</SelectItem>
+                {tenants.map((tenant) => (
+                  <SelectItem key={tenant._id} value={tenant._id}>{tenant.name}</SelectItem>
+                ))}
+              </SelectContent>
             </Select>
-          </Col>
-          <Col xs={24} sm={4}>
-            <Select
-              placeholder="Department"
-              value={departmentFilter}
-              onChange={setDepartmentFilter}
-              style={{ width: '100%' }}
-            >
-              <Option value="all">All Departments</Option>
-              {departments.map(dept => (
-                <Option key={dept._id} value={dept.name}>{dept.name}</Option>
-              ))}
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-[160px]"><SelectValue placeholder="Department" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Departments</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept._id} value={dept.name}>{dept.name}</SelectItem>
+                ))}
+              </SelectContent>
             </Select>
-          </Col>
-          <Col xs={24} sm={6}>
-            <Space>
-              <Text type="secondary">
-                Showing {activeTab === 'sessions' ? filteredSessions.length : filteredDepartmentAccess.length} records
-              </Text>
-            </Space>
-          </Col>
-        </Row>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Main Content */}
       <Card>
-        <Tabs 
-          activeKey={activeTab} 
-          onChange={setActiveTab}
-          items={[
-            {
-              key: 'sessions',
-              label: 'Active Sessions',
-              children: loading ? (
+        <CardContent className="p-4">
+          <Tabs defaultValue="sessions">
+            <TabsList className="flex-wrap h-auto">
+              <TabsTrigger value="sessions">Active Sessions ({filteredSessions.length})</TabsTrigger>
+              <TabsTrigger value="department-access">Department Access ({filteredDepartmentAccess.length})</TabsTrigger>
+              <TabsTrigger value="departments">Departments</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="sessions">
+              {loading ? (
                 <TableSkeleton columns={7} rows={5} />
               ) : (
-                <Table
-                  columns={sessionColumns}
-                  dataSource={filteredSessions}
-                  rowKey="_id"
-                  pagination={{
-                    pageSize: 20,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} sessions`,
-                    responsive: true,
-                    size: 'small'
-                  }}
-                  scroll={{ x: 800 }}
-                  size="small"
-                  responsive={true}
-                  tableLayout="auto"
-                />
-              )
-            },
-            {
-              key: 'department-access',
-              label: 'Department Access',
-              children: (
-                <>
-                  <div style={{ marginBottom: '16px' }}>
-                    <Button 
-                      type="primary" 
-                      icon={<PlusOutlined />}
-                      onClick={() => setAccessModalVisible(true)}
-                    >
-                      Grant Department Access
-                    </Button>
-                  </div>
-                  {loading ? (
-                    <TableSkeleton columns={8} rows={5} />
-                  ) : (
-                    <Table
-                      columns={departmentAccessColumns}
-                      dataSource={filteredDepartmentAccess}
-                      rowKey="_id"
-                      pagination={{
-                        pageSize: 20,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} access records`,
-                        responsive: true,
-                        size: 'small'
-                      }}
-                      scroll={{ x: 800 }}
-                      size="small"
-                      responsive={true}
-                      tableLayout="auto"
-                    />
-                  )}
-                </>
-              )
-            },
-            {
-              key: 'departments',
-              label: 'Departments',
-              children: (
-                <>
-                  <div style={{ marginBottom: '16px' }}>
-                    <Button 
-                      type="primary" 
-                      icon={<PlusOutlined />}
-                      onClick={() => setDepartmentModalVisible(true)}
-                    >
-                      Create Department
-                    </Button>
-                  </div>
-                  <Row gutter={[16, 16]}>
-                    {departments.map(department => (
-                      <Col xs={24} sm={12} lg={8} key={department._id}>
-                        <Card 
-                          title={department.name}
-                          extra={<Tag color="blue">{department.code}</Tag>}
-                          actions={[
-                            <Button type="text" icon={<EyeOutlined />}>View</Button>,
-                            <Button type="text" icon={<EditOutlined />}>Edit</Button>
-                          ]}
+                <DataTable columns={sessionColumns} data={filteredSessions} pageSize={20} emptyMessage="No sessions found" />
+              )}
+            </TabsContent>
+
+            <TabsContent value="department-access">
+              <div className="mb-4">
+                <Button onClick={() => setAccessModalVisible(true)}>
+                  <PlusIcon className="h-4 w-4" />
+                  Grant Department Access
+                </Button>
+              </div>
+              {loading ? (
+                <TableSkeleton columns={8} rows={5} />
+              ) : (
+                <DataTable columns={departmentAccessColumns} data={filteredDepartmentAccess} pageSize={20} emptyMessage="No access records found" />
+              )}
+            </TabsContent>
+
+            <TabsContent value="departments">
+              <div className="mb-4">
+                <Button onClick={() => setDepartmentModalVisible(true)}>
+                  <PlusIcon className="h-4 w-4" />
+                  Create Department
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {departments.map((department) => (
+                  <Card key={department._id}>
+                    <CardHeader className="flex-row items-center justify-between space-y-0">
+                      <CardTitle>{department.name}</CardTitle>
+                      <Badge className="border-transparent bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">{department.code}</Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{department.description}</p>
+                      <div className="mt-3 text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">Users: </span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{department.stats?.totalUsers || 0}</span>
+                        <br />
+                        <span className="text-gray-500 dark:text-gray-400">Status: </span>
+                        <Badge variant={department.status === 'active' ? 'success' : 'destructive'}>{department.status}</Badge>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="gap-2">
+                      <Button variant="ghost" size="sm"><EyeIcon className="h-4 w-4" />View</Button>
+                      <Button variant="ghost" size="sm"><PencilSquareIcon className="h-4 w-4" />Edit</Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader><CardTitle>Sessions by Department</CardTitle></CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={Object.entries(sessionAnalytics.sessionsByDepartment || {}).map(([name, value]) => ({ name, value }))}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          dataKey="value"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                         >
-                          <p>{department.description}</p>
-                          <div style={{ marginTop: '12px' }}>
-                            <Text type="secondary">Users: </Text>
-                            <Text strong>{department.stats?.totalUsers || 0}</Text>
-                            <br />
-                            <Text type="secondary">Status: </Text>
-                            <Tag color={department.status === 'active' ? 'green' : 'red'}>
-                              {department.status}
-                            </Tag>
-                          </div>
-                        </Card>
-                      </Col>
-                    ))}
-                  </Row>
-                </>
-              )
-            },
-            {
-              key: 'analytics',
-              label: 'Analytics',
-              children: (
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} lg={12}>
-                    <Card title="Sessions by Department">
-                      <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={Object.entries(sessionAnalytics.sessionsByDepartment || {}).map(([name, value]) => ({ name, value }))}
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            dataKey="value"
-                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          >
-                            {Object.entries(sessionAnalytics.sessionsByDepartment || {}).map((_, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <RechartsTooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </Card>
-                  </Col>
-                  <Col xs={24} lg={12}>
-                    <Card title="Hourly Session Distribution">
-                      <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={sessionAnalytics.hourlyDistribution?.map((value, index) => ({ hour: index, sessions: value })) || []}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="hour" />
-                          <YAxis />
-                          <RechartsTooltip />
-                          <Bar dataKey="sessions" fill="#1890ff" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </Card>
-                  </Col>
-                </Row>
-              )
-            }
-          ]}
-        />
+                          {Object.entries(sessionAnalytics.sessionsByDepartment || {}).map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader><CardTitle>Hourly Session Distribution</CardTitle></CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={sessionAnalytics.hourlyDistribution?.map((value, index) => ({ hour: index, sessions: value })) || []}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="hour" />
+                        <YAxis />
+                        <RechartsTooltip />
+                        <Bar dataKey="sessions" fill="#1890ff" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
       </Card>
 
+      {/* Terminate / Revoke confirmations (Popconfirm replacements) */}
+      <ConfirmDialog
+        open={!!terminateConfirm}
+        onOpenChange={(open) => !open && setTerminateConfirm(null)}
+        title="Terminate this session?"
+        description="The user will be signed out immediately."
+        confirmLabel="Terminate"
+        variant="destructive"
+        onConfirm={async () => { await handleTerminateSession(terminateConfirm); setTerminateConfirm(null); }}
+      />
+      <ConfirmDialog
+        open={!!revokeConfirm}
+        onOpenChange={(open) => !open && setRevokeConfirm(null)}
+        title="Revoke this access?"
+        description="The user will immediately lose access to this department."
+        confirmLabel="Revoke"
+        variant="destructive"
+        onConfirm={async () => { await handleRevokeDepartmentAccess(revokeConfirm); setRevokeConfirm(null); }}
+      />
+
       {/* Session Details Modal */}
-      <Modal
-        title={`Session Details - ${selectedSession?.userId?.fullName}`}
-        open={sessionDetailsModalVisible}
-        onCancel={() => {
-          setSessionDetailsModalVisible(false);
-          setSelectedSession(null);
-        }}
-        footer={null}
-        width={800}
-      >
-        {selectedSession && (
-          <Tabs 
-            defaultActiveKey="overview"
-            items={[
-              {
-                key: 'overview',
-                label: 'Overview',
-                children: (
-                  <Descriptions column={2}>
-                    <Descriptions.Item label="User">{selectedSession.userId?.fullName}</Descriptions.Item>
-                    <Descriptions.Item label="Email">{selectedSession.userId?.email}</Descriptions.Item>
-                    <Descriptions.Item label="Tenant">{selectedSession.tenantId?.name}</Descriptions.Item>
-                    <Descriptions.Item label="IP Address">{selectedSession.ipAddress}</Descriptions.Item>
-                    <Descriptions.Item label="Device">{selectedSession.userAgent}</Descriptions.Item>
-                    <Descriptions.Item label="Status">
-                      <Tag color={getStatusColor(selectedSession.status)}>{selectedSession.status}</Tag>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Login Time">{moment(selectedSession.loginTime).format('MMM DD, YYYY HH:mm')}</Descriptions.Item>
-                    <Descriptions.Item label="Last Activity">{moment(selectedSession.lastActivity).fromNow()}</Descriptions.Item>
-                  </Descriptions>
-                )
-              },
-              {
-                key: 'access',
-                label: 'Department Access',
-                children: (
-                  <List
-                    dataSource={selectedSession.departmentAccess}
-                    renderItem={access => (
-                      <List.Item>
-                        <List.Item.Meta
-                          title={access.department}
-                          description={
-                            <div>
-                              <div>Permissions: {access.permissions.join(', ')}</div>
-                              <div>Granted: {moment(access.grantedAt).format('MMM DD, YYYY')}</div>
-                              {access.expiresAt && <div>Expires: {moment(access.expiresAt).format('MMM DD, YYYY')}</div>}
-                            </div>
-                          }
-                        />
-                        <Tag color={access.isActive ? 'green' : 'red'}>
-                          {access.isActive ? 'Active' : 'Inactive'}
-                        </Tag>
-                      </List.Item>
-                    )}
-                  />
-                )
-              },
-              {
-                key: 'activity',
-                label: 'Activity Log',
-                children: (
-                  <Timeline
-                    items={selectedSession.activities?.map(activity => ({
-                      children: (
-                        <div>
-                          <div><strong>{activity.action}</strong> - {activity.resource}</div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>
-                            {moment(activity.timestamp).format('MMM DD, YYYY HH:mm')}
-                          </div>
-                        </div>
-                      )
-                    })) || []}
-                  />
-                )
-              }
-            ]}
-          />
-        )}
-      </Modal>
+      <Dialog open={sessionDetailsModalVisible} onOpenChange={(open) => { if (!open) { setSessionDetailsModalVisible(false); setSelectedSession(null); } }}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Session Details - {selectedSession?.userId?.fullName}</DialogTitle>
+          </DialogHeader>
+          {selectedSession && (
+            <Tabs defaultValue="overview">
+              <TabsList>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="access">Department Access</TabsTrigger>
+                <TabsTrigger value="activity">Activity Log</TabsTrigger>
+              </TabsList>
+              <TabsContent value="overview">
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <div><dt className="text-gray-500 dark:text-gray-400">User</dt><dd className="font-medium text-gray-900 dark:text-white">{selectedSession.userId?.fullName}</dd></div>
+                  <div><dt className="text-gray-500 dark:text-gray-400">Email</dt><dd className="font-medium text-gray-900 dark:text-white">{selectedSession.userId?.email}</dd></div>
+                  <div><dt className="text-gray-500 dark:text-gray-400">Tenant</dt><dd className="font-medium text-gray-900 dark:text-white">{selectedSession.tenantId?.name}</dd></div>
+                  <div><dt className="text-gray-500 dark:text-gray-400">IP Address</dt><dd className="font-medium text-gray-900 dark:text-white">{selectedSession.ipAddress}</dd></div>
+                  <div><dt className="text-gray-500 dark:text-gray-400">Device</dt><dd className="font-medium text-gray-900 dark:text-white truncate">{selectedSession.userAgent}</dd></div>
+                  <div><dt className="text-gray-500 dark:text-gray-400">Status</dt><dd><Badge variant={STATUS_BADGE_VARIANT(selectedSession.status)}>{selectedSession.status}</Badge></dd></div>
+                  <div><dt className="text-gray-500 dark:text-gray-400">Login Time</dt><dd className="font-medium text-gray-900 dark:text-white">{moment(selectedSession.loginTime).format('MMM DD, YYYY HH:mm')}</dd></div>
+                  <div><dt className="text-gray-500 dark:text-gray-400">Last Activity</dt><dd className="font-medium text-gray-900 dark:text-white">{moment(selectedSession.lastActivity).fromNow()}</dd></div>
+                </dl>
+              </TabsContent>
+              <TabsContent value="access">
+                <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {(selectedSession.departmentAccess || []).map((access) => (
+                    <li key={access.department} className="flex items-center justify-between py-3">
+                      <div>
+                        <p className="font-medium text-sm text-gray-900 dark:text-white">{access.department}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Permissions: {(access.permissions || []).join(', ')}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Granted: {moment(access.grantedAt).format('MMM DD, YYYY')}</p>
+                        {access.expiresAt && <p className="text-xs text-gray-500 dark:text-gray-400">Expires: {moment(access.expiresAt).format('MMM DD, YYYY')}</p>}
+                      </div>
+                      <Badge variant={access.isActive ? 'success' : 'destructive'}>{access.isActive ? 'Active' : 'Inactive'}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              </TabsContent>
+              <TabsContent value="activity">
+                <ul className="space-y-4">
+                  {(selectedSession.activities || []).map((activity, i) => (
+                    <li key={i} className="relative pl-5 border-l-2 border-gray-200 dark:border-gray-700">
+                      <span className="absolute -left-[5px] top-1 h-2 w-2 rounded-full bg-primary-500" />
+                      <p className="text-sm"><b className="text-gray-900 dark:text-white">{activity.action}</b> - {activity.resource}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{moment(activity.timestamp).format('MMM DD, YYYY HH:mm')}</p>
+                    </li>
+                  ))}
+                  {!(selectedSession.activities || []).length && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No activity recorded</p>
+                  )}
+                </ul>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Grant Department Access Modal */}
-      <Modal
-        title="Grant Department Access"
-        open={accessModalVisible}
-        onCancel={() => {
-          setAccessModalVisible(false);
-          accessForm.resetFields();
-        }}
-        footer={null}
-        width={600}
-      >
-        <Form
-          form={accessForm}
-          layout="vertical"
-          onFinish={handleGrantDepartmentAccess}
-        >
-          <Form.Item
-            name="userId"
-            label="User"
-            rules={[{ required: true, message: 'Please select a user' }]}
-          >
-            <Select placeholder="Select user" showSearch>
-              {/* This would be populated with users from the selected tenant */}
-            </Select>
-          </Form.Item>
-          
-          <Form.Item
-            name="department"
-            label="Department"
-            rules={[{ required: true, message: 'Please select a department' }]}
-          >
-            <Select placeholder="Select department">
-              {departments.map(dept => (
-                <Option key={dept._id} value={dept.name}>{dept.name}</Option>
-              ))}
-            </Select>
-          </Form.Item>
-          
-          <Form.Item
-            name="accessLevel"
-            label="Access Level"
-            rules={[{ required: true, message: 'Please select access level' }]}
-          >
-            <Radio.Group>
-              <Radio value="viewer">Viewer</Radio>
-              <Radio value="contributor">Contributor</Radio>
-              <Radio value="editor">Editor</Radio>
-              <Radio value="admin">Admin</Radio>
-            </Radio.Group>
-          </Form.Item>
-          
-          <Form.Item
-            name="permissions"
-            label="Permissions"
-            rules={[{ required: true, message: 'Please select permissions' }]}
-          >
-            <Checkbox.Group>
-              <Checkbox value="read">Read</Checkbox>
-              <Checkbox value="write">Write</Checkbox>
-              <Checkbox value="admin">Admin</Checkbox>
-              <Checkbox value="delete">Delete</Checkbox>
-              <Checkbox value="manage_users">Manage Users</Checkbox>
-              <Checkbox value="view_analytics">View Analytics</Checkbox>
-              <Checkbox value="export_data">Export Data</Checkbox>
-            </Checkbox.Group>
-          </Form.Item>
-          
-          <Form.Item
-            name="expiresAt"
-            label="Expiration Date"
-          >
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
-          
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit">
-                Grant Access
-              </Button>
-              <Button onClick={() => {
-                setAccessModalVisible(false);
-                accessForm.resetFields();
-              }}>
-                Cancel
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+      <Dialog open={accessModalVisible} onOpenChange={(open) => { if (!open) { setAccessModalVisible(false); accessForm.reset(); } }}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Grant Department Access</DialogTitle></DialogHeader>
+          <Form {...accessForm}>
+            <form onSubmit={accessForm.handleSubmit(handleGrantDepartmentAccess)} className="space-y-4">
+              <FormField
+                control={accessForm.control}
+                name="userId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>User</FormLabel>
+                    {/* This would be populated with users from the selected tenant */}
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Select user" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent />
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={accessForm.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept._id} value={dept.name}>{dept.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={accessForm.control}
+                name="accessLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Access Level</FormLabel>
+                    <FormControl>
+                      <RadioGroup value={field.value} onValueChange={field.onChange} className="flex flex-wrap gap-x-4 gap-y-2">
+                        {['viewer', 'contributor', 'editor', 'admin'].map((level) => (
+                          <label key={level} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                            <RadioGroupItem value={level} />
+                            {level.charAt(0).toUpperCase() + level.slice(1)}
+                          </label>
+                        ))}
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={accessForm.control}
+                name="permissions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Permissions</FormLabel>
+                    <FormControl>
+                      <div className="flex flex-wrap gap-x-4 gap-y-2">
+                        {PERMISSION_OPTIONS.map((opt) => (
+                          <label key={opt.value} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                            <Checkbox
+                              checked={(field.value || []).includes(opt.value)}
+                              onCheckedChange={(checked) => {
+                                const next = new Set(field.value || []);
+                                if (checked) next.add(opt.value); else next.delete(opt.value);
+                                field.onChange([...next]);
+                              }}
+                            />
+                            {opt.label}
+                          </label>
+                        ))}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={accessForm.control}
+                name="expiresAt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Expiration Date</FormLabel>
+                    <FormControl>
+                      <DatePicker value={field.value} onChange={field.onChange} className="w-full" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => { setAccessModalVisible(false); accessForm.reset(); }}>Cancel</Button>
+                <Button type="submit">Grant Access</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Department Modal */}
-      <Modal
-        title="Create Department"
-        open={departmentModalVisible}
-        onCancel={() => {
-          setDepartmentModalVisible(false);
-          departmentForm.resetFields();
-        }}
-        footer={null}
-        width={600}
-      >
-        <Form
-          form={departmentForm}
-          layout="vertical"
-          onFinish={handleCreateDepartment}
-        >
-          <Form.Item
-            name="name"
-            label="Department Name"
-            rules={[{ required: true, message: 'Please enter department name' }]}
-          >
-            <Input placeholder="Enter department name" />
-          </Form.Item>
-          
-          <Form.Item
-            name="code"
-            label="Department Code"
-            rules={[{ required: true, message: 'Please enter department code' }]}
-          >
-            <Input placeholder="Enter department code" />
-          </Form.Item>
-          
-          <Form.Item
-            name="description"
-            label="Description"
-          >
-            <Input.TextArea placeholder="Enter department description" rows={3} />
-          </Form.Item>
-          
-          <Form.Item
-            name="departmentHead"
-            label="Department Head"
-          >
-            <Select placeholder="Select department head" allowClear>
-              {/* This would be populated with users from the selected tenant */}
-            </Select>
-          </Form.Item>
-          
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit">
-                Create Department
-              </Button>
-              <Button onClick={() => {
-                setDepartmentModalVisible(false);
-                departmentForm.resetFields();
-              }}>
-                Cancel
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+      <Dialog open={departmentModalVisible} onOpenChange={(open) => { if (!open) { setDepartmentModalVisible(false); departmentForm.reset(); } }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader><DialogTitle>Create Department</DialogTitle></DialogHeader>
+          <Form {...departmentForm}>
+            <form onSubmit={departmentForm.handleSubmit(handleCreateDepartment)} className="space-y-4">
+              <FormField
+                control={departmentForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department Name</FormLabel>
+                    <FormControl><Input placeholder="Enter department name" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={departmentForm.control}
+                name="code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department Code</FormLabel>
+                    <FormControl><Input placeholder="Enter department code" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={departmentForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl><Textarea placeholder="Enter department description" rows={3} {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={departmentForm.control}
+                name="departmentHead"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department Head</FormLabel>
+                    {/* This would be populated with users from the selected tenant */}
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Select department head" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent />
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => { setDepartmentModalVisible(false); departmentForm.reset(); }}>Cancel</Button>
+                <Button type="submit">Create Department</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
