@@ -7,6 +7,7 @@ import {
   CalendarDaysIcon, DocumentCheckIcon, ShieldCheckIcon, SparklesIcon
 } from '@heroicons/react/24/outline';
 import SoftwareHouseNavbar from '../../../features/auth/components/SoftwareHouseNavbar';
+import SoftwareHouseFooter from '../../../features/auth/components/SoftwareHouseFooter';
 import './ModuleStoryPage.css';
 
 const icons = {
@@ -155,7 +156,7 @@ export default function ModuleStoryPage({ data }) {
                 <h1>{data.headline}<em>{data.highlight}</em></h1>
                 <p>{data.lede}</p>
                 <div className="msp-actions">
-                  <Link to="/software-house-signup" className="msp-primary">Start free <ArrowRightIcon /></Link>
+                  <Link to="/signup" className="msp-primary">Start free <ArrowRightIcon /></Link>
                   <a href="#story" className="msp-secondary">Explore the workflow <ArrowUpRightIcon /></a>
                 </div>
                 <div className="msp-proof">{data.proof.map(item => <span key={item}><CheckIcon />{item}</span>)}</div>
@@ -202,11 +203,11 @@ export default function ModuleStoryPage({ data }) {
           <section className="msp-final">
             <div className="msp-shell">
               <SparklesIcon /><span>{data.name.toUpperCase()}, CONNECTED</span><h2>{data.finalTitle}</h2><p>{data.finalCopy}</p>
-              <Link to="/software-house-signup">Build your workspace <ArrowRightIcon /></Link>
+              <Link to="/signup">Build your workspace <ArrowRightIcon /></Link>
             </div>
           </section>
         </main>
-        <footer><div className="msp-shell"><b>TWS <span>{data.name}</span></b><nav><Link to="/software-house">Platform</Link><Link to="/software-house/projects">Projects</Link><Link to="/software-house/hrm">HRM</Link><Link to="/software-house/finance">Finance</Link></nav><small>© 2026 The Wolf Stack</small></div></footer>
+        <SoftwareHouseFooter moduleName={`TWS ${data.name}`} />
       </div>
     </MotionConfig>
   );

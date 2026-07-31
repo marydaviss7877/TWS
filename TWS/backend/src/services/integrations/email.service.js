@@ -93,7 +93,7 @@ class EmailService {
           </p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${envConfig.get('FRONTEND_URL')}/login" 
+            <a href="${envConfig.get('FRONTEND_URL')}/login"
                style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
               Login to Student Portal
             </a>
@@ -138,7 +138,7 @@ class EmailService {
           </p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${envConfig.get('FRONTEND_URL')}/software-house-login" 
+            <a href="${envConfig.get('FRONTEND_URL')}/login"
                style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
               Login to Portal
             </a>

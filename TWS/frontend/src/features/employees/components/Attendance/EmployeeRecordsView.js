@@ -253,7 +253,7 @@ const EmployeeRecordsView = () => {
               <tr>
                 <td colSpan="7" className="px-6 py-12 text-center">
                   <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <div className="tws-loading-pulse rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     <span className="ml-2 text-gray-600">Loading records...</span>
                   </div>
                 </td>

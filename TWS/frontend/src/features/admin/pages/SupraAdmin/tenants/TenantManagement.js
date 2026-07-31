@@ -412,7 +412,7 @@ const TenantManagement = () => {
           <CardTitle>Tenants</CardTitle>
           <div className="flex items-center gap-2 flex-wrap">
             <Button variant="outline" onClick={fetchTenants} disabled={loading}>
-              <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <ArrowPathIcon className={`h-4 w-4 ${loading ? 'tws-loading-pulse' : ''}`} />
               Refresh
             </Button>
             {selectedRowKeys.length > 0 && (

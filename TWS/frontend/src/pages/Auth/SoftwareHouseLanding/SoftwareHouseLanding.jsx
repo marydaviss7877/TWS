@@ -33,7 +33,7 @@ const modules = [
     title: 'Projects move. Everyone sees why.',
     copy: 'Plan scope, run sprints, track dependencies and turn approved work into billable reality—without rebuilding the truth in a spreadsheet.',
     pills: ['Backlog & sprints', 'Deliverables', 'Client approvals'],
-    link: '/software-house/projects',
+    link: '/projects',
     accent: 'blue'
   },
   {
@@ -43,7 +43,7 @@ const modules = [
     title: 'Capacity without the guesswork.',
     copy: 'Connect attendance, payroll, performance and allocation to the work your people actually deliver.',
     pills: ['Attendance', 'Payroll', 'Performance'],
-    link: '/software-house/hrm',
+    link: '/hrm',
     accent: 'violet'
   },
   {
@@ -53,7 +53,7 @@ const modules = [
     title: 'Know the margin before month-end.',
     copy: 'See project costing, cash flow, invoices, payables and receivables in one audit-ready financial core.',
     pills: ['Project costing', 'Cash flow', 'Invoicing'],
-    link: '/software-house/finance',
+    link: '/finance',
     accent: 'lime'
   }
 ];
@@ -104,7 +104,7 @@ const SoftwareHouseLanding = () => {
                   Your team switches between projects, chat, time, payroll, invoices and client updates. Every handoff creates another gap. TWS turns that operational entropy into one visible system.
                 </p>
                 <div className="shx-hero-actions">
-                  <Link to="/software-house-signup" className="shx-button shx-button-primary">
+                  <Link to="/signup" className="shx-button shx-button-primary">
                     Unify your operation <ArrowRightIcon />
                   </Link>
                   <a href="#platform" className="shx-button shx-button-ghost">
@@ -291,7 +291,7 @@ const SoftwareHouseLanding = () => {
                 <span className="shx-section-index">04 / THE TRANSFORMATION</span>
                 <h2>Chaos becomes clarity.<br /><span>Activity becomes intelligence.</span></h2>
                 <p>The story ends where your next operating rhythm begins: one source of truth for how your people deliver client value, profitably.</p>
-                <Link to="/software-house-signup" className="shx-text-link">See it with your own workflow <ArrowRightIcon /></Link>
+                <Link to="/signup" className="shx-text-link">See it with your own workflow <ArrowRightIcon /></Link>
               </motion.div>
               <div className="shx-outcome-list">
                 {outcomes.map(([title, copy], i) => (
@@ -328,8 +328,8 @@ const SoftwareHouseLanding = () => {
               <h2>One house.<br />One <span>system.</span></h2>
               <p>Bring your delivery, team, clients and financial truth into one focused workspace.</p>
               <div className="shx-final-actions">
-                <Link to="/software-house-signup" className="shx-button shx-button-primary">Start building free <ArrowRightIcon /></Link>
-                <Link to="/software-house-login" className="shx-button shx-button-ghost">Sign in</Link>
+                <Link to="/signup" className="shx-button shx-button-primary">Start building free <ArrowRightIcon /></Link>
+                <Link to="/login" className="shx-button shx-button-ghost">Sign in</Link>
               </div>
             </motion.div>
           </section>
@@ -345,9 +345,9 @@ const SoftwareHouseLanding = () => {
                 <div className="shx-footer-status"><i /> All systems operational</div>
               </div>
               <div className="shx-footer-nav">
-                <div><span>Platform</span><a href="#story">The story</a><a href="#platform">Overview</a><Link to="/software-house/projects">Projects</Link></div>
-                <div><span>Systems</span><Link to="/software-house/hrm">People & HR</Link><Link to="/software-house/finance">Finance</Link><Link to="/software-house-signup">Client portal</Link></div>
-                <div><span>Get started</span><Link to="/software-house-signup">Create workspace</Link><Link to="/software-house-login">Sign in</Link><a href="mailto:hello@tws.enterprises">Talk to us</a></div>
+                <div><span>Platform</span><a href="#story">The story</a><a href="#platform">Overview</a><Link to="/projects">Projects</Link></div>
+                <div><span>Systems</span><Link to="/hrm">People & HR</Link><Link to="/finance">Finance</Link><Link to="/signup">Client portal</Link></div>
+                <div><span>Get started</span><Link to="/signup">Create workspace</Link><Link to="/login">Sign in</Link><a href="mailto:hello@tws.enterprises">Talk to us</a></div>
               </div>
             </div>
             <div className="shx-footer-bottom">

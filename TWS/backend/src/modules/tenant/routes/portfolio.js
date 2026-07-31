@@ -14,6 +14,8 @@ const Tenant = require('../../../models/tenant/Tenant');
 const SubscriptionPlan = require('../../../models/finance/SubscriptionPlan');
 const usageTrackerService = require('../../../services/usageTrackerService');
 const TenantAuditLog = require('../../../models/tenant/TenantAuditLog');
+const TenantDepartmentAccess = require('../../../models/tenant/TenantDepartmentAccess');
+const permissionResolver = require('../../../services/tenant/permissionResolver.service');
 
 const readAccess = requireErpAccess({ module: 'portfolio', action: ['read', 'write', 'admin'] });
 const writeAccess = requireErpAccess({ module: 'portfolio', action: ['write', 'admin'] });
@@ -42,6 +44,25 @@ const auditPortfolioEvent = (req, action, resourceId, metadata = {}) => TenantAu
   metadata
 }).catch(error => console.warn('Portfolio audit log write failed:', error.message));
 
+async function getPortfolioViewer(req) {
+  const userId = getUserId(req);
+  const tenantId = getTenantId(req);
+  const resolved = await permissionResolver.getResolvedPermissions(userId, tenantId, {
+    hrSubRole: req.user?.hrSubRole,
+    financeSubRole: req.user?.financeSubRole
+  });
+  const canManage = permissionResolver.hasAnyPermission(resolved.permissions, 'portfolio', ['write', 'admin']);
+  if (canManage) return { userId, canManage: true, isSales: true };
+
+  const memberships = await TenantDepartmentAccess.findActiveForUser(tenantId, userId);
+  const isSales = memberships.some(membership => {
+    const department = membership.departmentId || {};
+    const label = `${department.name || ''} ${department.code || ''} ${membership.department || ''}`;
+    return /\b(sales|business development|bizdev|revenue|growth|account management)\b/i.test(label);
+  });
+  return { userId, canManage: false, isSales };
+}
+
 router.use(verifyERPToken);
 
 router.get('/',
@@ -56,6 +77,7 @@ router.get('/',
     query('limit').optional().isInt({ min: 1, max: 100 })],
   handleValidation,
   ErrorHandler.asyncHandler(async (req, res) => {
+    const viewer = await getPortfolioViewer(req);
     const result = await portfolioService.list({
       orgId: getOrgId(req),
       status: req.query.status,
@@ -65,7 +87,8 @@ router.get('/',
       sort: req.query.sort || 'curated',
       order: req.query.order || 'desc',
       page: Number(req.query.page) || 1,
-      limit: Number(req.query.limit) || 20
+      limit: Number(req.query.limit) || 20,
+      viewer
     });
     res.json({ success: true, data: result });
   })
@@ -119,7 +142,7 @@ router.post('/bulk/delete',
 router.get('/:id',
   readAccess, idValidator, handleValidation,
   ErrorHandler.asyncHandler(async (req, res) => {
-    const item = await portfolioService.get(getOrgId(req), req.params.id);
+    const item = await portfolioService.get(getOrgId(req), req.params.id, await getPortfolioViewer(req));
     if (!item) return res.status(404).json({ success: false, message: 'Portfolio item not found' });
     res.json({ success: true, data: { item } });
   })
@@ -133,7 +156,10 @@ router.patch('/:id',
     body('metrics').optional().isArray({ max: 20 }),
     body('services').optional().isArray({ max: 30 }),
     body('technologies').optional().isArray({ max: 30 }),
-    body('tags').optional().isArray({ max: 30 })],
+    body('tags').optional().isArray({ max: 30 }),
+    body('visibility.scope').optional().isIn(['sales', 'organization']),
+    body('visibility.visibleFrom').optional({ nullable: true }).isISO8601(),
+    body('visibility.visibleUntil').optional({ nullable: true }).isISO8601()],
   handleValidation,
   ErrorHandler.asyncHandler(async (req, res) => {
     const item = await portfolioService.update({

@@ -61,7 +61,7 @@ const InviteAccept = () => {
 
         {status === 'loading' && (
           <div className="flex flex-col items-center gap-4 py-8">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" />
+            <div className="tws-loading-pulse rounded-full h-10 w-10 border-b-2 border-primary-600" />
             <p className="text-gray-500 dark:text-gray-400">Validating your invite link…</p>
           </div>
         )}
@@ -70,7 +70,7 @@ const InviteAccept = () => {
           <div className="flex flex-col items-center gap-4 py-8 text-center">
             <XMarkIcon className="w-12 h-12 text-red-500" />
             <p className="font-bold text-red-700 dark:text-red-400">{errorMsg}</p>
-            <button onClick={() => navigate('/software-house-login')}
+            <button onClick={() => navigate('/login')}
               className="mt-2 px-6 py-2 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700">
               Go to Login
             </button>
@@ -118,7 +118,7 @@ const InviteAccept = () => {
             <CheckCircleIcon className="w-14 h-14 text-green-500" />
             <p className="font-bold text-xl text-gray-900 dark:text-white">Account Activated!</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">You can now log in with your email and new password.</p>
-            <button onClick={() => navigate('/software-house-login')}
+            <button onClick={() => navigate('/login')}
               className="mt-2 px-6 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white font-bold hover:opacity-90">
               Go to Login
             </button>

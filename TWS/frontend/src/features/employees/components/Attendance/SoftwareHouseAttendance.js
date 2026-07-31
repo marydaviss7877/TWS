@@ -523,7 +523,7 @@ const SoftwareHouseAttendance = () => {
                     className="inline-flex items-center px-12 py-4 border border-transparent text-lg font-medium rounded-2xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
                   >
                     {loading ? (
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+                      <div className="tws-loading-pulse rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
                     ) : (
                       <RocketLaunchIcon className="h-6 w-6 mr-3" />
                     )}

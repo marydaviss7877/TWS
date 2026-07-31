@@ -195,7 +195,7 @@ const SystemHealth = () => {
             {lastUpdate ? `Last updated: ${moment(lastUpdate).fromNow()}` : 'Never updated'}
           </span>
           <Button onClick={fetchHealthData} disabled={loading}>
-            <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <ArrowPathIcon className={`h-4 w-4 ${loading ? 'tws-loading-pulse' : ''}`} />
             Refresh
           </Button>
         </div>

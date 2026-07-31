@@ -50,7 +50,7 @@ export const TenantAuthProvider = ({ children }) => {
     // Don't initialize on login pages - let login handle authentication
     const isOnLoginPage = location.pathname.includes('/login') || 
                          location.pathname.includes('/signup') ||
-                         location.pathname === '/software-house-login';
+                         location.pathname === '/login';
     
     if (isOnLoginPage) {
       setLoading(false);
@@ -129,13 +129,13 @@ export const TenantAuthProvider = ({ children }) => {
   const initializeAuth = async () => {
     // Helper: get redirect path (FR2: path is /<slug>/org/dashboard)
     // Defined before try so it's in scope for catch block
-    const getRedirectPath = () => '/software-house-login';
+    const getRedirectPath = () => '/login';
 
     try {
       setLoading(true);
       
       // Prevent redirect loops - don't redirect if already on a login page
-      const isOnLoginPage = location.pathname.includes('/login') || location.pathname.includes('/signup') || location.pathname === '/software-house-login';
+      const isOnLoginPage = location.pathname.includes('/login') || location.pathname.includes('/signup') || location.pathname === '/login';
       
       // Helper function to check if a string is an ObjectId
       const isObjectId = (str) => str && /^[0-9a-f]{24}$/i.test(str);
@@ -411,7 +411,7 @@ export const TenantAuthProvider = ({ children }) => {
           // Not authenticated (or slug mismatch), redirect to login (but not if already on login page)
           const isOnLoginPage = location.pathname.includes('/login') || location.pathname.includes('/signup');
           if (!isOnLoginPage) {
-            const redirectPath = '/software-house-login';
+            const redirectPath = '/login';
             if (navigate) {
               navigate(redirectPath);
             } else {
@@ -511,7 +511,7 @@ export const TenantAuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       
       toast.success('Logged out successfully');
-      window.location.href = '/software-house-login';
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout error:', error);
       
@@ -523,7 +523,7 @@ export const TenantAuthProvider = ({ children }) => {
       setUser(null);
       setIsAuthenticated(false);
       
-      window.location.href = '/software-house-login';
+      window.location.href = '/login';
     }
   };
 

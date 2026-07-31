@@ -44,7 +44,7 @@ const ClientOrganizationProfile = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="h-8 w-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+        <div className="h-8 w-8 rounded-full border-2 border-indigo-500 border-t-transparent tws-loading-pulse" />
       </div>
     );
   }

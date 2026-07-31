@@ -168,7 +168,7 @@ const TaskCard = ({ task, onStatusChange, statusMenuId, onToggleStatusMenu, upda
             title="Click to change status"
           >
             {updating
-              ? <span className="animate-spin h-2.5 w-2.5 border border-current border-t-transparent rounded-full inline-block" />
+              ? <span className="tws-loading-pulse h-2.5 w-2.5 border border-current border-t-transparent rounded-full inline-block" />
               : null
             }
             {STATUS_LABELS[task.status] || 'To Do'}

@@ -662,7 +662,7 @@ const ProjectResources = () => {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button onClick={() => load(true)} disabled={refreshing} className="glass-button p-2 rounded-xl" title="Refresh">
-              <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'tws-loading-pulse' : ''}`} />
             </button>
             <button
               onClick={() => navigate(`/${tenantSlug}/org/projects/${projectId}/board`)}

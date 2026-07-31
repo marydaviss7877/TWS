@@ -526,7 +526,7 @@ const AdminAttendancePanel = () => {
               {loading ? (
                 <tr>
                   <td colSpan="7" className="px-6 py-4 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="tws-loading-pulse rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                   </td>
                 </tr>
               ) : filteredRecords.length === 0 ? (

@@ -405,7 +405,7 @@ const Infrastructure = () => {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={fetchInfrastructureData} disabled={loading}>
-            <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <ArrowPathIcon className={`h-4 w-4 ${loading ? 'tws-loading-pulse' : ''}`} />
             Refresh
           </Button>
           <Button>

@@ -75,6 +75,7 @@ export default function PortfolioViewer() {
         <div className="mx-auto max-w-4xl text-center">
           <div className="mb-5 flex flex-wrap justify-center gap-2">
             <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">{item.type.replace('_', ' ')}</span>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Internal · {item.visibility?.scope === 'organization' ? 'Organization' : 'Sales / GTM'}</span>
             {item.featured && <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">Featured</span>}
           </div>
           <h1 className="text-4xl font-black tracking-tight text-slate-950 dark:text-white md:text-6xl">{item.title}</h1>

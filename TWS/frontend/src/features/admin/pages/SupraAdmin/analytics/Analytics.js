@@ -640,7 +640,7 @@ const Analytics = () => {
             }}
           />
           <Button variant="outline" onClick={fetchAnalyticsData} disabled={loading}>
-            <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <ArrowPathIcon className={`h-4 w-4 ${loading ? 'tws-loading-pulse' : ''}`} />
             Refresh
           </Button>
           <Button onClick={handleExportAnalytics}>

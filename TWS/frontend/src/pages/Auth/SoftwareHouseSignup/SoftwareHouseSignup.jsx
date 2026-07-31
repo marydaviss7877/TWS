@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../../../app/providers/ThemeContext';
 import SoftwareHouseNavbar from '../../../features/auth/components/SoftwareHouseNavbar';
+import SoftwareHouseFooter from '../../../features/auth/components/SoftwareHouseFooter';
 import './SoftwareHouseSignup.css';
 import {
   EyeIcon,
@@ -124,6 +125,14 @@ const SoftwareHouseSignup = () => {
   const orgSlugInputRef = useRef(null);
   const errorBoxRef = useRef(null);
   const otpInputRef = useRef(null);
+
+  useEffect(() => {
+    const previousTitle = document.title;
+    document.title = 'Signup | TWS ERP';
+    return () => {
+      document.title = previousTitle;
+    };
+  }, []);
 
   const showcaseModules = [
     {
@@ -336,7 +345,7 @@ const SoftwareHouseSignup = () => {
         toast.success('Account and workspace created!');
         const slug = formData.organizationSlug.trim();
         setTimeout(() => {
-          const loginUrl = getTenantSubdomainUrl(slug, '/software-house-login');
+          const loginUrl = getTenantSubdomainUrl(slug, '/login');
           navigateTo(loginUrl, (path) => navigate(path, { state: { signupSuccess: true, email: formData.email } }));
         }, 1800);
       } else {
@@ -409,7 +418,7 @@ const SoftwareHouseSignup = () => {
               <CheckCircleIcon className="sh-success-icon" />
               <h2 className="sh-signup-heading">Command Center Ready</h2>
               <p className="sh-signup-subtext" style={{ marginBottom: '2rem' }}>Your workspace has been initialized. Redirecting to login...</p>
-              <button onClick={() => navigate('/software-house-login')} className="sh-signup-submit-btn" style={{ background: '#fff', color: '#000' }}>
+              <button onClick={() => navigate('/login')} className="sh-signup-submit-btn" style={{ background: '#fff', color: '#000' }}>
                 Go to Login
               </button>
             </div>
@@ -469,7 +478,8 @@ const SoftwareHouseSignup = () => {
               </button>
             </form>
 
-            <div className="sh-signup-footer">
+            <SoftwareHouseFooter compact moduleName="Create workspace">
+              <div className="sh-signup-footer">
               <button
                 type="button"
                 onClick={handleResend}
@@ -489,7 +499,8 @@ const SoftwareHouseSignup = () => {
                   Use a different email
                 </button>
               </p>
-            </div>
+              </div>
+            </SoftwareHouseFooter>
           </div>
         </div>
         {rightPanel}
@@ -592,10 +603,9 @@ const SoftwareHouseSignup = () => {
             </button>
           </form>
 
-          <div className="sh-signup-footer">
-            <p style={{ marginBottom: '1rem' }}>© 2026 The Wolf Stack / Auth.Layer.01</p>
-            <Link to="/software-house-login" className="sh-signup-link">Already have an account? Login</Link>
-          </div>
+          <SoftwareHouseFooter compact moduleName="Create workspace">
+            <Link to="/login" className="sh-signup-link">Already have an account? Sign in</Link>
+          </SoftwareHouseFooter>
         </div>
       </div>
       {rightPanel}

@@ -217,7 +217,7 @@ const ClientCard = ({ client, onEdit, onDelete, onView, deletingClientId }) => {
             title="Delete client"
           >
             {deletingClientId === client._id ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent"></div>
+              <div className="tws-loading-pulse rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent"></div>
             ) : (
               <TrashIcon className="h-4 w-4" />
             )}
@@ -688,7 +688,7 @@ const Clients = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent"></div>
+          <div className="tws-loading-pulse rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading clients...</p>
         </div>
       </div>

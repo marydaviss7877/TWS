@@ -311,7 +311,7 @@ const BiometricAuth = ({ onSuccess, onError, type = 'fingerprint' }) => {
   const getStatusIcon = () => {
     switch (status) {
       case 'scanning':
-        return <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>;
+        return <div className="tws-loading-pulse rounded-full h-8 w-8 border-b-2 border-blue-600"></div>;
       case 'success':
         return <CheckCircleIcon className="h-8 w-8 text-green-600" />;
       case 'error':

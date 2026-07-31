@@ -10,10 +10,10 @@ const AuthContext = createContext();
 const PUBLIC_ROUTES = [
   '/software-house-signup',
   '/software-house-login',
+  '/login',
   '/software-house-forgot-password',
   '/forgot-password',
   '/software-house',
-  '/login',
   '/register',
   '/signup',
   '/supra-admin-login'

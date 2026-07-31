@@ -65,11 +65,11 @@ export function getTenantWorkspaceUrl(slug, ...pathParts) {
 
 /**
  * Build a URL on the tenant's subdomain for NON-workspace paths
- * (e.g. /software-house-login, /invite/accept).
+ * (e.g. /login, /invite/accept).
  *
- * Usage: getTenantSubdomainUrl('acme', '/software-house-login')
- *   → '/software-house-login'                           (dev / on subdomain)
- *   → 'https://acme.twspms.work.gd/software-house-login'  (root domain)
+ * Usage: getTenantSubdomainUrl('acme', '/login')
+ *   → '/login'                           (dev / on subdomain)
+ *   → 'https://acme.twspms.work.gd/login'  (root domain)
  */
 export function getTenantSubdomainUrl(slug, absolutePath) {
   if (isDev() || isSubdomainContext()) return absolutePath;

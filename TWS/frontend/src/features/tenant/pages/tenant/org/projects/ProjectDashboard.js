@@ -307,7 +307,7 @@ const ProjectDashboard = () => {
               className="p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent hover:border-white/20 transition-colors"
               title="Refresh"
             >
-              <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <ArrowPathIcon className={`w-4 h-4 ${refreshing ? 'tws-loading-pulse' : ''}`} />
             </button>
             <button
               type="button"

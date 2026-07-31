@@ -8,7 +8,7 @@
  * Requires MONGO_URI or MONGODB_URI in .env.
  *
  * Login credentials after running:
- *   URL:  /software-house-login
+ *   URL:  /login
  *   Email: employee@sufyan.com
  *   Password: Employee@123
  *   Role: Employee (redirects to Employee Portal)
@@ -102,7 +102,7 @@ async function main() {
     }
 
     console.log('\n--- Login credentials (Software House Employee Portal) ---');
-    console.log('URL:      /software-house-login');
+    console.log('URL:      /login');
     console.log('Email:    ' + EMPLOYEE_EMAIL);
     console.log('Password: ' + EMPLOYEE_PASSWORD);
     console.log('Tenant:   ' + org.slug + ' (same as owner sufyan@gmail.com)');

@@ -98,7 +98,7 @@ const SoftwareHouseDashboard = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center py-24">
-      <div className="h-10 w-10 rounded-full border-2 border-primary-500 border-t-transparent animate-spin" />
+      <div className="h-10 w-10 rounded-full border-2 border-primary-500 border-t-transparent tws-loading-pulse" />
     </div>
   );
 

@@ -217,7 +217,7 @@ const TenantOrgLayout = ({ children }) => {
         return (
             <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-clean-light-pure via-clean-light-soft to-primary-50/30 dark:from-glass-dark-deepest dark:via-glass-dark-deep dark:to-glass-dark-base ${themeTransition ? 'theme-transition' : ''}`}>
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-2 border-t-transparent mx-auto" style={{ borderColor: themeStyles.getPrimaryColor(500) }} />
+                    <div className="tws-loading-pulse rounded-full h-12 w-12 border-2 border-t-transparent mx-auto" style={{ borderColor: themeStyles.getPrimaryColor(500) }} />
                     <p className="mt-4 text-gray-600 dark:text-gray-300 font-normal">Loading…</p>
                 </div>
             </div>
@@ -417,7 +417,7 @@ const TenantOrgLayout = ({ children }) => {
                                     {children ?? (
                                         <div className="flex items-center justify-center h-full min-h-[400px]">
                                             <div className="text-center">
-                                                <div className="animate-spin rounded-full h-12 w-12 border-2 border-t-transparent mx-auto" style={{ borderColor: themeStyles.getPrimaryColor(500) }} />
+                                                <div className="tws-loading-pulse rounded-full h-12 w-12 border-2 border-t-transparent mx-auto" style={{ borderColor: themeStyles.getPrimaryColor(500) }} />
                                                 <p className="mt-4 text-gray-600 dark:text-gray-300">Loading…</p>
                                             </div>
                                         </div>

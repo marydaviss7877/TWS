@@ -709,7 +709,7 @@ const UserList = () => {
                 <tr>
                   <td colSpan="7" className="px-6 py-12 text-center">
                     <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+                      <div className="tws-loading-pulse rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
                       <span className="ml-2 text-gray-600 dark:text-gray-400">Loading users...</span>
                     </div>
                   </td>

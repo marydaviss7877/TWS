@@ -68,7 +68,7 @@ export default function PortfolioEditor() {
         challenge: item.challenge, approach: item.approach, solution: item.solution, outcome: item.outcome,
         metrics: item.metrics, testimonial: item.testimonial, blocks: item.blocks,
         coverAssetId: item.coverAssetId || null, featured: item.featured, projectDate: item.projectDate,
-        seo: item.seo
+        seo: item.seo, visibility: item.visibility || { scope: 'sales', visibleFrom: null, visibleUntil: null }
       };
       const saved = await portfolioApi.updateItem(tenantSlug, id, payload);
       setItem(current => ({ ...current, ...saved }));
@@ -87,7 +87,7 @@ export default function PortfolioEditor() {
     try {
       const saved = await portfolioApi.setStatus(tenantSlug, id, item.status === 'published' ? 'draft' : 'published');
       setItem(current => ({ ...current, ...saved }));
-      setNotice(saved.status === 'published' ? 'Published to the organization portfolio' : 'Moved back to draft');
+      setNotice(saved.status === 'published' ? 'Published to the internal portfolio library' : 'Moved back to draft');
     } catch (err) { setError(err.message); }
   };
 
@@ -280,6 +280,21 @@ export default function PortfolioEditor() {
               <Field label="Technologies" hint="Comma-separated"><input className={input} value={(item.technologies || []).join(', ')} onChange={e => update('technologies', splitList(e.target.value))} placeholder="React, Node.js, AWS" /></Field>
               <Field label="Tags" hint="Comma-separated"><input className={input} value={(item.tags || []).join(', ')} onChange={e => update('tags', splitList(e.target.value))} /></Field>
               <label className="flex items-center gap-3 rounded-xl bg-amber-50 p-3 text-sm font-medium text-amber-900 dark:bg-amber-500/10 dark:text-amber-200"><input type="checkbox" checked={Boolean(item.featured)} onChange={e => update('featured', e.target.checked)} className="h-4 w-4 rounded border-amber-300 text-violet-600 dark:border-amber-700 dark:bg-slate-900" /> Feature this work</label>
+            </div>
+          </section>
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="font-bold text-slate-950 dark:text-white">Internal visibility</h2>
+            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">This library is never public. Choose which authenticated colleagues can discover this entry.</p>
+            <div className="mt-4 space-y-4">
+              <Field label="Audience">
+                <select className={input} value={item.visibility?.scope || 'sales'} onChange={e => updateNested('visibility', 'scope', e.target.value)}>
+                  <option value="sales">Sales / GTM teams</option>
+                  <option value="organization">Entire organization</option>
+                </select>
+              </Field>
+              {item.client?.confidential && item.visibility?.scope === 'organization' && <p className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">NDA-protected entries are automatically restricted to Sales / GTM when saved.</p>}
+              <Field label="Show from" hint="Optional. Leave empty to show immediately after publishing."><input type="datetime-local" className={input} value={item.visibility?.visibleFrom ? String(item.visibility.visibleFrom).slice(0, 16) : ''} onChange={e => updateNested('visibility', 'visibleFrom', e.target.value || null)} /></Field>
+              <Field label="Hide after" hint="Optional. The item automatically disappears from reader views."><input type="datetime-local" className={input} value={item.visibility?.visibleUntil ? String(item.visibility.visibleUntil).slice(0, 16) : ''} onChange={e => updateNested('visibility', 'visibleUntil', e.target.value || null)} /></Field>
             </div>
           </section>
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">

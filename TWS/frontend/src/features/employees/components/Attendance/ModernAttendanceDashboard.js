@@ -94,7 +94,7 @@ const ModernAttendanceDashboard = () => {
     return (
       <div className="space-y-6 sm:space-y-8">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 dark:border-blue-400"></div>
+          <div className="tws-loading-pulse rounded-full h-32 w-32 border-b-2 border-blue-600 dark:border-blue-400"></div>
         </div>
       </div>
     );

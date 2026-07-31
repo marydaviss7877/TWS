@@ -5,7 +5,7 @@ const { generateSignedUrl, deleteFromS3 } = require('../../config/s3');
 const WRITABLE_FIELDS = [
   'title', 'slug', 'summary', 'type', 'client', 'services', 'technologies', 'tags',
   'challenge', 'approach', 'solution', 'outcome', 'metrics', 'testimonial', 'blocks',
-  'coverAssetId', 'featured', 'sortOrder', 'projectDate', 'seo'
+  'coverAssetId', 'featured', 'sortOrder', 'projectDate', 'seo', 'visibility'
 ];
 
 function sanitizeText(value) {
@@ -110,7 +110,39 @@ function preparePayload(payload) {
       return normalized;
     });
   }
+  if (clean.visibility) {
+    clean.visibility.scope = clean.visibility.scope === 'organization' ? 'organization' : 'sales';
+    clean.visibility.visibleFrom = clean.visibility.visibleFrom || null;
+    clean.visibility.visibleUntil = clean.visibility.visibleUntil || null;
+    if (clean.visibility.visibleFrom && clean.visibility.visibleUntil
+      && new Date(clean.visibility.visibleFrom) >= new Date(clean.visibility.visibleUntil)) {
+      throw Object.assign(new Error('Visibility end time must be after its start time'), { statusCode: 400 });
+    }
+  }
+  // NDA-protected material is never widened to the whole organization.
+  if (clean.client?.confidential) {
+    clean.visibility = { ...(clean.visibility || {}), scope: 'sales' };
+  }
   return clean;
+}
+
+function buildVisibilityQuery(viewer = {}, now = new Date()) {
+  if (viewer.canManage) return {};
+  const audience = [{ 'visibility.scope': 'organization' }];
+  if (viewer.isSales) {
+    audience.push(
+      { 'visibility.scope': 'sales' },
+      { 'visibility.scope': { $exists: false } }
+    );
+  }
+  return {
+    status: 'published',
+    $and: [
+      { $or: audience },
+      { $or: [{ 'visibility.visibleFrom': null }, { 'visibility.visibleFrom': { $exists: false } }, { 'visibility.visibleFrom': { $lte: now } }] },
+      { $or: [{ 'visibility.visibleUntil': null }, { 'visibility.visibleUntil': { $exists: false } }, { 'visibility.visibleUntil': { $gt: now } }] }
+    ]
+  };
 }
 
 async function withAssetUrls(item) {
@@ -134,9 +166,9 @@ async function withAssetUrls(item) {
   return plain;
 }
 
-async function list({ orgId, status, type, featured, search, sort = 'curated', order = 'desc', page = 1, limit = 20 }) {
-  const query = { orgId, deletedAt: null };
-  if (status) query.status = status;
+async function list({ orgId, status, type, featured, search, sort = 'curated', order = 'desc', page = 1, limit = 20, viewer }) {
+  const query = { orgId, deletedAt: null, ...buildVisibilityQuery(viewer) };
+  if (status && viewer?.canManage) query.status = status;
   if (type) query.type = type;
   if (featured !== undefined) query.featured = featured;
   if (search) query.$text = { $search: search };
@@ -204,9 +236,11 @@ async function create({ orgId, tenantId, userId, payload }) {
   return PortfolioItem.create({ ...clean, orgId, tenantId, createdBy: userId, updatedBy: userId });
 }
 
-async function get(orgId, id) {
+async function get(orgId, id, viewer) {
   if (!mongoose.isValidObjectId(id)) return null;
-  const item = await PortfolioItem.findOne({ _id: id, orgId, deletedAt: null });
+  const item = await PortfolioItem.findOne({
+    _id: id, orgId, deletedAt: null, ...buildVisibilityQuery(viewer)
+  });
   return item ? withAssetUrls(item) : null;
 }
 
@@ -319,5 +353,5 @@ async function bulkSoftDelete({ orgId, ids, userId }) {
 module.exports = {
   list, create, get, update, duplicate, addAsset, removeAsset, setStatus, softDelete,
   bulkSetStatus, bulkSoftDelete,
-  normalizeEmbed, normalizeExternalUrl, slugify, uniqueSlug
+  normalizeEmbed, normalizeExternalUrl, slugify, uniqueSlug, buildVisibilityQuery
 };

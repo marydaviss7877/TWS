@@ -497,7 +497,7 @@ const DocumentsHub = () => {
                       aria-label={`Delete folder ${f.name}`}
                     >
                       {deletingFolderId === f._id ? (
-                        <div className="h-4 w-4 border-2 border-[var(--tenant-muted)] border-t-transparent rounded-full animate-spin" />
+                        <div className="h-4 w-4 border-2 border-[var(--tenant-muted)] border-t-transparent rounded-full tws-loading-pulse" />
                       ) : (
                         <TrashIcon className="h-4 w-4" />
                       )}

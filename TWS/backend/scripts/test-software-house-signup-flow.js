@@ -111,7 +111,7 @@ async function run() {
     let frontendStatus = null;
     let frontendError = null;
     try {
-      const response = await axios.get(`${FRONTEND_URL}/software-house-signup`, {
+      const response = await axios.get(`${FRONTEND_URL}/signup`, {
         timeout: TIMEOUT_MS,
         validateStatus: () => true
       });

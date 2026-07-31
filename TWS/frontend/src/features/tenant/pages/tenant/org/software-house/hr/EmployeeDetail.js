@@ -78,7 +78,7 @@ const EmployeeDetail = () => {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-full border-2 border-primary-500/30 border-t-primary-500 animate-spin" />
+          <div className="w-10 h-10 rounded-full border-2 border-primary-500/30 border-t-primary-500 tws-loading-pulse" />
           <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
             Loading
           </p>

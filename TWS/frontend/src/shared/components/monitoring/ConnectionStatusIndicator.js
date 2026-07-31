@@ -95,7 +95,7 @@ const ConnectionStatusIndicator = () => {
   return (
     <div className={`fixed top-4 right-4 z-50 ${statusConfig.bgColor} ${statusConfig.borderColor} border rounded-lg p-3 shadow-lg max-w-sm`}>
       <div className="flex items-center space-x-3">
-        <Icon className={`w-5 h-5 ${statusConfig.color} ${connectionState === 'reconnecting' ? 'animate-spin' : ''}`} />
+        <Icon className={`w-5 h-5 ${statusConfig.color} ${connectionState === 'reconnecting' ? 'tws-loading-pulse' : ''}`} />
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-medium ${statusConfig.color}`}>
             {statusConfig.text}

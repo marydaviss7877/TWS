@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../app/providers/AuthContext';
 import { useTheme } from '../../../app/providers/ThemeContext';
 import SoftwareHouseNavbar from '../../../features/auth/components/SoftwareHouseNavbar';
+import SoftwareHouseFooter from '../../../features/auth/components/SoftwareHouseFooter';
 import './SoftwareHouseLogin.css';
 import {
     UserIcon,
@@ -34,8 +35,16 @@ const SoftwareHouseLogin = () => {
     const errorBoxRef = useRef(null);
 
     useEffect(() => {
-        if (validationBlockedRef.current && window.location.pathname !== '/software-house-login') {
-            window.history.replaceState(null, '', '/software-house-login');
+        const previousTitle = document.title;
+        document.title = 'Login | TWS ERP';
+        return () => {
+            document.title = previousTitle;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (validationBlockedRef.current && window.location.pathname !== '/login') {
+            window.history.replaceState(null, '', '/login');
         }
     }, []);
 
@@ -190,9 +199,7 @@ const SoftwareHouseLogin = () => {
                         <div style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '0.04em' }}>TWS ERP</div>
                     </div>
 
-                    <h1 className="sh-heading">
-                        Sign In to <span className="sh-accent-text">Portal</span>
-                    </h1>
+                    <h1 className="sh-heading">Login</h1>
 
                     {/* Portal selector */}
                     <div className="sh-portal-row">
@@ -284,10 +291,12 @@ const SoftwareHouseLogin = () => {
                         </button>
                     </form>
 
-                    <div className="sh-footer-row">
-                        <Link to="/software-house-forgot-password" className="sh-footer-link">Forgot password?</Link>
-                        <Link to="/software-house-signup" className="sh-footer-link">Create account</Link>
-                    </div>
+                    <SoftwareHouseFooter compact moduleName="Secure sign in">
+                        <div className="sh-footer-row">
+                            <Link to="/forgot-password" className="sh-footer-link">Forgot password?</Link>
+                            <Link to="/signup" className="sh-footer-link">Create account</Link>
+                        </div>
+                    </SoftwareHouseFooter>
                 </div>
             </div>
 

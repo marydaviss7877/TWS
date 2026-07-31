@@ -15,30 +15,30 @@ const SoftwareHouseNavbar = ({
 
   const navLinks = useMemo(
     () => [
-      { id: 'story', label: 'Story', href: '/software-house#story', isRoute: false },
-      { id: 'modules', label: 'Platform', href: '/software-house#platform', isRoute: false },
-      { id: 'projects', label: 'Projects', href: '/software-house/projects', isRoute: true },
-      { id: 'hrm', label: 'HRM', href: '/software-house/hrm', isRoute: true },
-      { id: 'finance', label: 'Finance', href: '/software-house/finance', isRoute: true }
+      { id: 'story', label: 'Story', href: '/#story', isRoute: false },
+      { id: 'modules', label: 'Platform', href: '/#platform', isRoute: false },
+      { id: 'projects', label: 'Projects', href: '/projects', isRoute: true },
+      { id: 'hrm', label: 'HRM', href: '/hrm', isRoute: true },
+      { id: 'finance', label: 'Finance', href: '/finance', isRoute: true }
     ],
     []
   );
 
   const isActive = (link) => {
     if (link.isRoute) return location.pathname === link.href;
-    return location.pathname === '/software-house';
+    return location.pathname === '/software-house' && link.id === 'modules';
   };
 
-  const isLanding = location.pathname === '/software-house';
+  const isPublicShell = location.pathname.startsWith('/software-house');
 
   return (
-    <header className={`sh-nav-shell ${fixed ? 'sh-nav-fixed' : ''} ${isLanding ? 'sh-nav-landing' : ''} ${className}`.trim()}>
+    <header className={`sh-nav-shell ${fixed ? 'sh-nav-fixed' : ''} ${isPublicShell ? 'sh-nav-landing' : ''} ${className}`.trim()}>
       <nav
         className={`sh-nav ${isDarkMode ? 'sh-nav-dark' : 'sh-nav-light'}`}
         aria-label="Software House navigation"
       >
         <div className="sh-nav-inner">
-          <Link to="/software-house" className="sh-brand" onClick={() => setMobileOpen(false)}>
+          <Link to="/" className="sh-brand" onClick={() => setMobileOpen(false)}>
             <span className="sh-brand-mark" aria-hidden="true">T</span>
             <span className="sh-brand-lockup">
               <span className="sh-brand-wordmark">TWS</span>
@@ -70,11 +70,11 @@ const SoftwareHouseNavbar = ({
 
           <div className="sh-nav-actions">
             {showThemeToggle ? <ThemeToggle size="sm" shortcut={true} /> : null}
-            <Link to="/software-house-login" className="sh-nav-login">
-              Login
+            <Link to="/login" className="sh-nav-login">
+              Sign in
             </Link>
-            <Link to="/software-house-signup" className="sh-nav-cta">
-              Build your workspace <span aria-hidden="true">↗</span>
+            <Link to="/signup" className="sh-nav-cta">
+              Start free <span aria-hidden="true">↗</span>
             </Link>
             <button
               type="button"
@@ -111,10 +111,10 @@ const SoftwareHouseNavbar = ({
                 </a>
               )
             )}
-            <Link to="/software-house-login" className="sh-nav-login" onClick={() => setMobileOpen(false)}>
+            <Link to="/login" className="sh-nav-login" onClick={() => setMobileOpen(false)}>
               Login
             </Link>
-            <Link to="/software-house-signup" className="sh-nav-cta" onClick={() => setMobileOpen(false)}>
+            <Link to="/signup" className="sh-nav-cta" onClick={() => setMobileOpen(false)}>
               Build your workspace
             </Link>
           </div>

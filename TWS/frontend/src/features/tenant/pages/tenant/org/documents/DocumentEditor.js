@@ -507,7 +507,7 @@ const DocumentEditor = () => {
   if (isNew && !contentReady) {
     return (
       <div className="min-h-full flex flex-col items-center justify-center gap-3 bg-[var(--tenant-bg)] text-[var(--tenant-muted)]">
-        <div className="h-8 w-8 rounded-full border-2 border-[var(--tenant-primary)] border-t-transparent animate-spin" aria-hidden />
+        <div className="h-8 w-8 rounded-full border-2 border-[var(--tenant-primary)] border-t-transparent tws-loading-pulse" aria-hidden />
         <p className="text-sm font-medium">Preparing your document…</p>
       </div>
     );

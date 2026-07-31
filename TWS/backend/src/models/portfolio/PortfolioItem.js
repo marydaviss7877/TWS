@@ -64,6 +64,16 @@ const portfolioItemSchema = new mongoose.Schema({
     default: 'draft',
     index: true
   },
+  visibility: {
+    scope: {
+      type: String,
+      enum: ['sales', 'organization'],
+      default: 'sales',
+      index: true
+    },
+    visibleFrom: { type: Date, default: null },
+    visibleUntil: { type: Date, default: null }
+  },
   client: {
     name: { type: String, trim: true, maxlength: 180, default: '' },
     industry: { type: String, trim: true, maxlength: 120, default: '' },
@@ -107,6 +117,7 @@ portfolioItemSchema.index({ orgId: 1, slug: 1 }, {
   partialFilterExpression: { deletedAt: null }
 });
 portfolioItemSchema.index({ orgId: 1, status: 1, featured: -1, sortOrder: 1, publishedAt: -1 });
+portfolioItemSchema.index({ orgId: 1, 'visibility.scope': 1, 'visibility.visibleFrom': 1, 'visibility.visibleUntil': 1 });
 portfolioItemSchema.index({ orgId: 1, title: 'text', summary: 'text', tags: 'text', services: 'text' });
 
 module.exports = mongoose.model('PortfolioItem', portfolioItemSchema);

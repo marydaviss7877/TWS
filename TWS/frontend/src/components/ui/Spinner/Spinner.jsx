@@ -16,7 +16,7 @@ const Spinner = React.forwardRef(({ className, size = 'default', label, ...props
   <div ref={ref} className={cn('flex flex-col items-center justify-center gap-3', className)} {...props}>
     <div
       className={cn(
-        'animate-spin rounded-full border-gray-200 dark:border-gray-700 border-t-primary-500 dark:border-t-primary-400',
+        'tws-loading-pulse rounded-full border-gray-200 dark:border-gray-700 border-t-primary-500 dark:border-t-primary-400',
         SIZE_CLASSES[size]
       )}
       role="status"

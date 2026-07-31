@@ -718,7 +718,7 @@ const Reporting = () => {
                   >
                     {generating && activeReportId === report.id ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-indigo-300 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-indigo-300 border-t-transparent rounded-full tws-loading-pulse" />
                         Generating...
                       </>
                     ) : (

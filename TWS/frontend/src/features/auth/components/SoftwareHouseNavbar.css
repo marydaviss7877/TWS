@@ -243,7 +243,7 @@
 }
 .sh-nav-landing .sh-nav-link { padding: .57rem .76rem; border-radius: 0; color: #898faa; font-size: .72rem; letter-spacing: .025em; }
 .sh-nav-landing .sh-nav-link:hover { color: #fff; background: rgba(114,137,255,.1); }
-.sh-nav-landing .sh-nav-link.active { color: #cbd3ff; background: transparent; }
+.sh-nav-landing .sh-nav-link.active { color: #fff; background: rgba(114,137,255,.12); box-shadow: inset 0 -2px #708dff; }
 .sh-nav-landing .sh-nav-login { color: #a1a7c0; font-size: .75rem; border-radius: 0; }
 .sh-nav-landing .sh-nav-cta {
   display: inline-flex; align-items: center; gap: 9px; padding: .72rem .9rem;
@@ -274,7 +274,7 @@
 }
 .sh-nav-landing .sh-nav-light .sh-nav-link { color: #61788f; }
 .sh-nav-landing .sh-nav-light .sh-nav-link:hover { color: #0e79a9; background: rgba(35,168,219,.08); }
-.sh-nav-landing .sh-nav-light .sh-nav-link.active { color: #168fc8; }
+.sh-nav-landing .sh-nav-light .sh-nav-link.active { color: #0d85ba; background: rgba(35,168,219,.09); box-shadow: inset 0 -2px #22a6db; }
 .sh-nav-landing .sh-nav-light .sh-nav-login { color: #567088; }
 .sh-nav-landing .sh-nav-light .sh-nav-cta {
   background: linear-gradient(135deg, #18a9df, #5f8de2);

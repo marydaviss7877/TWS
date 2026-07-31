@@ -2,6 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Portal loading standard
+ * Conventional rotating rings/arcs were removed in favor of a quiet,
+ * non-rotating three-point progress signal. Purposeful ModuleLoader motion
+ * uses its own animation namespace and is intentionally unaffected.
+ */
+@keyframes tws-loading-breathe {
+  0%, 100% {
+    opacity: 0.38;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tws-loading-pulse:not(svg) {
+  display: none !important;
+  animation: none !important;
+}
+
+button .tws-loading-pulse:not(svg),
+[role='button'] .tws-loading-pulse:not(svg),
+label .tws-loading-pulse:not(svg) {
+  display: inline-block !important;
+  width: 1.8rem !important;
+  height: 0.5rem !important;
+  min-width: 1.8rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background:
+    radial-gradient(circle closest-side, currentColor 88%, transparent) 0 50% / 33.333% 100% no-repeat,
+    radial-gradient(circle closest-side, currentColor 88%, transparent) 50% 50% / 33.333% 100% no-repeat,
+    radial-gradient(circle closest-side, currentColor 88%, transparent) 100% 50% / 33.333% 100% no-repeat !important;
+  animation: tws-loading-breathe 1.15s ease-in-out infinite !important;
+}
+
+svg.tws-loading-pulse {
+  animation: tws-loading-breathe 1.15s ease-in-out infinite !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tws-loading-pulse {
+    animation: none !important;
+    opacity: 0.72;
+  }
+}
+
 /* Premium Modern Design System */
 :root {
   /* Primary Colors - Deep Ocean & Electric Blue */

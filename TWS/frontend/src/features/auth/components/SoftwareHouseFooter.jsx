@@ -1,0 +1,33 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowUpRightIcon } from '@heroicons/react/24/outline';
+import './SoftwareHouseFooter.css';
+
+const SoftwareHouseFooter = ({ moduleName, compact = false, children }) => (
+  <footer className={`sh-public-footer ${compact ? 'sh-public-footer--compact' : ''}`}>
+    <div className="sh-public-footer__inner">
+      <div className="sh-public-footer__brand">
+        <Link to="/" aria-label="TWS Software House OS">
+          <strong>T</strong><span><b>TWS</b><small>{moduleName || 'Software House OS'}</small></span>
+        </Link>
+        {!compact && <p>Projects, people and finance—one operating truth for software delivery.</p>}
+        <span className="sh-public-footer__status"><i /> Systems operational</span>
+      </div>
+
+      {!compact && (
+        <div className="sh-public-footer__links">
+          <div><b>Platform</b><Link to="/">Overview</Link><Link to="/projects">Projects</Link><Link to="/hrm">HRM</Link><Link to="/finance">Finance</Link></div>
+          <div><b>Start</b><Link to="/signup">Create workspace <ArrowUpRightIcon /></Link><Link to="/login">Sign in</Link><Link to="/#security">Security</Link></div>
+        </div>
+      )}
+
+      {compact && <nav><Link to="/">Platform</Link><Link to="/projects">Projects</Link><Link to="/hrm">HRM</Link><Link to="/finance">Finance</Link></nav>}
+    </div>
+    <div className="sh-public-footer__bottom">
+      <span>© 2026 The Wolf Stack</span>
+      {children || <span>Software House Operating System</span>}
+    </div>
+  </footer>
+);
+
+export default SoftwareHouseFooter;

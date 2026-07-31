@@ -265,7 +265,7 @@ export default function AuditLogPage() {
             disabled={refreshing || loading}
             className="glass-button inline-flex items-center justify-center h-8 w-8 sm:w-auto sm:px-2.5 rounded-lg text-xs"
           >
-            <ArrowPathIcon className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <ArrowPathIcon className={`w-3.5 h-3.5 ${refreshing ? 'tws-loading-pulse' : ''}`} />
             <span className="hidden sm:inline ml-1.5">Refresh</span>
           </button>
           <button

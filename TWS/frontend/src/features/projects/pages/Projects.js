@@ -234,7 +234,7 @@ const Projects = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-600"></div>
+        <div className="tws-loading-pulse rounded-full h-32 w-32 border-b-2 border-orange-600"></div>
       </div>
     );
   }
@@ -340,7 +340,7 @@ const Projects = () => {
                     title="Delete client"
                   >
                     {deletingClientId === client._id ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                      <div className="tws-loading-pulse rounded-full h-4 w-4 border-b-2 border-red-600"></div>
                     ) : (
                       <TrashIcon className="h-4 w-4" />
                     )}

@@ -227,7 +227,7 @@ const TimeTracking = () => {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#0078d4] border-t-transparent mx-auto"></div>
+          <div className="tws-loading-pulse rounded-full h-12 w-12 border-2 border-[#0078d4] border-t-transparent mx-auto"></div>
           <p className="mt-4 text-[#605e5c]">Loading time tracking...</p>
         </div>
       </div>

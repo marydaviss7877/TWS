@@ -61,4 +61,30 @@ describe('portfolio service helpers', () => {
         .resolves.toBe('my-story-3');
     });
   });
+
+  describe('buildVisibilityQuery', () => {
+    it('allows portfolio managers to discover every lifecycle state', () => {
+      expect(portfolioService.buildVisibilityQuery({ canManage: true, isSales: false })).toEqual({});
+    });
+
+    it('limits sales readers to published, active sales or organization entries', () => {
+      const now = new Date('2026-07-31T12:00:00.000Z');
+      const query = portfolioService.buildVisibilityQuery({ canManage: false, isSales: true }, now);
+
+      expect(query.status).toBe('published');
+      expect(query.$and[0].$or).toEqual(expect.arrayContaining([
+        { 'visibility.scope': 'organization' },
+        { 'visibility.scope': 'sales' },
+        { 'visibility.scope': { $exists: false } }
+      ]));
+      expect(query.$and[1].$or).toContainEqual({ 'visibility.visibleFrom': { $lte: now } });
+      expect(query.$and[2].$or).toContainEqual({ 'visibility.visibleUntil': { $gt: now } });
+    });
+
+    it('does not expose sales-only or legacy entries to non-sales readers', () => {
+      const query = portfolioService.buildVisibilityQuery({ canManage: false, isSales: false });
+
+      expect(query.$and[0].$or).toEqual([{ 'visibility.scope': 'organization' }]);
+    });
+  });
 });

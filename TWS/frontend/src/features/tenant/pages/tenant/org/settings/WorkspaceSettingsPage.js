@@ -328,7 +328,7 @@ const WorkspaceSettingsPage = () => {
               <div className="flex justify-end pt-1">
                 <button onClick={save} disabled={saving || !dirty}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-40 transition-colors">
-                  {saving ? <ArrowPathIcon className="w-3 h-3 animate-spin" /> : <CheckIcon className="w-3 h-3" />}
+                  {saving ? <ArrowPathIcon className="w-3 h-3 tws-loading-pulse" /> : <CheckIcon className="w-3 h-3" />}
                   {saving ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>

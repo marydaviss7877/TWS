@@ -319,7 +319,7 @@ const ClientsContracts = () => {
     return (
       <AdminPageTemplate title="Contracts" description="Manage client contracts and agreements" stats={dashboardStats}>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="tws-loading-pulse rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       </AdminPageTemplate>
     );

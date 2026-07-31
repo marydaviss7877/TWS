@@ -17,6 +17,14 @@ const SoftwareHouseForgotPassword = () => {
   const successBoxRef = useRef(null);
 
   useEffect(() => {
+    const previousTitle = document.title;
+    document.title = 'Forgot Password | TWS ERP';
+    return () => {
+      document.title = previousTitle;
+    };
+  }, []);
+
+  useEffect(() => {
     if (error && errorBoxRef.current) errorBoxRef.current.focus();
   }, [error]);
 
@@ -85,7 +93,7 @@ const SoftwareHouseForgotPassword = () => {
         </form>
 
         <div className="sh-forgot-footer">
-          <Link to="/software-house-login">Back to login</Link>
+          <Link to="/login">Back to login</Link>
         </div>
       </div>
     </div>

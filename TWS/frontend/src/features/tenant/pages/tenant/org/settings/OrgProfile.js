@@ -199,7 +199,7 @@ const OrgProfile = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center py-16">
-      <div className="h-7 w-7 rounded-full border-2 border-primary-500 border-t-transparent animate-spin" />
+      <div className="h-7 w-7 rounded-full border-2 border-primary-500 border-t-transparent tws-loading-pulse" />
     </div>
   );
 
@@ -233,7 +233,7 @@ const OrgProfile = () => {
               className="text-xs px-2 py-1 rounded-md text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors">Discard</button>
             <button onClick={save} disabled={saving}
               className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-medium disabled:opacity-60 transition-colors">
-              {saving ? <span className="w-3 h-3 rounded-full border border-white border-t-transparent animate-spin" /> : <CheckIcon className="w-3 h-3" />}
+              {saving ? <span className="w-3 h-3 rounded-full border border-white border-t-transparent tws-loading-pulse" /> : <CheckIcon className="w-3 h-3" />}
               Save
             </button>
           </div>
@@ -379,7 +379,7 @@ const OrgProfile = () => {
                           logoUploading ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-wait pointer-events-none'
                                         : 'bg-primary-600 hover:bg-primary-700 text-white cursor-pointer'}`}>
                         {logoUploading
-                          ? <><span className="w-3 h-3 rounded-full border border-gray-400 border-t-transparent animate-spin" /> Uploading…</>
+                          ? <><span className="w-3 h-3 rounded-full border border-gray-400 border-t-transparent tws-loading-pulse" /> Uploading…</>
                           : <><ArrowUpTrayIcon className="w-3 h-3" /> {logoUrl ? 'Replace' : 'Upload'}</>}
                       </label>
 

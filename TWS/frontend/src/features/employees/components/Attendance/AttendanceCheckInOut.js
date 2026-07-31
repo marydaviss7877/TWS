@@ -368,7 +368,7 @@ const AttendanceCheckInOut = ({ todayAttendance, onAttendanceUpdate }) => {
                 className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               >
                 {loading ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  <div className="tws-loading-pulse rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                 ) : (
                   <CheckCircleIcon className="h-5 w-5 mr-2" />
                 )}
@@ -381,7 +381,7 @@ const AttendanceCheckInOut = ({ todayAttendance, onAttendanceUpdate }) => {
                 className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               >
                 {loading ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  <div className="tws-loading-pulse rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                 ) : (
                   <XCircleIcon className="h-5 w-5 mr-2" />
                 )}

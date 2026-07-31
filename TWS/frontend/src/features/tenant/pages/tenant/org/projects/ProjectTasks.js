@@ -363,7 +363,7 @@ function TaskDrawer({ task, onClose, onSaved, onDelete, tenantSlug, orgUsers }) 
           </button>
           <button onClick={handleSave} disabled={saving}
             className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2">
-            {saving && <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />}
+            {saving && <ArrowPathIcon className="w-3.5 h-3.5 tws-loading-pulse" />}
             {saving ? 'Saving…' : 'Save changes'}
           </button>
         </div>

@@ -983,7 +983,7 @@ const EmployeeCreate = () => {
           >
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <div className="tws-loading-pulse rounded-full h-5 w-5 border-b-2 border-white"></div>
                 <span>Adding Team Member...</span>
               </>
             ) : (

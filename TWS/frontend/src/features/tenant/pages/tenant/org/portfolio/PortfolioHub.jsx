@@ -76,7 +76,7 @@ export default function PortfolioHub() {
           <div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-400">Content studio</p>
             <h1 className="text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Portfolio</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">Build an internal library of outcome-led case studies, rich media, and Loom walkthroughs for your organization.</p>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">A private, centralized proof library for Sales to find and use approved case studies, media, and walkthroughs. Nothing here is publicly accessible.</p>
           </div>
           {canWrite && <button type="button" onClick={create} className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-violet-700">
             <PlusIcon className="h-5 w-5" /> New case study
@@ -126,7 +126,7 @@ export default function PortfolioHub() {
                   <div className="flex aspect-[16/9] items-center justify-center overflow-hidden bg-gradient-to-br from-violet-100 via-fuchsia-50 to-slate-100 dark:from-violet-950 dark:via-fuchsia-950/50 dark:to-slate-900">{item.cover?.kind === 'image' && item.cover.url ? <img src={item.cover.url} alt={item.cover.altText || ''} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" /> : item.cover?.kind === 'video' && item.cover.url ? <video src={item.cover.url} muted preload="metadata" className="h-full w-full object-cover" /> : <PhotoIcon className="h-10 w-10 text-violet-300 dark:text-violet-500" />}</div>
                   <div className="p-5">
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyle[item.status]}`}>{item.status}</span>
+                    <div className="flex flex-wrap gap-1.5"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyle[item.status]}`}>{item.status}</span><span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">{item.visibility?.scope === 'organization' ? 'Organization' : 'Sales / GTM'}</span></div>
                     {item.featured && <StarIcon className="h-5 w-5 fill-amber-400 text-amber-400" aria-label="Featured" />}
                   </div>
                   <h2 className="line-clamp-2 text-lg font-semibold text-slate-950 group-hover:text-violet-700 dark:text-white dark:group-hover:text-violet-400">{item.title}</h2>

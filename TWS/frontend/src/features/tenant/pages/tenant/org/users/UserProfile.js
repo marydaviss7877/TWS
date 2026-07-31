@@ -243,7 +243,7 @@ const UserProfile = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-200 border-t-indigo-600 mx-auto"></div>
+          <div className="tws-loading-pulse rounded-full h-12 w-12 border-4 border-indigo-200 border-t-indigo-600 mx-auto"></div>
           <p className="mt-4 text-gray-500 dark:text-gray-400">Loading profile...</p>
         </div>
       </div>
@@ -473,7 +473,7 @@ const UserProfile = () => {
                   >
                     {saving ? (
                       <>
-                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                        <div className="inline-block tws-loading-pulse rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
                         Saving...
                       </>
                     ) : (

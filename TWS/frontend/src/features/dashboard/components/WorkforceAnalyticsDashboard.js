@@ -154,7 +154,7 @@ const WorkforceAnalyticsDashboard = () => {
         <div className="text-center space-y-4">
           <div className="relative mx-auto w-12 h-12">
             <div className="absolute inset-0 rounded-full border-4 border-border" />
-            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent animate-spin" />
+            <div className="absolute inset-0 rounded-full border-4 border-primary-500 border-t-transparent tws-loading-pulse" />
           </div>
           <div>
             <p className="text-sm font-medium text-foreground">Analyzing workforce data</p>

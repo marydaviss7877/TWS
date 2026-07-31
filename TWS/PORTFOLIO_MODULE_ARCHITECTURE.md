@@ -19,6 +19,7 @@ testimonial, or reusable resource. It contains:
 - allow-listed Loom, YouTube, Vimeo, and Figma embeds;
 - private S3 media assets and an optional cover asset;
 - draft, internally published, and archived lifecycle states;
+- internal audience scope (`sales` by default or `organization`) with optional visibility start/end times;
 - featured ordering and complete creator/updater audit references.
 
 ## Access model
@@ -29,6 +30,13 @@ testimonial, or reusable resource. It contains:
 - Admins, managers, and project managers receive read/write by default.
 - Employees receive read access by default.
 - Every API request is authenticated and filtered by `orgId`.
+- Portfolio managers can manage every lifecycle state. Read-only members can only retrieve
+  currently visible published entries for their audience.
+- Sales/GTM membership is resolved from active tenant department access. Sales, Business
+  Development, Revenue, Growth, and Account Management departments qualify.
+- Legacy entries without an audience setting default securely to Sales/GTM visibility.
+- NDA-protected entries cannot be widened to organization visibility.
+- No anonymous route, public page, public object URL, or external share token exists.
 
 ## API
 

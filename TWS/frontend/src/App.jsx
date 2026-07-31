@@ -185,6 +185,11 @@ function ScrollToTopOnRouteChange() {
   return null;
 }
 
+function LegacyLandingRedirect() {
+  const location = useLocation();
+  return <Navigate to={{ pathname: '/', hash: location.hash }} replace />;
+}
+
 // On subdomain, catch any old-style /:slug/org/* navigate() call and
 // strip the prefix so the URL becomes the clean /path version.
 function SubdomainOldPathRedirect() {
@@ -261,10 +266,10 @@ function App() {
             path="/supra-admin-login"
             element={user ? <Navigate to="/supra-admin" replace /> : <SupraAdminLogin />}
           />
-          <Route path="/login" element={<Navigate to="/software-house-login" replace />} />
+          <Route path="/software-house-login" element={<Navigate to="/login" replace />} />
           <Route path="/invite/accept" element={<InviteAccept />} />
           <Route
-            path="/software-house-login"
+            path="/login"
             element={
               user ? (() => {
                 try {
@@ -290,21 +295,29 @@ function App() {
             }
           />
           <Route
-            path="/software-house-signup"
+            path="/signup"
             element={user ? <Navigate to="/" replace /> : <SoftwareHouseSignup />}
           />
+          <Route path="/software-house-signup" element={<Navigate to="/signup" replace />} />
           <Route
-            path="/software-house-forgot-password"
+            path="/forgot-password"
             element={user ? <Navigate to="/" replace /> : <SoftwareHouseForgotPassword />}
           />
-          <Route path="/forgot-password" element={<Navigate to="/software-house-forgot-password" replace />} />
-          <Route path="/software-house" element={<SoftwareHouseLanding />} />
-          <Route path="/software-house/finance" element={<FinanceSystemPage />} />
-          <Route path="/software-house/hrm" element={<HRMSystemPage />} />
-          <Route path="/software-house/projects" element={<ProjectSystemPage />} />
-          <Route path="/software-house/analytics" element={<Navigate to="/software-house/projects" replace />} />
+          <Route path="/software-house-forgot-password" element={<Navigate to="/forgot-password" replace />} />
+          <Route path="/software-house" element={<LegacyLandingRedirect />} />
+          {!isSubdomain && (
+            <>
+              <Route path="/finance" element={<FinanceSystemPage />} />
+              <Route path="/hrm" element={<HRMSystemPage />} />
+              <Route path="/projects" element={<ProjectSystemPage />} />
+              <Route path="/software-house/finance" element={<Navigate to="/finance" replace />} />
+              <Route path="/software-house/hrm" element={<Navigate to="/hrm" replace />} />
+              <Route path="/software-house/projects" element={<Navigate to="/projects" replace />} />
+              <Route path="/software-house/analytics" element={<Navigate to="/projects" replace />} />
+            </>
+          )}
           <Route path="/access-denied" element={<AccessDenied />} />
-          <Route path="/landing" element={<Navigate to="/software-house" replace />} />
+          <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="/monitoring-status" element={<MonitoringSystemStatus />} />
           <Route path="/debug" element={
             <div className="p-8">
@@ -557,16 +570,16 @@ function App() {
               />
             ) : (
               <>
-                <Route path="/" element={<Navigate to="/software-house" replace />} />
-                <Route path="/dashboard" element={<Navigate to="/software-house" replace />} />
+                <Route path="/" element={<SoftwareHouseLanding />} />
+                <Route path="/dashboard" element={<Navigate to="/" replace />} />
                 <Route path="*" element={<PageNotFound />} />
               </>
             )
           ) : (
             <>
-              <Route path="/" element={<Navigate to="/software-house" replace />} />
-              <Route path="/landing" element={<Navigate to="/software-house" replace />} />
-              <Route path="/dashboard" element={<Navigate to="/software-house" replace />} />
+              <Route path="/" element={<SoftwareHouseLanding />} />
+              <Route path="/landing" element={<Navigate to="/" replace />} />
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
               <Route path="*" element={<PageNotFound />} />
             </>
           )}
