@@ -9,7 +9,7 @@ const envConfig = require('../../config/environment-validator');
 class EmailService {
   constructor() {
     // Secrets read directly from process.env, never through client-facing config.
-    this.from = process.env.EMAIL_FROM || 'noreply@tws-platform.com';
+    this.from = process.env.EMAIL_FROM || 'noreply@noreply.tws.enterprises';
     const apiKey = process.env.RESEND_API_KEY;
 
     if (!apiKey) {

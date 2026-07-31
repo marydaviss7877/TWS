@@ -77,7 +77,7 @@ class BackendConfig {
       EMAIL_PORT: process.env.EMAIL_PORT || 587,
       EMAIL_USER: process.env.EMAIL_USER || '',
       EMAIL_PASS: process.env.EMAIL_PASS || '',
-      EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@tws.com',
+      EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@noreply.tws.enterprises',
       
       
       // AWS Configuration

@@ -120,7 +120,7 @@ router.get('/system-health', requirePlatformPermission(PLATFORM_PERMISSIONS.ANAL
  */
 router.get('/settings', requirePlatformPermission(PLATFORM_PERMISSIONS.SYSTEM.READ), async (req, res) => {
   try {
-    const settings = { systemName: 'TWS - The Wolf Stack', version: '1.0.0', maintenanceMode: false, registrationEnabled: true, defaultTrialDays: 14, maxTenantsPerAdmin: 100, backupSettings: { frequency: 'daily', retention: 30 }, emailSettings: { enabled: true, smtpHost: 'smtp.gmail.com', smtpPort: 587, fromEmail: 'noreply@tws.com' }, securitySettings: { passwordMinLength: 8, sessionTimeout: 24, ipWhitelist: [] }, notificationSettings: { emailNotifications: true, systemAlerts: true, maintenanceAlerts: true, securityAlerts: true } };
+    const settings = { systemName: 'TWS - The Wolf Stack', version: '1.0.0', maintenanceMode: false, registrationEnabled: true, defaultTrialDays: 14, maxTenantsPerAdmin: 100, backupSettings: { frequency: 'daily', retention: 30 }, emailSettings: { enabled: true, smtpHost: 'smtp.gmail.com', smtpPort: 587, fromEmail: 'noreply@noreply.tws.enterprises' }, securitySettings: { passwordMinLength: 8, sessionTimeout: 24, ipWhitelist: [] }, notificationSettings: { emailNotifications: true, systemAlerts: true, maintenanceAlerts: true, securityAlerts: true } };
     res.json(settings);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch settings' });
