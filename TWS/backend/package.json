@@ -33,8 +33,8 @@
     "test:hr": "jest --runTestsByPath src/modules/tenant/routes/__tests__/organization.hr-routes.integration.test.js src/services/hr/__tests__/recruitment.service.test.js src/services/__tests__/attendanceIntegrationService.test.js src/middleware/auth/__tests__/erpAccessControl.hr-permissions.test.js"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.943.0",
-    "@aws-sdk/s3-request-presigner": "^3.943.0",
+    "@aws-sdk/client-s3": "3.1068.0",
+    "@aws-sdk/s3-request-presigner": "3.1068.0",
     "@sendgrid/mail": "^8.1.6",
     "@sentry/node": "^7.120.4",
     "aws-sdk": "^2.1692.0",
@@ -107,6 +107,10 @@
     "nodemon": "^3.0.1",
     "supertest": "^6.3.4",
     "typescript": "^4.9.5"
+  },
+  "overrides": {
+    "@aws-sdk/core": "3.974.20",
+    "@aws-sdk/lib-storage": "3.943.0"
   },
   "jest": {
     "testEnvironment": "node",
