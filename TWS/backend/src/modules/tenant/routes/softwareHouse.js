@@ -12,6 +12,7 @@ const Sprint = require('../../../models/project-delivery/Sprint');
 const DevelopmentMetrics = require('../../../models/analytics/DevelopmentMetrics');
 const { TimeEntry, Transaction, Invoice, Bill, ProjectCosting, ChartOfAccounts, CashFlowForecast, Vendor } = require('../../../models/finance/Finance');
 const Expense = require('../../../models/finance/Expense');
+const FinanceBudget = require('../../../models/finance/FinanceBudget');
 const Client = require('../../../models/industry/Client');
 const Workspace = require('../../../models/org/Workspace');
 const ProjectMember = require('../../../models/project-delivery/ProjectMember');
@@ -618,7 +619,8 @@ require('./softwareHouseFinanceReads')(router, {
   ChartOfAccounts,
   CashFlowForecast,
   Vendor,
-  ProjectCosting
+  ProjectCosting,
+  Expense
 });
 
 require('./softwareHouseFinanceWrites')(router, {
@@ -635,7 +637,8 @@ require('./softwareHouseFinanceWrites')(router, {
   ProjectCosting,
   CashFlowForecast,
   Expense,
-  Transaction
+  Transaction,
+  FinanceBudget
 });
 
 // ==================== SOFTWARE-HOUSE FINANCE: CLIENTS ====================

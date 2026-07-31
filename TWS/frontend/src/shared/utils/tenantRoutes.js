@@ -12,7 +12,27 @@
  */
 export function tenantPath(tenantSlug, ...pathParts) {
   if (!tenantSlug) return '/';
-  const rest = pathParts.filter(Boolean).join('/');
+  const cleanParts = pathParts.filter(Boolean);
+  const orgIndex = cleanParts.indexOf('org');
+  const workspaceParts = orgIndex >= 0 ? cleanParts.slice(orgIndex + 1) : cleanParts;
+
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost');
+    if (!isLocal) {
+      const configuredBase = (process.env.REACT_APP_BASE_DOMAIN || 'twspms.work.gd')
+        .trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+      const hostParts = hostname.split('.');
+      const hasTenantSubdomain =
+        hostParts.length > configuredBase.split('.').length &&
+        !['www', 'api', 'admin', 'mail', 'smtp', 'app', 'swh', 'edu'].includes(hostParts[0]);
+      if (hasTenantSubdomain) {
+        return workspaceParts.length ? `/${workspaceParts.join('/')}` : '/home';
+      }
+    }
+  }
+
+  const rest = cleanParts.join('/');
   return rest ? `/${tenantSlug}/${rest}` : `/${tenantSlug}`;
 }
 

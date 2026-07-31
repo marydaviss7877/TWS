@@ -18,7 +18,7 @@ const BASE_ROLE_PERMISSIONS = {
   owner: ['*:*'],
   admin: [
     'projects:read', 'projects:write', 'tasks:read', 'tasks:write', 'documents:read', 'documents:write',
-    'sheets:read', 'sheets:write',
+    'sheets:read', 'sheets:write', 'portfolio:read', 'portfolio:write',
     'hr:read', 'hr:write', 'employees:read', 'employees:write', 'attendance:read', 'attendance:write',
     'leave:read', 'leave:write', 'payroll:read', 'payroll:write',
     'finance:read', 'finance:write',
@@ -27,21 +27,21 @@ const BASE_ROLE_PERMISSIONS = {
   ],
   manager: [
     'projects:read', 'tasks:read', 'tasks:write', 'documents:read', 'documents:write',
-    'sheets:read', 'sheets:write',
+    'sheets:read', 'sheets:write', 'portfolio:read', 'portfolio:write',
     'attendance:read', 'leave:read', 'leave:write', 'analytics:read', 'nucleus:read', 'nucleus:write',
     'teams:read', 'teams:write',
     'finance:read'
   ],
   project_manager: [
     'projects:read', 'projects:write', 'tasks:read', 'tasks:write', 'documents:read', 'documents:write',
-    'sheets:read', 'sheets:write',
+    'sheets:read', 'sheets:write', 'portfolio:read', 'portfolio:write',
     'nucleus:read', 'nucleus:write', 'clients:read', 'analytics:read', 'teams:read', 'teams:write',
     'finance:read'
   ],
   hr: [], // resolved via HR_SUBROLE_PERMISSIONS when hrSubRole is set
   finance: [], // resolved via FINANCE_SUBROLE_PERMISSIONS when financeSubRole is set
   employee: [
-    'projects:read', 'tasks:read', 'documents:read', 'sheets:read', 'attendance:read', 'attendance:write_own', 'leave:read', 'leave:write',
+    'projects:read', 'tasks:read', 'documents:read', 'sheets:read', 'portfolio:read', 'attendance:read', 'attendance:write_own', 'leave:read', 'leave:write',
     'nucleus:read', 'payroll:read_own', 'teams:read',
     // Employee portal: own HR profile only (GET /hr/employees?userId=<self>); not full roster
     'employees:read_own',
@@ -111,7 +111,7 @@ function deptPermsToModuleActions(permissions, _departmentId) {
   if (!Array.isArray(permissions)) return [];
   const out = [];
   const modules = [
-    'projects', 'hr', 'finance', 'payroll', 'documents', 'sheets', 'analytics', 'audit', 'clients', 'settings', 'nucleus',
+    'projects', 'hr', 'finance', 'payroll', 'documents', 'sheets', 'portfolio', 'analytics', 'audit', 'clients', 'settings', 'nucleus',
     'attendance', 'leave', 'teams'
   ];
   for (const p of permissions) {

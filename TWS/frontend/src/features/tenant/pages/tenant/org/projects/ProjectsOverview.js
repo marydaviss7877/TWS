@@ -53,6 +53,7 @@ import LoadingSpinner from '../../../../../../shared/components/feedback/Loading
 import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import './ProjectsOverviewSky.css';
 
 // Register Chart.js components
 ChartJS.register(
@@ -526,7 +527,12 @@ const ProjectsOverviewContent = () => {
     const teamCounts =
       projectSlice.length > 0
         ? projectSlice.map(
-            (p) => p.team?.members?.length || p.team?.length || p.teamMembers?.length || 0
+            (p) =>
+              p.teamMemberCount ??
+              p.team?.members?.length ??
+              p.team?.length ??
+              p.teamMembers?.length ??
+              0
           )
         : [];
     const teamAllocationData =
@@ -861,18 +867,19 @@ const ProjectsOverviewContent = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="projects-sky-page space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="projects-sky-hero flex items-center justify-between">
         <div>
+          <div className="projects-sky-eyebrow"><span /> Delivery command center</div>
           <h1 className="text-2xl xl:text-3xl font-bold font-heading text-gray-900 dark:text-white">
-            Projects Overview
+            Projects, in motion.
           </h1>
           <p className="text-sm xl:text-base text-gray-600 dark:text-gray-300 mt-1">
-            Comprehensive view of your organization's projects
+            One live view of delivery, capacity, risk and project economics.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="projects-sky-actions flex items-center gap-3">
           <button
             onClick={() => navigate(`/${tenantSlug}/org/projects/tasks`)}
             className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2"
@@ -923,9 +930,9 @@ const ProjectsOverviewContent = () => {
       {/* Stats Grid - Expanded */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <div 
+          <div
             key={stat.label} 
-            className={`glass-card-premium p-5 hover-glow transition-all duration-300 ${stat.onClick ? 'cursor-pointer' : ''}`}
+            className={`projects-sky-stat glass-card-premium p-5 hover-glow transition-all duration-300 ${stat.onClick ? 'cursor-pointer' : ''}`}
             onClick={stat.onClick}
           >
             <div className="flex items-center justify-between mb-3">

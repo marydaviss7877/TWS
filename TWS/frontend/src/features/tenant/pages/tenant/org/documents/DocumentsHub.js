@@ -74,7 +74,7 @@ function StatusBadge({ status }) {
     draft: { label: 'Draft', className: 'border border-amber-200 bg-amber-50 text-amber-700' },
     in_review: { label: 'In review', className: 'border border-sky-200 bg-sky-50 text-sky-700' },
     approved: { label: 'Approved', className: 'border border-emerald-200 bg-emerald-50 text-emerald-700' },
-    archived: { label: 'Archived', className: 'border border-slate-300 bg-slate-100 text-slate-700' },
+    archived: { label: 'Archived', className: 'border border-[var(--tenant-border)] bg-[var(--tenant-bg)] text-[var(--tenant-muted)]' },
   };
   const s = map[status] || map.draft;
   return (
@@ -369,7 +369,7 @@ const DocumentsHub = () => {
   const hasFilters = search || statusFilter || typeFilter || folderId || selectedTags.length > 0;
 
   return (
-    <div className="min-h-full bg-slate-50 text-[var(--tenant-text)]">
+    <div className="min-h-full bg-[var(--tenant-bg)] text-[var(--tenant-text)]">
       <header className="border-b border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -413,7 +413,7 @@ const DocumentsHub = () => {
         <aside className="flex-shrink-0 w-56 mr-6 sm:mr-8 hidden sm:block">
           <div className="sticky top-4 space-y-3">
             {/* Documents section - Status quick links */}
-            <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="rounded-xl border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] p-3 shadow-sm">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--tenant-muted)] px-2 py-1.5 flex items-center gap-2">
                 <DocumentTextIcon className="h-4 w-4" />
                 Documents
@@ -422,7 +422,7 @@ const DocumentsHub = () => {
                 <button
                   type="button"
                   onClick={() => { setStatusFilter(''); setFolderId(''); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${!statusFilter && !folderId ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-text)] hover:bg-slate-50'}`}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${!statusFilter && !folderId ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-text)] hover:bg-[var(--tenant-bg)]'}`}
                 >
                   <DocumentTextIcon className="h-4 w-4 flex-shrink-0" />
                   All Documents
@@ -430,7 +430,7 @@ const DocumentsHub = () => {
                 <button
                   type="button"
                   onClick={() => { setStatusFilter('in_review'); setFolderId(''); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${statusFilter === 'in_review' && !folderId ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-[var(--tenant-text)] hover:bg-slate-50'}`}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${statusFilter === 'in_review' && !folderId ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-[var(--tenant-text)] hover:bg-[var(--tenant-bg)]'}`}
                 >
                   <ClockIcon className="h-4 w-4 flex-shrink-0" />
                   Awaiting My Approval
@@ -438,7 +438,7 @@ const DocumentsHub = () => {
                 <button
                   type="button"
                   onClick={() => { setStatusFilter('draft'); setFolderId(''); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${statusFilter === 'draft' && !folderId ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-[var(--tenant-text)] hover:bg-slate-50'}`}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${statusFilter === 'draft' && !folderId ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-[var(--tenant-text)] hover:bg-[var(--tenant-bg)]'}`}
                 >
                   <PencilSquareIcon className="h-4 w-4 flex-shrink-0" />
                   Drafts
@@ -446,7 +446,7 @@ const DocumentsHub = () => {
                 <button
                   type="button"
                   onClick={() => { setStatusFilter('approved'); setFolderId(''); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${statusFilter === 'approved' && !folderId ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-[var(--tenant-text)] hover:bg-slate-50'}`}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${statusFilter === 'approved' && !folderId ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-[var(--tenant-text)] hover:bg-[var(--tenant-bg)]'}`}
                 >
                   <CheckCircleIcon className="h-4 w-4 flex-shrink-0" />
                   Approved
@@ -454,7 +454,7 @@ const DocumentsHub = () => {
                 <button
                   type="button"
                   onClick={() => { setStatusFilter('archived'); setFolderId(''); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${statusFilter === 'archived' && !folderId ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'text-[var(--tenant-text)] hover:bg-slate-50'}`}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${statusFilter === 'archived' && !folderId ? 'bg-[var(--tenant-bg)] text-slate-600 border border-[var(--tenant-border)]' : 'text-[var(--tenant-text)] hover:bg-[var(--tenant-bg)]'}`}
                 >
                   <ArchiveBoxIcon className="h-4 w-4 flex-shrink-0" />
                   Archived
@@ -463,7 +463,7 @@ const DocumentsHub = () => {
             </div>
 
             {/* Folders section */}
-            <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="rounded-xl border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] p-3 shadow-sm">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--tenant-muted)] px-2 py-1.5 flex items-center gap-2">
                 <FolderIcon className="h-4 w-4" />
                 Folders
@@ -472,7 +472,7 @@ const DocumentsHub = () => {
                 <button
                   type="button"
                   onClick={() => setFolderId('')}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${!folderId ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-text)] hover:bg-slate-50'}`}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition ${!folderId ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-text)] hover:bg-[var(--tenant-bg)]'}`}
                 >
                   <DocumentTextIcon className="h-4 w-4 flex-shrink-0" />
                   All Documents
@@ -482,7 +482,7 @@ const DocumentsHub = () => {
                     <button
                       type="button"
                       onClick={() => setFolderId(f._id)}
-                      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition truncate ${folderId === f._id ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-text)] hover:bg-slate-50'}`}
+                      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium transition truncate ${folderId === f._id ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-text)] hover:bg-[var(--tenant-bg)]'}`}
                       title={f.name}
                     >
                       <FolderIcon className="h-4 w-4 flex-shrink-0 text-[var(--tenant-muted)]" />
@@ -519,20 +519,20 @@ const DocumentsHub = () => {
           <div className="sm:hidden space-y-2">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1">
               <span className="text-xs text-[var(--tenant-muted)] flex-shrink-0 font-medium">Status:</span>
-              <button type="button" onClick={() => { setStatusFilter(''); setFolderId(''); }} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium ${!statusFilter && !folderId ? 'bg-[var(--tenant-primary)] text-white' : 'bg-white text-[var(--tenant-text)] border border-slate-200'}`}>All</button>
-              <button type="button" onClick={() => { setStatusFilter('in_review'); setFolderId(''); }} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium ${statusFilter === 'in_review' && !folderId ? 'bg-blue-500 text-white' : 'bg-white text-[var(--tenant-text)] border border-slate-200'}`}>Awaiting</button>
-              <button type="button" onClick={() => { setStatusFilter('draft'); setFolderId(''); }} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium ${statusFilter === 'draft' && !folderId ? 'bg-amber-500 text-white' : 'bg-white text-[var(--tenant-text)] border border-slate-200'}`}>Drafts</button>
-              <button type="button" onClick={() => { setStatusFilter('approved'); setFolderId(''); }} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium ${statusFilter === 'approved' && !folderId ? 'bg-emerald-500 text-white' : 'bg-white text-[var(--tenant-text)] border border-slate-200'}`}>Approved</button>
+              <button type="button" onClick={() => { setStatusFilter(''); setFolderId(''); }} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium ${!statusFilter && !folderId ? 'bg-[var(--tenant-primary)] text-white' : 'bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] border border-[var(--tenant-border)]'}`}>All</button>
+              <button type="button" onClick={() => { setStatusFilter('in_review'); setFolderId(''); }} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium ${statusFilter === 'in_review' && !folderId ? 'bg-blue-500 text-white' : 'bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] border border-[var(--tenant-border)]'}`}>Awaiting</button>
+              <button type="button" onClick={() => { setStatusFilter('draft'); setFolderId(''); }} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium ${statusFilter === 'draft' && !folderId ? 'bg-amber-500 text-white' : 'bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] border border-[var(--tenant-border)]'}`}>Drafts</button>
+              <button type="button" onClick={() => { setStatusFilter('approved'); setFolderId(''); }} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium ${statusFilter === 'approved' && !folderId ? 'bg-emerald-500 text-white' : 'bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] border border-[var(--tenant-border)]'}`}>Approved</button>
             </div>
             <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1">
               <span className="text-xs text-[var(--tenant-muted)] flex-shrink-0 font-medium">Folders:</span>
-              <button type="button" onClick={() => setFolderId('')} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium ${!folderId ? 'bg-[var(--tenant-primary)] text-white' : 'bg-white text-[var(--tenant-text)] border border-slate-200'}`}>All</button>
+              <button type="button" onClick={() => setFolderId('')} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium ${!folderId ? 'bg-[var(--tenant-primary)] text-white' : 'bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] border border-[var(--tenant-border)]'}`}>All</button>
               {folders.map((f) => (
-                <button key={f._id} type="button" onClick={() => setFolderId(f._id)} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium truncate max-w-[140px] ${folderId === f._id ? 'bg-[var(--tenant-primary)] text-white' : 'bg-white text-[var(--tenant-text)] border border-slate-200'}`} title={f.name}>{f.name}</button>
+                <button key={f._id} type="button" onClick={() => setFolderId(f._id)} className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium truncate max-w-[140px] ${folderId === f._id ? 'bg-[var(--tenant-primary)] text-white' : 'bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] border border-[var(--tenant-border)]'}`} title={f.name}>{f.name}</button>
               ))}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] p-3 shadow-sm">
             <div className="relative flex-1 min-w-[200px] max-w-md">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--tenant-muted)]" />
               <input
@@ -540,7 +540,7 @@ const DocumentsHub = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search documents..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-[var(--tenant-text)] placeholder-[var(--tenant-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30 focus:border-[var(--tenant-primary)] focus-visible:ring-2 focus-visible:ring-[var(--tenant-primary)]/30 transition"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-sm text-[var(--tenant-text)] placeholder-[var(--tenant-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30 focus:border-[var(--tenant-primary)] focus-visible:ring-2 focus-visible:ring-[var(--tenant-primary)]/30 transition"
               />
               {search && (
                 <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-[var(--tenant-muted)] hover:bg-[var(--tenant-bg)]" aria-label="Clear search">
@@ -551,7 +551,7 @@ const DocumentsHub = () => {
             <button
               type="button"
               onClick={() => setShowFilters((v) => !v)}
-              className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-xl border transition ${showFilters ? 'border-[var(--tenant-primary)] bg-[var(--tenant-primary)]/10 text-[var(--tenant-primary)]' : 'border-slate-200 bg-white text-[var(--tenant-text)] hover:bg-slate-50'}`}
+              className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-xl border transition ${showFilters ? 'border-[var(--tenant-primary)] bg-[var(--tenant-primary)]/10 text-[var(--tenant-primary)]' : 'border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] hover:bg-[var(--tenant-bg)]'}`}
             >
               <FunnelIcon className="h-5 w-5" />
               Filters
@@ -561,21 +561,21 @@ const DocumentsHub = () => {
                 Clear filters
               </button>
             )}
-            <div className="flex items-center gap-1 border border-slate-200 rounded-xl overflow-hidden bg-white">
-              <button type="button" onClick={() => setViewMode('grid')} className={`p-2.5 transition-colors ${viewMode === 'grid' ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-muted)] hover:bg-slate-50 hover:text-[var(--tenant-text)]'}`} aria-label="Grid view"><Squares2X2Icon className="h-5 w-5" /></button>
-              <button type="button" onClick={() => setViewMode('list')} className={`p-2.5 transition-colors ${viewMode === 'list' ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-muted)] hover:bg-slate-50 hover:text-[var(--tenant-text)]'}`} aria-label="List view"><ListBulletIcon className="h-5 w-5" /></button>
-              <button type="button" onClick={() => setViewMode('table')} className={`p-2.5 transition-colors ${viewMode === 'table' ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-muted)] hover:bg-slate-50 hover:text-[var(--tenant-text)]'}`} aria-label="Table view"><TableCellsIcon className="h-5 w-5" /></button>
+            <div className="flex items-center gap-1 border border-[var(--tenant-border)] rounded-xl overflow-hidden bg-[var(--tenant-bg-elevated)]">
+              <button type="button" onClick={() => setViewMode('grid')} className={`p-2.5 transition-colors ${viewMode === 'grid' ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-muted)] hover:bg-[var(--tenant-bg)] hover:text-[var(--tenant-text)]'}`} aria-label="Grid view"><Squares2X2Icon className="h-5 w-5" /></button>
+              <button type="button" onClick={() => setViewMode('list')} className={`p-2.5 transition-colors ${viewMode === 'list' ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-muted)] hover:bg-[var(--tenant-bg)] hover:text-[var(--tenant-text)]'}`} aria-label="List view"><ListBulletIcon className="h-5 w-5" /></button>
+              <button type="button" onClick={() => setViewMode('table')} className={`p-2.5 transition-colors ${viewMode === 'table' ? 'bg-[var(--tenant-primary)]/15 text-[var(--tenant-primary)]' : 'text-[var(--tenant-muted)] hover:bg-[var(--tenant-bg)] hover:text-[var(--tenant-text)]'}`} aria-label="Table view"><TableCellsIcon className="h-5 w-5" /></button>
             </div>
           </div>
           {showFilters && (
-            <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-slate-200 bg-white text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
+            <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] shadow-sm">
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
                 {STATUS_OPTIONS.map((o) => <option key={o.value || 'all'} value={o.value}>{o.label}</option>)}
               </select>
-              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-lg border border-slate-200 bg-white text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
+              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
                 {TYPE_OPTIONS.map((o) => <option key={o.value || 'all'} value={o.value}>{o.label}</option>)}
               </select>
-              <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className="rounded-lg border border-slate-200 bg-white text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
+              <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
                 <option value="">All folders</option>
                 {folders.map((f) => <option key={f._id} value={f._id}>{f.name}</option>)}
               </select>
@@ -587,7 +587,7 @@ const DocumentsHub = () => {
                     const values = Array.from(e.target.selectedOptions, (opt) => opt.value);
                     setSelectedTags(values);
                   }}
-                  className="rounded-lg border border-slate-200 bg-white text-[var(--tenant-text)] px-3 py-2 text-sm min-w-[160px] max-h-32 overflow-y-auto focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30"
+                  className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] px-3 py-2 text-sm min-w-[160px] max-h-32 overflow-y-auto focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30"
                   size={Math.min(tags.length + 1, 4)}
                 >
                   <option value="" disabled>Filter by tags</option>
@@ -606,25 +606,25 @@ const DocumentsHub = () => {
                   </button>
                 )}
               </div>
-              <select value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-lg border border-slate-200 bg-white text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
+              <select value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] text-[var(--tenant-text)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30">
                 {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
-              <button type="button" onClick={() => setOrder((o) => (o === 'desc' ? 'asc' : 'desc'))} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50 transition-colors">
+              <button type="button" onClick={() => setOrder((o) => (o === 'desc' ? 'asc' : 'desc'))} className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] px-3 py-2 text-sm hover:bg-[var(--tenant-bg)] transition-colors">
                 {order === 'desc' ? 'Newest first' : 'Oldest first'}
               </button>
               <div className="flex items-center gap-3 border-l border-[var(--tenant-border)] pl-4 ml-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <input type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="New folder name" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30" onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()} />
+                  <input type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="New folder name" className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] px-3 py-2 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30" onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()} />
                   <button type="button" onClick={handleCreateFolder} disabled={!newFolderName.trim() || creatingFolder} className="rounded-lg px-3 py-2 text-sm font-medium bg-[var(--tenant-primary)] text-white disabled:opacity-50">Add folder</button>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input type="text" value={newTagName} onChange={(e) => setNewTagName(e.target.value)} placeholder="New tag" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30" onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()} />
+                  <input type="text" value={newTagName} onChange={(e) => setNewTagName(e.target.value)} placeholder="New tag" className="rounded-lg border border-[var(--tenant-border)] bg-[var(--tenant-bg-elevated)] px-3 py-2 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-[var(--tenant-primary)]/30" onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()} />
                   <button type="button" onClick={handleCreateTag} disabled={!newTagName.trim() || creatingTag} className="rounded-lg px-3 py-2 text-sm font-medium border border-[var(--tenant-primary)] text-[var(--tenant-primary)] disabled:opacity-50">Add tag</button>
                 </div>
                 {tags.length > 0 && (
                   <div className="flex items-center gap-1 flex-wrap">
                     {tags.map((t) => (
-                      <span key={t._id} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-white border border-slate-200">
+                      <span key={t._id} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-[var(--tenant-bg-elevated)] border border-[var(--tenant-border)]">
                         <span>{t.name}</span>
                         <button
                           type="button"
@@ -686,16 +686,16 @@ const DocumentsHub = () => {
             </div>
           </div>
         ) : viewMode === 'table' ? (
-          <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-sm">
+          <div className="rounded-2xl border border-[var(--tenant-border)] overflow-hidden bg-[var(--tenant-bg-elevated)] shadow-sm">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-slate-300/80 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-                  <th className="sticky top-0 z-10 w-10 p-3"><input type="checkbox" checked={selectedIds.size === documents.length} onChange={toggleSelectAll} className="rounded border-slate-300" aria-label="Select all" /></th>
-                  <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700">Title</th>
-                  <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700 hidden sm:table-cell">Type</th>
-                  <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700 hidden sm:table-cell">Status</th>
-                  <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700 hidden lg:table-cell">Tags</th>
-                  <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-slate-700 hidden md:table-cell">Updated</th>
+                <tr className="border-b border-[var(--tenant-border)]/80 bg-[var(--tenant-bg-elevated)]/90 backdrop-blur supports-[backdrop-filter]:bg-[var(--tenant-bg-elevated)]/80">
+                  <th className="sticky top-0 z-10 w-10 p-3"><input type="checkbox" checked={selectedIds.size === documents.length} onChange={toggleSelectAll} className="rounded border-[var(--tenant-border)]" aria-label="Select all" /></th>
+                  <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-[var(--tenant-muted)]">Title</th>
+                  <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-[var(--tenant-muted)] hidden sm:table-cell">Type</th>
+                  <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-[var(--tenant-muted)] hidden sm:table-cell">Status</th>
+                  <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-[var(--tenant-muted)] hidden lg:table-cell">Tags</th>
+                  <th className="sticky top-0 z-10 p-3 text-xs font-semibold uppercase tracking-wide text-[var(--tenant-muted)] hidden md:table-cell">Updated</th>
                   <th className="sticky top-0 z-10 w-24 p-3" aria-label="Actions" />
                 </tr>
               </thead>
@@ -703,7 +703,7 @@ const DocumentsHub = () => {
                 {documents.map((doc) => (
                   <tr
                     key={doc._id}
-                    className={`group border-b border-slate-100 last:border-0 cursor-pointer transition-colors ${selectedIds.has(doc._id) ? 'bg-blue-50/70' : 'hover:bg-slate-50/70'}`}
+                    className={`group border-b border-[var(--tenant-border)] last:border-0 cursor-pointer transition-colors ${selectedIds.has(doc._id) ? 'bg-blue-50/70' : 'hover:bg-[var(--tenant-bg)]/70'}`}
                     onClick={() => handleOpen(doc._id)}
                     onKeyDown={(e) => handleKeyboardOpen(e, () => handleOpen(doc._id))}
                     tabIndex={0}
@@ -711,15 +711,15 @@ const DocumentsHub = () => {
                     aria-label={`Open document ${doc.title || 'Untitled'}`}
                   >
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" checked={selectedIds.has(doc._id)} onChange={() => toggleSelect(doc._id)} className="rounded border-slate-300" />
+                      <input type="checkbox" checked={selectedIds.has(doc._id)} onChange={() => toggleSelect(doc._id)} className="rounded border-[var(--tenant-border)]" />
                     </td>
                     <td className="p-3 text-sm font-medium text-[var(--tenant-text)]">{doc.title || 'Untitled'}</td>
-                    <td className="p-3 text-sm text-slate-700 hidden sm:table-cell">{doc.type === 'uploaded' ? 'Uploaded' : 'Created'}</td>
+                    <td className="p-3 text-sm text-[var(--tenant-muted)] hidden sm:table-cell">{doc.type === 'uploaded' ? 'Uploaded' : 'Created'}</td>
                     <td className="p-3 hidden sm:table-cell"><StatusBadge status={doc.status} /></td>
                     <td className="p-3 hidden lg:table-cell">
                       <DocumentTags tags={doc.tags} allTags={tags} />
                     </td>
-                    <td className="p-3 text-sm text-slate-700 hidden md:table-cell">{doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'}</td>
+                    <td className="p-3 text-sm text-[var(--tenant-muted)] hidden md:table-cell">{doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'}</td>
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
                       <button type="button" onClick={(e) => handleDelete(e, doc._id)} className="p-2 rounded-lg text-[var(--tenant-muted)] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-red-500 hover:bg-red-500/10 focus-visible:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition-opacity" aria-label="Delete"><TrashIcon className="h-5 w-5" /></button>
                     </td>
@@ -733,7 +733,7 @@ const DocumentsHub = () => {
             {documents.map((doc) => (
               <article
                 key={doc._id}
-                className={`group flex items-center gap-4 p-4 rounded-xl border bg-white cursor-pointer transition-all shadow-sm ${selectedIds.has(doc._id) ? 'border-blue-200 bg-blue-50/40' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/40'}`}
+                className={`group flex items-center gap-4 p-4 rounded-xl border bg-[var(--tenant-bg-elevated)] cursor-pointer transition-all shadow-sm ${selectedIds.has(doc._id) ? 'border-blue-200 bg-blue-50/40' : 'border-[var(--tenant-border)] hover:border-[var(--tenant-border)] hover:bg-[var(--tenant-bg)]/40'}`}
                 onClick={() => handleOpen(doc._id)}
                 onKeyDown={(e) => handleKeyboardOpen(e, () => handleOpen(doc._id))}
                 tabIndex={0}
@@ -743,12 +743,12 @@ const DocumentsHub = () => {
                 <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                   <input type="checkbox" checked={selectedIds.has(doc._id)} onChange={() => toggleSelect(doc._id)} className="rounded border-[var(--tenant-border)]" />
                 </div>
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-[var(--tenant-primary)]">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[var(--tenant-bg)] flex items-center justify-center text-[var(--tenant-primary)]">
                   {doc.type === 'uploaded' ? <DocumentTextIcon className="h-5 w-5" /> : <PencilSquareIcon className="h-5 w-5" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-[var(--tenant-text)] truncate">{doc.title || 'Untitled'}</h3>
-                  <p className="text-xs text-slate-700 flex items-center gap-2 mt-0.5 flex-wrap">
+                  <p className="text-xs text-[var(--tenant-muted)] flex items-center gap-2 mt-0.5 flex-wrap">
                     <StatusBadge status={doc.status} />
                     <span>{doc.type === 'uploaded' ? 'Uploaded' : 'Created'}</span>
                     <CalendarIcon className="h-3.5 w-3.5" />
@@ -768,7 +768,7 @@ const DocumentsHub = () => {
             {documents.map((doc) => (
               <article
                 key={doc._id}
-                className={`group flex items-center gap-4 p-4 sm:p-5 rounded-xl border bg-white cursor-pointer transition-all shadow-sm ${selectedIds.has(doc._id) ? 'border-blue-200 bg-blue-50/40' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/40 hover:shadow-md'}`}
+                className={`group flex items-center gap-4 p-4 sm:p-5 rounded-xl border bg-[var(--tenant-bg-elevated)] cursor-pointer transition-all shadow-sm ${selectedIds.has(doc._id) ? 'border-blue-200 bg-blue-50/40' : 'border-[var(--tenant-border)] hover:border-[var(--tenant-border)] hover:bg-[var(--tenant-bg)]/40 hover:shadow-md'}`}
                 onClick={() => handleOpen(doc._id)}
                 onKeyDown={(e) => handleKeyboardOpen(e, () => handleOpen(doc._id))}
                 tabIndex={0}
@@ -778,14 +778,14 @@ const DocumentsHub = () => {
                 <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                   <input type="checkbox" checked={selectedIds.has(doc._id)} onChange={() => toggleSelect(doc._id)} className="rounded border-[var(--tenant-border)]" />
                 </div>
-                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-[var(--tenant-primary)]">
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[var(--tenant-bg)] flex items-center justify-center text-[var(--tenant-primary)]">
                   {doc.type === 'uploaded' ? <DocumentTextIcon className="h-6 w-6" /> : <PencilSquareIcon className="h-6 w-6" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-[var(--tenant-text)] truncate">{doc.title || 'Untitled'}</h3>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <StatusBadge status={doc.status} />
-                    <span className="text-xs text-slate-700 flex items-center gap-1.5">
+                    <span className="text-xs text-[var(--tenant-muted)] flex items-center gap-1.5">
                       <CalendarIcon className="h-3.5 w-3.5 flex-shrink-0" />
                       {doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'}
                     </span>
@@ -862,7 +862,7 @@ const DocumentsHub = () => {
                     >
                       <div className={`relative flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center ${isBlank ? 'bg-gradient-to-br from-slate-500 via-slate-600 to-slate-700' : 'bg-gradient-to-br from-[var(--tenant-primary)] via-[var(--tenant-primary)]/90 to-[var(--tenant-primary)]/80'} text-white shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300`}>
                         <Icon className="h-8 w-8" />
-                        <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="absolute inset-0 rounded-2xl bg-[var(--tenant-bg-elevated)]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       </div>
                       <div className="flex-1 min-w-0 space-y-2">
                         <span className="block font-bold text-lg text-[var(--tenant-text)] group-hover:text-[var(--tenant-primary)] transition-colors duration-200">

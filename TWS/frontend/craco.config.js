@@ -107,8 +107,10 @@ module.exports = {
         });
       }
 
-      // html2pdf.js ships a sourceMappingURL for es6-promise.map but does not include the file;
-      // source-map-loader then warns on every compile. Ignore only that case.
+      // Some dependencies ship broken source-map references:
+      // - html2pdf.js references an es6-promise map that is not included.
+      // - ot-json1@1.0.2 ends json1.release.js with `sourceMappingURL=true`.
+      // Ignore only those known upstream packaging defects.
       const prevIgnore = webpackConfig.ignoreWarnings || [];
       webpackConfig.ignoreWarnings = [
         ...prevIgnore,
@@ -116,6 +118,11 @@ module.exports = {
           typeof warning.message === 'string' &&
           warning.message.includes('html2pdf.js') &&
           warning.message.includes('Failed to parse source map'),
+        (warning) =>
+          typeof warning.message === 'string' &&
+          warning.message.includes('ot-json1') &&
+          warning.message.includes('Failed to parse source map') &&
+          warning.message.includes('dist/true'),
       ];
 
       return webpackConfig;

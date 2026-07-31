@@ -117,6 +117,48 @@ const ROLE_DEFAULT_PERMISSIONS = {
   finance: []
 };
 
+const resolveProfilePicture = (url, tenantSlug) => {
+  if (!url || typeof url !== 'string') return null;
+  if (/^https?:\/\//i.test(url) || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  if (url.startsWith('/uploads/profile-pictures/')) return url;
+  const uploadMatch = url.match(/\/uploads\/profile-pictures\/[^/?#]+/);
+  if (uploadMatch) return uploadMatch[0];
+  if (url.startsWith('/api/tenant/')) return url;
+  if (url.startsWith('uploads/profile-pictures/')) return `/${url}`;
+  return `/api/tenant/${tenantSlug}/organization/uploads/profile-pictures/${url.replace(/^\/+/, '')}`;
+};
+
+const UserAvatar = ({ user, tenantSlug }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+  const src = resolveProfilePicture(user?.profilePicUrl || user?.avatarUrl, tenantSlug);
+  const fallback = (user?.fullName || user?.email || 'U')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part.charAt(0))
+    .join('')
+    .toUpperCase();
+
+  if (src && !imageFailed) {
+    return (
+      <img
+        src={src}
+        alt={`${user?.fullName || 'User'} profile`}
+        className="h-10 w-10 rounded-full object-cover ring-2 ring-white dark:ring-slate-800 shadow-sm"
+        loading="lazy"
+        referrerPolicy="no-referrer"
+        onError={() => setImageFailed(true)}
+      />
+    );
+  }
+
+  return (
+    <div className="h-10 w-10 rounded-full flex items-center justify-center bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 ring-1 ring-sky-200/70 dark:ring-sky-700/40">
+      <span className="text-xs font-semibold">{fallback || 'U'}</span>
+    </div>
+  );
+};
+
 const normalizePermissionCodeList = (codes) => {
   if (!Array.isArray(codes)) return [];
   const seen = new Set();
@@ -684,11 +726,7 @@ const UserList = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 bg-indigo-600 dark:bg-indigo-500 rounded-full flex items-center justify-center">
-                            <span className="text-white text-sm font-medium">
-                              {user.fullName?.charAt(0) || 'U'}
-                            </span>
-                          </div>
+                          <UserAvatar user={user} tenantSlug={tenantSlug} />
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900 dark:text-white">{user.fullName}</div>
@@ -706,7 +744,7 @@ const UserList = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                      {user.department?.name || 'N/A'}
+                      {user.department?.name || user.department || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(user.status)}`}>

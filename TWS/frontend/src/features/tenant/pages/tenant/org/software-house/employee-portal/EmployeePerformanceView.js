@@ -79,18 +79,18 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
   };
 
   const getRatingColor = (rating) => {
-    if (rating >= 4.5) return 'text-green-600 bg-green-100';
-    if (rating >= 3.5) return 'text-blue-600 bg-blue-100';
-    if (rating >= 2.5) return 'text-yellow-600 bg-yellow-100';
-    return 'text-red-600 bg-red-100';
+    if (rating >= 4.5) return 'text-green-600 bg-green-100 dark:bg-green-900/30';
+    if (rating >= 3.5) return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30';
+    if (rating >= 2.5) return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30';
+    return 'text-red-600 bg-red-100 dark:bg-red-900/30';
   };
 
   const getGoalStatusColor = (status) => {
     const colors = {
-      'completed': 'text-green-600 bg-green-100',
-      'in-progress': 'text-blue-600 bg-blue-100',
-      'not-started': 'text-gray-600 bg-gray-100',
-      'on-hold': 'text-yellow-600 bg-yellow-100'
+      'completed': 'text-green-600 bg-green-100 dark:bg-green-900/30',
+      'in-progress': 'text-blue-600 bg-blue-100 dark:bg-blue-900/30',
+      'not-started': 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700',
+      'on-hold': 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30'
     };
     return colors[status] || colors['not-started'];
   };
@@ -106,8 +106,8 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-bold text-gray-900">My Performance</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">My Performance</h2>
       </div>
 
       {/* Overall Rating */}
@@ -139,31 +139,31 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
       </div>
 
       {/* Performance Goals */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Performance Goals</h3>
-          <span className="text-sm text-gray-500">{goals.length} goals</span>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Performance Goals</h3>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{goals.length} goals</span>
         </div>
         <div className="space-y-4">
           {goals.length > 0 ? (
             goals.map((goal, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4">
+              <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <h4 className="font-medium text-gray-900">{goal.title}</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-white">{goal.title}</h4>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getGoalStatusColor(goal.status)}`}>
                     {goal.status?.replace('-', ' ')}
                   </span>
                 </div>
                 {goal.description && (
-                  <p className="text-sm text-gray-600 mb-3">{goal.description}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{goal.description}</p>
                 )}
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-gray-500">Progress</span>
-                      <span className="text-xs font-medium text-gray-700">{goal.progress || 0}%</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Progress</span>
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{goal.progress || 0}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
                         className="bg-purple-600 h-2 rounded-full transition-all"
                         style={{ width: `${goal.progress || 0}%` }}
@@ -171,7 +171,7 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
                     </div>
                   </div>
                   {goal.targetDate && (
-                    <div className="ml-4 flex items-center text-xs text-gray-500">
+                    <div className="ml-4 flex items-center text-xs text-gray-500 dark:text-gray-400">
                       <CalendarIcon className="h-4 w-4 mr-1" />
                       {new Date(goal.targetDate).toLocaleDateString()}
                     </div>
@@ -180,24 +180,24 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-500 py-8">No performance goals set</p>
+            <p className="text-center text-gray-500 dark:text-gray-400 py-8">No performance goals set</p>
           )}
         </div>
       </div>
 
       {/* Performance Reviews */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Reviews</h3>
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Performance Reviews</h3>
         <div className="space-y-4">
           {reviews.length > 0 ? (
             reviews.map((review, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4">
+              <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h4 className="font-medium text-gray-900">
+                    <h4 className="font-medium text-gray-900 dark:text-white">
                       {review.reviewType || 'Annual Review'}
                     </h4>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {review.reviewDate ? new Date(review.reviewDate).toLocaleDateString() : 'N/A'}
                     </p>
                   </div>
@@ -209,36 +209,36 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
                   )}
                 </div>
                 {review.feedback && (
-                  <p className="text-sm text-gray-600 mb-3">{review.feedback}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{review.feedback}</p>
                 )}
                 {review.reviewer && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Reviewed by: {review.reviewer.name || review.reviewer}
                   </p>
                 )}
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-500 py-8">No performance reviews available</p>
+            <p className="text-center text-gray-500 dark:text-gray-400 py-8">No performance reviews available</p>
           )}
         </div>
       </div>
 
       {/* Competencies */}
       {performance?.competencies && performance.competencies.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Competencies</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Competencies</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {performance.competencies.map((competency, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4">
+              <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900">{competency.name}</h4>
-                  <span className="text-sm font-medium text-gray-700">
+                  <h4 className="font-medium text-gray-900 dark:text-white">{competency.name}</h4>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {competency.level || 'N/A'}
                   </span>
                 </div>
                 {competency.rating && (
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
                       className="bg-purple-600 h-2 rounded-full"
                       style={{ width: `${(competency.rating / 5) * 100}%` }}

@@ -5,7 +5,7 @@ const User = require('../../models/users-auth/User');
 const Employee = require('../../models/hr-payroll/Employee');
 const Project = require('../../models/project-delivery/Project');
 const Task = require('../../models/project-delivery/Task');
-const Finance = require('../../models/finance/Finance');
+const { Transaction: Finance } = require('../../models/finance/Finance');
 const Attendance = require('../../models/hr-payroll/Attendance');
 const Payroll = require('../../models/hr-payroll/Payroll');
 const Department = require('../../models/org/Department');
@@ -400,7 +400,7 @@ class TenantOrgService {
       const filter = this.getTenantFilter(tenantContext);
       
       const userStats = await models.User.aggregate([
-        { $match: { ...filter, isActive: true } },
+        { $match: { ...filter, status: 'active' } },
         {
           $group: {
             _id: '$role',
@@ -410,7 +410,7 @@ class TenantOrgService {
       ]);
 
       const departmentStats = await models.User.aggregate([
-        { $match: { ...filter, isActive: true } },
+        { $match: { ...filter, status: 'active' } },
         {
           $group: {
             _id: '$department',
@@ -443,7 +443,7 @@ class TenantOrgService {
       const filter = this.getTenantFilter(tenantContext);
       
       const projectStats = await models.Project.aggregate([
-        { $match: { ...filter, isActive: true } },
+        { $match: { ...filter, status: { $ne: 'archived' } } },
         {
           $group: {
             _id: '$status',
@@ -454,7 +454,7 @@ class TenantOrgService {
       ]);
 
       const monthlyProjects = await models.Project.aggregate([
-        { $match: { ...filter, isActive: true } },
+        { $match: { ...filter, status: { $ne: 'archived' } } },
         {
           $group: {
             _id: {
@@ -492,7 +492,7 @@ class TenantOrgService {
       const filter = this.getTenantFilter(tenantContext);
       
       const taskStats = await models.Task.aggregate([
-        { $match: { ...filter, isActive: true } },
+        { $match: filter },
         {
           $group: {
             _id: '$status',
@@ -502,7 +502,7 @@ class TenantOrgService {
       ]);
 
       const priorityStats = await models.Task.aggregate([
-        { $match: { ...filter, isActive: true } },
+        { $match: filter },
         {
           $group: {
             _id: '$priority',
@@ -535,7 +535,7 @@ class TenantOrgService {
       const filter = this.getTenantFilter(tenantContext);
       
       const financialStats = await models.Finance.aggregate([
-        { $match: { ...filter, isActive: true } },
+        { $match: filter },
         {
           $group: {
             _id: '$type',
@@ -1107,7 +1107,7 @@ class TenantOrgService {
       
       const [employees, total, activeCount, onLeaveCount, departmentsList] = await Promise.all([
         models.Employee.find(filter)
-          .populate('userId', 'fullName email')
+          .populate('userId', 'fullName email profilePicUrl')
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit)
@@ -1122,6 +1122,7 @@ class TenantOrgService {
         ...emp,
         name: emp.userId?.fullName || 'N/A',
         email: emp.userId?.email || 'N/A',
+        profilePicUrl: emp.userId?.profilePicUrl || null,
         role: emp.jobTitle,
         status: emp.status || 'active'
       }));
@@ -1524,7 +1525,7 @@ class TenantOrgService {
         ? { ...baseFilter, _id: employeeId }
         : { ...baseFilter, employeeId };
       const employee = await models.Employee.findOne(filter)
-        .populate('userId', 'fullName email phone')
+        .populate('userId', 'fullName email phone profilePicUrl')
         .lean();
       if (!employee) return null;
       return {

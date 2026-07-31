@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
-const mongoose = require('mongoose');
 const selfServeSignupService = require('../services/tenant/self-serve-signup.service');
 const onboardingChecklistService = require('../services/onboardingChecklistService');
 const emailVerificationService = require('../services/integrations/email-verification.service');
@@ -9,7 +8,7 @@ const emailValidationService = require('../services/integrations/email-validatio
 const ErrorHandler = require('../utils/errorHandler');
 const rateLimit = require('express-rate-limit');
 
-// Rate limiting - signup complete/register (stricter, allows retries)
+// Rate limiting - request-otp (stricter, allows validation retries)
 const signupLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 15, // 15 signup attempts per hour per IP (allows validation retries)
@@ -26,13 +25,43 @@ const signupLimiter = rateLimit({
   }
 });
 
-// More lenient rate limiter for create-tenant (allows retries)
-const createTenantLimiter = rateLimit({
+// Rate limiter for the final verify+provision step (allows retries on wrong OTP)
+const completeSignupLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30, // 10 requests per 15 minutes per IP (allows retries)
-  message: 'Too many tenant creation attempts. Please wait a few minutes and try again.',
+  max: 30, // 30 requests per 15 minutes per IP (allows retries)
+  message: 'Too many attempts. Please wait a few minutes and try again.',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many attempts. Please wait a few minutes and try again.',
+      code: 'RATE_LIMIT_EXCEEDED',
+      retryAfter: 900
+    });
+  }
+});
+
+// Backstop limiter for OTP resend, keyed by IP + email (primary throttle lives
+// in emailVerificationService.resendVerification: 3 resends / 30 min)
+const resendOtpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    const email = String(req.body?.email || 'unknown').trim().toLowerCase();
+    return `resend_otp_${ip}_${email}`;
+  },
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many resend requests. Please wait a moment and try again.',
+      code: 'RATE_LIMIT_EXCEEDED',
+      retryAfter: 900
+    });
+  }
 });
 
 const apiLimiter = rateLimit({
@@ -73,132 +102,76 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 /**
- * POST /api/signup/register
- * Step 1: Register user with email and password
+ * POST /api/signup/software-house/request-otp
+ * Step 1: Send an email verification code. No account is created yet.
  */
-router.post('/register',
+router.post('/software-house/request-otp',
   signupLimiter,
   [
     body('email').isEmail().normalizeEmail({ gmail_remove_dots: false }),
-    body('password').isLength({ min: 6 }),
-    body('fullName').notEmpty().trim(),
+    body('fullName').notEmpty().trim().isLength({ min: 2, max: 255 }),
     handleValidationErrors
   ],
   ErrorHandler.asyncHandler(async (req, res) => {
+    const { email, fullName } = req.body;
+
+    // Validate email using email validation service (non-blocking)
+    // If validation fails, we still allow signup to proceed
+    let emailValidation;
     try {
-      const { email, password, fullName } = req.body;
-      
-      console.log('📝 Signup request received:', { email, hasPassword: !!password, hasFullName: !!fullName });
-      
-      // Validate email using email validation service (non-blocking)
-      // If validation fails, we still allow signup to proceed
-      let emailValidation;
-      try {
-        console.log('📝 Starting email validation for:', email);
-        // Set a timeout for email validation (3 seconds max - reduced from 5)
-        const validationPromise = emailValidationService.validateEmail(email);
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Email validation timeout')), 3000)
-        );
-        
-        emailValidation = await Promise.race([validationPromise, timeoutPromise]);
-        console.log('✅ Email validation completed:', emailValidation);
-        
-        // Only block if it's clearly a disposable email or invalid format
-        // Allow signup to proceed even if MX records check fails
-        if (!emailValidation.valid && emailValidation.reason === 'disposable_email') {
-          console.warn('⚠️ Disposable email detected, blocking signup');
-          return res.status(400).json({
-            success: false,
-            message: emailValidation.message || 'Disposable email addresses are not allowed',
-            reason: emailValidation.reason
-          });
-        }
-        
-        // For other validation failures (MX records, etc.), allow signup to proceed
-        if (!emailValidation.valid) {
-          console.warn('⚠️ Email validation failed but allowing signup:', emailValidation.reason);
-          emailValidation = { valid: true, domain: email.split('@')[1], checks: {} };
-        }
-      } catch (emailValidationError) {
-        console.warn('⚠️ Email validation error (allowing signup):', emailValidationError.message);
-        console.warn('⚠️ Email validation error stack:', emailValidationError.stack);
-        // Continue with signup even if email validation service fails
-        emailValidation = { valid: true, domain: email.split('@')[1] || 'unknown', checks: {} };
+      const validationPromise = emailValidationService.validateEmail(email);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Email validation timeout')), 3000)
+      );
+
+      emailValidation = await Promise.race([validationPromise, timeoutPromise]);
+
+      // Only block if it's clearly a disposable email
+      if (!emailValidation.valid && emailValidation.reason === 'disposable_email') {
+        return res.status(400).json({
+          success: false,
+          message: emailValidation.message || 'Disposable email addresses are not allowed',
+          reason: emailValidation.reason
+        });
       }
+    } catch (emailValidationError) {
+      console.warn('⚠️ Email validation error (allowing signup):', emailValidationError.message);
+    }
 
-      const metadata = {
-        signupSource: req.query.source || req.headers['x-signup-source'] || 'self-serve',
-        landingPage: req.query.landingPage || req.headers['x-landing-page'],
-        industry: req.query.industry || req.headers['x-industry'],
-        ipAddress: req.ip || req.connection.remoteAddress,
-        userAgent: req.headers['user-agent']
-      };
+    const metadata = {
+      signupSource: req.query.source || req.headers['x-signup-source'] || 'self-serve',
+      landingPage: req.query.landingPage || req.headers['x-landing-page'],
+      industry: req.query.industry || req.headers['x-industry'] || 'software_house',
+      fullName,
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.headers['user-agent']
+    };
 
-      console.log('📝 Calling registerUser with metadata:', metadata);
-      console.log('📝 User details:', { email, hasPassword: !!password, fullName });
-
-      let result;
-      try {
-        result = await selfServeSignupService.registerUser(
-          email,
-          password,
-          fullName,
-          metadata
-        );
-        console.log('✅ User registered successfully:', result.user._id);
-      } catch (registerError) {
-        console.error('❌ Registration error in route handler:', registerError);
-        console.error('❌ Registration error name:', registerError.name);
-        console.error('❌ Registration error message:', registerError.message);
-        console.error('❌ Registration error stack:', registerError.stack);
-        throw registerError; // Re-throw to let ErrorHandler handle it
-      }
-
-      res.status(201).json({
+    try {
+      const result = await selfServeSignupService.requestSignupVerification(email, metadata);
+      res.status(200).json({
         success: true,
         message: result.message,
-        data: {
-          userId: result.user._id,
-          email: result.user.email,
-          emailValidation: {
-            valid: true,
-            domain: emailValidation.domain,
-            checks: emailValidation.checks
-          }
-        }
+        data: { email: result.email }
       });
     } catch (error) {
-      console.error('❌ Signup error:', error);
-      console.error('❌ Error stack:', error.stack);
-      throw error; // Let ErrorHandler handle it
-    }
-  })
-);
-
-/**
- * POST /api/signup/verify-email
- * Step 2: Verify email with OTP
- */
-router.post('/verify-email',
-  apiLimiter,
-  [
-    body('email').isEmail().normalizeEmail({ gmail_remove_dots: false }),
-    body('otp').isLength({ min: 6, max: 6 }),
-    handleValidationErrors
-  ],
-  ErrorHandler.asyncHandler(async (req, res) => {
-    const { email, otp } = req.body;
-
-    const result = await selfServeSignupService.verifyEmail(email, otp);
-
-    res.json({
-      success: true,
-      message: result.message,
-      data: {
-        userId: result.userId
+      if (error.message.includes('already exists')) {
+        return res.status(409).json({
+          success: false,
+          message: error.message,
+          code: 'DUPLICATE_EMAIL'
+        });
       }
-    });
+      if (error.message.includes('Too many resend attempts')) {
+        return res.status(429).json({
+          success: false,
+          message: error.message,
+          code: 'RATE_LIMIT_EXCEEDED',
+          retryAfter: 1800
+        });
+      }
+      throw error;
+    }
   })
 );
 
@@ -207,7 +180,7 @@ router.post('/verify-email',
  * Resend verification OTP
  */
 router.post('/resend-otp',
-  apiLimiter,
+  resendOtpLimiter,
   [
     body('email').isEmail().normalizeEmail({ gmail_remove_dots: false }),
     handleValidationErrors
@@ -219,12 +192,24 @@ router.post('/resend-otp',
       userAgent: req.headers['user-agent']
     };
 
-    await selfServeSignupService.resendOTP(email, metadata);
+    try {
+      await selfServeSignupService.resendOTP(email, metadata);
 
-    res.json({
-      success: true,
-      message: 'Verification code resent. Please check your email.'
-    });
+      res.json({
+        success: true,
+        message: 'Verification code resent. Please check your email.'
+      });
+    } catch (error) {
+      if (error.message.includes('Too many resend attempts')) {
+        return res.status(429).json({
+          success: false,
+          message: error.message,
+          code: 'RATE_LIMIT_EXCEEDED',
+          retryAfter: 1800
+        });
+      }
+      throw error;
+    }
   })
 );
 
@@ -266,212 +251,6 @@ router.get('/check-slug-availability',
           message: error.message
         }
       });
-    }
-  })
-);
-
-/**
- * POST /api/signup/create-tenant
- * Step 4: Create tenant (after email verification)
- */
-router.post('/create-tenant',
-  createTenantLimiter,
-  [
-    body('userId').notEmpty(),
-    body('organizationName').notEmpty().trim().isLength({ min: 2, max: 255 }),
-    body('slug').notEmpty().trim(),
-    body('industry').optional().isIn([
-      'business', 'warehouse', 
-      'software_house'
-    ]),
-    handleValidationErrors
-  ],
-  ErrorHandler.asyncHandler(async (req, res) => {
-    // Ensure response is sent even if connection closes
-    let responseSent = false;
-    const sendResponse = (statusCode, data) => {
-      if (!responseSent) {
-        responseSent = true;
-        try {
-          res.status(statusCode).json(data);
-        } catch (sendError) {
-          console.error('❌ Error sending response:', sendError);
-        }
-      }
-    };
-
-    try {
-      const { userId, organizationName, slug, industry, metadata: requestMetadata } = req.body;
-      
-      console.log('📝 Create tenant request:', { userId, organizationName, slug, industry });
-      
-      // Validate required fields
-      if (!userId) {
-        return sendResponse(400, {
-          success: false,
-          message: 'User ID is required',
-          code: 'MISSING_USER_ID'
-        });
-      }
-      
-      if (!organizationName || !slug) {
-        return sendResponse(400, {
-          success: false,
-          message: 'Organization name and slug are required',
-          code: 'MISSING_REQUIRED_FIELDS'
-        });
-      }
-      
-      const metadata = {
-        ...requestMetadata, // Industry-specific fields from frontend
-        ipAddress: req.ip || req.connection.remoteAddress,
-        userAgent: req.headers['user-agent']
-      };
-
-      console.log('📝 Calling createTenant with metadata:', metadata);
-
-      // Set a timeout for the tenant creation (45 seconds max - reduced from 60)
-      const createTenantPromise = selfServeSignupService.createTenant(
-        userId,
-        organizationName,
-        slug,
-        industry,
-        metadata
-      );
-      
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Tenant creation timeout - this may take a few minutes. Please check your tenant status.')), 45000)
-      );
-
-      const result = await Promise.race([createTenantPromise, timeoutPromise]);
-
-      console.log('✅ Tenant created successfully:', result.tenant?._id);
-
-      // Initialize onboarding checklist (non-blocking)
-      onboardingChecklistService.initializeChecklist(result.tenant._id).catch(error => {
-        console.error('⚠️ Error initializing onboarding checklist (non-critical):', error);
-      });
-
-      sendResponse(201, {
-        success: true,
-        message: result.message,
-        data: result
-      });
-    } catch (error) {
-      console.error('❌ ========== CREATE TENANT ERROR ==========');
-      console.error('❌ Error name:', error.name);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error code:', error.code);
-      console.error('❌ Error stack:', error.stack);
-      console.error('❌ MongoDB readyState:', mongoose?.connection?.readyState);
-      
-      // Log error properties safely
-      try {
-        const errorDetails = {
-          name: error.name,
-          message: error.message,
-          code: error.code,
-          stack: error.stack?.substring(0, 500), // Limit stack length
-          cause: error.cause,
-          errno: error.errno,
-          syscall: error.syscall,
-          hostname: error.hostname,
-          port: error.port
-        };
-        console.error('❌ Error details:', JSON.stringify(errorDetails, null, 2));
-      } catch (stringifyError) {
-        console.error('❌ Could not stringify error:', stringifyError);
-      }
-      
-      // Check if response was already sent
-      if (responseSent) {
-        console.error('⚠️ Response already sent, cannot send error response');
-        return;
-      }
-      
-      // Log the original error if it exists
-      if (error.originalError) {
-        console.error('❌ Original error:', error.originalError);
-        console.error('❌ Original error name:', error.originalError.name);
-        console.error('❌ Original error message:', error.originalError.message);
-        console.error('❌ Original error code:', error.originalError.code);
-      }
-      
-      // Handle connection errors - be specific, don't catch all MongoServerError
-      const isConnectionError = error.message && (
-        error.message.includes('Connection is closed') ||
-        error.message.includes('ECONNRESET') ||
-        error.message.includes('socket hang up') ||
-        error.message.includes('write EPIPE') ||
-        error.message.includes('topology was destroyed') ||
-        error.message.includes('MongoNetworkError') ||
-        (error.name === 'MongoNetworkError') ||
-        (error.name === 'MongoServerSelectionError')
-      );
-      
-      if (isConnectionError) {
-        console.error('❌ CONNECTION ERROR DETECTED:');
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Error name:', error.name);
-        console.error('❌ Error code:', error.code);
-        console.error('❌ MongoDB readyState:', mongoose?.connection?.readyState);
-        if (error.originalError) {
-          console.error('❌ Original error:', error.originalError);
-        }
-        
-        return sendResponse(500, {
-          success: false,
-          message: 'Database connection error. Please try again.',
-          code: 'CONNECTION_ERROR',
-          details: process.env.NODE_ENV === 'development' ? {
-            errorMessage: error.message,
-            errorName: error.name,
-            mongoState: mongoose?.connection?.readyState
-          } : undefined
-        });
-      }
-      
-      // If it's a timeout, return a more helpful message
-      if (error.message && error.message.includes('timeout')) {
-        return sendResponse(202, {
-          success: true,
-          message: 'Tenant creation is in progress. This may take a few minutes. Please check your tenant status.',
-          data: {
-            status: 'processing',
-            message: 'Please wait while your tenant is being set up...'
-          }
-        });
-      }
-      
-      // For development, include more error details
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      const errorResponse = {
-        success: false,
-        message: error.message || 'Failed to create tenant',
-        code: error.code || 'TENANT_CREATION_ERROR'
-      };
-      
-      if (isDevelopment) {
-        errorResponse.error = {
-          name: error.name,
-          message: error.message,
-          stack: error.stack?.substring(0, 500), // Limit stack trace length
-          originalError: error.originalError ? {
-            name: error.originalError.name,
-            message: error.originalError.message
-          } : undefined
-        };
-      }
-      
-      // Determine status code based on error type
-      let statusCode = 500;
-      if (error.name === 'ValidationError' || error.code === 11000) {
-        statusCode = 400;
-      } else if (error.message && error.message.includes('not found')) {
-        statusCode = 404;
-      }
-      
-      sendResponse(statusCode, errorResponse);
     }
   })
 );
@@ -564,12 +343,14 @@ router.get('/onboarding/:tenantId/progress',
  * Addresses Issue #4.1 and #4.2 - ensures atomic operations with rollback
  */
 router.post('/software-house/complete',
+  completeSignupLimiter,
   [
     body('email').isEmail().normalizeEmail({ gmail_remove_dots: false }),
     body('password').isLength({ min: 6 }),
     body('fullName').notEmpty().trim().isLength({ min: 2, max: 255 }),
     body('organizationName').notEmpty().trim().isLength({ min: 2, max: 255 }),
     body('organizationSlug').notEmpty().trim().isLength({ min: 3, max: 50 }),
+    body('otp').isLength({ min: 6, max: 6 }).withMessage('A 6-digit verification code is required'),
     body('confirmPassword').custom((value, { req }) => {
       if (value !== req.body.password) {
         throw new Error('Passwords do not match');
@@ -580,19 +361,20 @@ router.post('/software-house/complete',
   ],
   ErrorHandler.asyncHandler(async (req, res) => {
     try {
-      const { 
-        email, 
-        fullName, 
-        password, 
+      const {
+        email,
+        fullName,
+        password,
         confirmPassword,
-        organizationName, 
-        organizationSlug 
+        organizationName,
+        organizationSlug,
+        otp
       } = req.body;
-      
-      console.log('📝 Complete signup request:', { 
-        email, 
-        organizationName, 
-        organizationSlug 
+
+      console.log('📝 Complete signup request:', {
+        email,
+        organizationName,
+        organizationSlug
       });
       
       // Validate password match
@@ -635,13 +417,14 @@ router.post('/software-house/complete',
         methodology: req.body.methodology
       };
       
-      // Complete signup in single transaction
+      // Verify OTP, then complete signup in a single transaction
       const result = await selfServeSignupService.completeSignup(
         email,
         password,
         fullName,
         organizationName,
         organizationSlug,
+        otp,
         metadata
       );
       
@@ -670,6 +453,17 @@ router.post('/software-house/complete',
       console.error('❌ Error stack:', error.stack);
       
       // Handle specific errors
+      if (
+        error.message.includes('verification code') ||
+        error.message.includes('incorrect attempts')
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: error.message,
+          code: 'INVALID_OTP'
+        });
+      }
+
       if (error.message.includes('already exists')) {
         return res.status(409).json({
           success: false,
@@ -677,7 +471,7 @@ router.post('/software-house/complete',
           code: 'DUPLICATE_EMAIL'
         });
       }
-      
+
       if (error.message.includes('slug is already taken')) {
         return res.status(409).json({
           success: false,

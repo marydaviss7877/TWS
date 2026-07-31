@@ -5,6 +5,11 @@ const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl'
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const ProjectClient = require('../../../models/industry/Client');
 const Project = require('../../../models/project-delivery/Project');
+const User = require('../../../models/users-auth/User');
+const Tenant = require('../../../models/tenant/Tenant');
+const TenantUser = require('../../../models/tenant/TenantUser');
+const Organization = require('../../../models/org/Organization');
+const crypto = require('crypto');
 
 const clientsRead = requireErpAccess({ module: 'clients', action: ['read', 'read_own'], checkRevocation: false });
 const clientsWrite = requireErpAccess({ module: 'clients', action: 'write', checkRevocation: false });
@@ -266,6 +271,114 @@ router.get('/:clientId/portal', clientsRead, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching client portal',
+      error: error.message
+    });
+  }
+});
+
+router.post('/:clientId/portal/invite', clientsAdmin, async (req, res) => {
+  try {
+    const orgId = req.user.orgId?._id || req.user.orgId;
+    const client = await ProjectClient.findOne({ _id: req.params.clientId, orgId });
+    if (!client) {
+      return res.status(404).json({ success: false, message: 'ProjectClient not found' });
+    }
+    const email = String(req.body.email || client.contact?.primary?.email || '').trim().toLowerCase();
+    const fullName = String(req.body.fullName || client.contact?.primary?.name || client.name || '').trim();
+    if (!email || !fullName) {
+      return res.status(400).json({ success: false, message: 'Client name and email are required' });
+    }
+    const tenant = await Tenant.findOne({
+      $or: [{ orgId }, { organizationId: orgId }]
+    }).select('_id').lean();
+    if (!tenant) {
+      return res.status(409).json({ success: false, message: 'Tenant is not linked to this organization' });
+    }
+
+    let user = await User.findOne({ email });
+    if (user && String(user.orgId) !== String(orgId)) {
+      return res.status(409).json({
+        success: false,
+        message: 'This email belongs to a user in another organization'
+      });
+    }
+    if (!user) {
+      user = await User.create({
+        email,
+        fullName,
+        password: crypto.randomBytes(24).toString('base64url'),
+        role: 'client',
+        orgId,
+        status: 'pending',
+        emailVerified: false
+      });
+    } else {
+      user.fullName = fullName;
+      user.role = 'client';
+      if (user.status !== 'active') user.status = 'pending';
+      await user.save();
+    }
+
+    let tenantUser = await TenantUser.findOne({ userId: user._id, tenantId: tenant._id });
+    if (tenantUser?.status === 'active') {
+      client.userId = user._id;
+      client.portal.enabled = true;
+      await client.save();
+      return res.status(409).json({
+        success: false,
+        message: 'This client already has active portal access'
+      });
+    }
+    if (tenantUser) {
+      tenantUser.roles = [{ role: 'client', permissions: [] }];
+      tenantUser.status = 'pending';
+      tenantUser.accessLevel = 'readonly';
+      tenantUser.invitation.invitedBy = req.user._id;
+      tenantUser.invitation.invitedAt = new Date();
+      tenantUser.invitation.invitationToken = crypto.randomBytes(32).toString('hex');
+      tenantUser.invitation.invitationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      await tenantUser.save();
+    } else {
+      tenantUser = await TenantUser.inviteUser(user._id, tenant._id, req.user._id, 'client');
+      tenantUser.accessLevel = 'readonly';
+      await tenantUser.save();
+    }
+
+    client.userId = user._id;
+    client.portal.enabled = true;
+    await client.save();
+
+    const organization = await Organization.findById(orgId).select('name').lean();
+    const inviter = await User.findById(req.user._id).select('fullName').lean();
+    const envConfig = require('../../../config/environment');
+    const frontendUrl = envConfig.get('FRONTEND_URL') || process.env.FRONTEND_URL || '';
+    const inviteLink = `${frontendUrl}/invite/accept?token=${tenantUser.invitation.invitationToken}`;
+    const emailService = require('../../../services/integrations/email.service');
+    emailService.sendEmployeeInviteEmail(
+      { fullName, email },
+      {
+        inviteLink,
+        orgName: organization?.name || 'your organisation',
+        role: 'client',
+        inviterName: inviter?.fullName || 'An administrator'
+      }
+    ).catch(error => console.warn('Client invite email failed (non-fatal):', error.message));
+
+    return res.status(201).json({
+      success: true,
+      message: 'Client portal invitation created',
+      data: {
+        clientId: client._id,
+        userId: user._id,
+        email,
+        status: tenantUser.status,
+        invitationExpires: tenantUser.invitation.invitationExpires
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create client portal invitation',
       error: error.message
     });
   }

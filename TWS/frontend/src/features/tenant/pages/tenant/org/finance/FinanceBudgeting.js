@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import PageHeader from '../../../../../../components/PageHeader/PageHeader';
 import {
   ChartPieIcon,
@@ -15,6 +15,7 @@ const FinanceBudgeting = () => {
   const tenantSlug = useTenantSlug();
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [budgets, setBudgets] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     department: '',
@@ -26,19 +27,37 @@ const FinanceBudgeting = () => {
     categories: [{ name: '', amount: '' }]
   });
 
+  const loadBudgets = useCallback(async () => {
+    const response = await tenantApiService.makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/budgets`);
+    setBudgets(Array.isArray(response?.data) ? response.data : []);
+  }, [tenantSlug]);
+
+  useEffect(() => {
+    if (tenantSlug) loadBudgets().catch(error => console.error('Error loading budgets:', error));
+  }, [tenantSlug, loadBudgets]);
+
+  const totals = useMemo(() => budgets.reduce((acc, budget) => {
+    acc.total += Number(budget.totalAmount || 0);
+    acc.allocated += Number(budget.allocated || 0);
+    acc.departments.add(budget.department);
+    return acc;
+  }, { total: 0, allocated: 0, departments: new Set() }), [budgets]);
+  const money = value => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(value);
   const stats = [
-    { label: 'Total Budget', value: '$2.4M', icon: CurrencyDollarIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400' },
-    { label: 'Allocated', value: '$1.8M', icon: ChartPieIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
-    { label: 'Available', value: '$600K', icon: ArrowTrendingUpIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' },
-    { label: 'Departments', value: '8', icon: CheckCircleIcon, iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600 dark:text-amber-400' }
+    { label: 'Total Budget', value: money(totals.total), icon: CurrencyDollarIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400' },
+    { label: 'Allocated', value: money(totals.allocated), icon: ChartPieIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
+    { label: 'Available', value: money(Math.max(totals.total - totals.allocated, 0)), icon: ArrowTrendingUpIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' },
+    { label: 'Departments', value: String(totals.departments.size), icon: CheckCircleIcon, iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600 dark:text-amber-400' }
   ];
 
-  const budgetByDepartment = [
-    { department: 'Engineering', allocated: 850000, spent: 680000, percentage: 80 },
-    { department: 'Sales & Marketing', allocated: 450000, spent: 380000, percentage: 84 },
-    { department: 'Operations', allocated: 320000, spent: 290000, percentage: 91 },
-    { department: 'HR', allocated: 180000, spent: 145000, percentage: 81 }
-  ];
+  const budgetByDepartment = useMemo(() => Object.values(budgets.reduce((map, budget) => {
+    const key = budget.department;
+    if (!map[key]) map[key] = { department: key, allocated: 0, spent: 0, percentage: 0 };
+    map[key].allocated += Number(budget.totalAmount || 0);
+    map[key].spent += Number(budget.allocated || 0);
+    map[key].percentage = map[key].allocated ? Math.round((map[key].spent / map[key].allocated) * 100) : 0;
+    return map;
+  }, {})), [budgets]);
 
   const addCategory = () => setFormData(prev => ({ ...prev, categories: [...prev.categories, { name: '', amount: '' }] }));
   const removeCategory = (i) => setFormData(prev => ({ ...prev, categories: prev.categories.filter((_, idx) => idx !== i) }));
@@ -52,10 +71,11 @@ const FinanceBudgeting = () => {
     e.preventDefault();
     setSaving(true);
     try {
-      await tenantApiService.makeRequest(`/api/tenant/${tenantSlug}/organization/finance/budgets`, {
+      await tenantApiService.makeRequest(`/api/tenant/${tenantSlug}/software-house/finance/budgets`, {
         method: 'POST',
         body: JSON.stringify(formData)
       });
+      await loadBudgets();
       setShowForm(false);
       setFormData({ name: '', department: '', period: 'monthly', startDate: '', endDate: '', totalAmount: '', description: '', categories: [{ name: '', amount: '' }] });
     } catch (err) {

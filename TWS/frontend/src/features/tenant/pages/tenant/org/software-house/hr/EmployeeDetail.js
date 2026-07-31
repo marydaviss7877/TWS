@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
+import ProfileAvatar from '../../../../../../../shared/components/ui/ProfileAvatar';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -112,7 +113,6 @@ const EmployeeDetail = () => {
   const name        = employee.name || employee.userId?.fullName || 'N/A';
   const email       = employee.email || employee.userId?.email || null;
   const phone       = employee.userId?.phone || employee.phone || null;
-  const initial     = name.charAt(0).toUpperCase();
   const isActive    = !employee.status || ['active', 'Active'].includes(employee.status);
   const statusLabel = (employee.status || 'active').replace(/-/g, ' ');
 
@@ -174,12 +174,13 @@ const EmployeeDetail = () => {
 
           {/* avatar */}
           <div className="mb-7">
-            <div className="relative w-[72px] h-[72px] rounded-2xl mb-4"
-              style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)' }}
-            >
-              <span className="absolute inset-0 flex items-center justify-center text-2xl font-bold font-heading text-white">
-                {initial}
-              </span>
+            <div className="relative w-[72px] h-[72px] rounded-2xl mb-4">
+              <ProfileAvatar
+                person={employee}
+                tenantSlug={tenantSlug}
+                className="w-[72px] h-[72px] rounded-2xl"
+                fallbackClassName="bg-sky-700 text-white text-2xl"
+              />
               {/* active dot */}
               <span
                 className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full ring-2 ring-[#0d0d14] ${

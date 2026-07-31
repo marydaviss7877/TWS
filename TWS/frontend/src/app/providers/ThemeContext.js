@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
 
 const ThemeContext = createContext();
 
@@ -11,6 +11,10 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
+  const [isSystemTheme, setIsSystemTheme] = useState(() => {
+    return !localStorage.getItem('ws-theme');
+  });
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check localStorage first, then system preference
     const savedTheme = localStorage.getItem('ws-theme');
@@ -23,17 +27,22 @@ export const ThemeProvider = ({ children }) => {
   const [themeTransition, setThemeTransition] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Add transition class for smooth theme switching
     setThemeTransition(true);
     
-    // Update document class and localStorage
+    // Update the document class. Only persist an explicit user choice; writing
+    // the detected system value here would silently disable "follow system".
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('ws-theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('ws-theme', 'light');
+    }
+
+    if (!isSystemTheme) {
+      localStorage.setItem('ws-theme', isDarkMode ? 'dark' : 'light');
+    } else {
+      localStorage.removeItem('ws-theme');
     }
 
     // Remove transition class after animation
@@ -42,21 +51,21 @@ export const ThemeProvider = ({ children }) => {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [isDarkMode]);
+  }, [isDarkMode, isSystemTheme]);
 
   useEffect(() => {
     // Listen for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e) => {
       // Only update if user hasn't manually set a preference
-      if (!localStorage.getItem('ws-theme')) {
+      if (isSystemTheme) {
         setIsDarkMode(e.matches);
       }
     };
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  }, [isSystemTheme]);
 
   // Accessibility: Check for reduced motion preference
   useEffect(() => {
@@ -82,10 +91,12 @@ export const ThemeProvider = ({ children }) => {
   }, []);
 
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
+    setIsSystemTheme(false);
+    setIsDarkMode((current) => !current);
   };
 
   const setTheme = (theme) => {
+    setIsSystemTheme(false);
     setIsDarkMode(theme === 'dark');
   };
 
@@ -97,9 +108,10 @@ export const ThemeProvider = ({ children }) => {
     themeTransition,
     prefersReducedMotion,
     // Additional theme utilities
-    isSystemTheme: !localStorage.getItem('ws-theme'),
+    isSystemTheme,
     resetToSystemTheme: () => {
       localStorage.removeItem('ws-theme');
+      setIsSystemTheme(true);
       setIsDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
     },
     // Animation control based on user preference

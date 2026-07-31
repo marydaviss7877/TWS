@@ -41,6 +41,10 @@ const emailVerificationSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  attempts: {
+    type: Number,
+    default: 0
+  },
   lastResendAt: {
     type: Date
   },

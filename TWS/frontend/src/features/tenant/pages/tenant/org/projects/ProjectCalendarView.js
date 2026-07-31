@@ -18,6 +18,7 @@ import {
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import tenantProjectApiService from './services/tenantProjectApiService';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import ProfileAvatar from '../../../../../../shared/components/ui/ProfileAvatar';
 
 /* ─── constants ─────────────────────────────────────────────────────────────── */
 const DAYS   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -67,10 +68,6 @@ function buildCells(year, month) {
   for (let r = 1; r <= rem; r++)
     cells.push({ date: r, current: false, full: new Date(year, month + 1, r) });
   return cells;
-}
-
-function initials(name = '') {
-  return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
 }
 
 /* ─── component ──────────────────────────────────────────────────────────────── */
@@ -317,11 +314,11 @@ const ProjectCalendarView = () => {
                     </div>
                   </div>
                   {t.assignee && (
-                    <div
-                      title={t.assignee.fullName || t.assignee.name || t.assignee.email}
-                      className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
-                      {initials(t.assignee.fullName || t.assignee.name || t.assignee.email || '?')}
-                    </div>
+                    <ProfileAvatar
+                      person={t.assignee}
+                      tenantSlug={tenantSlug}
+                      className="w-6 h-6 rounded-full text-[9px]"
+                    />
                   )}
                 </div>
               );

@@ -35,8 +35,10 @@
   ExclamationCircleIcon,
   FolderIcon,
   PencilSquareIcon,
-  TableCellsIcon
+  TableCellsIcon,
+  PhotoIcon
 } from '@heroicons/react/24/outline';
+import { tenantPath } from '../../../shared/utils/tenantRoutes';
 
 /**
  * Industry-aware menu builder
@@ -224,6 +226,13 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
           path: `/sheets`
         }
       ]
+    },
+    {
+      key: 'portfolio',
+      icon: PhotoIcon,
+      label: 'Portfolio',
+      path: `/portfolio`,
+      description: 'Publish case studies, project stories, media, and client outcomes'
     },
     // Messaging menu item removed - only supra-admin messaging remains
     {
@@ -437,6 +446,11 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
   });
 
   const industryOnlyCategories = ['warehouse'];
+  const scopePaths = (items) => items.map(item => ({
+    ...item,
+    path: tenantPath(tenantSlug, 'org', ...String(item.path || '').split('/').filter(Boolean)),
+    children: item.children ? scopePaths(item.children) : item.children,
+  }));
   
   if (industryOnlyCategories.includes(effectiveCategory)) {
     // Industry-specific tenants: Only Dashboard, Settings, and industry modules
@@ -465,10 +479,10 @@ export const getIndustryMenuItems = (erpCategory = 'software_house', tenantSlug,
         ]
       }
     ];
-    return [...essentialModules, ...industrySpecific];
+    return scopePaths([...essentialModules, ...industrySpecific]);
   }
   // Software House / Business: common modules + industry-specific
-  return [...allowedCommonModules, ...industrySpecific];
+  return scopePaths([...allowedCommonModules, ...industrySpecific]);
 };
 
 /**
@@ -481,4 +495,3 @@ export const getIndustryModuleKeys = (erpCategory) => {
   };
   return moduleMap[erpCategory] || moduleMap.software_house;
 };
-

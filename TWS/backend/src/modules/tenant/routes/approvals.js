@@ -118,7 +118,8 @@ router.post('/:approvalId/approve',
     if (approval.step_number > 1) {
       const previousApproved = await Approval.isPreviousStepApproved(
         approval.deliverable_id,
-        approval.step_number
+        approval.step_number,
+        { orgId, tenantId }
       );
       
       if (!previousApproved) {
@@ -136,6 +137,8 @@ router.post('/:approvalId/approve',
     // The client step (4) is handled separately below once ALL internal steps pass.
     const nextStep = await Approval.findOne({
       deliverable_id: approval.deliverable_id,
+      orgId,
+      tenantId,
       step_number: approval.step_number + 1
     });
     if (nextStep && nextStep.approver_type !== 'client') {
@@ -147,13 +150,16 @@ router.post('/:approvalId/approve',
     // areAllInternalStepsApproved() counts only the steps that actually exist,
     // so this correctly handles the case where security step is omitted.
     const allInternalApproved = await Approval.areAllInternalStepsApproved(
-      approval.deliverable_id
+      approval.deliverable_id,
+      { orgId, tenantId }
     );
 
     if (allInternalApproved) {
       // Enable client approval step
       const clientApproval = await Approval.findOne({
         deliverable_id: approval.deliverable_id,
+        orgId,
+        tenantId,
         step_number: 4
       });
 
@@ -175,7 +181,10 @@ router.post('/:approvalId/approve',
     }
     
     // Check if all steps are approved
-    const allApprovals = await Approval.getApprovalsForDeliverable(approval.deliverable_id);
+    const allApprovals = await Approval.getApprovalsForDeliverable(
+      approval.deliverable_id,
+      { orgId, tenantId }
+    );
     const allApproved = allApprovals.every(a => a.status === 'approved');
     
     if (allApproved) {
@@ -362,7 +371,9 @@ router.post('/deliverable/:deliverableId/create-chain',
     
     // Check if approval chain already exists
     const existingApprovals = await Approval.find({
-      deliverable_id: req.params.deliverableId
+      deliverable_id: req.params.deliverableId,
+      orgId,
+      tenantId
     });
     
     if (existingApprovals.length > 0) {
@@ -373,7 +384,11 @@ router.post('/deliverable/:deliverableId/create-chain',
     }
     
     // Get deliverable for workspaceId
-    const deliverable = await Deliverable.findById(req.params.deliverableId);
+    const deliverable = await Deliverable.findOne({
+      _id: req.params.deliverableId,
+      orgId,
+      tenantId
+    });
     if (!deliverable) {
       return res.status(404).json({
         success: false,

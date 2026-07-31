@@ -2,6 +2,7 @@ const { S3Client } = require('@aws-sdk/client-s3');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
 const path = require('path');
+const crypto = require('crypto');
 const envConfig = require('./environment');
 
 /**
@@ -76,6 +77,65 @@ const uploadToS3 = multer({
   }
 });
 
+const PORTFOLIO_MIME_EXTENSIONS = {
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/png': ['.png'],
+  'image/webp': ['.webp'],
+  'image/gif': ['.gif'],
+  'video/mp4': ['.mp4'],
+  'video/webm': ['.webm'],
+  'video/quicktime': ['.mov'],
+  'audio/mpeg': ['.mp3'],
+  'audio/wav': ['.wav'],
+  'application/pdf': ['.pdf'],
+  'application/msword': ['.doc'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+  'application/vnd.ms-powerpoint': ['.ppt'],
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
+  'application/zip': ['.zip']
+};
+
+/**
+ * Portfolio media uploader. Objects are private and UUID-named; original names
+ * remain metadata only. MIME and extension must agree.
+ */
+const uploadPortfolioAsset = multer({
+  storage: multerS3({
+    s3: s3Client,
+    bucket: BUCKET_NAME,
+    acl: 'private',
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    metadata: (req, file, cb) => cb(null, {
+      uploadedBy: String(req.user?._id || req.user?.id || 'unknown'),
+      tenantId: String(req.tenantId || req.tenant?._id || 'unknown'),
+      orgId: String(req.orgId || req.tenant?.organizationId || req.tenant?.orgId || 'unknown'),
+      originalName: path.basename(file.originalname).slice(0, 255)
+    }),
+    key: (req, file, cb) => {
+      const tenantId = String(req.tenantId || req.tenant?._id || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '');
+      const orgId = String(req.orgId || req.tenant?.organizationId || req.tenant?.orgId || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '');
+      const extension = path.extname(file.originalname).toLowerCase();
+      cb(null, `${tenantId}/${orgId}/portfolio/${crypto.randomUUID()}${extension}`);
+    }
+  }),
+  limits: {
+    fileSize: 100 * 1024 * 1024,
+    files: 1
+  },
+  fileFilter: (_req, file, cb) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    const allowedExtensions = PORTFOLIO_MIME_EXTENSIONS[file.mimetype];
+    if (!allowedExtensions || !allowedExtensions.includes(extension)) {
+      return cb(new Error('File type and extension do not match an allowed portfolio format'));
+    }
+    const categoryLimit = file.mimetype.startsWith('image/') ? 5 * 1024 * 1024
+      : file.mimetype.startsWith('video/') ? 100 * 1024 * 1024
+        : 25 * 1024 * 1024;
+    file.portfolioSizeLimit = categoryLimit;
+    cb(null, true);
+  }
+});
+
 /**
  * Generate signed URL for downloading private files
  * URLs expire after 1 hour
@@ -116,6 +176,45 @@ async function deleteFromS3(fileKey) {
     console.error('Error deleting file from S3:', error);
     throw error;
   }
+}
+
+function matchesPortfolioSignature(mimeType, bytes) {
+  const ascii = bytes.toString('ascii');
+  const hex = bytes.toString('hex');
+  const startsHex = signature => hex.startsWith(signature.toLowerCase());
+  switch (mimeType) {
+    case 'image/jpeg': return startsHex('ffd8ff');
+    case 'image/png': return startsHex('89504e470d0a1a0a');
+    case 'image/gif': return ascii.startsWith('GIF87a') || ascii.startsWith('GIF89a');
+    case 'image/webp': return ascii.startsWith('RIFF') && ascii.slice(8, 12) === 'WEBP';
+    case 'application/pdf': return ascii.startsWith('%PDF');
+    case 'application/zip':
+    case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+    case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+      return startsHex('504b0304') || startsHex('504b0506') || startsHex('504b0708');
+    case 'application/msword':
+    case 'application/vnd.ms-powerpoint':
+      return startsHex('d0cf11e0a1b11ae1');
+    case 'video/mp4':
+    case 'video/quicktime':
+      return ascii.slice(4, 8) === 'ftyp';
+    case 'video/webm': return startsHex('1a45dfa3');
+    case 'audio/mpeg': return ascii.startsWith('ID3') || startsHex('fffb') || startsHex('fff3') || startsHex('fff2');
+    case 'audio/wav': return ascii.startsWith('RIFF') && ascii.slice(8, 12) === 'WAVE';
+    default: return false;
+  }
+}
+
+async function validatePortfolioObjectSignature(file) {
+  if (!file?.key || !file?.mimetype) return false;
+  const command = new GetObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: file.key,
+    Range: 'bytes=0-31'
+  });
+  const response = await s3Client.send(command);
+  const byteArray = await response.Body.transformToByteArray();
+  return matchesPortfolioSignature(file.mimetype, Buffer.from(byteArray));
 }
 
 /**
@@ -167,11 +266,13 @@ const isS3Configured = () => {
 
 module.exports = {
   uploadToS3,
+  uploadPortfolioAsset,
   uploadLocal,
   generateSignedUrl,
   deleteFromS3,
+  validatePortfolioObjectSignature,
+  matchesPortfolioSignature,
   isS3Configured,
   s3Client,
   BUCKET_NAME
 };
-

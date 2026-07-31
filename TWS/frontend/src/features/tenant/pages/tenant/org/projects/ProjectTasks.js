@@ -29,6 +29,7 @@ import { toMongoIdString, toProjectRef } from './utils/validation';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import ProfileAvatar from '../../../../../../shared/components/ui/ProfileAvatar';
 
 /* ─── helpers ──────────────────────────────────────────────────────────────── */
 
@@ -134,17 +135,16 @@ function sortTaskListForBoard(list, sortKey, sortDir) {
   return [...list].sort((x, y) => compareBoardTasks(x, y, sortKey, sortDir));
 }
 
-function initials(name = '') {
-  return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
-}
-
-function Avatar({ user, size = 'sm' }) {
+function Avatar({ user, size = 'sm', tenantSlug }) {
   const name = user?.fullName || user?.name || user?.email || '';
   const sz = size === 'sm' ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs';
   return (
-    <div className={`${sz} rounded-full bg-primary-600 flex items-center justify-center text-white font-bold shrink-0`} title={name}>
-      {initials(name)}
-    </div>
+    <ProfileAvatar
+      person={user}
+      tenantSlug={tenantSlug}
+      className={`${sz} rounded-full`}
+      alt={`${name} profile`}
+    />
   );
 }
 
@@ -440,6 +440,7 @@ function DeleteConfirm({ task, onConfirm, onCancel, loading }) {
 
 function TaskCard({
   task, columnId, orgUsers, scopeProjectId,
+  tenantSlug,
   timerTaskId, timerStartedAt,
   onOpenDrawer, onEditModal, onDuplicate, onDelete,
   onDragStart, onAssigneeChange, onTimerStart, onTimerStop,
@@ -552,7 +553,7 @@ function TaskCard({
                 </select>
               </div>
             ) : assignee ? (
-              <Avatar user={assignee} />
+              <Avatar user={assignee} tenantSlug={tenantSlug} />
             ) : (
               scopeProjectId && (
                 <button onClick={(e) => { e.stopPropagation(); onOpenDrawer(task); }}
@@ -1012,7 +1013,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
   }
 
   const sharedCardProps = {
-    orgUsers, scopeProjectId, timerTaskId, timerStartedAt,
+    orgUsers, scopeProjectId, tenantSlug, timerTaskId, timerStartedAt,
     onOpenDrawer: setTaskDrawer,
     onEditModal: setEditingTask,
     onDuplicate: handleDuplicateTask,
@@ -1394,7 +1395,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
                       </div>
                       <div className="flex items-center justify-between mt-2 pl-3 text-xs text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-2">
-                          {assignee ? <Avatar user={assignee} /> : <span>—</span>}
+                          {assignee ? <Avatar user={assignee} tenantSlug={tenantSlug} /> : <span>—</span>}
                         </div>
                         <span className={overdue ? 'text-red-500 font-semibold' : ''}>
                           {task.dueDate ? fmtDate(task.dueDate) : '—'}
@@ -1452,7 +1453,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
                           </div>
                         </div>
                         <div>
-                          {assignee ? <Avatar user={assignee} /> : <span className="text-xs text-gray-400">—</span>}
+                          {assignee ? <Avatar user={assignee} tenantSlug={tenantSlug} /> : <span className="text-xs text-gray-400">—</span>}
                         </div>
                         <span className={`inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit ${STATUS_COLOR[colId]}`}>
                           {STATUS_LABEL[colId]}

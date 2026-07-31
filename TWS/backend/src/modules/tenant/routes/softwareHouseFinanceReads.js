@@ -38,7 +38,8 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
     ChartOfAccounts,
     CashFlowForecast,
     Vendor,
-    ProjectCosting
+    ProjectCosting,
+    Expense
   } = deps;
 
   const shFinanceRead = requireErpAccess({ module: 'finance', action: 'read' });
@@ -161,6 +162,18 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
           { $match: { orgId, type, date: { $gte: start, $lt: end } } },
           { $group: { _id: null, t: { $sum: '$amount' } } }
         ]).catch(() => []);
+      const sumApprovedExpenses = (start, end) =>
+        Expense.aggregate([
+          {
+            $match: {
+              organizationId: orgId,
+              status: 'approved',
+              deleted: { $ne: true },
+              ...(start && end ? { date: { $gte: start, $lt: end } } : {})
+            }
+          },
+          { $group: { _id: null, t: { $sum: '$amount' } } }
+        ]).catch(() => []);
 
       const [
         rev,
@@ -174,7 +187,10 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
         arIssuedThisMonth,
         arIssuedLastMonth,
         overdueInvoiceRows,
-        overdueBillRows
+        overdueBillRows,
+        approvedExpenses,
+        approvedExpensesThisMonth,
+        approvedExpensesLastMonth
       ] = await Promise.all([
         Transaction.aggregate([
           { $match: { orgId, type: 'revenue' } },
@@ -247,11 +263,14 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
         Bill.aggregate([
           { $match: { orgId, status: { $nin: ['paid', 'cancelled'] }, dueDate: { $lt: now } } },
           { $group: { _id: null, count: { $sum: 1 } } }
-        ]).catch(() => [])
+        ]).catch(() => []),
+        sumApprovedExpenses(),
+        sumApprovedExpenses(startOfThisMonth, startOfNextMonth),
+        sumApprovedExpenses(startOfLastMonth, startOfThisMonth)
       ]);
 
       const totalRevenue = rev[0]?.t || 0;
-      const totalExpenses = exp[0]?.t || 0;
+      const totalExpenses = (exp[0]?.t || 0) + (approvedExpenses[0]?.t || 0);
       const netIncome = totalRevenue - totalExpenses;
 
       // Period-over-period trend: null pct when the prior period has nothing to compare against
@@ -263,8 +282,8 @@ module.exports = function registerSoftwareHouseFinanceReads(router, deps) {
 
       const currentMonthRevenue = revThisMonth[0]?.t || 0;
       const previousMonthRevenue = revLastMonth[0]?.t || 0;
-      const currentMonthExpenses = expThisMonth[0]?.t || 0;
-      const previousMonthExpenses = expLastMonth[0]?.t || 0;
+      const currentMonthExpenses = (expThisMonth[0]?.t || 0) + (approvedExpensesThisMonth[0]?.t || 0);
+      const previousMonthExpenses = (expLastMonth[0]?.t || 0) + (approvedExpensesLastMonth[0]?.t || 0);
       const currentMonthNetIncome = currentMonthRevenue - currentMonthExpenses;
       const previousMonthNetIncome = previousMonthRevenue - previousMonthExpenses;
       const currentMonthArIssued = arIssuedThisMonth[0]?.t || 0;

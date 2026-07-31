@@ -83,7 +83,7 @@ ApprovalSchema.index({ tenantId: 1, deliverable_id: 1 });
 /**
  * Static method to check if previous step is approved
  */
-ApprovalSchema.statics.isPreviousStepApproved = async function(deliverableId, stepNumber) {
+ApprovalSchema.statics.isPreviousStepApproved = async function(deliverableId, stepNumber, scope = {}) {
   if (stepNumber === 1) {
     return true; // First step has no previous step
   }
@@ -91,7 +91,9 @@ ApprovalSchema.statics.isPreviousStepApproved = async function(deliverableId, st
   const previousApproval = await this.findOne({
     deliverable_id: deliverableId,
     step_number: stepNumber - 1,
-    status: 'approved'
+    status: 'approved',
+    ...(scope.orgId ? { orgId: scope.orgId } : {}),
+    ...(scope.tenantId ? { tenantId: String(scope.tenantId) } : {})
   });
   
   return !!previousApproval;
@@ -100,8 +102,12 @@ ApprovalSchema.statics.isPreviousStepApproved = async function(deliverableId, st
 /**
  * Static method to get all approvals for a deliverable
  */
-ApprovalSchema.statics.getApprovalsForDeliverable = async function(deliverableId) {
-  return this.find({ deliverable_id: deliverableId })
+ApprovalSchema.statics.getApprovalsForDeliverable = async function(deliverableId, scope = {}) {
+  return this.find({
+    deliverable_id: deliverableId,
+    ...(scope.orgId ? { orgId: scope.orgId } : {}),
+    ...(scope.tenantId ? { tenantId: String(scope.tenantId) } : {})
+  })
     .sort({ step_number: 1 });
 };
 
@@ -111,16 +117,21 @@ ApprovalSchema.statics.getApprovalsForDeliverable = async function(deliverableId
  * then checks all of them are approved (avoids hardcoded === 3 that broke when
  * security step was omitted from createApprovalChain).
  */
-ApprovalSchema.statics.areAllInternalStepsApproved = async function(deliverableId) {
-  const existingCount = await this.countDocuments({
+ApprovalSchema.statics.areAllInternalStepsApproved = async function(deliverableId, scope = {}) {
+  const scopedFilter = {
     deliverable_id: deliverableId,
+    ...(scope.orgId ? { orgId: scope.orgId } : {}),
+    ...(scope.tenantId ? { tenantId: String(scope.tenantId) } : {})
+  };
+  const existingCount = await this.countDocuments({
+    ...scopedFilter,
     step_number: { $in: [1, 2, 3] }
   });
 
   if (existingCount === 0) return false;
 
   const approvedCount = await this.countDocuments({
-    deliverable_id: deliverableId,
+    ...scopedFilter,
     step_number: { $in: [1, 2, 3] },
     status: 'approved'
   });
@@ -136,7 +147,8 @@ ApprovalSchema.methods.approve = async function(notes = null) {
   if (this.step_number > 1) {
     const previousApproved = await this.constructor.isPreviousStepApproved(
       this.deliverable_id,
-      this.step_number
+      this.step_number,
+      { orgId: this.orgId, tenantId: this.tenantId }
     );
     
     if (!previousApproved) {
@@ -167,6 +179,8 @@ ApprovalSchema.methods.reject = async function(reason) {
   await this.constructor.updateMany(
     {
       deliverable_id: this.deliverable_id,
+      orgId: this.orgId,
+      tenantId: this.tenantId,
       step_number: { $gt: this.step_number }
     },
     {

@@ -7,6 +7,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
+import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
 
 const HROnboarding = () => {
   const tenantSlug = useTenantSlug();
@@ -53,14 +54,7 @@ const HROnboarding = () => {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading onboarding data...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Assembling onboarding journeys…" className="min-h-[40vh] bg-transparent" />;
   }
 
   return (
@@ -171,4 +165,3 @@ const HROnboarding = () => {
 };
 
 export default HROnboarding;
-

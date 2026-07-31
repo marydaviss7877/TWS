@@ -92,18 +92,34 @@ class EmailVerificationService {
   async verifyOTP(email, otp) {
     const verification = await EmailVerification.findOne({
       email: email.toLowerCase(),
-      otp,
       status: 'pending'
-    });
+    }).sort({ createdAt: -1 });
 
     if (!verification) {
-      throw new Error('Invalid or expired verification code');
+      throw new Error('Invalid or expired verification code. Please request a new one.');
     }
 
     if (!verification.isValid()) {
       verification.status = 'expired';
       await verification.save();
-      throw new Error('Verification code has expired');
+      throw new Error('Verification code has expired. Please request a new one.');
+    }
+
+    if (verification.otp !== String(otp)) {
+      // Atomic increment so concurrent wrong guesses can't collapse into one
+      // (a read-then-write on verification.attempts would race under parallel requests)
+      const updated = await EmailVerification.findOneAndUpdate(
+        { _id: verification._id, status: 'pending' },
+        { $inc: { attempts: 1 } },
+        { new: true }
+      );
+
+      if (updated && updated.attempts >= 5) {
+        updated.status = 'expired';
+        await updated.save();
+        throw new Error('Too many incorrect attempts. Please request a new code.');
+      }
+      throw new Error('Incorrect verification code');
     }
 
     // Mark as verified
@@ -136,12 +152,15 @@ class EmailVerificationService {
 
   /**
    * Resend verification code
+   * Reuses the existing record (even if it just expired from too many failed
+   * attempts) so the resend-count/cooldown can't be reset by tripping the
+   * attempt cap, and rotates the OTP so a previously-guessed code stops working.
    */
   async resendVerification(email, metadata = {}) {
-    // Check rate limiting
+    const normalizedEmail = email.toLowerCase();
     const existing = await EmailVerification.findOne({
-      email: email.toLowerCase(),
-      status: 'pending'
+      email: normalizedEmail,
+      status: { $in: ['pending', 'expired'] }
     }).sort({ createdAt: -1 });
 
     if (existing) {
@@ -154,19 +173,22 @@ class EmailVerificationService {
         throw new Error('Too many resend attempts. Please wait 30 minutes.');
       }
 
-      // Update resend count
+      // Rotate the OTP and reset attempts/status so a guessed or expired code is dead
+      existing.otp = this.generateOTP();
+      existing.token = this.generateToken();
+      existing.attempts = 0;
+      existing.status = 'pending';
       existing.resendCount += 1;
       existing.lastResendAt = now;
-      existing.expiresAt = new Date(Date.now() + 15 * 60 * 1000); // Reset expiry
+      existing.expiresAt = new Date(now.getTime() + 15 * 60 * 1000); // Reset expiry
       await existing.save();
 
-      // Send email with same OTP
       await this.sendVerificationEmail(existing);
       return existing;
     }
 
     // Create new verification if none exists
-    const verification = await this.createVerification(email, null, metadata);
+    const verification = await this.createVerification(normalizedEmail, null, metadata);
     await this.sendVerificationEmail(verification);
     return verification;
   }

@@ -244,7 +244,7 @@ const UserProfile = () => {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-200 border-t-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-500">Loading profile...</p>
+          <p className="mt-4 text-gray-500 dark:text-gray-400">Loading profile...</p>
         </div>
       </div>
     );
@@ -253,13 +253,13 @@ const UserProfile = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
     <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
               Account Profile
             </h1>
-            <p className="text-gray-600 mt-1">Manage your personal information and account settings</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your personal information and account settings</p>
           </div>
           {!editing && (
             <button
@@ -276,7 +276,7 @@ const UserProfile = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Picture & Basic Info */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <div className="text-center">
               <div className="relative inline-block">
                 <div className="relative h-32 w-32 rounded-full bg-indigo-600 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-white overflow-hidden">
@@ -304,8 +304,8 @@ const UserProfile = () => {
                   </label>
                 )}
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mt-4">{profileData.fullName || 'User'}</h2>
-              <p className="text-gray-600 mt-1">{profileData.email}</p>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-4">{profileData.fullName || 'User'}</h2>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">{profileData.email}</p>
               <div className="mt-3 space-y-2">
                 <span className="inline-block px-3 py-1 text-sm font-semibold bg-indigo-100 text-indigo-700 rounded-full">
                   {user.role || 'Member'}
@@ -330,8 +330,8 @@ const UserProfile = () => {
 
           {/* Role Management (for admins) */}
           {(hasModulePermission?.('users', 'admin') || hasModulePermission?.('settings', 'admin')) && (
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 mt-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 mt-6">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                 <ShieldCheckIcon className="h-5 w-5 mr-2 text-indigo-600" />
                 Role Management
               </h3>
@@ -347,17 +347,17 @@ const UserProfile = () => {
           )}
 
           {/* Account Security */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 mt-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 mt-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
               <ShieldCheckIcon className="h-5 w-5 mr-2 text-indigo-600" />
               Account Security
             </h3>
             <button
               onClick={() => setShowPasswordChange(!showPasswordChange)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
             >
-              <span className="text-sm font-medium text-gray-700">Change Password</span>
-              <LockClosedIcon className="h-5 w-5 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Change Password</span>
+              <LockClosedIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             </button>
           </div>
         </div>
@@ -365,8 +365,8 @@ const UserProfile = () => {
         {/* Profile Details */}
         <div className="lg:col-span-2 space-y-6">
           {/* Personal Information */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center">
               <UserIcon className="h-5 w-5 mr-2 text-indigo-600" />
               Personal Information
             </h3>
@@ -375,76 +375,76 @@ const UserProfile = () => {
               <form onSubmit={handleProfileUpdate} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Full Name
                     </label>
                     <input
                       type="text"
                       value={profileData.fullName}
                       onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       required
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <EnvelopeIcon className="h-4 w-4 mr-1 text-gray-500" />
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                      <EnvelopeIcon className="h-4 w-4 mr-1 text-gray-500 dark:text-gray-400" />
                       Email
                     </label>
                     <input
                       type="email"
                       value={profileData.email}
                       disabled
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Email cannot be changed</p>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <PhoneIcon className="h-4 w-4 mr-1 text-gray-500" />
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                      <PhoneIcon className="h-4 w-4 mr-1 text-gray-500 dark:text-gray-400" />
                       Phone Number
                     </label>
                     <input
                       type="tel"
                       value={profileData.phone}
                       onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       placeholder="+92-300-1234567"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <BriefcaseIcon className="h-4 w-4 mr-1 text-gray-500" />
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                      <BriefcaseIcon className="h-4 w-4 mr-1 text-gray-500 dark:text-gray-400" />
                       Job Title
                     </label>
                     <input
                       type="text"
                       value={profileData.jobTitle}
                       onChange={(e) => setProfileData({ ...profileData, jobTitle: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       placeholder="e.g., Principal, Teacher, Admin"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <BuildingOfficeIcon className="h-4 w-4 mr-1 text-gray-500" />
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                      <BuildingOfficeIcon className="h-4 w-4 mr-1 text-gray-500 dark:text-gray-400" />
                       Department
                     </label>
                     <input
                       type="text"
                       value={profileData.department}
                       onChange={(e) => setProfileData({ ...profileData, department: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       placeholder="e.g., Administration, Academic"
                     />
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     type="button"
                     onClick={() => {
@@ -461,7 +461,7 @@ const UserProfile = () => {
                         });
                       }
                     }}
-                    className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                    className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
                     <XMarkIcon className="h-5 w-5 inline mr-2" />
                     Cancel
@@ -491,48 +491,48 @@ const UserProfile = () => {
                   <div className="flex items-start space-x-3">
                     <UserIcon className="h-5 w-5 text-gray-400 mt-1" />
                     <div>
-                      <p className="text-sm text-gray-500">Full Name</p>
-                      <p className="text-base font-medium text-gray-900">{profileData.fullName || 'Not set'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Full Name</p>
+                      <p className="text-base font-medium text-gray-900 dark:text-white">{profileData.fullName || 'Not set'}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start space-x-3">
                     <EnvelopeIcon className="h-5 w-5 text-gray-400 mt-1" />
                     <div>
-                      <p className="text-sm text-gray-500">Email</p>
-                      <p className="text-base font-medium text-gray-900">{profileData.email}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                      <p className="text-base font-medium text-gray-900 dark:text-white">{profileData.email}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start space-x-3">
                     <PhoneIcon className="h-5 w-5 text-gray-400 mt-1" />
                     <div>
-                      <p className="text-sm text-gray-500">Phone Number</p>
-                      <p className="text-base font-medium text-gray-900">{profileData.phone || 'Not set'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Phone Number</p>
+                      <p className="text-base font-medium text-gray-900 dark:text-white">{profileData.phone || 'Not set'}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start space-x-3">
                     <BriefcaseIcon className="h-5 w-5 text-gray-400 mt-1" />
                     <div>
-                      <p className="text-sm text-gray-500">Job Title</p>
-                      <p className="text-base font-medium text-gray-900">{profileData.jobTitle || 'Not set'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Job Title</p>
+                      <p className="text-base font-medium text-gray-900 dark:text-white">{profileData.jobTitle || 'Not set'}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start space-x-3">
                     <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mt-1" />
                     <div>
-                      <p className="text-sm text-gray-500">Department</p>
-                      <p className="text-base font-medium text-gray-900">{profileData.department || 'Not set'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Department</p>
+                      <p className="text-base font-medium text-gray-900 dark:text-white">{profileData.department || 'Not set'}</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start space-x-3">
                     <CalendarIcon className="h-5 w-5 text-gray-400 mt-1" />
                     <div>
-                      <p className="text-sm text-gray-500">Role</p>
-                      <p className="text-base font-medium text-gray-900">{user.role || 'Member'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Role</p>
+                      <p className="text-base font-medium text-gray-900 dark:text-white">{user.role || 'Member'}</p>
                     </div>
                   </div>
                 </div>
@@ -542,15 +542,15 @@ const UserProfile = () => {
 
           {/* Password Change Modal */}
           {showPasswordChange && (
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                 <LockClosedIcon className="h-5 w-5 mr-2 text-indigo-600" />
                 Change Password
               </h3>
               
               <form onSubmit={handlePasswordChange} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Current Password
                   </label>
                   <div className="relative">
@@ -558,13 +558,13 @@ const UserProfile = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={passwordData.currentPassword}
                       onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                     >
                       {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                     </button>
@@ -572,7 +572,7 @@ const UserProfile = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     New Password
                   </label>
                   <div className="relative">
@@ -580,14 +580,14 @@ const UserProfile = () => {
                       type={showNewPassword ? 'text' : 'password'}
                       value={passwordData.newPassword}
                       onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
                       required
                       minLength={6}
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                     >
                       {showNewPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                     </button>
@@ -595,7 +595,7 @@ const UserProfile = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Confirm New Password
                   </label>
                   <div className="relative">
@@ -603,21 +603,21 @@ const UserProfile = () => {
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={passwordData.confirmPassword}
                       onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
                       required
                       minLength={6}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                     >
                       {showConfirmPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                     </button>
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     type="button"
                     onClick={() => {
@@ -628,7 +628,7 @@ const UserProfile = () => {
                         confirmPassword: ''
                       });
                     }}
-                    className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                    className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
                     Cancel
                   </button>

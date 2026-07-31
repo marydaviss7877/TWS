@@ -24,6 +24,7 @@ import {
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 
 const FinanceOverview = () => {
   const tenantSlug = useTenantSlug();
@@ -191,16 +192,7 @@ const FinanceOverview = () => {
 
   // Show loading if auth is loading or data is loading
   if (authLoading || loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">
-            {authLoading ? 'Authenticating...' : 'Loading finance overview...'}
-          </p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message={authLoading ? 'Securing your finance workspace…' : 'Reconciling your finance overview…'} className="min-h-[40vh] bg-transparent" />;
   }
 
   // If not authenticated, show message (TenantAuthContext should redirect, but just in case)

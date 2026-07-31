@@ -141,6 +141,34 @@ exports.getProjects = async (req, res) => {
       .skip(parseInt(skip))
       .lean();
 
+    // Project members are stored in a separate collection, not embedded on Project.
+    // Include a lightweight count so portfolio views can render team allocation
+    // without fetching every project's complete member roster.
+    if (projects.length > 0) {
+      const projectIds = projects.map(project => project._id);
+      const memberCounts = await ProjectMember.aggregate([
+        {
+          $match: {
+            projectId: { $in: projectIds },
+            status: 'active'
+          }
+        },
+        {
+          $group: {
+            _id: '$projectId',
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+      const memberCountByProject = new Map(
+        memberCounts.map(item => [String(item._id), item.count])
+      );
+      projects = projects.map(project => ({
+        ...project,
+        teamMemberCount: memberCountByProject.get(String(project._id)) || 0
+      }));
+    }
+
     // UPR Phase 3.5: Apply per-department view config to list (redact fields by user's department)
     if (tenantId && userId && projects.length > 0) {
       const userDeptIds = await getUserDepartmentIds(tenantId, userId);
@@ -2319,38 +2347,51 @@ exports.getSprints = async (req, res) => {
       .sort({ startDate: -1 })
       .lean();
 
-    // Calculate metrics for each sprint
-    const sprintsWithMetrics = await Promise.all(
-      sprints.map(async (sprint) => {
-        const tasks = await Task.find({
-          orgId,
-          sprintId: sprint._id
-        }).lean();
-
-        const completedTasks = tasks.filter(t => 
-          t.status === 'completed' || t.status === 'done'
-        );
-
-        const totalPoints = tasks.reduce((sum, t) => sum + (t.storyPoints || 0), 0);
-        const completedPoints = completedTasks.reduce((sum, t) => sum + (t.storyPoints || 0), 0);
-
-        return {
-          ...sprint,
-          tasks: {
-            total: tasks.length,
-            completed: completedTasks.length
-          },
-          points: {
-            total: totalPoints,
-            completed: completedPoints
-          },
-          projectId: sprint.projectId ? {
-            _id: sprint.projectId._id,
-            name: sprint.projectId.name
-          } : null
-        };
-      })
-    );
+    const sprintIds = sprints.map(sprint => sprint._id);
+    const taskMetrics = sprintIds.length > 0
+      ? await Task.aggregate([
+          { $match: { orgId, sprintId: { $in: sprintIds } } },
+          {
+            $group: {
+              _id: '$sprintId',
+              totalTasks: { $sum: 1 },
+              completedTasks: {
+                $sum: { $cond: [{ $in: ['$status', ['completed', 'done']] }, 1, 0] }
+              },
+              totalPoints: { $sum: { $ifNull: ['$storyPoints', 0] } },
+              completedPoints: {
+                $sum: {
+                  $cond: [
+                    { $in: ['$status', ['completed', 'done']] },
+                    { $ifNull: ['$storyPoints', 0] },
+                    0
+                  ]
+                }
+              }
+            }
+          }
+        ])
+      : [];
+    const metricsBySprint = new Map(taskMetrics.map(item => [String(item._id), item]));
+    const sprintsWithMetrics = sprints.map((sprint) => {
+      const calculated = metricsBySprint.get(String(sprint._id)) || {};
+      return {
+        ...sprint,
+        tasks: {
+          total: calculated.totalTasks || 0,
+          completed: calculated.completedTasks || 0
+        },
+        points: {
+          total: calculated.totalPoints || 0,
+          completed: calculated.completedPoints || 0
+        },
+        velocity: sprint.metrics?.velocity ?? 0,
+        projectId: sprint.projectId ? {
+          _id: sprint.projectId._id,
+          name: sprint.projectId.name
+        } : null
+      };
+    });
 
     res.json({
       success: true,

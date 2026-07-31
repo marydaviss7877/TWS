@@ -29,6 +29,18 @@ router.post('/',
         message: 'Deliverable ID and description are required'
       });
     }
+
+    const deliverable = await Deliverable.findOne({
+      _id: deliverable_id,
+      orgId,
+      tenantId
+    }).select('_id project_id name');
+    if (!deliverable) {
+      return res.status(404).json({
+        success: false,
+        message: 'Deliverable not found'
+      });
+    }
     
     const changeRequest = new ChangeRequest({
       deliverable_id,
@@ -54,7 +66,6 @@ router.post('/',
     
     // Send in-app notification to PM (Project has no ownerId; use ProjectMember owner)
     try {
-      const deliverable = await Deliverable.findById(deliverable_id);
       if (deliverable) {
         const project = await Project.findById(deliverable.project_id);
         if (project) {

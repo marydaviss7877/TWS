@@ -21,6 +21,7 @@ import tenantProjectApiService from './services/tenantProjectApiService';
 import { showSuccess, showError } from './utils/toastNotifications';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
+import ProfileAvatar from '../../../../../../shared/components/ui/ProfileAvatar';
 
 /* ─── constants ─────────────────────────────────────────────────────────────── */
 const STATUS_OPTIONS = [
@@ -45,15 +46,6 @@ function fmtDate(d) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
 }
-function initials(name = '') {
-  return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
-}
-function avatarBg(name = '') {
-  const c = ['from-violet-500 to-purple-600','from-blue-500 to-indigo-600','from-emerald-500 to-teal-600','from-rose-500 to-pink-600','from-amber-500 to-orange-600'];
-  let h = 0; for (let i = 0; i < name.length; i++) h = (h*31+name.charCodeAt(i))&0xffffffff;
-  return c[Math.abs(h)%c.length];
-}
-
 const STATUS_MAP  = Object.fromEntries(STATUS_OPTIONS.map(s => [s.value, s]));
 const PRIORITY_MAP= Object.fromEntries(PRIORITY_OPTIONS.map(p => [p.value, p]));
 
@@ -391,9 +383,12 @@ const ProjectTableView = () => {
                       <td className="px-3 py-2.5">
                         {assigneeName ? (
                           <div className="flex items-center gap-1.5">
-                            <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${avatarBg(assigneeName)} flex items-center justify-center text-white text-[9px] font-bold shrink-0`} title={assigneeName}>
-                              {initials(assigneeName)}
-                            </div>
+                            <ProfileAvatar
+                              person={task.assignee}
+                              tenantSlug={tenantSlug}
+                              className="w-6 h-6 rounded-full text-[9px]"
+                              alt={`${assigneeName} profile`}
+                            />
                             <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[80px]">{assigneeName}</span>
                           </div>
                         ) : (

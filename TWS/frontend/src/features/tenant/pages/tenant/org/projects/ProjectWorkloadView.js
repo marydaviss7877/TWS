@@ -15,6 +15,7 @@ import {
 import tenantProjectApiService from './services/tenantProjectApiService';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
+import ProfileAvatar from '../../../../../../shared/components/ui/ProfileAvatar';
 
 /* ─── constants ────────────────────────────────────────────────────────────── */
 const STATUS_CHIP = {
@@ -33,26 +34,8 @@ const PRIORITY_DOT = {
 const OVERLOAD = 8; // tasks threshold
 
 /* ─── helpers ──────────────────────────────────────────────────────────────── */
-function initials(name = '') {
-  return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
-}
-
-function avatarGradient(name = '') {
-  const colors = [
-    'from-violet-500 to-purple-600',
-    'from-blue-500 to-indigo-600',
-    'from-emerald-500 to-teal-600',
-    'from-rose-500 to-pink-600',
-    'from-amber-500 to-orange-600',
-    'from-cyan-500 to-sky-600',
-  ];
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return colors[Math.abs(h) % colors.length];
-}
-
 /* ─── MemberCard ───────────────────────────────────────────────────────────── */
-function MemberCard({ entry }) {
+function MemberCard({ entry, tenantSlug }) {
   const [expanded, setExpanded] = useState(false);
 
   const statusCounts = { todo: 0, in_progress: 0, under_review: 0, completed: 0 };
@@ -78,12 +61,14 @@ function MemberCard({ entry }) {
       <div className="p-4">
         <div className="flex items-start gap-3">
           {/* Avatar */}
-          <div className={[
-            'w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 bg-gradient-to-br',
-            isUnassigned ? 'from-gray-400 to-gray-500' : avatarGradient(entry.name),
-          ].join(' ')}>
-            {initials(entry.name)}
-          </div>
+          <ProfileAvatar
+            person={entry.person || { fullName: entry.name, email: entry.email }}
+            tenantSlug={tenantSlug}
+            className="w-10 h-10 rounded-full text-sm"
+            fallbackClassName={isUnassigned
+              ? 'bg-gray-400 text-white dark:bg-gray-600'
+              : 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300'}
+          />
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -218,6 +203,7 @@ const ProjectWorkloadView = () => {
     workloadMap[key] = {
       key, name,
       email:         user.email || '',
+      person:        user,
       role:          m.role || 'contributor',
       tasks:         [],
       capacityHours: m.capacity?.hoursPerWeek || 40,
@@ -244,6 +230,7 @@ const ProjectWorkloadView = () => {
       workloadMap[key] = {
         key, name: a.fullName || a.name || a.email || 'Unknown',
         email: a.email || '', role: '', tasks: [], capacityHours: 40, allocationPct: 100,
+        person: a,
       };
     }
     workloadMap[key].tasks.push(t);
@@ -356,7 +343,7 @@ const ProjectWorkloadView = () => {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {assigned.map(entry => (
-            <MemberCard key={entry.key} entry={entry} />
+            <MemberCard key={entry.key} entry={entry} tenantSlug={tenantSlug} />
           ))}
         </div>
       )}

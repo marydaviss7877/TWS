@@ -120,6 +120,9 @@ import DocumentsHub from './features/tenant/pages/tenant/org/documents/Documents
 import DocumentEditor from './features/tenant/pages/tenant/org/documents/DocumentEditor';
 import ApprovalQueue from './features/tenant/pages/tenant/org/documents/ApprovalQueue';
 import DocumentAuditView from './features/tenant/pages/tenant/org/documents/DocumentAuditView';
+import PortfolioHub from './features/tenant/pages/tenant/org/portfolio/PortfolioHub';
+import PortfolioEditor from './features/tenant/pages/tenant/org/portfolio/PortfolioEditor';
+import PortfolioViewer from './features/tenant/pages/tenant/org/portfolio/PortfolioViewer';
 
 // ── Tenant Org — Software House ───────────────────────────────────────────────
 import TimeTracking from './features/tenant/pages/tenant/org/software-house/TimeTracking';
@@ -516,6 +519,11 @@ function App() {
             <Route path="sheets" element={<Suspense fallback={<LoadingSpinner />}><SheetsHub /></Suspense>} />
             <Route path="sheets/new" element={<Suspense fallback={<LoadingSpinner />}><SheetEditor /></Suspense>} />
             <Route path="sheets/:id" element={<Suspense fallback={<LoadingSpinner />}><SheetEditor /></Suspense>} />
+
+            {/* Portfolio */}
+            <Route path="portfolio" element={<PortfolioHub />} />
+            <Route path="portfolio/:id" element={<PortfolioViewer />} />
+            <Route path="portfolio/:id/edit" element={<PortfolioEditor />} />
 
             {/* Profile */}
             <Route path="profile" element={<UserProfile />} />

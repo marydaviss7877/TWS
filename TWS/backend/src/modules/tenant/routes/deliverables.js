@@ -31,13 +31,45 @@ router.get('/',
       filter.status = status;
     }
     
-    const deliverables = await Deliverable.find(filter)
-      .populate('project_id', 'name')
-      .sort({ target_date: 1 });
+    const milestoneFilter = { orgId };
+    if (projectId) milestoneFilter.projectId = projectId;
+    const [deliverables, milestones] = await Promise.all([
+      Deliverable.find(filter)
+        .populate('project_id', 'name')
+        .sort({ target_date: 1 })
+        .lean(),
+      Deliverable.countDocuments(filter).then(count => count === 0
+        ? Milestone.find(milestoneFilter).populate('projectId', 'name').sort({ dueDate: 1 }).lean()
+        : [])
+    ]);
+
+    const milestoneStatusMap = {
+      pending: 'created',
+      in_progress: 'in_dev',
+      completed: 'shipped',
+      at_risk: 'in_rework',
+      delayed: 'in_rework'
+    };
+    const milestoneDeliverables = milestones.map(milestone => ({
+      _id: milestone._id,
+      project_id: milestone.projectId,
+      name: milestone.title,
+      description: milestone.description,
+      start_date: milestone.createdAt,
+      target_date: milestone.dueDate,
+      shipped_at: milestone.completedDate,
+      status: milestoneStatusMap[milestone.status] || 'created',
+      progress_percentage: milestone.progress || 0,
+      tasks: [],
+      acceptance_criteria: [],
+      blocking_criteria_met: milestone.status === 'completed',
+      orgId: milestone.orgId,
+      type: 'milestone'
+    })).filter(item => !status || item.status === status);
     
     res.json({
       success: true,
-      data: deliverables
+      data: [...deliverables.map(item => ({ ...item, type: 'deliverable' })), ...milestoneDeliverables]
     });
   })
 );
@@ -155,19 +187,19 @@ router.post('/',
       return res.status(400).json({ success: false, message: 'Target date is required' });
     }
 
-    // Only validate project if project_id is supplied
-    if (project_id) {
-      const project = await Project.findOne({ _id: project_id, orgId });
-      if (!project) {
-        return res.status(404).json({
-          success: false,
-          message: 'Project not found or does not belong to your organization'
-        });
-      }
+    if (!project_id) {
+      return res.status(400).json({ success: false, message: 'Project is required' });
+    }
+    const project = await Project.findOne({ _id: project_id, orgId }).select('_id workspaceId');
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: 'Project not found or does not belong to your organization'
+      });
     }
 
     const deliverable = new Deliverable({
-      ...(project_id ? { project_id } : {}),
+      project_id,
       name: name.trim(),
       description: description || null,
       start_date: new Date(start_date),
@@ -176,7 +208,9 @@ router.post('/',
       acceptance_criteria: acceptance_criteria || [],
       blocking_criteria_met: blocking_criteria_met || false,
       orgId,
-      tenantId
+      tenantId,
+      workspaceId: project.workspaceId || undefined,
+      ownerId: req.user?._id
     });
 
     await deliverable.save();

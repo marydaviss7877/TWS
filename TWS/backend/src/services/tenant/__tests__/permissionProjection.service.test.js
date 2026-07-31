@@ -18,4 +18,27 @@ describe('permissionProjection.service', () => {
 
     expect(modules.finance.read).toBe(true);
   });
+
+  it('projects portfolio access for the portfolio page controls', () => {
+    const modules = buildModuleAccessFromResolved({
+      permissions: ['portfolio:read', 'portfolio:write'],
+      deniedPermissionCodes: []
+    });
+
+    expect(modules.portfolio).toEqual({
+      read: true,
+      write: true,
+      delete: false
+    });
+  });
+
+  it('respects an explicit portfolio write denial', () => {
+    const modules = buildModuleAccessFromResolved({
+      permissions: ['portfolio:read', 'portfolio:write'],
+      deniedPermissionCodes: ['portfolio:write']
+    });
+
+    expect(modules.portfolio.read).toBe(true);
+    expect(modules.portfolio.write).toBe(false);
+  });
 });

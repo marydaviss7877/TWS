@@ -4,8 +4,7 @@ const mongoose = require('mongoose');
 const chartOfAccountsSchema = new mongoose.Schema({
   code: {
     type: String,
-    required: true,
-    unique: true
+    required: true
   },
   name: {
     type: String,
@@ -48,8 +47,7 @@ chartOfAccountsSchema.index({ orgId: 1, parentAccount: 1 });
 const journalEntrySchema = new mongoose.Schema({
   entryNumber: {
     type: String,
-    required: true,
-    unique: true
+    required: true
   },
   date: {
     type: Date,
@@ -313,8 +311,7 @@ const vendorSchema = new mongoose.Schema({
 const billSchema = new mongoose.Schema({
   billNumber: {
     type: String,
-    required: true,
-    unique: true
+    required: true
   },
   vendorId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -499,8 +496,7 @@ const cashFlowForecastSchema = new mongoose.Schema({
 const invoiceSchema = new mongoose.Schema({
   invoiceNumber: {
     type: String,
-    required: true,
-    unique: true
+    required: true
   },
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -595,6 +591,11 @@ const invoiceSchema = new mongoose.Schema({
 
 // Enhanced Client Schema
 const clientSchema = new mongoose.Schema({
+  projectClientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ProjectClient',
+    default: null
+  },
   name: {
     type: String,
     required: true
@@ -641,7 +642,8 @@ const clientSchema = new mongoose.Schema({
     required: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  collection: 'finance_clients'
 });
 
 // Time Entry Schema for Project Costing
@@ -822,11 +824,11 @@ transactionSchema.index({ accountId: 1 });
 transactionSchema.index({ status: 1 });
 transactionSchema.index({ orgId: 1 });
 
-chartOfAccountsSchema.index({ code: 1 });
+chartOfAccountsSchema.index({ orgId: 1, code: 1 }, { unique: true });
 chartOfAccountsSchema.index({ type: 1 });
 chartOfAccountsSchema.index({ orgId: 1 });
 
-journalEntrySchema.index({ entryNumber: 1 });
+journalEntrySchema.index({ orgId: 1, entryNumber: 1 }, { unique: true });
 journalEntrySchema.index({ date: 1 });
 journalEntrySchema.index({ status: 1 });
 journalEntrySchema.index({ orgId: 1 });
@@ -834,13 +836,13 @@ journalEntrySchema.index({ orgId: 1 });
 accountSchema.index({ code: 1 });
 accountSchema.index({ type: 1 });
 
-invoiceSchema.index({ invoiceNumber: 1 });
+invoiceSchema.index({ orgId: 1, invoiceNumber: 1 }, { unique: true });
 invoiceSchema.index({ clientId: 1 });
 invoiceSchema.index({ status: 1 });
 invoiceSchema.index({ dueDate: 1 });
 invoiceSchema.index({ orgId: 1 });
 
-billSchema.index({ billNumber: 1 });
+billSchema.index({ orgId: 1, billNumber: 1 }, { unique: true });
 billSchema.index({ vendorId: 1 });
 billSchema.index({ status: 1 });
 billSchema.index({ dueDate: 1 });
@@ -865,6 +867,7 @@ clientSchema.index({ name: 1 });
 clientSchema.index({ email: 1 });
 clientSchema.index({ status: 1 });
 clientSchema.index({ orgId: 1 });
+clientSchema.index({ orgId: 1, projectClientId: 1 }, { unique: true, sparse: true });
 
 // Enhanced indexes for time entries
 timeEntrySchema.index({ orgId: 1, date: -1 });

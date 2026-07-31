@@ -26,32 +26,12 @@ import {
   HomeIcon,
 } from '@heroicons/react/24/outline';
 import { Button } from '../../../components/ui/Button/Button';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '../../../components/ui/DropdownMenu/DropdownMenu';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/Avatar/Avatar';
 import ThemeToggle from '../../../shared/components/ui/ThemeToggle';
+import { Sheet, SheetContent } from '../../../components/ui/Sheet/Sheet';
 import { APP_METADATA } from '../../../constants/navigationConstants';
 import { cn } from '../../../lib/utils';
-
-const MAX_VISIBLE_TABS = 6;
-
-// ── SubNavTab ─────────────────────────────────────────────────────────────────
-const SubNavTab = ({ item, isActive }) => (
-  <Link
-    to={item.path}
-    className={cn(
-      'shrink-0 whitespace-nowrap rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-150 outline-none',
-      'focus-visible:ring-2 focus-visible:ring-primary-500',
-      isActive
-        ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300'
-        : 'text-slate-600 dark:text-gray-400 hover:bg-[#e8eeff] dark:hover:bg-white/8 hover:text-[#0d0e24] dark:hover:text-gray-100'
-    )}
-  >
-    {item.label}
-  </Link>
-);
+import { tenantPath } from '../../../shared/utils/tenantRoutes';
 
 // ── OdooTopBar ────────────────────────────────────────────────────────────────
 const OdooTopBar = ({
@@ -72,10 +52,12 @@ const OdooTopBar = ({
 
   // Mobile
   onMobileMenu,  // opens the mobile sheet sidebar
+  showAccount = true,
 }) => {
   const navigate        = useNavigate();
   const location        = useLocation();
   const tenantSlug = useTenantSlug();
+  const isHome = location.pathname === '/home' || location.pathname.endsWith('/org/home');
 
   const initial      = (orgName  || 'O').charAt(0).toUpperCase();
   const userInitial  = (user?.fullName?.[0] ?? user?.email?.[0] ?? 'U').toUpperCase();
@@ -84,6 +66,7 @@ const OdooTopBar = ({
   const isAdminUser = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner']
     .includes(String(user?.role || '').toLowerCase());
   const [avatarError, setAvatarError] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const avatarSrc = (() => {
     const raw = user?.avatarUrl || user?.profilePicUrl;
     if (!raw) return null;
@@ -104,9 +87,6 @@ const OdooTopBar = ({
 
   // ── Sub-nav: split children into visible + overflow ────────────────────────
   const children = activeApp?.children ?? [];
-  const visibleTabs  = children.slice(0, MAX_VISIBLE_TABS);
-  const overflowTabs = children.slice(MAX_VISIBLE_TABS);
-
   // Detect active child (exact match first, then startsWith)
   const activeChildPath = useMemo(() => {
     const match = children.find(c => {
@@ -122,13 +102,13 @@ const OdooTopBar = ({
   const appMeta = activeApp ? (APP_METADATA[activeApp.key] ?? null) : null;
 
   return (
-    <header className="flex h-11 sm:h-12 shrink-0 items-center gap-1.5 sm:gap-2 border-b border-[#c9d6f4]/70 dark:border-gray-700/80 bg-[#dce7ff]/52 dark:bg-gray-900 px-2 sm:px-3 shadow-sm z-30 relative backdrop-blur-[2px]">
+    <header className={`tws-command-nav ${isHome ? 'tws-command-nav--home' : ''} flex h-11 sm:h-12 shrink-0 items-center gap-1.5 sm:gap-2 border-b border-[#c9d6f4]/70 dark:border-gray-700/80 bg-[#dce7ff]/52 dark:bg-gray-900 px-2 sm:px-3 shadow-sm z-30 relative backdrop-blur-[2px]`}>
 
       {/* ── 1. Home / org logo ──────────────────────────────────────────── */}
       <button
         type="button"
-        onClick={() => navigate(`/${tenantSlug}/org/home`)}
-        className="group flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-lg px-1 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 hover:bg-[#e8eeff] dark:hover:bg-gray-800 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(99,102,241,0.16)] active:translate-y-0 active:scale-[0.98]"
+        onClick={() => navigate(tenantPath(tenantSlug, 'org', 'home'))}
+        className="md:hidden group flex shrink-0 items-center gap-1.5 sm:gap-2 rounded-lg px-1 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 hover:bg-[#e8eeff] dark:hover:bg-gray-800 transition-all duration-200"
         aria-label="Go to home"
         title="Home"
       >
@@ -147,10 +127,7 @@ const OdooTopBar = ({
         <HomeIcon className="hidden sm:block h-3.5 w-3.5 text-slate-400 dark:text-gray-500 transition-transform duration-200 group-hover:translate-x-0.5" />
       </button>
 
-      {/* ── Divider ─────────────────────────────────────────────────────── */}
-      <div className="hidden md:block h-5 w-px bg-[#d7ddf3] dark:bg-gray-700 shrink-0" />
-
-      {/* ── 3. Active app name + sub-nav tabs (flex-1) — sub-nav scrolls horizontally like PM workspace tabs ── */}
+      {/* Current module context — navigation itself lives in the sidebar */}
       <div className="hidden md:flex flex-1 items-center gap-1 min-w-0 min-h-0">
 
         {activeApp ? (
@@ -173,59 +150,15 @@ const OdooTopBar = ({
               {activeApp.label}
             </Link>
 
-            {/* Sub-nav separator */}
-            {children.length > 0 && (
-              <span className="text-[#b9c3e6] dark:text-gray-600 text-xs select-none shrink-0">/</span>
-            )}
-
-            {/* Sub-nav tabs — horizontal scroll + styled scrollbar (all viewports where this row is shown) */}
-            <nav
-              className="flex min-w-0 flex-1 flex-nowrap items-center gap-0.5 overflow-x-auto overflow-y-hidden py-0.5 pb-1 glass-scrollbar scroll-smooth"
-              aria-label={`${activeApp.label} sub-navigation`}
-            >
-              {visibleTabs.map(item => (
-                <SubNavTab
-                  key={item.key}
-                  item={item}
-                  isActive={item.path === activeChildPath}
-                />
-              ))}
-            </nav>
-
-            {/* Overflow "More ▼" dropdown */}
-            {overflowTabs.length > 0 && (
-              <div className="shrink-0">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1 px-2 text-xs text-slate-500 dark:text-gray-400 hover:text-[#0d0e24] dark:hover:text-gray-100 shrink-0"
-                  >
-                    More
-                    <ChevronDownIcon className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-44">
-                  {overflowTabs.map(item => (
-                    <DropdownMenuItem
-                      key={item.key}
-                      onClick={() => navigate(item.path)}
-                      className={item.path === activeChildPath ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : ''}
-                    >
-                      {item.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              </div>
-            )}
+            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+              {children.find(item => item.path === activeChildPath)?.label || 'Workspace'}
+            </span>
           </>
         ) : (
           /* Fallback when no active app matched — org name links to org profile */
           <button
             type="button"
-            onClick={() => navigate(`/${tenantSlug}/org/settings/organization`)}
+            onClick={() => navigate(tenantPath(tenantSlug, 'org', 'settings', 'organization'))}
             className="text-sm font-semibold text-[#0d0e24] dark:text-gray-200 px-2 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
             title="Organization Profile"
           >
@@ -256,7 +189,7 @@ const OdooTopBar = ({
           variant="ghost"
           size="sm"
           onClick={onSearch}
-          className="hidden sm:flex h-7 w-7 lg:w-auto lg:px-2.5 items-center justify-center lg:justify-start gap-1.5 rounded-xl text-xs text-slate-500 dark:text-gray-500 bg-[#eef2ff] dark:bg-gray-800 border border-[#d2d6ee] dark:border-gray-700 hover:bg-[#e8eeff] dark:hover:bg-gray-700"
+          className="tws-nav-search hidden sm:flex h-7 w-7 lg:w-auto lg:px-2.5 items-center justify-center lg:justify-start gap-1.5 rounded-xl text-xs text-slate-500 dark:text-gray-500 bg-[#eef2ff] dark:bg-gray-800 border border-[#d2d6ee] dark:border-gray-700 hover:bg-[#e8eeff] dark:hover:bg-gray-700"
         >
           <MagnifyingGlassIcon className="h-3.5 w-3.5 shrink-0" />
           <span className="hidden lg:inline">Search…</span>
@@ -274,13 +207,12 @@ const OdooTopBar = ({
           <MagnifyingGlassIcon className="h-4 w-4 text-slate-500 dark:text-gray-400" />
         </Button>
 
-        {/* Theme toggle */}
-        <ThemeToggle size="sm" className="hidden sm:inline-flex" />
+        {/* Secondary utilities are retained only for mobile; desktop keeps a focused header */}
+        <ThemeToggle size="sm" className="sm:hidden" />
 
-        {/* Fullscreen */}
         {typeof onFullscreenToggle === 'function' && (
           <Button
-            variant="ghost" size="icon" className="hidden md:inline-flex h-7 w-7"
+            variant="ghost" size="icon" className="hidden h-7 w-7"
             onClick={onFullscreenToggle}
             title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
           >
@@ -292,49 +224,71 @@ const OdooTopBar = ({
         )}
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="hidden sm:inline-flex h-7 w-7 relative" title="Notifications">
+        <Button variant="ghost" size="icon" className="hidden h-7 w-7 relative" title="Notifications">
           <BellIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
           <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden="true" />
         </Button>
 
-        {/* Profile dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 rounded-full" aria-label="User menu">
-              <Avatar className="h-6 w-6">
+        {/* Profile — right-side account drawer */}
+        {showAccount && <Sheet open={profileOpen} onOpenChange={setProfileOpen}>
+            <button
+              type="button"
+              onClick={() => setProfileOpen(true)}
+              className="tws-profile-trigger h-8 rounded-xl"
+              aria-label="Open account panel"
+            >
+              <Avatar className="h-6 w-6 shrink-0">
                 {avatarSrc && !avatarError && <AvatarImage src={avatarSrc} alt={displayName} onError={() => setAvatarError(true)} />}
                 <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary-500 to-accent-500 text-white">
                   {userInitial}
                 </AvatarFallback>
               </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="font-normal">
-              <p className="font-semibold text-gray-900 dark:text-white truncate">{displayName}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onProfile}>
-              <UserIcon className="h-4 w-4" /> My Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate(`/${tenantSlug}/org/settings/organization`)}>
-              <BuildingOfficeIcon className="h-4 w-4" /> Org Profile
-            </DropdownMenuItem>
+              <span className="tws-profile-trigger__copy">
+                <strong>{displayName}</strong>
+                <small>{String(user?.role || 'member').replace(/_/g, ' ')}</small>
+              </span>
+              <ChevronDownIcon className="tws-profile-trigger__chevron" aria-hidden="true" />
+            </button>
+          <SheetContent side="right" className="tws-account-drawer">
+            <div className="tws-account-drawer__eyebrow">Account</div>
+            <div className="tws-profile-menu__identity">
+              <Avatar className="h-11 w-11 shrink-0">
+                {avatarSrc && !avatarError && <AvatarImage src={avatarSrc} alt={displayName} onError={() => setAvatarError(true)} />}
+                <AvatarFallback className="bg-gradient-to-br from-sky-500 to-indigo-500 text-sm font-bold text-white">
+                  {userInitial}
+                </AvatarFallback>
+              </Avatar>
+              <span className="tws-profile-menu__identity-copy">
+                <strong>{displayName}</strong>
+                <small>{user?.email}</small>
+                <em><i /> Active · {String(user?.role || 'member').replace(/_/g, ' ')}</em>
+              </span>
+            </div>
+            <div className="tws-account-drawer__rule" />
+            <button onClick={() => { setProfileOpen(false); onProfile(); }} className="tws-profile-menu__item">
+              <span className="tws-profile-menu__icon"><UserIcon /></span>
+              <span><strong>My profile</strong><small>Identity and personal details</small></span>
+            </button>
+            <button onClick={() => { setProfileOpen(false); navigate(tenantPath(tenantSlug, 'org', 'settings', 'organization')); }} className="tws-profile-menu__item">
+              <span className="tws-profile-menu__icon"><BuildingOfficeIcon /></span>
+              <span><strong>Organization</strong><small>Workspace profile and brand</small></span>
+            </button>
             {isAdminUser && (
-              <DropdownMenuItem onClick={() => navigate(`/${tenantSlug}/org/settings`)}>
-                <CogIcon className="h-4 w-4" /> Settings
-              </DropdownMenuItem>
+              <button onClick={() => { setProfileOpen(false); navigate(tenantPath(tenantSlug, 'org', 'settings')); }} className="tws-profile-menu__item">
+                <span className="tws-profile-menu__icon"><CogIcon /></span>
+                <span><strong>Settings</strong><small>Preferences and administration</small></span>
+              </button>
             )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
+            <div className="tws-account-drawer__spacer" />
+            <button
               onClick={onLogout}
-              className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 focus:bg-red-50 dark:focus:bg-red-900/20"
+              className="tws-profile-menu__item tws-profile-menu__item--danger"
             >
-              <ArrowRightOnRectangleIcon className="h-4 w-4" /> Sign out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <span className="tws-profile-menu__icon"><ArrowRightOnRectangleIcon /></span>
+              <span><strong>Sign out</strong><small>End this workspace session</small></span>
+            </button>
+          </SheetContent>
+        </Sheet>}
 
       </div>
     </header>

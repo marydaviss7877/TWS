@@ -100,6 +100,12 @@ const SoftwareHouseSignup = () => {
   const [slugAvailable, setSlugAvailable] = useState(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [otpStep, setOtpStep] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [activeModuleIndex, setActiveModuleIndex] = useState(0);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -117,6 +123,7 @@ const SoftwareHouseSignup = () => {
   const orgNameInputRef = useRef(null);
   const orgSlugInputRef = useRef(null);
   const errorBoxRef = useRef(null);
+  const otpInputRef = useRef(null);
 
   const showcaseModules = [
     {
@@ -158,6 +165,18 @@ const SoftwareHouseSignup = () => {
       errorBoxRef.current.focus();
     }
   }, [error]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return undefined;
+    const timeoutId = setTimeout(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(timeoutId);
+  }, [resendCooldown]);
+
+  useEffect(() => {
+    if (otpStep && otpInputRef.current) {
+      otpInputRef.current.focus();
+    }
+  }, [otpStep]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -267,21 +286,13 @@ const SoftwareHouseSignup = () => {
     setFieldErrors({});
     setLoading(true);
     try {
-      const response = await axios.post('/api/signup/software-house/complete', {
+      const response = await axios.post('/api/signup/software-house/request-otp', {
         email: trimmedEmail,
-        fullName: trimmedFullName,
-        password: trimmedPassword,
-        confirmPassword: trimmedConfirmPassword,
-        organizationName: trimmedOrgName,
-        organizationSlug: trimmedOrgSlug
+        fullName: trimmedFullName
       });
       if (response.data.success) {
-        setSuccess(true);
-        toast.success('Account and workspace created!');
-        setTimeout(() => {
-          const loginUrl = getTenantSubdomainUrl(trimmedOrgSlug, '/software-house-login');
-          navigateTo(loginUrl, (path) => navigate(path, { state: { signupSuccess: true, email: formData.email } }));
-        }, 1800);
+        setOtpStep(true);
+        toast.success('Verification code sent! Check your email.');
       } else {
         setError(response.data.message || 'Signup failed.');
       }
@@ -289,13 +300,91 @@ const SoftwareHouseSignup = () => {
       const rawError = String(err.response?.data?.message || err.message || '').trim();
       const safeMessage = /too many|rate limit/i.test(rawError)
         ? 'Too many signup attempts. Please wait and try again.'
-        : /network|failed to fetch|connection|timeout/i.test(rawError)
-          ? 'Network issue detected. Please check your connection and retry.'
-          : (rawError || 'Signup failed.');
+        : /already exists/i.test(rawError)
+          ? rawError
+          : /network|failed to fetch|connection|timeout/i.test(rawError)
+            ? 'Network issue detected. Please check your connection and retry.'
+            : (rawError || 'Signup failed.');
       setError(safeMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    setOtpError('');
+    const trimmedOtp = String(otp || '').trim();
+    if (!/^\d{6}$/.test(trimmedOtp)) {
+      setOtpError('Enter the 6-digit code from your email.');
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      const response = await axios.post('/api/signup/software-house/complete', {
+        email: formData.email.trim(),
+        fullName: formData.fullName.trim(),
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        organizationName: formData.organizationName.trim(),
+        organizationSlug: formData.organizationSlug.trim(),
+        otp: trimmedOtp
+      });
+      if (response.data.success) {
+        setSuccess(true);
+        toast.success('Account and workspace created!');
+        const slug = formData.organizationSlug.trim();
+        setTimeout(() => {
+          const loginUrl = getTenantSubdomainUrl(slug, '/software-house-login');
+          navigateTo(loginUrl, (path) => navigate(path, { state: { signupSuccess: true, email: formData.email } }));
+        }, 1800);
+      } else {
+        setOtpError(response.data.message || 'Verification failed.');
+      }
+    } catch (err) {
+      const status = err.response?.status;
+      const rawError = String(err.response?.data?.message || err.message || '').trim();
+      const safeMessage = status === 429
+        ? 'Too many attempts. Please wait a few minutes and try again.'
+        : /network|failed to fetch|connection|timeout/i.test(rawError)
+          ? 'Network issue detected. Please check your connection and retry.'
+          : (rawError || 'Verification failed. Please try again.');
+      setOtpError(safeMessage);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (resendCooldown > 0 || resending) return;
+    setResending(true);
+    setOtpError('');
+    try {
+      const response = await axios.post('/api/signup/resend-otp', { email: formData.email.trim() });
+      if (response.data.success) {
+        toast.success('A new code has been sent.');
+        setResendCooldown(60);
+      }
+    } catch (err) {
+      const status = err.response?.status;
+      const retryAfter = Number(err.response?.headers?.['retry-after']) || Number(err.response?.data?.retryAfter);
+      const wait = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 60;
+      if (status === 429) {
+        setOtpError(`Too many attempts. Try again in ${wait}s.`);
+        setResendCooldown(wait);
+      } else {
+        setOtpError(String(err.response?.data?.message || 'Could not resend code. Please try again.'));
+      }
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const handleEditDetails = () => {
+    setOtpStep(false);
+    setOtp('');
+    setOtpError('');
   };
 
 
@@ -323,6 +412,83 @@ const SoftwareHouseSignup = () => {
               <button onClick={() => navigate('/software-house-login')} className="sh-signup-submit-btn" style={{ background: '#fff', color: '#000' }}>
                 Go to Login
               </button>
+            </div>
+          </div>
+        </div>
+        {rightPanel}
+      </div>
+    );
+  }
+
+  if (otpStep) {
+    return (
+      <div className={`sh-signup-container ${!isDarkMode ? 'day-mode' : ''}`}>
+        <SoftwareHouseNavbar isDarkMode={isDarkMode} />
+        <div className="sh-signup-left">
+          <div className="sh-signup-wrapper">
+            <h1 className="sh-signup-heading">Check your <span style={{ color: '#06B6D4' }}>inbox.</span></h1>
+            <p className="sh-signup-subtext">
+              We sent a 6-digit code to <strong>{formData.email}</strong>. Enter it below to finish creating your workspace.
+            </p>
+
+            {otpError && (
+              <div
+                id="sh-otp-form-error"
+                className="sh-signup-error-box"
+                role="alert"
+                aria-live="assertive"
+              >
+                {otpError}
+              </div>
+            )}
+
+            <form onSubmit={handleVerify}>
+              <div>
+                <label className="sh-signup-label">Verification Code *</label>
+                <div className="sh-signup-input-wrap">
+                  <input
+                    ref={otpInputRef}
+                    name="otp"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="123456"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    required
+                    maxLength={6}
+                    className="sh-signup-input"
+                    style={{ letterSpacing: '0.4em', textAlign: 'center', fontSize: '1.25rem' }}
+                    aria-invalid={Boolean(otpError)}
+                    aria-describedby={otpError ? 'sh-otp-form-error' : undefined}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" disabled={verifying || otp.length !== 6} className="sh-signup-submit-btn">
+                {verifying ? 'Verifying...' : 'Verify & Create Workspace'}
+              </button>
+            </form>
+
+            <div className="sh-signup-footer">
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resending || resendCooldown > 0}
+                className="sh-signup-link"
+                style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: (resending || resendCooldown > 0) ? 'default' : 'pointer' }}
+              >
+                {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : (resending ? 'Sending...' : 'Resend code')}
+              </button>
+              <p style={{ marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={handleEditDetails}
+                  className="sh-signup-link"
+                  style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
+                >
+                  Use a different email
+                </button>
+              </p>
             </div>
           </div>
         </div>
@@ -422,7 +588,7 @@ const SoftwareHouseSignup = () => {
             </div>
 
             <button type="submit" disabled={loading || slugAvailable === false} className="sh-signup-submit-btn">
-              {loading ? 'Processing Workspace...' : 'Initialize Organization'}
+              {loading ? 'Sending Code...' : 'Continue'}
             </button>
           </form>
 

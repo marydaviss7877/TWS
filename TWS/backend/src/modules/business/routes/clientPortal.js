@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
 const ErrorHandler = require('../../../middleware/common/errorHandler');
@@ -6,7 +7,7 @@ const Project = require('../../../models/project-delivery/Project');
 const Card = require('../../../models/industry/Card');
 const ProjectClient = require('../../../models/industry/Client');
 const Organization = require('../../../models/org/Organization');
-const { TimeEntry, Invoice } = require('../../../models/finance/Finance');
+const { TimeEntry, Invoice, Client: FinanceClient } = require('../../../models/finance/Finance');
 
 const router = express.Router();
 const clientPortalAccess = requireErpAccess({ allowedRoles: ['client', 'customer'], checkRevocation: true });
@@ -133,6 +134,41 @@ const resolveCardForClient = async ({ cardId, orgId, client }) => {
   return { card, project };
 };
 
+router.get('/access-status', clientPortalAccess, ErrorHandler.asyncHandler(async (req, res) => {
+  const orgId = getOrgIdFromReq(req);
+  const userId = req.user?._id;
+  const client = orgId && userId
+    ? await ProjectClient.findOne({ orgId, userId }).select('_id status portal').lean()
+    : null;
+  const projectStats = client
+    ? await Project.aggregate([
+        { $match: { orgId: new mongoose.Types.ObjectId(String(orgId)), clientId: client._id } },
+        {
+          $group: {
+            _id: null,
+            assignedProjects: { $sum: 1 },
+            portalEnabledProjects: {
+              $sum: { $cond: ['$settings.portalSettings.allowClientPortal', 1, 0] }
+            }
+          }
+        }
+      ])
+    : [];
+  const stats = projectStats[0] || { assignedProjects: 0, portalEnabledProjects: 0 };
+  return res.json({
+    success: true,
+    data: {
+      organizationResolved: !!orgId,
+      userLinked: !!client,
+      clientActive: !!client && client.status !== 'inactive',
+      clientPortalEnabled: !!client && client.portal?.enabled !== false,
+      accessLevel: client?.portal?.accessLevel || null,
+      assignedProjects: stats.assignedProjects || 0,
+      portalEnabledProjects: stats.portalEnabledProjects || 0
+    }
+  });
+}));
+
 // Get client's projects (accessible by client role). Scoped by orgId so clients cannot see other tenants' data.
 router.get('/projects', clientPortalAccess, ErrorHandler.asyncHandler(async (req, res) => {
   const context = await getClientContext(req);
@@ -149,16 +185,21 @@ router.get('/projects', clientPortalAccess, ErrorHandler.asyncHandler(async (req
     .select(PROJECT_SELECT_FIELDS)
     .sort({ updatedAt: -1 });
 
-  // Add pending approvals count for each project (Card may have orgId; filter by project ownership)
-  const projectsWithApprovals = await Promise.all(
-    projects.map(async (project) => {
-      const pendingCount = await Card.countDocuments({
-        projectId: project._id,
-        status: { $in: ['review', 'testing'] },
-        clientVisible: true
-      });
-
-      return {
+  const projectIds = projects.map(project => project._id);
+  const approvalCounts = projectIds.length
+    ? await Card.aggregate([
+        {
+          $match: {
+            projectId: { $in: projectIds },
+            status: { $in: ['review', 'testing'] },
+            clientVisible: true
+          }
+        },
+        { $group: { _id: '$projectId', count: { $sum: 1 } } }
+      ])
+    : [];
+  const approvalsByProject = new Map(approvalCounts.map(item => [String(item._id), item.count]));
+  const projectsWithApprovals = projects.map(project => ({
         _id: project._id,
         name: project.name,
         description: project.description,
@@ -166,10 +207,8 @@ router.get('/projects', clientPortalAccess, ErrorHandler.asyncHandler(async (req
         priority: project.priority,
         timeline: project.timeline || {},
         metrics: project.metrics || {},
-        pendingApprovals: pendingCount
-      };
-    })
-  );
+        pendingApprovals: approvalsByProject.get(String(project._id)) || 0
+      }));
 
   res.json({
     success: true,
@@ -438,13 +477,20 @@ router.get('/projects/:projectId/invoices', clientPortalAccess, ErrorHandler.asy
     return res.status(projectResult.error.status).json({ success: false, message: projectResult.error.message });
   }
 
+  const financeClient = await FinanceClient.findOne({
+    orgId: context.orgId,
+    projectClientId: context.client._id
+  }).select('_id').lean();
+  const clientIdentityFilters = [
+    ...(financeClient ? [{ clientId: financeClient._id }] : []),
+    ...(context.client.contact?.primary?.email
+      ? [{ clientEmail: context.client.contact.primary.email }]
+      : []),
+    { 'items.projectId': projectId }
+  ];
   const invoices = await Invoice.find({
     orgId: context.orgId,
-    $or: [
-      { clientId: context.client._id },
-      { clientEmail: context.client.contact?.primary?.email || null },
-      { 'items.projectId': projectId }
-    ]
+    $or: clientIdentityFilters
   })
     .select('invoiceNumber issueDate dueDate total status currency paidAmount remainingAmount notes items')
     .sort({ issueDate: -1 })

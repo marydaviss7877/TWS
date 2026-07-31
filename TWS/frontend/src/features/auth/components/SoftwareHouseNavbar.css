@@ -54,6 +54,14 @@
   color: inherit;
 }
 
+.sh-brand-mark { display: none; }
+
+.sh-brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .sh-brand-wordmark {
   font-family: 'Sora', sans-serif;
   font-weight: 800;
@@ -208,4 +216,81 @@
   .sh-nav-mobile-menu {
     display: none;
   }
+}
+
+/* Landing navigation: deliberately part of the marketing composition. */
+.sh-nav-landing { padding: 18px 20px 0; pointer-events: none; }
+.sh-nav-landing .sh-nav {
+  width: min(1180px, 100%);
+  border: 1px solid rgba(123, 146, 255, 0.16);
+  background: linear-gradient(110deg, rgba(15, 17, 39, 0.92), rgba(8, 10, 24, 0.86));
+  box-shadow: 0 18px 60px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.05);
+  pointer-events: auto;
+}
+.sh-nav-landing .sh-nav-inner { max-width: none; padding: .7rem .75rem .7rem .85rem; }
+.sh-nav-landing .sh-brand { min-width: 190px; gap: .72rem; }
+.sh-nav-landing .sh-brand-mark {
+  width: 34px; height: 34px; display: grid; place-items: center;
+  background: linear-gradient(145deg, #7896ff, #7655e8); color: white;
+  font: 800 15px/1 'Sora', sans-serif; box-shadow: 0 8px 24px rgba(79,70,229,.34);
+}
+.sh-nav-landing .sh-brand-lockup { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.sh-nav-landing .sh-brand-wordmark { color: #f6f7ff; font-size: .92rem; line-height: 1; letter-spacing: .02em; }
+.sh-nav-landing .sh-brand-badge { padding: 0; border: 0; color: #747b9f; font-size: .5rem; letter-spacing: .17em; }
+.sh-nav-landing .sh-nav-links-desktop {
+  padding: 4px; border: 1px solid rgba(255,255,255,.055);
+  background: rgba(255,255,255,.025); border-radius: 0;
+}
+.sh-nav-landing .sh-nav-link { padding: .57rem .76rem; border-radius: 0; color: #898faa; font-size: .72rem; letter-spacing: .025em; }
+.sh-nav-landing .sh-nav-link:hover { color: #fff; background: rgba(114,137,255,.1); }
+.sh-nav-landing .sh-nav-link.active { color: #cbd3ff; background: transparent; }
+.sh-nav-landing .sh-nav-login { color: #a1a7c0; font-size: .75rem; border-radius: 0; }
+.sh-nav-landing .sh-nav-cta {
+  display: inline-flex; align-items: center; gap: 9px; padding: .72rem .9rem;
+  border-radius: 0; background: linear-gradient(135deg, #6686ff, #7655e8);
+  box-shadow: 0 10px 30px rgba(79,70,229,.28); font-size: .72rem;
+}
+.sh-nav-landing .sh-nav-cta span { opacity: .75; }
+.sh-nav-landing .sh-nav-mobile-toggle {
+  border-radius: 0; border-color: rgba(123,146,255,.2); background: rgba(123,146,255,.08);
+}
+.sh-nav-landing .sh-nav-mobile-menu {
+  margin-top: 1px; padding: .7rem; border-top: 1px solid rgba(123,146,255,.12); background: rgba(8,10,24,.98);
+}
+.sh-nav-landing .sh-nav-light {
+  background: rgba(250,253,255,.8);
+  border-color: rgba(42,111,167,.14);
+  box-shadow: 0 18px 55px rgba(39,87,126,.11), inset 0 1px rgba(255,255,255,.95);
+}
+.sh-nav-landing .sh-nav-light .sh-brand-mark {
+  background: linear-gradient(145deg, #25b6e8, #6688e0);
+  box-shadow: 0 8px 24px rgba(39,151,207,.22);
+}
+.sh-nav-landing .sh-nav-light .sh-brand-wordmark { color: #132944; }
+.sh-nav-landing .sh-nav-light .sh-brand-badge { color: #71869b; }
+.sh-nav-landing .sh-nav-light .sh-nav-links-desktop {
+  background: rgba(230,244,253,.6);
+  border-color: rgba(42,111,167,.08);
+}
+.sh-nav-landing .sh-nav-light .sh-nav-link { color: #61788f; }
+.sh-nav-landing .sh-nav-light .sh-nav-link:hover { color: #0e79a9; background: rgba(35,168,219,.08); }
+.sh-nav-landing .sh-nav-light .sh-nav-link.active { color: #168fc8; }
+.sh-nav-landing .sh-nav-light .sh-nav-login { color: #567088; }
+.sh-nav-landing .sh-nav-light .sh-nav-cta {
+  background: linear-gradient(135deg, #18a9df, #5f8de2);
+  box-shadow: 0 10px 28px rgba(32,148,205,.2);
+}
+.sh-nav-landing .sh-nav-light .sh-nav-mobile-toggle {
+  color: #36566f;
+  border-color: rgba(42,111,167,.14);
+  background: rgba(226,243,252,.72);
+}
+.sh-nav-landing .sh-nav-light .sh-nav-mobile-menu {
+  border-color: rgba(42,111,167,.1);
+  background: rgba(250,253,255,.97);
+}
+
+@media (max-width: 899px) {
+  .sh-nav-landing { padding: 10px 10px 0; }
+  .sh-nav-landing .sh-brand { min-width: auto; }
 }

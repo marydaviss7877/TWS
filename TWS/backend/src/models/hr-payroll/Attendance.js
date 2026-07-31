@@ -282,7 +282,8 @@ const attendanceSchema = new mongoose.Schema({
     device: String
   }]
 }, {
-  timestamps: true
+  timestamps: true,
+  collection: 'employee_attendances'
 });
 
 // Indexes for performance

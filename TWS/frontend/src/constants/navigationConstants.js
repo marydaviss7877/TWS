@@ -12,7 +12,9 @@ import {
   PencilSquareIcon,
   BookOpenIcon,
   TableCellsIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
+import { tenantPath } from '../shared/utils/tenantRoutes';
 
 // ---------------------------------------------------------------------------
 // NAV ACTIONS — single source of truth used by CommandPalette + TopBar search
@@ -36,6 +38,7 @@ export const getNavigationActions = (tenantSlug, userRole = '') => {
     { id: 'analytics',    label: 'Analytics',       icon: ChartBarIcon,              category: 'Navigate', path: `/${tenantSlug}/org/analytics` },
     { id: 'documents',    label: 'Documents',       icon: PencilSquareIcon,          category: 'Navigate', path: `/${tenantSlug}/org/documents` },
     { id: 'sheets',       label: 'Sheets',          icon: TableCellsIcon,            category: 'Navigate', path: `/${tenantSlug}/org/sheets` },
+    { id: 'portfolio',    label: 'Portfolio',       icon: PhotoIcon,                 category: 'Navigate', path: `/${tenantSlug}/org/portfolio` },
     { id: 'employee-profile', label: 'My Profile',  icon: UserIcon,                  category: 'Navigate', path: `/${tenantSlug}/org/employee/profile` },
     { id: 'employee-attendance', label: 'Attendance', icon: ClockIcon,               category: 'Navigate', path: `/${tenantSlug}/org/employee/attendance` },
     { id: 'employee-leave', label: 'Leave Requests', icon: BriefcaseIcon,            category: 'Navigate', path: `/${tenantSlug}/org/employee/leave` },
@@ -51,15 +54,23 @@ export const getNavigationActions = (tenantSlug, userRole = '') => {
     { id: 'new-document',   label: 'New Document',     icon: PencilSquareIcon,          category: 'Quick Create', path: `/${tenantSlug}/org/documents/new` },
     { id: 'new-sheet',      label: 'New Sheet',        icon: TableCellsIcon,            category: 'Quick Create', path: `/${tenantSlug}/org/sheets/new` },
   ];
+  const scopedActions = actions.map(action => ({
+    ...action,
+    path: tenantPath(
+      tenantSlug,
+      'org',
+      ...action.path.replace(/^\/[^/]+\/org\/?/, '').split('/').filter(Boolean)
+    ),
+  }));
   if (isAdminUser) {
-    const nonEmployeeActions = actions.filter((action) => !action.id.startsWith('employee-'));
+    const nonEmployeeActions = scopedActions.filter((action) => !action.id.startsWith('employee-'));
     const settingsIndex = nonEmployeeActions.findIndex((action) => action.id === 'settings');
     const adminProfileAction = {
       id: 'profile',
       label: 'My Profile',
       icon: UserIcon,
       category: 'Navigate',
-      path: `/${tenantSlug}/org/profile`,
+      path: tenantPath(tenantSlug, 'org', 'profile'),
     };
     if (settingsIndex >= 0) {
       nonEmployeeActions.splice(settingsIndex, 0, adminProfileAction);
@@ -67,7 +78,7 @@ export const getNavigationActions = (tenantSlug, userRole = '') => {
     }
     return [adminProfileAction, ...nonEmployeeActions];
   }
-  return actions;
+  return scopedActions;
 };
 
 // ---------------------------------------------------------------------------
@@ -154,7 +165,7 @@ export const SIDEBAR_SECTIONS = [
   { label: 'People',   keys: ['hr', 'users', 'departments', 'roles', 'permissions'] },
   { label: 'Finance',  keys: ['finance', 'payroll'] },
   { label: 'Insights', keys: ['analytics', 'audit'] },
-  { label: 'Content',  keys: ['documents', 'sheets'] },
+  { label: 'Content',  keys: ['documents', 'sheets', 'portfolio'] },
   { label: 'Settings', keys: ['settings', 'rulebook'] },
 ];
 
@@ -170,6 +181,7 @@ export const APP_METADATA = {
   analytics:          { gradient: 'from-cyan-500 to-sky-600',        description: 'Reports & insights' },
   documents:          { gradient: 'from-slate-500 to-slate-600',     description: 'Files & approvals' },
   sheets:             { gradient: 'from-lime-500 to-green-600',      description: 'Spreadsheets & Excel files' },
+  portfolio:          { gradient: 'from-fuchsia-500 to-violet-600',  description: 'Case studies & showcase media' },
   clients:            { gradient: 'from-sky-500 to-blue-600',        description: 'Client management' },
   users:              { gradient: 'from-pink-500 to-rose-500',       description: 'Team members' },
   departments:        { gradient: 'from-orange-500 to-amber-500',    description: 'Org structure' },
@@ -199,6 +211,7 @@ export const MENU_KEY_PERMISSION_MODULE = {
   payroll:      'payroll',
   documents:    'documents',
   sheets:       'sheets',
+  portfolio:    'portfolio',
   analytics:    'analytics',
   nucleus:      'nucleus',
   clients:      'clients',

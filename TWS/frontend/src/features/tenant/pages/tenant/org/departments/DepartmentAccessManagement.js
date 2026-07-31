@@ -201,7 +201,7 @@ export default function DepartmentAccessManagement() {
   return (
     <div className="px-4 py-6 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           <BuildingOfficeIcon className="w-6 h-6" />
           Department Access
         </h1>
@@ -216,15 +216,15 @@ export default function DepartmentAccessManagement() {
       </div>
 
       {grantOpen && (
-        <form onSubmit={handleGrant} className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h3 className="font-medium text-gray-900 mb-3">Grant department access</h3>
+        <form onSubmit={handleGrant} className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h3 className="font-medium text-gray-900 dark:text-white mb-3">Grant department access</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
             <div>
-              <label className="block text-sm text-gray-600 mb-1">User</label>
+              <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">User</label>
               <select
                 value={grantUserId}
                 onChange={(e) => setGrantUserId(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2"
                 required
               >
                 <option value="">Select user</option>
@@ -240,11 +240,11 @@ export default function DepartmentAccessManagement() {
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Department</label>
+              <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Department</label>
               <select
                 value={grantDepartmentId}
                 onChange={(e) => setGrantDepartmentId(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2"
                 required
               >
                 <option value="">Select department</option>
@@ -256,12 +256,12 @@ export default function DepartmentAccessManagement() {
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Expires (optional)</label>
+              <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Expires (optional)</label>
               <input
                 type="datetime-local"
                 value={grantExpiresAt}
                 onChange={(e) => setGrantExpiresAt(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2"
               />
             </div>
           </div>
@@ -269,7 +269,7 @@ export default function DepartmentAccessManagement() {
             <button type="submit" disabled={submitting} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50">
               {submitting ? 'Granting...' : 'Grant'}
             </button>
-            <button type="button" onClick={() => setGrantOpen(false)} className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100">
+            <button type="button" onClick={() => setGrantOpen(false)} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
               Cancel
             </button>
           </div>
@@ -278,15 +278,15 @@ export default function DepartmentAccessManagement() {
 
       {editExpiryId != null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setEditExpiryId(null)}>
-          <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-medium text-gray-900 mb-3">Edit expiry</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl p-4 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-medium text-gray-900 dark:text-white mb-3">Edit expiry</h3>
             <input
               type="datetime-local"
               value={editExpiryValue}
               onChange={(e) => setEditExpiryValue(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-3"
+              className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 mb-3"
             />
-            <p className="text-xs text-gray-500 mb-3">Leave empty to clear expiry (no expiration).</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Leave empty to clear expiry (no expiration).</p>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -299,7 +299,7 @@ export default function DepartmentAccessManagement() {
               <button
                 type="button"
                 onClick={() => { setEditExpiryId(null); setEditExpiryValue(''); }}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 Cancel
               </button>
@@ -308,22 +308,22 @@ export default function DepartmentAccessManagement() {
         </div>
       )}
 
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Level</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Expires</th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">User</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Department</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Level</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Expires</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {list.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                   <EmptyState
                     title="No department access records"
                     message="Grant access to assign users to departments."
@@ -335,7 +335,7 @@ export default function DepartmentAccessManagement() {
               list.map((row) => (
                 <tr key={row._id}>
                   <td className="px-4 py-2">
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {row.userId?.fullName || row.userId?.email || row.userId || '—'}
                     </span>
                   </td>
@@ -345,14 +345,14 @@ export default function DepartmentAccessManagement() {
                   <td className="px-4 py-2">{row.accessLevel || 'viewer'}</td>
                   <td className="px-4 py-2">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                      row.status === 'active' ? 'bg-green-100 text-green-800' :
-                      row.status === 'suspended' ? 'bg-yellow-100 text-yellow-800' :
-                      row.status === 'revoked' || row.status === 'expired' ? 'bg-gray-100 text-gray-800' : 'bg-gray-100'
+                      row.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                      row.status === 'suspended' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                      row.status === 'revoked' || row.status === 'expired' ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' : 'bg-gray-100 dark:bg-gray-700'
                     }`}>
                       {row.status}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-sm text-gray-600">
+                  <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">
                     {row.expiresAt ? new Date(row.expiresAt).toLocaleDateString() : '—'}
                   </td>
                   <td className="px-4 py-2 text-right">
@@ -360,7 +360,7 @@ export default function DepartmentAccessManagement() {
                       <button
                         type="button"
                         onClick={() => openEditExpiry(row)}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                         title="Change expiry"
                       >
                         <PencilSquareIcon className="w-4 h-4" />

@@ -21,6 +21,7 @@ import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import tenantProjectApiService from './services/tenantProjectApiService';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
+import ProfileAvatar from '../../../../../../shared/components/ui/ProfileAvatar';
 
 /* ─── constants ─────────────────────────────────────────────────────────────── */
 const STATUS_COLOR = {
@@ -38,14 +39,6 @@ const PRIORITY_DOT = {
 };
 
 /* ─── helpers ────────────────────────────────────────────────────────────────── */
-function initials(name = '') {
-  return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
-}
-function avatarBg(name = '') {
-  const colors = ['from-violet-500 to-purple-600','from-blue-500 to-indigo-600','from-emerald-500 to-teal-600','from-rose-500 to-pink-600','from-amber-500 to-orange-600','from-cyan-500 to-sky-600'];
-  let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return colors[Math.abs(h) % colors.length];
-}
 function fmtTime(d) {
   if (!d) return '';
   return new Date(d).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -86,7 +79,7 @@ function inferTaskEvents(task) {
 }
 
 /* ─── ActivityItem ─────────────────────────────────────────────────────────── */
-function ActivityItem({ item }) {
+function ActivityItem({ item, tenantSlug }) {
   const { type, ts, task, milestone, cr } = item;
 
   let Icon, iconBg, headline, subline;
@@ -154,9 +147,12 @@ function ActivityItem({ item }) {
       {/* Right: actor + time */}
       <div className="flex items-center gap-2 shrink-0">
         {actorName && (
-          <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${avatarBg(actorName)} flex items-center justify-center text-white text-[9px] font-bold`} title={actorName}>
-            {initials(actorName)}
-          </div>
+          <ProfileAvatar
+            person={task?.assignee}
+            tenantSlug={tenantSlug}
+            className="w-6 h-6 rounded-full text-[9px]"
+            alt={`${actorName} profile`}
+          />
         )}
         <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">{fmtTime(ts)}</span>
       </div>
@@ -292,7 +288,7 @@ const ProjectActivityView = () => {
               {/* Items */}
               <div className="glass-card-premium rounded-xl px-4 divide-y divide-gray-100 dark:divide-gray-800">
                 {byDay[key].map((item, i) => (
-                  <ActivityItem key={`${key}-${i}`} item={item} />
+                  <ActivityItem key={`${key}-${i}`} item={item} tenantSlug={tenantSlug} />
                 ))}
               </div>
             </div>

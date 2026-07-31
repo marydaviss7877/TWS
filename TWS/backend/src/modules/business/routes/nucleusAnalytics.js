@@ -155,7 +155,10 @@ router.get(
       if (!deliverable) continue;
 
       // Check if all internal steps are approved
-      const allInternalApproved = await Approval.areAllInternalStepsApproved(deliverable._id);
+      const allInternalApproved = await Approval.areAllInternalStepsApproved(
+        deliverable._id,
+        { orgId: approval.orgId, tenantId: approval.tenantId }
+      );
       
       if (allInternalApproved) {
         const project = await Project.findById(deliverable.project_id);

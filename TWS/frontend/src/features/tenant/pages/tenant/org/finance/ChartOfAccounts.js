@@ -20,6 +20,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 
 const ChartOfAccounts = () => {
   const tenantSlug = useTenantSlug();
@@ -708,14 +709,7 @@ const ChartOfAccounts = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading chart of accounts...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Structuring your accounts…" className="min-h-[40vh] bg-transparent" />;
   }
 
   const flatAccounts = flattenAccounts(accounts);
@@ -1209,4 +1203,3 @@ const ChartOfAccounts = () => {
 };
 
 export default ChartOfAccounts;
-

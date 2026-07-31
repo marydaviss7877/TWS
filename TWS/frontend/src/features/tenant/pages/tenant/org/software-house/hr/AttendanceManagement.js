@@ -15,6 +15,7 @@ import {
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../../../app/providers/TenantAuthContext';
 import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
+import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
 
 const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -330,11 +331,7 @@ const AttendanceManagement = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
-      </div>
-    );
+    return <LoadingSpinner message="Aligning attendance timelines…" className="min-h-[40vh] bg-transparent" />;
   }
 
   return (

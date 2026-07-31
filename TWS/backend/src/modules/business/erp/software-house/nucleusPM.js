@@ -555,7 +555,8 @@ router.post(
     if (approval.step_number > 1) {
       const previousApproved = await Approval.isPreviousStepApproved(
         approval.deliverable_id,
-        approval.step_number
+        approval.step_number,
+        { orgId: approval.orgId, tenantId: approval.tenantId }
       );
 
       if (!previousApproved) {
@@ -570,7 +571,10 @@ router.post(
     await approval.approve(notes);
 
     // Update deliverable status if all internal steps approved
-    const allInternalApproved = await Approval.areAllInternalStepsApproved(approval.deliverable_id);
+    const allInternalApproved = await Approval.areAllInternalStepsApproved(
+      approval.deliverable_id,
+      { orgId: approval.orgId, tenantId: approval.tenantId }
+    );
     if (allInternalApproved) {
       const deliverable = await Deliverable.findById(approval.deliverable_id);
       if (deliverable.status === 'ready_approval') {

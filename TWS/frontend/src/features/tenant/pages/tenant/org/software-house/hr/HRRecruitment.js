@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
+import LoadingSpinner from '../../../../../../../shared/components/feedback/LoadingSpinner';
 
 const HRRecruitment = () => {
   const tenantSlug = useTenantSlug();
@@ -79,14 +80,7 @@ const HRRecruitment = () => {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading recruitment data...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Building the candidate pipeline…" className="min-h-[40vh] bg-transparent" />;
   }
 
   return (
@@ -175,4 +169,3 @@ const HRRecruitment = () => {
 };
 
 export default HRRecruitment;
-

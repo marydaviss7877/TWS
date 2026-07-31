@@ -9,10 +9,10 @@
     <!-- CSP temporarily disabled for development - will be re-enabled for production -->
     <!-- <meta http-equiv="Content-Security-Policy" content="..." /> -->
     <title>WolfStack Project Management Portal</title>
-    <!-- TWS Finance page: Sora (display), DM Sans (body) -->
+    <!-- Portal typography: Plus Jakarta Sans, weights 300–800 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300..800&display=swap" rel="stylesheet" />
     <script>
       // Apply tenant theme immediately before React hydration to prevent flash
       (function() {
@@ -34,8 +34,8 @@
                 const primaryColor = themeData.customColors?.primary || themeData.colors?.primary || '#6366F1';
                 const secondaryColor = themeData.customColors?.secondary || themeData.colors?.secondary || '#10B981';
                 const accentColor = themeData.customColors?.accent || themeData.colors?.accent || '#A855F7';
-                const headingFont = themeData.fonts?.heading || 'Geist';
-                const bodyFont = themeData.fonts?.body || 'Inter';
+                const headingFont = "'Plus Jakarta Sans', 'Inter', -apple-system, 'Segoe UI', sans-serif";
+                const bodyFont = "'Plus Jakarta Sans', 'Inter', -apple-system, 'Segoe UI', sans-serif";
                 
                 // Apply basic theme variables immediately
                 const root = document.documentElement;

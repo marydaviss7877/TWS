@@ -14,7 +14,18 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useTenantSlug } from '../../../shared/hooks/useTenantSlug';
-import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import {
+    ArrowRightOnRectangleIcon,
+    BellIcon,
+    CheckIcon,
+    ChevronDoubleLeftIcon,
+    ChevronDoubleRightIcon,
+    ChevronRightIcon,
+    ComputerDesktopIcon,
+    MoonIcon,
+    SunIcon,
+    UserCircleIcon,
+} from '@heroicons/react/24/outline';
 import { useTenantAuth } from '../../../app/providers/TenantAuthContext';
 import { useTheme } from '../../../app/providers/ThemeContext';
 import { getIndustryMenuItems } from '../utils/industryMenuBuilder';
@@ -30,11 +41,20 @@ import CommandPalette from './CommandPalette';
 import OdooTopBar from './OdooTopBar';
 import BookmarkBar from './BookmarkBar';
 import SidebarNav from '../../../shared/components/navigation/SidebarNav';
-import Breadcrumbs from '../../../shared/components/navigation/Breadcrumbs';
 import IdleSessionGuard from './IdleSessionGuard';
 import { TenantPermissionsProvider } from '../contexts/TenantPermissionsContext';
 import { Sheet, SheetContent } from '../../../components/ui/Sheet/Sheet';
+import { Avatar, AvatarFallback } from '../../../components/ui/Avatar/Avatar';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '../../../components/ui/DropdownMenu/DropdownMenu';
 import axiosInstance from '../../../shared/utils/axiosInstance';
+import { tenantPath } from '../../../shared/utils/tenantRoutes';
 import './TenantOrgLayout.css';
 import '../styles/tenant-theme.css';
 import '../styles/tenant-tokens.css';
@@ -44,20 +64,22 @@ const TenantOrgLayout = ({ children }) => {
     const tenantSlug = useTenantSlug();
     const navigate   = useNavigate();
     const location   = useLocation();
-    // Works for both clean URLs (/home) and legacy path-based (/slug/org/home)
-    const isHomeRoute = location.pathname === '/home' || location.pathname === `/${tenantSlug}/org/home`;
-
+    const isProjectsRoute = location.pathname.includes('/org/projects') || location.pathname === '/projects' || location.pathname.startsWith('/projects/');
+    const isSkyWorkspaceRoute = isProjectsRoute || location.pathname.endsWith('/org/home') || location.pathname === '/home';
     // ── Auth / Theme ──────────────────────────────────────────────────────────
     const { user, logout, tenant, isAuthenticated, loading: authLoading } = useTenantAuth();
     const normalizedRole = String(user?.role || '').toLowerCase();
     const isAdminUser = ['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner']
         .includes(normalizedRole);
-    const { isDarkMode, themeTransition } = useTheme();
+    const { isDarkMode, themeTransition, setTheme, resetToSystemTheme, isSystemTheme } = useTheme();
     const themeStyles   = useThemeStyles();
     const { isFullscreen, toggleFullscreen, exitFullscreen } = useFullscreen();
 
     // ── UI state ──────────────────────────────────────────────────────────────
     const [mobileMenuOpen,       setMobileMenuOpen]       = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+        try { return localStorage.getItem('tws-sidebar-collapsed') === 'true'; } catch (_) { return false; }
+    });
     const [commandPaletteOpen,   setCommandPaletteOpen]   = useState(false);
     const [commandPaletteQuery,  setCommandPaletteQuery]  = useState('');
     const mainContentRef = useRef(null);
@@ -170,6 +192,14 @@ const TenantOrgLayout = ({ children }) => {
         });
     };
 
+    const toggleSidebar = () => {
+        setSidebarCollapsed(prev => {
+            const next = !prev;
+            try { localStorage.setItem('tws-sidebar-collapsed', String(next)); } catch (_) {}
+            return next;
+        });
+    };
+
     // ── Keyboard shortcuts ────────────────────────────────────────────────────
     useKeyboardShortcuts({
         'ctrl+k': (e) => { e.preventDefault(); setCommandPaletteOpen(true); },
@@ -198,36 +228,13 @@ const TenantOrgLayout = ({ children }) => {
     return (
         <TenantThemeProvider>
         <div
-            className={`tenant-org-layout tenant-portal h-screen flex flex-col relative overflow-hidden bg-gradient-to-br from-clean-light-pure via-clean-light-soft to-primary-50/30 dark:from-glass-dark-deepest dark:via-glass-dark-deep dark:to-glass-dark-base ${themeTransition ? 'theme-transition' : ''}`}
+            className={`tenant-org-layout tenant-portal ${isSkyWorkspaceRoute ? 'projects-sky-shell' : ''} h-screen flex flex-col relative overflow-hidden bg-gradient-to-br from-clean-light-pure via-clean-light-soft to-primary-50/30 dark:from-glass-dark-deepest dark:via-glass-dark-deep dark:to-glass-dark-base ${themeTransition ? 'theme-transition' : ''}`}
             data-industry={tenant?.erpCategory || 'business'}
         >
             {/* Subtle background pattern */}
             <div className="absolute inset-0 hidden dark:block opacity-10 pointer-events-none z-0">
                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnptMC0xOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnpNMCA1NGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnptMTggMGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjEiLz48L2c+PC9zdmc+')] " />
             </div>
-
-            {/* ── Top Bar (Odoo-style) ─────────────────────────────────────────── */}
-            <div className="flex-shrink-0 z-30 relative">
-                <OdooTopBar
-                    orgLogoUrl={tenant?.logoUrl || tenant?.logo}
-                    orgName={tenant?.name}
-                    activeApp={activeApp}
-                    user={user}
-                    onProfile={() => navigate(`/${tenantSlug}/org/${isAdminUser ? 'profile' : 'employee/profile'}`)}
-                    onLogout={logout}
-                    onSearch={() => setCommandPaletteOpen(true)}
-                    isFullscreen={isFullscreen}
-                    onFullscreenToggle={toggleFullscreen}
-                    onMobileMenu={() => setMobileMenuOpen(true)}
-                />
-            </div>
-
-            {/* ── Bookmark Bar (Chrome-style, below top bar) ────────────────────── */}
-            <BookmarkBar
-                items={favoriteApps}
-                activeAppKey={activeAppKey}
-                onRemove={toggleFavorite}
-            />
 
             {/* ── Mobile sidebar sheet (hamburger → full module list) ─────────── */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -264,20 +271,139 @@ const TenantOrgLayout = ({ children }) => {
                 </SheetContent>
             </Sheet>
 
-            {/* ── Main content (full width — no sidebar) ──────────────────────── */}
+            {/* ── Enterprise workspace: module sidebar + content ─────────────── */}
             <div className="flex flex-1 overflow-hidden relative">
+                <aside className={`tws-enterprise-sidebar hidden md:flex ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
+                    <div className="tws-enterprise-sidebar__brand">
+                        <button
+                            type="button"
+                            className="tws-enterprise-sidebar__identity"
+                            onClick={() => navigate(tenantPath(tenantSlug, 'org', 'home'))}
+                            title={tenant?.name || 'Organization'}
+                        >
+                            <span className="tws-enterprise-sidebar__mark">
+                                {(tenant?.name || 'W').charAt(0).toUpperCase()}
+                            </span>
+                            <span className="tws-enterprise-sidebar__brand-copy">
+                                <strong>{tenant?.name || 'Organization'}</strong>
+                                <small>Software House OS</small>
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            className="tws-sidebar-collapse"
+                            onClick={toggleSidebar}
+                            aria-label={sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+                            title={sidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+                        >
+                            {sidebarCollapsed
+                                ? <ChevronDoubleRightIcon />
+                                : <ChevronDoubleLeftIcon />}
+                        </button>
+                    </div>
+                    <div className="tws-enterprise-sidebar__label">Workspace</div>
+                    <SidebarNav
+                        filteredMenuItems={filteredMenuItems}
+                        expandedMenus={expandedMenus}
+                        toggleMenuExpansion={toggleMenuExpansion}
+                        isDarkMode={isDarkMode}
+                        themeStyles={themeStyles}
+                        collapsed={sidebarCollapsed}
+                    />
+                    {!sidebarCollapsed && favoriteApps.length > 0 && (
+                        <div className="tws-enterprise-sidebar__favorites">
+                            <BookmarkBar
+                                items={favoriteApps}
+                                activeAppKey={activeAppKey}
+                                onRemove={toggleFavorite}
+                            />
+                        </div>
+                    )}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                type="button"
+                                className={`tws-sidebar-account ${sidebarCollapsed ? 'is-collapsed' : ''}`}
+                                aria-label="Open account menu"
+                            >
+                                <Avatar className="h-8 w-8 shrink-0">
+                                    <AvatarFallback className="tws-sidebar-account__avatar text-[11px] font-bold">
+                                        {(user?.fullName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                                {!sidebarCollapsed && (
+                                    <>
+                                        <span className="tws-sidebar-account__copy">
+                                            <strong>{user?.fullName || user?.email || 'User'}</strong>
+                                            <small>{user?.email || String(user?.role || 'member').replace(/_/g, ' ')}</small>
+                                        </span>
+                                        <ChevronRightIcon className="tws-sidebar-account__chevron" />
+                                    </>
+                                )}
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            side="top"
+                            align="start"
+                            sideOffset={8}
+                            collisionPadding={10}
+                            className="tws-sidebar-profile-menu"
+                        >
+                            <DropdownMenuLabel className="tws-sidebar-profile-menu__user">
+                                <Avatar className="h-9 w-9 shrink-0">
+                                    <AvatarFallback className="tws-sidebar-account__avatar text-[11px] font-bold">
+                                        {(user?.fullName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <span><strong>{user?.fullName || 'User'}</strong><small>{user?.email}</small></span>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => navigate(tenantPath(tenantSlug, 'org', isAdminUser ? 'profile' : 'employee/profile'))} className="tws-sidebar-profile-menu__item">
+                                <UserCircleIcon /><span>Account</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(tenantPath(tenantSlug, 'org', 'settings', 'notifications'))} className="tws-sidebar-profile-menu__item">
+                                <BellIcon /><span>Notifications</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="tws-sidebar-profile-menu__section">Theme</DropdownMenuLabel>
+                            <DropdownMenuItem onSelect={() => setTheme('light')} className="tws-sidebar-profile-menu__item">
+                                <SunIcon /><span>Light</span>{!isDarkMode && !isSystemTheme && <CheckIcon className="menu-check" />}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setTheme('dark')} className="tws-sidebar-profile-menu__item">
+                                <MoonIcon /><span>Dark</span>{isDarkMode && !isSystemTheme && <CheckIcon className="menu-check" />}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={resetToSystemTheme} className="tws-sidebar-profile-menu__item">
+                                <ComputerDesktopIcon /><span>System</span>{isSystemTheme && <CheckIcon className="menu-check" />}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={logout} className="tws-sidebar-profile-menu__item is-danger">
+                                <ArrowRightOnRectangleIcon /><span>Log out</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </aside>
                 <div className="flex-1 flex flex-col min-w-0 relative z-10">
+                    {/* Workspace utility header: scoped to content, never above org navigation */}
+                    <div className="tws-workspace-header flex-shrink-0 z-30 relative">
+                        <OdooTopBar
+                            orgLogoUrl={tenant?.logoUrl || tenant?.logo}
+                            orgName={tenant?.name}
+                            activeApp={activeApp}
+                            user={user}
+                            onProfile={() => navigate(tenantPath(tenantSlug, 'org', isAdminUser ? 'profile' : 'employee/profile'))}
+                            onLogout={logout}
+                            onSearch={() => setCommandPaletteOpen(true)}
+                            isFullscreen={isFullscreen}
+                            onFullscreenToggle={toggleFullscreen}
+                            onMobileMenu={() => setMobileMenuOpen(true)}
+                            showAccount={false}
+                        />
+                    </div>
                     <main
                         ref={mainContentRef}
-                        className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 glass-scrollbar transition-all duration-500"
+                        className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 bg-[#dce7ff]/52 dark:bg-transparent glass-scrollbar transition-all duration-500"
                     >
                         <div className="px-2 sm:px-3 md:px-4 lg:px-5 pb-2 sm:pb-3 md:pb-4 lg:pb-5 pt-0 relative animate-fade-in">
-                            <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-[#cddcff]/100 via-[#dce7ff]/78 to-transparent dark:hidden" />
-                            {!isHomeRoute && (
-                                <div className="-mx-2 sm:-mx-3 md:-mx-4 lg:-mx-5 mb-1 px-3 sm:px-4 md:px-5 py-1.5 border-b border-[#cfdbf6]/55 bg-gradient-to-b from-[#dde8ff]/48 via-[#e8efff]/30 to-transparent backdrop-blur-[1px] dark:border-gray-700/70 dark:bg-gray-900/70">
-                                    <Breadcrumbs className="text-xs text-slate-600/95 dark:text-gray-400" />
-                                </div>
-                            )}
                             <TenantNavProvider value={{
                                 filteredMenuItems,
                                 activeAppKey,

@@ -7,11 +7,11 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        'sans': ['Inter', 'system-ui', 'sans-serif'],
-        'heading': ['Geist', 'Inter', 'system-ui', 'sans-serif'],
-        'mono': ['JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', 'monospace'],
-        'sora': ['Sora', 'system-ui', 'sans-serif'],
-        'dm-sans': ['DM Sans', 'system-ui', 'sans-serif'],
+        'sans': ['Plus Jakarta Sans', 'Inter', '-apple-system', 'Segoe UI', 'sans-serif'],
+        'heading': ['Plus Jakarta Sans', 'Inter', '-apple-system', 'Segoe UI', 'sans-serif'],
+        'mono': ['Plus Jakarta Sans', 'Inter', '-apple-system', 'Segoe UI', 'sans-serif'],
+        'sora': ['Plus Jakarta Sans', 'Inter', '-apple-system', 'Segoe UI', 'sans-serif'],
+        'dm-sans': ['Plus Jakarta Sans', 'Inter', '-apple-system', 'Segoe UI', 'sans-serif'],
       },
       colors: {
         // Premium Color Palette

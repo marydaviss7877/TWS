@@ -17,6 +17,7 @@ import LoadingSpinner from '../../../../../../../shared/components/feedback/Load
 import ErrorState from '../../../../../../../shared/components/feedback/ErrorState';
 import EmptyState from '../../../../../../../shared/components/feedback/EmptyState';
 import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
+import ProfileAvatar from '../../../../../../../shared/components/ui/ProfileAvatar';
 
 // Lightweight inline invite modal — no extra file needed
 const InviteModal = ({ tenantSlug, onClose }) => {
@@ -327,11 +328,7 @@ const EmployeeList = () => {
                   <tr key={employee._id || employee.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center">
-                          <span className="text-white font-bold text-sm">
-                            {employee.name?.charAt(0) || employee.email?.charAt(0) || 'U'}
-                          </span>
-                        </div>
+                        <ProfileAvatar person={employee} tenantSlug={tenantSlug} className="w-10 h-10 rounded-xl" />
                         <span className="text-sm font-bold text-gray-900 dark:text-white">
                           {employee.name || employee.fullName || 'N/A'}
                         </span>

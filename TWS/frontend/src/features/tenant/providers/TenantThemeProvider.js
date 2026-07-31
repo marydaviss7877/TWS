@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { DEFAULT_THEME, generateColorShades, loadFontOnDemand } from '../utils/themeConfig';
+import { isSubdomainContext } from '../../../shared/utils/subdomain';
 
 const TenantThemeContext = createContext();
 
@@ -100,7 +101,12 @@ export const TenantThemeProvider = ({ children, tenantSlug }) => {
   const hasAppliedTheme = useRef(false);
 
   // Check if we're in tenant portal route
-  const isTenantPortalRoute = tenantSlug && location?.pathname?.startsWith(`/${tenantSlug}/org`);
+  const isTenantPortalRoute = Boolean(
+    tenantSlug && (
+      location?.pathname?.startsWith(`/${tenantSlug}/org`) ||
+      isSubdomainContext()
+    )
+  );
 
   // Apply theme synchronously on mount if we have cached theme
   useEffect(() => {

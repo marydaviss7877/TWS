@@ -51,8 +51,8 @@
   --theme-accent-950: var(--tenant-accent-950, #3b0764);
 
   /* Font Variables */
-  --theme-heading-font: var(--tenant-heading-font, 'Geist', 'Inter', system-ui, sans-serif);
-  --theme-body-font: var(--tenant-body-font, 'Inter', system-ui, sans-serif);
+  --theme-heading-font: var(--portal-font-family);
+  --theme-body-font: var(--portal-font-family);
 }
 
 /* Also define in .tenant-portal for scoped access (inherits from :root) */

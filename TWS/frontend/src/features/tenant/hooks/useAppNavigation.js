@@ -29,10 +29,9 @@ function write(key, value) {
 export function getActiveAppKeyFromPath(pathname) {
   const segments = pathname.split('/').filter(Boolean);
   const orgIdx = segments.indexOf('org');
-  if (orgIdx === -1) return null;
-
-  const after = segments.slice(orgIdx + 1);
+  const after = orgIdx >= 0 ? segments.slice(orgIdx + 1) : segments;
   if (!after.length) return null;
+  if (after[0] === 'home') return 'dashboard';
 
   // /org/software-house/hr → 'hr'
   if (after[0] === 'software-house' && after[1]) return after[1];

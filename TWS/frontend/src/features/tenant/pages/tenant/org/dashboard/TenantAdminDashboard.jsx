@@ -30,9 +30,9 @@ import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext
 import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { softwareHouseApi } from '../../../../../../shared/services/industry/softwareHouseApi';
-import Breadcrumbs from '../../../../../../shared/components/navigation/Breadcrumbs';
 import './TenantAdminDashboard.css';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import ProfileAvatar from '../../../../../../shared/components/ui/ProfileAvatar';
 
 const STATUS_CLASS = {
   completed: 'tad-status tad-status--completed',
@@ -44,24 +44,9 @@ const STATUS_CLASS = {
   cancelled: 'tad-status tad-status--cancelled',
 };
 
-const AVATAR_PALETTE = ['#2A3EEB', '#0E9C8F', '#C8790E', '#5C6CFF', '#D8434B', '#7C4DE0'];
-
 function statusAvatarClass(status) {
   const key = status || '';
   return STATUS_CLASS[key] || 'tad-status tad-status--default';
-}
-
-function avatarColor(seed) {
-  const s = String(seed || '');
-  let hash = 0;
-  for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
-  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
-}
-
-function initials(name) {
-  const parts = String(name || '?').trim().split(/\s+/);
-  if (!parts.length || !parts[0]) return '?';
-  return parts.length > 1 ? `${parts[0][0]}${parts[1][0]}`.toUpperCase() : parts[0].slice(0, 2).toUpperCase();
 }
 
 function greeting() {
@@ -614,8 +599,6 @@ export default function TenantAdminDashboard() {
   return (
     <div className="tad-dashboard">
       <div className="tad-dashboard__shell tad-dashboard__stack tad-dashboard__shell--enter">
-        <Breadcrumbs className="tad-dashboard__breadcrumbs" />
-
         <div className="tad-dashboard__hero">
           <header className="tad-dashboard__header">
             <div className="tad-dashboard__header-main">
@@ -1127,7 +1110,7 @@ export default function TenantAdminDashboard() {
                 <ul className="tad-team-list">
                   {teamMembers.slice(0, 6).map((tm) => (
                     <li key={tm._id} className="tad-team-row">
-                      <span className="tad-team-row__avatar" style={{ background: avatarColor(tm._id || tm.email) }}>{initials(tm.fullName || tm.email)}</span>
+                      <ProfileAvatar person={tm} tenantSlug={tenantSlug} className="tad-team-row__avatar" fallbackClassName="" />
                       <span className="tad-team-row__body">
                         <span className="tad-team-row__name">{tm.fullName || tm.email || 'Team member'}</span>
                         <span className="tad-team-row__role capitalize">{fmtStatus(tm.role)}</span>

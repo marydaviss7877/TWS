@@ -13,6 +13,7 @@ import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../../../components/ui/Dialog/Dialog';
 import { Button } from '../../../../../../components/ui/Button/Button';
 import { Input } from '../../../../../../components/ui/Input/Input';
+import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 
 const EMPTY_ROLE_FORM = { name: '', slug: '', description: '', permissions: [] };
 
@@ -289,14 +290,7 @@ const RolesList = () => {
   );
 
   if (catalogLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto" />
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading role catalog…</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Resolving roles and access…" className="min-h-[40vh] bg-transparent" />;
   }
 
   return (

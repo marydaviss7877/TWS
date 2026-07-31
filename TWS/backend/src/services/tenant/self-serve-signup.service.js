@@ -4,7 +4,6 @@ const TenantRole = require('../../models/tenant/TenantRole');
 const TenantUser = require('../../models/tenant/TenantUser');
 const Organization = require('../../models/org/Organization');
 const emailVerificationService = require('../integrations/email-verification.service');
-const tenantProvisioningService = require('../tenantProvisioningService');
 const emailService = require('../integrations/email.service');
 const masterERPService = require('../masterERPService');
 const validator = require('validator');
@@ -19,152 +18,28 @@ const normalizeSignupEmail = (email) =>
 
 class SelfServeSignupService {
   /**
-   * Step 1: Register user with email and password
+   * Step 1: Kick off signup by sending an email verification OTP.
+   * Does NOT create any User/Organization/Tenant records — those are only
+   * created after the OTP is verified, inside completeSignup().
    */
-  async registerUser(email, password, fullName, metadata = {}) {
+  async requestSignupVerification(email, metadata = {}) {
     const normalizedEmail = normalizeSignupEmail(email);
-    // Check if user already exists
+
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
-      throw new Error('User with this email already exists');
+      throw new Error('An account with this email already exists. Please log in instead.');
     }
 
-    // Validate password strength
-    this.validatePassword(password);
+    // Route through the same cooldown-aware path as an explicit resend, so
+    // repeatedly hitting this endpoint for someone else's inbox is capped at
+    // 3 emails / 30 min per address instead of issuing a fresh code every time.
+    await emailVerificationService.resendVerification(normalizedEmail, metadata);
 
-    // For self-serve signup, we need to create a temporary organization
-    // or use a placeholder orgId. The orgId will be updated when tenant is created.
-    // Get or create a temporary signup organization
-    let tempOrg;
-    try {
-      console.log('📝 Looking for temporary organization with slug: signup-temp');
-      tempOrg = await Organization.findOne({ slug: 'signup-temp' });
-
-      if (!tempOrg) {
-        console.log('📝 Temporary organization not found, creating new one...');
-        // Create temporary organization for signup users
-        tempOrg = new Organization({
-          name: 'Temporary Signup Organization',
-          slug: 'signup-temp',
-          status: 'active'
-        });
-
-        console.log('📝 Saving temporary organization...');
-        await tempOrg.save();
-        console.log('✅ Created temporary organization for signup:', tempOrg._id);
-      } else {
-        console.log('✅ Found existing temporary organization:', tempOrg._id);
-      }
-    } catch (orgError) {
-      console.error('❌ Error creating/finding temporary organization:', orgError);
-      console.error('❌ Organization error name:', orgError.name);
-      console.error('❌ Organization error message:', orgError.message);
-      console.error('❌ Organization error code:', orgError.code);
-      if (orgError.errors) {
-        console.error('❌ Organization validation errors:', JSON.stringify(orgError.errors, null, 2));
-      }
-      if (orgError.keyPattern) {
-        console.error('❌ Organization duplicate key pattern:', orgError.keyPattern);
-      }
-      if (orgError.keyValue) {
-        console.error('❌ Organization duplicate key value:', orgError.keyValue);
-      }
-
-      // If it's a duplicate key error, try to find the existing org
-      if (orgError.code === 11000) {
-        console.log('📝 Duplicate key error, trying to find existing organization...');
-        tempOrg = await Organization.findOne({ slug: 'signup-temp' });
-        if (tempOrg) {
-          console.log('✅ Found existing organization after duplicate error:', tempOrg._id);
-        } else {
-          throw new Error(`Failed to setup signup organization: Duplicate key but organization not found. ${orgError.message}`);
-        }
-      } else {
-        throw new Error(`Failed to setup signup organization: ${orgError.message}`);
-      }
-    }
-
-    // Create user account with temporary orgId (will be updated during tenant creation)
-    // Email verification is skipped - mark as verified automatically
-    try {
-      console.log('📝 Creating user with email:', normalizedEmail);
-      console.log('📝 User orgId:', tempOrg._id);
-      console.log('📝 User fullName:', fullName);
-
-      const user = new User({
-        email: normalizedEmail,
-        password,
-        fullName,
-        emailVerified: true, // Skip email verification - mark as verified
-        emailVerifiedAt: new Date(),
-        status: 'active', // Active immediately since no email verification needed
-        orgId: tempOrg._id, // Temporary orgId - will be updated when tenant is created
-        signupMetadata: {
-          source: metadata.signupSource || 'self-serve',
-          landingPage: metadata.landingPage,
-          industry: metadata.industry,
-          ipAddress: metadata.ipAddress,
-          userAgent: metadata.userAgent
-        }
-      });
-
-      console.log('📝 Saving user...');
-      await user.save();
-      console.log('✅ User created successfully:', user._id);
-
-      return {
-        user: user.toJSON(),
-        message: 'Registration successful. You can now proceed to create your company.'
-      };
-    } catch (userError) {
-      console.error('❌ Error creating user:', userError);
-      console.error('❌ User error name:', userError.name);
-      console.error('❌ User error message:', userError.message);
-      console.error('❌ User error code:', userError.code);
-      console.error('❌ User error stack:', userError.stack);
-
-      if (userError.errors) {
-        console.error('❌ User validation errors:', JSON.stringify(userError.errors, null, 2));
-        const validationErrors = Object.keys(userError.errors).map(key => ({
-          field: key,
-          message: userError.errors[key].message
-        }));
-        throw new Error(`User validation failed: ${validationErrors.map(e => `${e.field}: ${e.message}`).join(', ')}`);
-      }
-      if (userError.code === 11000) {
-        console.error('❌ Duplicate key error - user already exists');
-        throw new Error('User with this email already exists');
-      }
-      throw new Error(`Failed to create user: ${userError.message}`);
-    }
+    return { email: normalizedEmail, message: 'Verification code sent. Please check your email.' };
   }
 
   /**
-   * Step 2: Verify email with OTP
-   */
-  async verifyEmail(email, otp) {
-    const verification = await emailVerificationService.verifyOTP(email, otp);
-
-    // Update user status
-    const user = await User.findById(verification.userId);
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    user.emailVerified = true;
-    user.emailVerifiedAt = new Date();
-    user.status = 'active';
-    await user.save();
-
-    return {
-      success: true,
-      userId: user._id,
-      message: 'Email verified successfully'
-    };
-  }
-
-  /**
-   * Step 3: Check slug availability
+   * Step 2: Check slug availability
    */
   async checkSlugAvailability(slug) {
     // Validate slug format
@@ -201,169 +76,6 @@ class SelfServeSignupService {
       available: true,
       message: 'Slug is available'
     };
-  }
-
-  /**
-   * Step 4: Create tenant (after email verification)
-   * Supports industry-specific fields via metadata
-   */
-  async createTenant(userId, organizationName, slug, industry, metadata = {}) {
-    // Verify user exists (email verification is no longer required)
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new Error('User not found');
-    }
-    // Email verification check removed - users can create tenant immediately
-
-    // Check slug availability
-    const slugCheck = await this.checkSlugAvailability(slug);
-    if (!slugCheck.available) {
-      throw new Error(slugCheck.message);
-    }
-
-    // Rate limiting: max 5 tenants per email per 24 hours
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const recentTenants = await Tenant.countDocuments({
-      'contactInfo.email': user.email,
-      createdAt: { $gte: oneDayAgo }
-    });
-
-    if (recentTenants >= 5) {
-      throw new Error('Rate limit exceeded. Maximum 5 tenants per email per 24 hours.');
-    }
-
-    // Prepare tenant data
-    // IMPORTANT: Store the userId so we can update the existing user instead of creating a new admin user
-    const tenantData = {
-      name: organizationName,
-      companyName: organizationName, // Also set companyName for tenantCreation.js compatibility
-      slug: slug.toLowerCase(),
-      erpCategory: industry || 'business',
-      contactInfo: {
-        email: user.email,
-        phone: metadata.contactPhone || metadata.schoolPhone || null
-      },
-      businessInfo: {
-        industry: industry || 'business',
-        companySize: metadata.employeeCount || metadata.teamSize || '1-10'
-      },
-      ownerCredentials: {
-        username: user.email.split('@')[0],
-        password: user.password, // Will be hashed by Tenant model pre-save
-        email: user.email,
-        fullName: user.fullName
-      },
-      // Add admin fields for provisioning service (using existing user's data)
-      // Note: adminPassword will be handled by using the existing user's password
-      adminEmail: user.email,
-      adminName: user.fullName,
-      adminPassword: null, // Will be set to use existing user - see provisioning service
-      existingUserId: user._id.toString(), // Pass existing user ID to avoid creating duplicate
-      status: 'pending_setup',
-      subscription: {
-        plan: 'trial',
-        status: 'trialing',
-        price: 10,
-        currency: 'USD',
-        trialStartDate: new Date(),
-        trialEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days free trial
-      }
-    };
-
-    // Always set softwareHouseConfig for software_house industry
-    if (industry === 'software_house') {
-      tenantData.softwareHouseConfig = {
-        defaultMethodology: metadata.methodology || 'agile',
-        supportedMethodologies: metadata.methodology ? [metadata.methodology] : ['agile', 'scrum'],
-        techStack: {
-          frontend: [],
-          backend: metadata.primaryTechStack ? [metadata.primaryTechStack] : [],
-          database: [],
-          cloud: [],
-          tools: []
-        }
-      };
-    }
-
-    // Store all metadata for reference
-    tenantData.metadata = {
-      signupSource: metadata.signupSource || 'self-serve',
-      landingPage: metadata.landingPage,
-      industrySpecificData: metadata
-    };
-
-    // Generate tenantId
-    const tenantId = this.generateTenantId(organizationName);
-    tenantData.tenantId = tenantId;
-
-    // Find master ERP ID for the industry (if applicable)
-    let masterERPId = null;
-    if (industry && industry !== 'business') {
-      try {
-        const masterERPResult = await masterERPService.getMasterERPByIndustry(industry);
-        if (masterERPResult && masterERPResult.success && masterERPResult.data) {
-          masterERPId = masterERPResult.data._id;
-          console.log(`✅ Found Master ERP template for ${industry}: ${masterERPId}`);
-        }
-      } catch (error) {
-        console.warn(`⚠️  Could not find Master ERP for ${industry}, proceeding without template: ${error.message}`);
-        // Continue without master ERP template - will use default provisioning
-      }
-    }
-
-    // Create tenant using provisioning service (synchronous)
-    try {
-      console.log('📝 Starting synchronous tenant provisioning...');
-      console.log('📝 Tenant data:', JSON.stringify(tenantData, null, 2));
-
-      const result = await tenantProvisioningService.provisionTenant(
-        tenantData,
-        masterERPId, // Use master ERP ID if found
-        null  // createdBy (self-serve)
-      );
-
-      console.log('✅ Tenant provisioned successfully:', result.tenant?._id);
-
-      // Create tenant role assignment
-      const tenantRole = new TenantRole({
-        tenantId: result.tenant._id,
-        userId: user._id,
-        role: 'TENANT_ADMIN',
-        assignedBy: 'SYSTEM'
-      });
-      await tenantRole.save();
-      console.log('✅ Tenant role assigned');
-
-      // Update tenant status to active
-      result.tenant.status = 'active';
-      result.tenant.activatedAt = new Date();
-      await result.tenant.save();
-      console.log('✅ Tenant status updated to active');
-
-      // Send welcome email
-      try {
-        const baseDomain = (process.env.BASE_DOMAIN || 'twspms.work.gd').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
-        const subdomain = `${slug}.${baseDomain}`;
-        await emailService.sendTenantWelcomeEmail(user, result.tenant, subdomain);
-        console.log('✅ Welcome email sent');
-      } catch (emailError) {
-        console.error('⚠️ Error sending welcome email (non-critical):', emailError);
-        // Continue even if email fails
-      }
-
-      return {
-        tenant: result.tenant.toJSON(),
-        adminUser: result.adminUser,
-        organization: result.organization,
-        status: 'active',
-        message: 'Tenant created and provisioned successfully',
-        masterERPId: masterERPId
-      };
-    } catch (provisionError) {
-      console.error('❌ Tenant provisioning error:', provisionError);
-      console.error('❌ Provisioning error stack:', provisionError.stack);
-      throw new Error(`Failed to provision tenant: ${provisionError.message}`);
-    }
   }
 
   /**
@@ -416,21 +128,26 @@ class SelfServeSignupService {
   }
 
   /**
-   * Complete signup: User + Tenant + Organization in single transaction
+   * Complete signup: verifies the email OTP, then creates
+   * User + Tenant + Organization in a single transaction.
    * This method addresses Issue #4.1 and #4.2 by ensuring atomic operations
    * @param {String} email - User email
    * @param {String} password - User password
    * @param {String} fullName - User full name
    * @param {String} organizationName - Organization name
    * @param {String} organizationSlug - Organization slug
+   * @param {String} otp - Email verification code sent via requestSignupVerification
    * @param {Object} metadata - Additional metadata (teamSize, primaryTechStack, methodology)
    * @returns {Object} Created user, tenant, and organization
    */
-  async completeSignup(email, password, fullName, organizationName, organizationSlug, metadata = {}) {
+  async completeSignup(email, password, fullName, organizationName, organizationSlug, otp, metadata = {}) {
     const mongoose = require('mongoose');
-    const session = await mongoose.startSession();
     const normalizedEmail = normalizeSignupEmail(email);
 
+    // Gate the whole signup on a verified email OTP before touching the DB.
+    await emailVerificationService.verifyOTP(normalizedEmail, otp);
+
+    const session = await mongoose.startSession();
     let user, tenant, organization, tenantRole;
 
     try {

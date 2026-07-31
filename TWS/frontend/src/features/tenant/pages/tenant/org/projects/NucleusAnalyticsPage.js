@@ -71,7 +71,7 @@ const NucleusAnalyticsPage = () => {
 
         if (cancelled) return;
 
-        const projList = projRes?.data ?? projRes ?? [];
+        const projList = projRes?.projects ?? projRes?.data?.projects ?? projRes?.data ?? projRes ?? [];
         const projArray = Array.isArray(projList) ? projList : [];
         setProjects(projArray);
 
@@ -100,9 +100,12 @@ const NucleusAnalyticsPage = () => {
     const loadCharts = async () => {
       setChartsLoading(true);
       try {
-        const sprintRes = await tenantProjectApiService.getProjectSprints(tenantSlug, projectIdFilter);
+        const sprintRes = await tenantProjectApiService.getProjectSprints(
+          tenantSlug,
+          { projectId: projectIdFilter }
+        );
         if (!cancelled) {
-          const sprintList = sprintRes?.data ?? sprintRes ?? [];
+          const sprintList = sprintRes?.sprints ?? sprintRes?.data?.sprints ?? sprintRes?.data ?? sprintRes ?? [];
           setSprints(Array.isArray(sprintList) ? sprintList : []);
         }
       } catch (err) {
@@ -144,12 +147,14 @@ const NucleusAnalyticsPage = () => {
   }, [filteredDeliverables]);
 
   const velocityChartData = useMemo(() => {
-    const completedSprints = sprints.filter(s => s.status === 'completed' && s.velocity != null);
+    const completedSprints = sprints.filter(
+      s => s.status === 'completed' && (s.velocity != null || s.metrics?.velocity != null)
+    );
     return {
       labels: completedSprints.map(s => s.name || `Sprint ${s._id?.slice(-4)}`),
       datasets: [{
         label: 'Velocity (story points)',
-        data: completedSprints.map(s => s.velocity || 0),
+        data: completedSprints.map(s => s.velocity ?? s.metrics?.velocity ?? 0),
         backgroundColor: 'rgba(99, 102, 241, 0.5)',
         borderColor: 'rgba(99, 102, 241, 1)',
         borderWidth: 1

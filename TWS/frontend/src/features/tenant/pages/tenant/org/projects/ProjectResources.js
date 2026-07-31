@@ -24,19 +24,9 @@ import { handleApiError } from './utils/errorHandler';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import ErrorState from '../../../../../../shared/components/feedback/ErrorState';
+import ProfileAvatar from '../../../../../../shared/components/ui/ProfileAvatar';
 
 /* ─── constants ────────────────────────────────────────────────────────────── */
-
-const AVATAR_GRADIENTS = [
-  'from-violet-500 to-purple-600',
-  'from-blue-500 to-cyan-500',
-  'from-emerald-500 to-teal-500',
-  'from-orange-500 to-amber-500',
-  'from-pink-500 to-rose-500',
-  'from-indigo-500 to-blue-500',
-  'from-sky-500 to-cyan-400',
-  'from-fuchsia-500 to-pink-500',
-];
 
 const PROJECT_ROLES = [
   { value: 'owner',       label: 'Owner',       color: 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' },
@@ -54,14 +44,6 @@ const STATUS_CFG = {
 };
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
-
-function avatarGradient(name = '') {
-  return AVATAR_GRADIENTS[(name.charCodeAt(0) || 0) % AVATAR_GRADIENTS.length];
-}
-
-function initials(name = '') {
-  return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
-}
 
 function utilisationBar(pct = 0) {
   if (pct <= 0)   return 'bg-gray-300 dark:bg-gray-600';
@@ -370,7 +352,7 @@ function EditMemberModal({ member, isOpen, onClose, onSaved, tenantSlug, project
 
 /* ─── Member Card ──────────────────────────────────────────────────────────── */
 
-function MemberCard({ member, onEdit, onRemove }) {
+function MemberCard({ member, onEdit, onRemove, tenantSlug }) {
   const { tasks = {}, utilisation, skills = [] } = member;
   const rCfg     = roleCfg(member.role);
   const statusCfg = STATUS_CFG[member.resourceStatus] || null;
@@ -384,9 +366,11 @@ function MemberCard({ member, onEdit, onRemove }) {
 
       {/* Avatar + name + actions */}
       <div className="flex items-start gap-3">
-        <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${avatarGradient(displayName)} flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm`}>
-          {initials(displayName)}
-        </div>
+        <ProfileAvatar
+          person={member.userId}
+          tenantSlug={tenantSlug}
+          className="w-11 h-11 rounded-xl shadow-sm"
+        />
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-gray-900 dark:text-white text-sm truncate leading-tight">{displayName}</p>
           {email && (
@@ -753,6 +737,7 @@ const ProjectResources = () => {
                 member={m}
                 onEdit={setEditMember}
                 onRemove={setRemovingMember}
+                tenantSlug={tenantSlug}
               />
             ))}
           </div>

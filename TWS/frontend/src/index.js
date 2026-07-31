@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import './index.css';
-import './assets/fonts.css';
 import App from './App.jsx';
 import { AuthProvider } from './app/providers/AuthContext';
 import { SocketProvider } from './app/providers/SocketContext';

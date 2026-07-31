@@ -150,6 +150,26 @@
   --tenant-border: #1F2937;
   --tenant-text: #FFFFFF;
   --tenant-muted: #9CA3AF;
+
+  --token-card-bg: #111827;
+  --token-card-border: #1F2937;
+  --token-card-header-bg: rgba(79, 70, 229, 0.16);
+  --token-card-header-text: #E0E7FF;
+  --token-card-body-text: #D1D5DB;
+
+  --token-menu-item-active-bg: rgba(79, 70, 229, 0.2);
+  --token-menu-item-active-text: #C7D2FE;
+  --token-menu-item-active-border: rgba(99, 102, 241, 0.4);
+  --token-menu-item-hover-bg: #1F2937;
+  --token-menu-item-hover-text: #E0E7FF;
+
+  --token-navbar-bg: #111827;
+  --token-navbar-border: #1F2937;
+
+  --token-input-bg: #111827;
+  --token-input-border: #374151;
+  --token-input-text: #F9FAFB;
+  --token-input-placeholder: #9CA3AF;
 }
 
 /* ============================================

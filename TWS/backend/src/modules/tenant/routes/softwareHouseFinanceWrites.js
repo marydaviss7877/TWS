@@ -47,8 +47,74 @@ module.exports = function registerSoftwareHouseFinanceWrites(router, deps) {
     ProjectCosting,
     CashFlowForecast,
     Expense,
-    Transaction
+    Transaction,
+    FinanceBudget
   } = deps;
+
+  const recordPaymentTransaction = async ({ orgId, kind, source, amount, date, method, userId }) => {
+    const value = Number(amount || 0);
+    if (!(value > 0)) throw Object.assign(new Error('Payment amount must be greater than zero'), { statusCode: 400 });
+    const isInvoice = kind === 'invoice';
+    const reference = isInvoice ? source.invoiceNumber : source.billNumber;
+    return Transaction.findOneAndUpdate(
+      { orgId, reference: `PAYMENT:${reference}:${String(date.toISOString())}:${value}` },
+      {
+        $setOnInsert: {
+          orgId,
+          type: isInvoice ? 'revenue' : 'expense',
+          category: isInvoice ? 'Invoice Payment' : 'Vendor Payment',
+          amount: value,
+          currency: source.currency || 'USD',
+          date,
+          description: `${isInvoice ? 'Payment received' : 'Vendor payment'} — ${reference}`,
+          reference: `PAYMENT:${reference}:${String(date.toISOString())}:${value}`,
+          relatedInvoiceId: isInvoice ? source._id : undefined,
+          client: isInvoice ? { name: source.clientName, email: source.clientEmail, clientId: source.clientId } : undefined,
+          vendor: !isInvoice ? { name: source.vendorName, email: source.vendorEmail, vendorId: source.vendorId } : undefined,
+          status: 'reconciled',
+          approvedBy: userId,
+          approvedAt: date,
+          bankReconciliation: { reconciled: true, reconciledAt: date, reconciledBy: userId },
+          tags: ['system-generated', 'payment']
+        }
+      },
+      { upsert: true, new: true }
+    );
+  };
+
+  router.get('/finance/budgets', unifiedSoftwareHouseAuth, shFinanceRead, ErrorHandler.asyncHandler(async (req, res) => {
+    const orgId = toOrgObjectId(req.user.orgId, mongoose);
+    const budgets = await FinanceBudget.find({ orgId }).sort({ startDate: -1 }).lean();
+    const data = budgets.map((budget) => {
+      const allocated = (budget.categories || []).reduce((sum, row) => sum + Number(row.amount || 0), 0);
+      return { ...budget, allocated, available: Math.max(Number(budget.totalAmount || 0) - allocated, 0) };
+    });
+    res.json({ success: true, data });
+  }));
+
+  router.post('/finance/budgets', unifiedSoftwareHouseAuth, shFinanceWrite, ErrorHandler.asyncHandler(async (req, res) => {
+    const orgId = toOrgObjectId(req.user.orgId, mongoose);
+    const startDate = new Date(req.body.startDate);
+    const endDate = new Date(req.body.endDate);
+    const totalAmount = Number(req.body.totalAmount || 0);
+    const categories = (Array.isArray(req.body.categories) ? req.body.categories : [])
+      .filter(row => row?.name)
+      .map(row => ({ name: String(row.name).trim(), amount: Number(row.amount || 0) }));
+    if (!req.body.name || !req.body.department || !Number.isFinite(startDate.getTime()) ||
+        !Number.isFinite(endDate.getTime()) || endDate < startDate || totalAmount <= 0) {
+      return res.status(400).json({ success: false, message: 'Valid name, department, dates, and positive total amount are required' });
+    }
+    const allocated = categories.reduce((sum, row) => sum + row.amount, 0);
+    if (allocated > totalAmount) {
+      return res.status(400).json({ success: false, message: 'Category allocations cannot exceed the total budget' });
+    }
+    const budget = await FinanceBudget.create({
+      orgId, createdBy: req.user._id, name: req.body.name, department: req.body.department,
+      period: req.body.period || 'annual', startDate, endDate, totalAmount, categories,
+      description: req.body.description || '', status: req.body.status || 'active'
+    });
+    res.status(201).json({ success: true, data: budget });
+  }));
 
   const parseInvoiceItems = (body) => {
     const source = Array.isArray(body.items) ? body.items : Array.isArray(body.billingItems) ? body.billingItems : [];
@@ -327,6 +393,8 @@ module.exports = function registerSoftwareHouseFinanceWrites(router, deps) {
     const invoice = await Invoice.findOne({ _id: req.params.invoiceId, orgId });
     if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
     const amount = Number(req.body.amount || 0);
+    const outstanding = Math.max(Number(invoice.total || 0) - Number(invoice.paidAmount || 0), 0);
+    if (!(amount > 0) || amount > outstanding) return res.status(400).json({ success: false, message: 'Payment must be positive and cannot exceed the outstanding balance' });
     invoice.paidAmount = Number(invoice.paidAmount || 0) + amount;
     const totals = computeInvoiceTotals(invoice);
     invoice.remainingAmount = totals.remaining;
@@ -334,6 +402,7 @@ module.exports = function registerSoftwareHouseFinanceWrites(router, deps) {
     invoice.paidAt = req.body.paymentDate ? new Date(req.body.paymentDate) : new Date();
     invoice.paymentMethod = req.body.paymentMethod || invoice.paymentMethod;
     await invoice.save();
+    await recordPaymentTransaction({ orgId, kind: 'invoice', source: invoice, amount, date: invoice.paidAt, method: invoice.paymentMethod, userId: req.user._id });
     res.json({ success: true, data: invoice });
   }));
 
@@ -384,6 +453,8 @@ module.exports = function registerSoftwareHouseFinanceWrites(router, deps) {
     const invoice = await Invoice.findOne({ _id: req.params.invoiceId, orgId });
     if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
     const amount = Number(req.body.amount || 0);
+    const outstanding = Math.max(Number(invoice.total || 0) - Number(invoice.paidAmount || 0), 0);
+    if (!(amount > 0) || amount > outstanding) return res.status(400).json({ success: false, message: 'Payment must be positive and cannot exceed the outstanding balance' });
     invoice.paidAmount = Number(invoice.paidAmount || 0) + amount;
     const totals = computeInvoiceTotals(invoice);
     invoice.remainingAmount = totals.remaining;
@@ -391,6 +462,7 @@ module.exports = function registerSoftwareHouseFinanceWrites(router, deps) {
     invoice.paidAt = req.body.paymentDate ? new Date(req.body.paymentDate) : new Date();
     invoice.paymentMethod = req.body.paymentMethod || invoice.paymentMethod;
     await invoice.save();
+    await recordPaymentTransaction({ orgId, kind: 'invoice', source: invoice, amount, date: invoice.paidAt, method: invoice.paymentMethod, userId: req.user._id });
     res.json({ success: true, data: invoice });
   }));
 
@@ -740,12 +812,16 @@ module.exports = function registerSoftwareHouseFinanceWrites(router, deps) {
     const orgId = toOrgObjectId(req.user.orgId, mongoose);
     const bill = await Bill.findOne({ _id: req.params.billId, orgId });
     if (!bill) return res.status(404).json({ success: false, message: 'Bill not found' });
-    bill.paidAmount = Number(bill.paidAmount || 0) + Number(req.body.amount || 0);
+    const amount = Number(req.body.amount || 0);
+    const outstanding = Math.max(Number(bill.total || 0) - Number(bill.paidAmount || 0), 0);
+    if (!(amount > 0) || amount > outstanding) return res.status(400).json({ success: false, message: 'Payment must be positive and cannot exceed the outstanding balance' });
+    bill.paidAmount = Number(bill.paidAmount || 0) + amount;
     const remaining = Math.max(Number(bill.total || 0) - Number(bill.paidAmount || 0), 0);
     bill.status = remaining <= 0 ? 'paid' : 'approved';
     bill.paidAt = req.body.paymentDate ? new Date(req.body.paymentDate) : new Date();
     bill.paymentMethod = req.body.paymentMethod || bill.paymentMethod;
     await bill.save();
+    await recordPaymentTransaction({ orgId, kind: 'bill', source: bill, amount, date: bill.paidAt, method: bill.paymentMethod, userId: req.user._id });
     res.json({ success: true, data: bill });
   }));
 
@@ -795,12 +871,16 @@ module.exports = function registerSoftwareHouseFinanceWrites(router, deps) {
     const orgId = toOrgObjectId(req.user.orgId, mongoose);
     const bill = await Bill.findOne({ _id: req.params.billId, orgId });
     if (!bill) return res.status(404).json({ success: false, message: 'Bill not found' });
-    bill.paidAmount = Number(bill.paidAmount || 0) + Number(req.body.amount || 0);
+    const amount = Number(req.body.amount || 0);
+    const outstanding = Math.max(Number(bill.total || 0) - Number(bill.paidAmount || 0), 0);
+    if (!(amount > 0) || amount > outstanding) return res.status(400).json({ success: false, message: 'Payment must be positive and cannot exceed the outstanding balance' });
+    bill.paidAmount = Number(bill.paidAmount || 0) + amount;
     const remaining = Math.max(Number(bill.total || 0) - Number(bill.paidAmount || 0), 0);
     bill.status = remaining <= 0 ? 'paid' : 'approved';
     bill.paidAt = req.body.paymentDate ? new Date(req.body.paymentDate) : new Date();
     bill.paymentMethod = req.body.paymentMethod || bill.paymentMethod;
     await bill.save();
+    await recordPaymentTransaction({ orgId, kind: 'bill', source: bill, amount, date: bill.paidAt, method: bill.paymentMethod, userId: req.user._id });
     res.json({ success: true, data: bill });
   }));
 

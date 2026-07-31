@@ -23,6 +23,7 @@ const SidebarNav = ({
   toggleMenuExpansion,
   isDarkMode,
   themeStyles,
+  collapsed = false,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,6 +36,9 @@ const SidebarNav = ({
       if (['software-house'].includes(seg)) return segments[orgIdx + 2] || seg;
       return seg;
     }
+    if (segments[0] === 'software-house') return segments[1] || segments[0];
+    if (segments[0] === 'home') return 'dashboard';
+    if (segments[0]) return segments[0];
     return 'dashboard';
   };
 
@@ -71,8 +75,11 @@ const SidebarNav = ({
       <div key={item.key} className="relative">
         <button
           onClick={handleClick}
+          data-nav-key={item.key}
+          data-active={highlight ? 'true' : 'false'}
           className={cn(
-            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+            'tws-sidebar-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+            collapsed && 'is-collapsed',
             highlight
               ? 'text-white shadow-sm'
               : 'bg-transparent hover:bg-gray-100/60 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300'
@@ -93,21 +100,21 @@ const SidebarNav = ({
         >
           <div
             className={cn(
-              'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all',
+              'tws-sidebar-nav-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all',
               highlight ? 'text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
             )}
             style={highlight ? { background: themeStyles.primaryGradientBr } : {}}
           >
             {Icon && <Icon className="w-4 h-4" />}
           </div>
-          <span className="flex-1 text-sm font-medium truncate text-left">{item.label}</span>
-          {hasSubmenu && (
+          {!collapsed && <span className="flex-1 text-sm font-medium truncate text-left">{item.label}</span>}
+          {hasSubmenu && !collapsed && (
             <ChevronDownIcon className={cn('w-4 h-4 shrink-0 transition-transform duration-200', isExpanded && 'rotate-180')} />
           )}
         </button>
 
         {/* Submenu */}
-        {hasSubmenu && (
+        {hasSubmenu && !collapsed && (
           <div className={cn('overflow-hidden transition-all duration-300', isExpanded ? 'max-h-[32rem] opacity-100' : 'max-h-0 opacity-0')}>
             <div className="ml-8 mt-1 space-y-1 border-l-2 border-gray-200 dark:border-gray-700 pl-3 py-2 overflow-y-auto max-h-[30rem]">
               {item.children.map(child => {
@@ -150,7 +157,7 @@ const SidebarNav = ({
           if (!items.length) return null;
           return (
             <div key={section.label ?? 'main'} className="mb-3">
-              {section.label && (
+              {section.label && !collapsed && (
                 <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 select-none">
                   {section.label}
                 </p>

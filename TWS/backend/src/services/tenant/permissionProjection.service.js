@@ -1,6 +1,6 @@
 const MODULES = [
   'projects', 'hr', 'finance', 'payroll', 'documents', 'sheets', 'analytics', 'nucleus',
-  'audit', 'clients', 'settings', 'attendance', 'leave', 'reports', 'tasks'
+  'audit', 'clients', 'settings', 'attendance', 'leave', 'reports', 'tasks', 'portfolio'
 ];
 
 function buildModuleAccessFromResolved(resolved = {}) {

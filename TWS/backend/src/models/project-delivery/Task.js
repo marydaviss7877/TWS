@@ -294,6 +294,16 @@ taskSchema.index({ milestoneId: 1, status: 1 });
 taskSchema.index({ projectId: 1, sprintId: 1 });
 taskSchema.index({ projectId: 1, milestoneId: 1 });
 taskSchema.index({ isOnCriticalPath: 1 });
+taskSchema.index(
+  { tenantId: 1, taskId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      tenantId: { $type: 'objectId' },
+      taskId: { $type: 'string' }
+    }
+  }
+);
 
 // Virtual for completion percentage based on subtasks
 taskSchema.virtual('completionPercentage').get(function() {

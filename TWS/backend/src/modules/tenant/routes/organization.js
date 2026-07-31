@@ -2651,6 +2651,8 @@ router.get('/hr/recruitment', verifyERPToken, employeesRead, async (req, res) =>
     const result = await recruitmentService.getJobPostings(tenantContext.orgId, req.query || {});
     const jobs = result?.jobs || [];
     const activeCandidates = jobs.reduce((sum, job) => sum + Number(job.applicants || 0), 0);
+    const inReview = jobs.reduce((sum, job) => sum + Number(job.inReview || 0), 0);
+    const hiredThisMonth = jobs.reduce((sum, job) => sum + Number(job.accepted || 0), 0);
     return res.json({
       success: true,
       data: {
@@ -2658,8 +2660,8 @@ router.get('/hr/recruitment', verifyERPToken, employeesRead, async (req, res) =>
         stats: {
           openPositions: jobs.length,
           activeCandidates,
-          inReview: 0,
-          hiredThisMonth: 0
+          inReview,
+          hiredThisMonth
         }
       }
     });
@@ -2801,7 +2803,10 @@ router.get('/hr/recruitment/interviews', verifyERPToken, employeesRead, async (r
 router.post('/hr/recruitment/interviews', verifyERPToken, employeesWrite, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
-    const interview = await recruitmentService.createInterview(tenantContext.orgId, req.body || {});
+    const interview = await recruitmentService.createInterview(tenantContext.orgId, {
+      ...(req.body || {}),
+      createdBy: req.user?._id
+    });
     return res.status(201).json({ success: true, data: interview });
   } catch (error) {
     console.error('Create HR interview error:', error);
@@ -3800,11 +3805,13 @@ const changeRequestsRoutes = require('./changeRequests');
 const deliverablesRoutes = require('./deliverables');
 const documentsRoutes = require('./documents');
 const sheetsRoutes = require('./sheets');
+const portfolioRoutes = require('./portfolio');
 router.use('/approvals', tokenVerificationLimiter, verifyERPToken, approvalsRoutes);
 router.use('/change-requests', tokenVerificationLimiter, verifyERPToken, changeRequestsRoutes);
 router.use('/deliverables', tokenVerificationLimiter, verifyERPToken, deliverablesRoutes);
 router.use('/documents', tokenVerificationLimiter, verifyERPToken, documentsRoutes);
 router.use('/sheets', tokenVerificationLimiter, verifyERPToken, sheetsRoutes);
+router.use('/portfolio', portfolioRoutes);
 
 // Note: The routes below are legacy routes that may still be used by older frontend code
 // The new routes above provide comprehensive CRUD operations

@@ -7,8 +7,8 @@ const OperationsOverview = () => {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Operations Overview</h1>
-        <p className="text-gray-600">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Operations Overview</h1>
+        <p className="text-gray-600 dark:text-gray-400">
           Manage business operations and processes
         </p>
       </div>

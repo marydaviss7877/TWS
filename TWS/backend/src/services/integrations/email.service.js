@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const envConfig = require('../../config/environment-validator');
 
 /**
@@ -8,45 +8,18 @@ const envConfig = require('../../config/environment-validator');
 
 class EmailService {
   constructor() {
-    this.transporter = null;
-    this.from = envConfig.get('EMAIL_FROM') || 'noreply@tws-platform.com';
-    this.initializeTransporter();
-  }
+    // Secrets read directly from process.env, never through client-facing config.
+    this.from = process.env.EMAIL_FROM || 'noreply@tws-platform.com';
+    const apiKey = process.env.RESEND_API_KEY;
 
-  initializeTransporter() {
-    // Check if email is configured
-    const emailUser = envConfig.get('EMAIL_USER');
-    const emailPass = envConfig.get('EMAIL_PASS');
-    
-    if (!emailUser || !emailPass) {
+    if (!apiKey) {
       if (process.env.NODE_ENV !== 'test') {
-        console.warn('⚠️  Email service not configured. Emails will be logged to console.');
+        console.warn('⚠️  RESEND_API_KEY not set. Emails will be logged to console.');
       }
-      return;
+      this.resend = null;
+    } else {
+      this.resend = new Resend(apiKey);
     }
-
-    // Use Gmail SMTP or custom SMTP
-    const emailHost = envConfig.get('EMAIL_HOST') || 'smtp.gmail.com';
-    const emailPort = envConfig.get('EMAIL_PORT') || 587;
-
-    this.transporter = nodemailer.createTransporter({
-      host: emailHost,
-      port: emailPort,
-      secure: emailPort === 465,
-      auth: {
-        user: emailUser,
-        pass: emailPass
-      }
-    });
-
-    // Verify connection
-    this.transporter.verify((error, success) => {
-      if (error) {
-        console.error('❌ Email service connection failed:', error);
-      } else {
-        console.log('✅ Email service ready to send messages');
-      }
-    });
   }
 
   /**
@@ -54,26 +27,36 @@ class EmailService {
    */
   async sendEmail(to, subject, html, text = null) {
     try {
-      if (!this.transporter) {
-        // Fallback: Log to console
-        console.log('📧 EMAIL (Console Fallback):');
+      if (!this.resend) {
+        // Fallback: log to console. Body may contain OTPs/tokens, so only
+        // print it in development — elsewhere just confirm it was suppressed.
+        console.log('📧 EMAIL (Console Fallback — RESEND_API_KEY not configured):');
         console.log('  To:', to);
         console.log('  Subject:', subject);
-        console.log('  Content:', text || html.replace(/<[^>]*>/g, ''));
+        console.log(
+          '  Content:',
+          process.env.NODE_ENV === 'development'
+            ? (text || html.replace(/<[^>]*>/g, ''))
+            : '[suppressed outside development — configure RESEND_API_KEY to send real emails]'
+        );
         return { success: true, mode: 'console' };
       }
 
-      const mailOptions = {
+      const { data, error } = await this.resend.emails.send({
         from: this.from,
         to,
         subject,
         html,
         text: text || html.replace(/<[^>]*>/g, '') // Strip HTML for text version
-      };
+      });
 
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Email sent:', info.messageId);
-      return { success: true, messageId: info.messageId, mode: 'smtp' };
+      if (error) {
+        console.error('❌ Email send failed:', error);
+        return { success: false, error: error.message || 'Failed to send email' };
+      }
+
+      console.log('✅ Email sent:', data?.id);
+      return { success: true, messageId: data?.id, mode: 'resend' };
     } catch (error) {
       console.error('❌ Email send failed:', error);
       return { success: false, error: error.message };

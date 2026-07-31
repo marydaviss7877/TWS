@@ -13,6 +13,7 @@ const Workspace = require('../models/org/Workspace');
 const Client = require('../models/industry/Client');
 const OrgDocument = require('../models/documents/OrgDocument');
 const OrgSheet = require('../models/sheets/OrgSheet');
+const PortfolioItem = require('../models/portfolio/PortfolioItem');
 
 class UsageTrackerService {
   constructor() {
@@ -73,7 +74,7 @@ class UsageTrackerService {
         return n;
       }
       case 'storage': {
-        const [documentTotal, sheetTotal] = await Promise.all([
+        const [documentTotal, sheetTotal, portfolioTotal] = await Promise.all([
           OrgDocument.aggregate([
             { $match: { tenantId: id } },
             { $group: { _id: null, total: { $sum: { $ifNull: ['$fileSize', 0] } } } }
@@ -82,11 +83,17 @@ class UsageTrackerService {
           OrgSheet.aggregate([
             { $match: { tenantId: id } },
             { $group: { _id: null, total: { $sum: { $add: [{ $ifNull: ['$fileSize', 0] }, { $ifNull: ['$contentSize', 0] }] } } } }
+          ]),
+          PortfolioItem.aggregate([
+            { $match: { tenantId: id, deletedAt: null } },
+            { $unwind: { path: '$assets', preserveNullAndEmptyArrays: false } },
+            { $group: { _id: null, total: { $sum: { $ifNull: ['$assets.size', 0] } } } }
           ])
         ]);
         const documentBytes = (documentTotal[0] && documentTotal[0].total) ? documentTotal[0].total : 0;
         const sheetBytes = (sheetTotal[0] && sheetTotal[0].total) ? sheetTotal[0].total : 0;
-        return documentBytes + sheetBytes;
+        const portfolioBytes = (portfolioTotal[0] && portfolioTotal[0].total) ? portfolioTotal[0].total : 0;
+        return documentBytes + sheetBytes + portfolioBytes;
       }
       default:
         return 0;

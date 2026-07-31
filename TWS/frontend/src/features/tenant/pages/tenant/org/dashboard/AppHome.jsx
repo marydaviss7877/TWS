@@ -221,6 +221,8 @@ const AppHome = () => {
   const firstName = user?.fullName?.split(' ')[0] || user?.email?.split('@')[0] || 'there';
   const greeting  = getGreeting();
   const dateStr   = getDateString();
+  const orgInitial = (tenant?.name || 'TWS').charAt(0).toUpperCase();
+  const coverHue = Array.from(tenant?.name || 'TWS').reduce((sum, char) => sum + char.charCodeAt(0), 0) % 45;
 
   // Filter by search
   const q       = search.trim().toLowerCase();
@@ -338,7 +340,7 @@ const AppHome = () => {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        'apphome-root min-h-full relative overflow-hidden transition-all duration-500',
+        'apphome-root apphome-sky min-h-full relative overflow-hidden transition-all duration-500',
         'px-2 sm:px-3 md:px-4 lg:px-5',
         'bg-gradient-to-br from-[#f2f6ff] via-[#f7f9ff] to-[#f3f7ff]',
         'dark:bg-none',
@@ -370,47 +372,42 @@ const AppHome = () => {
       </div>
 
       {/* ── Centred content wrapper ─────────────────────────────────────────── */}
-      <div ref={revealScopeRef} className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
+      <div ref={revealScopeRef} className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
         {/* ── Hero / Greeting ──────────────────────────────────────────────── */}
-        <div data-reveal className="apphome-fade-up apphome-fade-delay-2 apphome-hero-wrap text-center space-y-3 -mt-3 sm:-mt-4">
-          {/* Date */}
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-widest">
-            {dateStr}
-          </p>
-
-          {/* Greeting */}
-          <h1
-            className="apphome-hero-title text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white"
-            style={{ lineHeight: 1.1 }}
+        <div data-reveal className="apphome-fade-up apphome-fade-delay-2 apphome-hero-wrap">
+          <div
+            className="apphome-cover-banner"
+            style={{ '--cover-hue': coverHue }}
+            aria-label={`${tenant?.name || 'Organization'} workspace cover`}
           >
-            {greeting},{' '}
-            <span className="apphome-hero-name bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
-              {firstName}
-            </span>
-            {' '}👋
-          </h1>
-
-          {/* Org + Role */}
-          <div className="flex items-center justify-center gap-3 flex-wrap">
-            {tenant?.name && (
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                {tenant.name}
-              </span>
-            )}
-            {tenant?.name && user?.role && (
-              <span className="text-gray-300 dark:text-gray-600">·</span>
-            )}
-            {user?.role && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 px-3 py-0.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-700/50">
-                {user.role.replace(/_/g, ' ')}
-              </span>
-            )}
+            <div className="apphome-cover-banner__mesh" aria-hidden="true" />
+            <div className="apphome-cover-banner__line" aria-hidden="true" />
+            <div className="apphome-cover-banner__label">
+              <span>SOFTWARE HOUSE WORKSPACE</span>
+              <b><i /> PRIVATE</b>
+            </div>
+          </div>
+          <div className="apphome-command-copy">
+            <div className="apphome-org-identity">
+              <div className="apphome-org-mark">{orgInitial}</div>
+              <div><strong>{tenant?.name || 'Your organization'}</strong><span>Software House OS</span></div>
+            </div>
+            <p className="apphome-command-kicker"><span /> Live workspace · {dateStr}</p>
+            <h1 className="apphome-hero-title">
+              {greeting}, <span className="apphome-hero-name">{firstName}.</span>
+            </h1>
+            <p className="apphome-command-lede">
+              Everything your software house needs, arranged around the way you work.
+            </p>
+            <div className="apphome-command-meta">
+              {tenant?.name && <span><i />{tenant.name}</span>}
+              {user?.role && <span>{user.role.replace(/_/g, ' ')}</span>}
+            </div>
           </div>
         </div>
 
         {/* ── Search ─────────────────────────────────────────────────────────── */}
-        <div data-reveal className="apphome-fade-up apphome-fade-delay-3 apphome-search-wrap relative max-w-2xl mx-auto">
+        <div data-reveal className="apphome-fade-up apphome-fade-delay-3 apphome-search-wrap relative">
           <MagnifyingGlassIcon className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
           <input
             ref={searchRef}
