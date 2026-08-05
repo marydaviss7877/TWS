@@ -122,10 +122,15 @@ const SheetEditor = () => {
       setInitError(true);
     }
     return () => {
-      if (univerRef.current) {
-        univerRef.current.univer.dispose();
+      const instance = univerRef.current;
+      if (instance) {
+        // Univer owns a React root internally. Disposing it synchronously while
+        // our React tree is being unmounted triggers React's nested-unmount
+        // warning and can race with the current render. Detach our references
+        // now, then let the active render/commit finish before disposing it.
         univerRef.current = null;
         workbookRef.current = null;
+        setTimeout(() => instance.univer.dispose(), 0);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

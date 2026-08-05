@@ -10,9 +10,16 @@ const envConfig = require('./environment');
  * Supports homework submissions, documents, and other tenant materials
  */
 
-// Initialize S3 Client
+// Initialize an AWS S3 or S3-compatible client (for example Railway Buckets).
+const endpoint = envConfig.get('S3_ENDPOINT');
 const s3Client = new S3Client({
   region: envConfig.get('AWS_REGION') || 'us-east-1',
+  // Buckets created in a different region respond with x-amz-bucket-region and
+  // PermanentRedirect. Let the SDK follow that hint instead of turning a valid
+  // upload into a 500 (notably sheet autosaves, which write JSON directly).
+  followRegionRedirects: true,
+  ...(endpoint ? { endpoint } : {}),
+  forcePathStyle: Boolean(envConfig.get('S3_FORCE_PATH_STYLE')),
   credentials: {
     accessKeyId: envConfig.get('AWS_ACCESS_KEY_ID') || 'dummy-key',
     secretAccessKey: envConfig.get('AWS_SECRET_ACCESS_KEY') || 'dummy-secret'
