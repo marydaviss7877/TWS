@@ -1,5 +1,6 @@
-const { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const { GetObjectCommand, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { s3Client, BUCKET_NAME } = require('../config/s3');
 const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
@@ -15,14 +16,10 @@ class FileService {
     
     // S3 Configuration
     if (this.useS3) {
-      this.s3Client = new S3Client({
-        credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        },
-        region: process.env.AWS_REGION || 'us-east-1'
-      });
-      this.bucketName = process.env.S3_BUCKET_NAME;
+      // Reuse the application-wide client so custom S3 endpoints (Railway,
+      // R2, MinIO) behave exactly like Sheets, Documents, and Portfolio.
+      this.s3Client = s3Client;
+      this.bucketName = BUCKET_NAME;
     }
     
     // File validation configuration
