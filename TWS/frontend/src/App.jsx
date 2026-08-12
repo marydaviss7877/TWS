@@ -5,7 +5,7 @@ import { ThemeProvider } from './app/providers/ThemeContext';
 import { SocketProvider } from './app/providers/SocketContext';
 import { setupGlobalErrorHandling } from './shared/utils/errorHandler';
 import { tenantPath } from './shared/utils/tenantRoutes';
-import { getSubdomainSlug, getTenantWorkspaceUrl } from './shared/utils/subdomain';
+import { getSubdomainSlug, getTenantWorkspaceUrl, isAdminHost } from './shared/utils/subdomain';
 
 import './assets/software-house-premium.css';
 
@@ -13,6 +13,7 @@ import './assets/software-house-premium.css';
 import SupraAdminLogin from './pages/Auth/SupraAdminLogin/SupraAdminLogin';
 import SoftwareHouseSignup from './pages/Auth/SoftwareHouseSignup/SoftwareHouseSignup';
 import SoftwareHouseLogin from './pages/Auth/SoftwareHouseLogin/SoftwareHouseLogin';
+import FindWorkspace from './pages/Auth/FindWorkspace/FindWorkspace';
 import SoftwareHouseForgotPassword from './pages/Auth/SoftwareHouseForgotPassword/SoftwareHouseForgotPassword';
 import SoftwareHouseLanding from './pages/Auth/SoftwareHouseLanding/SoftwareHouseLanding';
 import InviteAccept from './pages/Auth/InviteAccept/InviteAccept';
@@ -291,7 +292,7 @@ function App() {
                 }
                 return <SoftwareHouseLogin />;
               })()
-              : <SoftwareHouseLogin />
+              : (isSubdomain || isAdminHost() ? <SoftwareHouseLogin /> : <FindWorkspace />)
             }
           />
           <Route

@@ -31,6 +31,16 @@ export function isSubdomainContext() {
 }
 
 /**
+ * True when the current page is the Software House Admin host
+ * (admin.housesbase.com). Distinct from a tenant subdomain — 'admin' is
+ * already reserved as an infra subdomain in getSubdomainSlug() above.
+ */
+export function isAdminHost() {
+  if (typeof window === 'undefined') return false;
+  return window.location.hostname.split('.')[0] === 'admin';
+}
+
+/**
  * Build a URL for the tenant workspace using CLEAN paths (no slug or /org/ in
  * the path — the slug lives only in the subdomain).
  *

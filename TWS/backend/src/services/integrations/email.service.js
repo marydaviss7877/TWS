@@ -374,6 +374,55 @@ class EmailService {
   }
 
   /**
+   * Workspace Lookup Email
+   * Sent when a user submits their email on the root-domain "find my workspace"
+   * page. Purely informational — contains a link to their org's subdomain,
+   * no login token or auth material.
+   */
+  async sendWorkspaceLookupEmail(user, org) {
+    const subject = 'Your HouseBase workspace';
+    const baseDomain = process.env.BASE_DOMAIN || 'housesbase.com';
+    const workspaceUrl = `https://${org.slug}.${baseDomain}/login`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0;">Your Workspace</h1>
+        </div>
+        <div style="padding: 30px; background: #f9fafb;">
+          <p style="font-size: 16px; color: #374151;">Dear ${user.fullName || 'there'},</p>
+
+          <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
+            Here's the link to your organization's workspace on HouseBase:
+          </p>
+
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 10px 0;"><strong>Organization:</strong> ${org.name}</p>
+          </div>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${workspaceUrl}"
+               style="background: #667eea; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">
+              Go to Your Workspace
+            </a>
+          </div>
+
+          <p style="font-size: 12px; color: #9ca3af;">
+            Or copy this link into your browser:<br/>
+            <a href="${workspaceUrl}" style="color: #667eea;">${workspaceUrl}</a>
+          </p>
+
+          <p style="font-size: 12px; color: #9ca3af; margin-top: 30px;">
+            This email was sent to ${user.email} because someone requested this workspace link. If that
+            wasn't you, you can safely ignore this email.
+          </p>
+        </div>
+      </div>
+    `;
+
+    return await this.sendEmail(user.email, subject, html);
+  }
+
+  /**
    * Teacher Notification - New Homework Submission
    */
   async sendTeacherHomeworkNotification(teacher, student, homework) {

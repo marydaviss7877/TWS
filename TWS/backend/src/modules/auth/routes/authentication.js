@@ -420,6 +420,68 @@ router.post('/login',
 
 /**
  * @swagger
+ * /api/auth/find-workspace:
+ *   post:
+ *     summary: Look up a user's organization by email and send them their workspace link
+ *     description: >
+ *       Does not authenticate or return any session data. Sends an email containing
+ *       the tenant subdomain URL for the org the given email belongs to. Rate limited
+ *       to 5 requests/15min/IP.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Workspace found; email sent
+ *       400:
+ *         description: Validation failed
+ *       404:
+ *         description: No account found for that email address
+ *       429:
+ *         description: Too many requests from this IP
+ *       503:
+ *         description: Database connection not ready
+ */
+router.post('/find-workspace',
+  authLimiter,
+  checkDatabaseConnection,
+  body('email').isEmail().normalizeEmail(AUTH_EMAIL_NORMALIZE),
+  handleValidationErrors,
+  ErrorHandler.asyncHandler(async (req, res) => {
+    const rawEmail = String(req.body.email || '').trim();
+    const normalizedEmail = validator.normalizeEmail(rawEmail, AUTH_EMAIL_NORMALIZE)
+      || rawEmail.toLowerCase();
+
+    const user = await User.findOne({ email: normalizedEmail }).select('email fullName orgId');
+
+    if (!user || !user.orgId) {
+      return res.status(404).json({ success: false, message: 'No account found for that email address.' });
+    }
+
+    const org = await Organization.findById(user.orgId).select('slug name').lean();
+
+    if (!org) {
+      return res.status(404).json({ success: false, message: 'No account found for that email address.' });
+    }
+
+    const emailService = require('../../../services/integrations/email.service');
+    await emailService.sendWorkspaceLookupEmail(user, org);
+
+    res.json({ success: true, message: 'We found your workspace. Check your email for the link.' });
+  })
+);
+
+/**
+ * @swagger
  * /api/auth/supra-admin/login:
  *   post:
  *     summary: Log in a Supra Admin (TWSAdmin)
