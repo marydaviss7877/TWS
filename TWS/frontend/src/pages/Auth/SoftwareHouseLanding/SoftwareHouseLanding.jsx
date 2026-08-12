@@ -347,7 +347,7 @@ const SoftwareHouseLanding = () => {
               <div className="shx-footer-nav">
                 <div><span>Platform</span><a href="#story">The story</a><a href="#platform">Overview</a><Link to="/projects">Projects</Link></div>
                 <div><span>Systems</span><Link to="/hrm">People & HR</Link><Link to="/finance">Finance</Link><Link to="/signup">Client portal</Link></div>
-                <div><span>Get started</span><Link to="/signup">Create workspace</Link><Link to="/login">Sign in</Link><a href="mailto:hello@tws.enterprises">Talk to us</a></div>
+                <div><span>Get started</span><Link to="/signup">Create workspace</Link><Link to="/login">Sign in</Link><a href="mailto:hello@housesbase.com">Talk to us</a></div>
               </div>
             </div>
             <div className="shx-footer-bottom">

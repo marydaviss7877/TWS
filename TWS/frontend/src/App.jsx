@@ -198,7 +198,7 @@ function SubdomainOldPathRedirect() {
 }
 
 // Handles redirects from School ERP's SlugRouter:
-// swh.tws.enterprises/org/beaconhouse → swh.tws.enterprises/beaconhouse/org
+// swh.housesbase.com/org/beaconhouse → swh.housesbase.com/beaconhouse/org
 function OrgPathRedirect() {
   const { tenantSlug, '*': rest } = useParams();
   const dest = `/${tenantSlug}/org${rest ? `/${rest}` : ''}`;
@@ -383,7 +383,7 @@ function App() {
           )}
 
           {/* ── Tenant Org workspace ──────────────────────────────────────── */}
-          {/* On subdomain (acme.tws.enterprises): routes live at /home, /projects, etc.
+          {/* On subdomain (acme.housesbase.com): routes live at /home, /projects, etc.
               On root domain: routes live at /:tenantSlug/org/home, etc.         */}
           <Route path={isSubdomain ? '/' : '/:tenantSlug/org'} element={<TenantOrg />}>
             <Route index element={<Navigate to="home" replace />} />
@@ -515,6 +515,7 @@ function App() {
             <Route path="rulebook" element={<TenantOrgRulebook />} />
 
             {/* Settings */}
+            <Route path="onboarding" element={<Navigate to="../settings/organization" replace />} />
             <Route path="settings" element={<AdminOnlySettingsRoute><SettingsRoute /></AdminOnlySettingsRoute>} />
             <Route path="settings/organization" element={<OrganizationProfileAccessRoute><OrganizationProfileRoute /></OrganizationProfileAccessRoute>} />
             <Route path="settings/workspace" element={<AdminOnlySettingsRoute><WorkspaceSettingsPage /></AdminOnlySettingsRoute>} />

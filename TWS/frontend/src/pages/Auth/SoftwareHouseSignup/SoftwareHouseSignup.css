@@ -1,27 +1,31 @@
 :root {
-    --sh-signup-bg: #050508;
-    --sh-signup-text: #FFFFFF;
-    --sh-signup-surface: #020203;
-    --sh-signup-accent: #06B6D4;
-    --sh-signup-secondary: #8B8BA8;
-    --sh-signup-border: rgba(255, 255, 255, 0.05);
-    --sh-signup-input-bg: rgba(255, 255, 255, 0.03);
-    --sh-signup-input-border: rgba(255, 255, 255, 0.08);
-    --sh-signup-placeholder: #52526A;
-    --sh-signup-mockup-bg: rgba(255, 255, 255, 0.02);
+    --sh-signup-bg: #1F3A63;
+    --sh-signup-text: #EEF3F9;
+    --sh-signup-surface: #24456F;
+    --sh-signup-accent: #E2694F;
+    --sh-signup-accent-rgb: 226, 105, 79;
+    --sh-signup-secondary: #A9C0D6;
+    --sh-signup-border: rgba(238, 243, 249, 0.12);
+    --sh-signup-input-bg: rgba(238, 243, 249, 0.05);
+    --sh-signup-input-border: rgba(238, 243, 249, 0.16);
+    --sh-signup-placeholder: #7C93B0;
+    --sh-signup-mockup-bg: rgba(238, 243, 249, 0.04);
+    --sh-signup-caution: #C1543E;
 }
 
 .sh-signup-container.day-mode {
-    --sh-signup-bg: #F8F8FC;
-    --sh-signup-text: #0F172A;
+    --sh-signup-bg: #F4F6F9;
+    --sh-signup-text: #1F3A63;
     --sh-signup-surface: #FFFFFF;
-    --sh-signup-accent: #0891B2;
-    --sh-signup-secondary: #64748B;
-    --sh-signup-border: rgba(0, 0, 0, 0.05);
+    --sh-signup-accent: #C8402B;
+    --sh-signup-accent-rgb: 200, 64, 43;
+    --sh-signup-secondary: #5B6B7C;
+    --sh-signup-border: #D8DFE6;
     --sh-signup-input-bg: #FFFFFF;
-    --sh-signup-input-border: #E2E8F0;
-    --sh-signup-placeholder: #94A3B8;
-    --sh-signup-mockup-bg: rgba(0, 0, 0, 0.02);
+    --sh-signup-input-border: #D8DFE6;
+    --sh-signup-placeholder: #93A5B8;
+    --sh-signup-mockup-bg: rgba(31, 58, 99, 0.03);
+    --sh-signup-caution: #A8412F;
 }
 
 .sh-signup-container {
@@ -50,7 +54,7 @@
     padding: 2rem;
     position: relative;
     z-index: 10;
-    background: radial-gradient(circle at 0% 0%, rgba(6, 182, 212, 0.05) 0%, transparent 50%);
+    background: radial-gradient(circle at 0% 0%, rgba(31, 58, 99, 0.05) 0%, transparent 50%);
 }
 
 .sh-signup-wrapper {
@@ -74,10 +78,10 @@
 
 .sh-signup-error-box {
     padding: 1rem;
-    background: rgba(239, 68, 68, 0.1);
-    border-left: 4px solid #ef4444;
+    background: rgba(168, 65, 47, 0.1);
+    border-left: 4px solid var(--sh-signup-caution);
     margin-bottom: 1.5rem;
-    color: #ef4444;
+    color: var(--sh-signup-caution);
     font-size: 0.875rem;
     border-radius: 4px;
 }
@@ -86,7 +90,7 @@
     margin-top: -0.7rem;
     margin-bottom: 0.8rem;
     font-size: 0.75rem;
-    color: #ef4444;
+    color: var(--sh-signup-caution);
 }
 
 .sh-signup-label {
@@ -119,13 +123,13 @@
 .sh-signup-input:focus {
     border-color: var(--sh-signup-accent) !important;
     background: var(--sh-signup-mockup-bg) !important;
-    box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.1) !important;
+    box-shadow: 0 0 0 4px rgba(var(--sh-signup-accent-rgb), 0.1) !important;
     outline: none;
 }
 
 .sh-signup-input[aria-invalid="true"] {
-    border-color: #ef4444 !important;
-    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12) !important;
+    border-color: var(--sh-signup-caution) !important;
+    box-shadow: 0 0 0 4px rgba(168, 65, 47, 0.12) !important;
 }
 
 .sh-signup-icon {
@@ -162,12 +166,12 @@
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     margin-top: 1rem;
-    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
+    box-shadow: 0 4px 12px rgba(var(--sh-signup-accent-rgb), 0.2);
 }
 
 .sh-signup-submit-btn:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(6, 182, 212, 0.4);
+    box-shadow: 0 8px 20px rgba(var(--sh-signup-accent-rgb), 0.4);
     filter: brightness(1.1);
 }
 
@@ -184,7 +188,7 @@
 }
 
 .sh-signup-link:hover {
-    color: #22d3ee;
+    color: #E2694F;
     text-decoration: underline;
 }
 
@@ -197,7 +201,7 @@
 /* Right Section - Premium Showcase */
 .sh-signup-right {
     flex: 1.2;
-    background: #020203;
+    background: #152A49;
     border-left: 1px solid var(--sh-signup-border);
     display: flex;
     align-items: center;
@@ -209,7 +213,7 @@
 }
 
 .day-mode .sh-signup-right {
-    background: #F1F5F9;
+    background: #E9EDF3;
 }
 
 .sh-signup-right::before {
@@ -217,8 +221,8 @@
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 40%);
+        radial-gradient(circle at 80% 20%, rgba(238, 243, 249, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 20% 80%, rgba(31, 58, 99, 0.35) 0%, transparent 40%);
     z-index: 1;
 }
 
@@ -341,7 +345,7 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #06B6D4, #3B82F6);
+    background: linear-gradient(135deg, #1F3A63, #3A5C88);
 }
 
 .sh-mockup-item-text {
@@ -375,7 +379,7 @@
 
 .sh-mockup-chart-bar {
     flex: 1;
-    background: linear-gradient(to top, var(--sh-signup-accent), #3B82F6);
+    background: linear-gradient(to top, var(--sh-signup-accent), #1F3A63);
     border-radius: 6px 6px 0 0;
     min-height: 20px;
     transition: height 1s ease;

@@ -8,7 +8,7 @@ const emailService = require('../integrations/email.service');
  */
 async function sendWelcomeEmail(tenant, adminUser) {
   try {
-    const baseDomain = (process.env.BASE_DOMAIN || 'twspms.work.gd').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+    const baseDomain = (process.env.BASE_DOMAIN || 'housesbase.com').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
     const subdomain = `${tenant.slug}.${baseDomain}`;
     
     // Use the main email service

@@ -54,7 +54,17 @@
   color: inherit;
 }
 
-.sh-brand-mark { display: none; }
+.sh-brand-mark {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #1f3a63;
+  color: #f4f6f9;
+}
 
 .sh-brand-lockup {
   display: inline-flex;
@@ -70,8 +80,8 @@
 }
 
 .sh-brand-badge {
-  border: 1px solid var(--tws-accent, #06b6d4);
-  color: var(--tws-accent, #06b6d4);
+  border: 1px solid var(--tws-accent, #c8402b);
+  color: var(--tws-accent, #c8402b);
   font-size: 0.62rem;
   line-height: 1;
   letter-spacing: 0.08em;
@@ -104,7 +114,7 @@
 
 .sh-nav-link.active {
   color: var(--tws-text-primary, #fff);
-  background: rgba(6, 182, 212, 0.14);
+  background: rgba(200, 64, 43, 0.14);
 }
 
 .sh-nav-actions {
@@ -145,7 +155,7 @@
 
 .sh-nav-light .sh-nav-link.active {
   color: #0d0e24;
-  background: rgba(6, 182, 212, 0.18);
+  background: rgba(200, 64, 43, 0.18);
 }
 
 .sh-nav-cta {
@@ -155,8 +165,8 @@
   font-size: 0.84rem;
   padding: 0.62rem 0.95rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #06b6d4 0%, #4f46e5 100%);
-  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
+  background: #c8402b;
+  box-shadow: 0 8px 20px rgba(200, 64, 43, 0.25);
   transition: transform 0.2s ease;
 }
 

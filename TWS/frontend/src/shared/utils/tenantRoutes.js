@@ -20,7 +20,7 @@ export function tenantPath(tenantSlug, ...pathParts) {
     const hostname = window.location.hostname;
     const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost');
     if (!isLocal) {
-      const configuredBase = (process.env.REACT_APP_BASE_DOMAIN || 'twspms.work.gd')
+      const configuredBase = (process.env.REACT_APP_BASE_DOMAIN || 'housesbase.com')
         .trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
       const hostParts = hostname.split('.');
       const hasTenantSubdomain =

@@ -101,7 +101,7 @@ EMAIL_HOST=
 EMAIL_PORT=587
 EMAIL_USER=
 EMAIL_PASS=
-EMAIL_FROM=noreply@noreply.tws.enterprises
+EMAIL_FROM=noreply@noreply.housesbase.com
 
 # AWS Configuration (Optional)
 AWS_ACCESS_KEY_ID=

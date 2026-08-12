@@ -3,7 +3,6 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../app/providers/AuthContext';
 import { useTheme } from '../../../app/providers/ThemeContext';
 import SoftwareHouseNavbar from '../../../features/auth/components/SoftwareHouseNavbar';
-import SoftwareHouseFooter from '../../../features/auth/components/SoftwareHouseFooter';
 import './SoftwareHouseLogin.css';
 import {
     UserIcon,
@@ -13,8 +12,8 @@ import {
     BuildingOffice2Icon,
     LockClosedIcon,
     ShieldCheckIcon,
-    CpuChipIcon,
 } from '@heroicons/react/24/outline';
+import BrandMark from '../../../shared/components/ui/BrandMark';
 import { getTenantWorkspaceUrl, navigateTo } from '../../../shared/utils/subdomain';
 
 const SoftwareHouseLogin = () => {
@@ -36,7 +35,7 @@ const SoftwareHouseLogin = () => {
 
     useEffect(() => {
         const previousTitle = document.title;
-        document.title = 'Login | TWS ERP';
+        document.title = 'Login | HouseBase';
         return () => {
             document.title = previousTitle;
         };
@@ -187,16 +186,15 @@ const SoftwareHouseLogin = () => {
         <div className={`sh-login-container${!isDarkMode ? ' day-mode' : ''}`}>
             <SoftwareHouseNavbar isDarkMode={isDarkMode} />
 
-            {/* Left: Form */}
-            <div className="sh-login-left">
+            <div className="sh-login-stage">
                 <div className="sh-form-wrapper">
 
                     {/* Logo */}
                     <div className="sh-logo-area">
                         <div className="sh-logo-icon">
-                            <span style={{ color: '#fff', fontWeight: 900, fontSize: '1rem' }}>T</span>
+                            <BrandMark simple size={18} />
                         </div>
-                        <div style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '0.04em' }}>TWS ERP</div>
+                        <div style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '0.04em' }}>HouseBase</div>
                     </div>
 
                     <h1 className="sh-heading">Login</h1>
@@ -291,39 +289,9 @@ const SoftwareHouseLogin = () => {
                         </button>
                     </form>
 
-                    <SoftwareHouseFooter compact moduleName="Secure sign in">
-                        <div className="sh-footer-row">
-                            <Link to="/forgot-password" className="sh-footer-link">Forgot password?</Link>
-                            <Link to="/signup" className="sh-footer-link">Create account</Link>
-                        </div>
-                    </SoftwareHouseFooter>
-                </div>
-            </div>
-
-            {/* Right: Orbital Visualizer */}
-            <div className="sh-login-right">
-                <div className="sh-visualizer-bg" />
-                <div className="sh-grid" />
-                <div className="sh-core-container">
-                    <div className="sh-core-ring" />
-                    <div className="sh-core-ring" />
-                    <div className="sh-core-ring" />
-
-                    <div className="sh-status-card" style={{ top: '8%', left: '-18%' }}>
-                        <div className="sh-status-label">Auth Protocol</div>
-                        <div className="sh-status-value">VERIFIED</div>
-                    </div>
-                    <div className="sh-status-card" style={{ bottom: '8%', right: '-12%' }}>
-                        <div className="sh-status-label">Encryption</div>
-                        <div className="sh-status-value">AES-256</div>
-                    </div>
-                    <div className="sh-status-card" style={{ top: '50%', right: '-28%' }}>
-                        <div className="sh-status-label">Session Node</div>
-                        <div className="sh-status-value">US-EAST-01</div>
-                    </div>
-
-                    <div className="sh-visualizer-icon-wrapper">
-                        <CpuChipIcon className="sh-visualizer-icon" />
+                    <div className="sh-footer-row">
+                        <Link to="/forgot-password" className="sh-footer-link">Forgot password?</Link>
+                        <Link to="/signup" className="sh-footer-link">Create account</Link>
                     </div>
                 </div>
             </div>

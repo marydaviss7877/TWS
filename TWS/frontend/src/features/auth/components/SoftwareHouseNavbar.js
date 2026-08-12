@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import ThemeToggle from '../../../shared/components/ui/ThemeToggle';
+import BrandMark from '../../../shared/components/ui/BrandMark';
 import './SoftwareHouseNavbar.css';
 
 const SoftwareHouseNavbar = ({
@@ -39,9 +40,11 @@ const SoftwareHouseNavbar = ({
       >
         <div className="sh-nav-inner">
           <Link to="/" className="sh-brand" onClick={() => setMobileOpen(false)}>
-            <span className="sh-brand-mark" aria-hidden="true">T</span>
+            <span className="sh-brand-mark" aria-hidden="true">
+              <BrandMark simple size={18} />
+            </span>
             <span className="sh-brand-lockup">
-              <span className="sh-brand-wordmark">TWS</span>
+              <span className="sh-brand-wordmark">HouseBase</span>
               <span className="sh-brand-badge">Software House OS</span>
             </span>
           </Link>

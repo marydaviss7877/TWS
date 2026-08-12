@@ -1,4 +1,4 @@
-export const BASE_DOMAIN = (process.env.REACT_APP_BASE_DOMAIN || 'twspms.work.gd')
+export const BASE_DOMAIN = (process.env.REACT_APP_BASE_DOMAIN || 'housesbase.com')
   .trim()
   .replace(/^https?:\/\//, '')
   .replace(/\/+$/, '');
@@ -12,12 +12,12 @@ function isDev() {
 /**
  * Returns the tenant slug from the hostname subdomain, or null when on the
  * root domain or in development (no subdomains on localhost).
- * e.g. "acme.twspms.work.gd" → "acme", "twspms.work.gd" → null
+ * e.g. "acme.housesbase.com" → "acme", "housesbase.com" → null
  */
 export function getSubdomainSlug() {
   if (isDev()) return null;
   const parts = window.location.hostname.split('.');
-  const baseParts = BASE_DOMAIN.split('.').length; // e.g. 3 for twspms.work.gd
+  const baseParts = BASE_DOMAIN.split('.').length; // e.g. 2 for housesbase.com
   if (parts.length <= baseParts) return null;
   const sub = parts[0];
   // These are infrastructure subdomains, not tenant slugs
@@ -38,7 +38,7 @@ export function isSubdomainContext() {
  * the slug and 'org' so the resulting path is just '/home'.
  *
  * Usage: getTenantWorkspaceUrl('acme', 'org', 'home')
- *   prod root domain  → 'https://acme.twspms.work.gd/home'
+ *   prod root domain  → 'https://acme.housesbase.com/home'
  *   prod on subdomain → '/home'
  *   dev (localhost)   → '/acme/org/home'   (keeps legacy path for dev)
  */
@@ -69,7 +69,7 @@ export function getTenantWorkspaceUrl(slug, ...pathParts) {
  *
  * Usage: getTenantSubdomainUrl('acme', '/login')
  *   → '/login'                           (dev / on subdomain)
- *   → 'https://acme.twspms.work.gd/login'  (root domain)
+ *   → 'https://acme.housesbase.com/login'  (root domain)
  */
 export function getTenantSubdomainUrl(slug, absolutePath) {
   if (isDev() || isSubdomainContext()) return absolutePath;

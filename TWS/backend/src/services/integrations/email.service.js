@@ -9,7 +9,7 @@ const envConfig = require('../../config/environment-validator');
 class EmailService {
   constructor() {
     // Secrets read directly from process.env, never through client-facing config.
-    this.from = process.env.EMAIL_FROM || 'noreply@noreply.tws.enterprises';
+    this.from = process.env.EMAIL_FROM || 'noreply@updates.housesbase.com';
     const apiKey = process.env.RESEND_API_KEY;
 
     if (!apiKey) {
@@ -311,6 +311,14 @@ class EmailService {
    */
   async sendTenantWelcomeEmail(user, tenant, subdomain) {
     const subject = `Welcome to ${tenant.name || tenant.organizationName} - Your TWS ERP is Ready!`;
+    // The tenant slug lives in the hostname in production. Build this link from
+    // the provisioned subdomain instead of a central frontend URL so welcome
+    // emails cannot accidentally point at a placeholder or duplicate the slug.
+    const tenantHost = String(subdomain || '')
+      .trim()
+      .replace(/^https?:\/\//i, '')
+      .replace(/\/+$/, '');
+    const tenantOrigin = `https://${tenantHost}`;
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
@@ -343,7 +351,7 @@ class EmailService {
           </div>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${envConfig.get('FRONTEND_URL') || 'https://app.tws.example.com'}/${tenant.slug}/onboarding" 
+            <a href="${tenantOrigin}/onboarding"
                style="background: #667eea; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">
               Complete Your Setup
             </a>
@@ -351,8 +359,7 @@ class EmailService {
           
           <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="font-size: 12px; color: #6b7280; margin: 0;">
-              <strong>Need Help?</strong> Check out our <a href="${envConfig.get('FRONTEND_URL') || 'https://app.tws.example.com'}/docs" style="color: #667eea;">documentation</a> or 
-              <a href="${envConfig.get('FRONTEND_URL') || 'https://app.tws.example.com'}/support" style="color: #667eea;">contact support</a>.
+              <strong>Need Help?</strong> <a href="mailto:hello@housesbase.com" style="color: #667eea;">Contact support</a>.
             </p>
           </div>
           

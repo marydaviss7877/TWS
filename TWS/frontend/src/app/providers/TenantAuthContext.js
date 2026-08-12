@@ -31,7 +31,7 @@ export const TenantAuthProvider = ({ children }) => {
   const secondSegment = pathParts[1];
   // Tenant workspace routes: /:slug/org/... or /:slug/dashboard
   const isTenantPath = secondSegment === 'org' || secondSegment === 'dashboard';
-  // In subdomain mode (acme.tws.enterprises) the path is /home, /users, etc. — no slug in URL
+  // In subdomain mode (acme.housesbase.com) the path is /home, /users, etc. — no slug in URL
   let tenantSlug = (isTenantPath && firstSegment ? firstSegment : null) || getSubdomainSlug();
   
   // Check if tenantSlug is an ObjectId (24 hex characters) - if so, we need to get the actual slug

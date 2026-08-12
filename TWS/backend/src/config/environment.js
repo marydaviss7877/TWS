@@ -60,7 +60,7 @@ class BackendConfig {
       ENCRYPTION_MASTER_KEY: process.env.ENCRYPTION_MASTER_KEY || this.generateSecureSecret(),
       
       // CORS / Domain Configuration — trim to handle Railway env var trailing newlines
-      BASE_DOMAIN: (process.env.BASE_DOMAIN || 'twspms.work.gd').trim(),
+      BASE_DOMAIN: (process.env.BASE_DOMAIN || 'housesbase.com').trim(),
       CORS_ORIGIN: (process.env.CORS_ORIGIN || 'http://localhost:4000').trim(),
       SOCKET_CORS_ORIGIN: (process.env.SOCKET_CORS_ORIGIN || 'http://localhost:4000').trim(),
       
@@ -77,7 +77,7 @@ class BackendConfig {
       EMAIL_PORT: process.env.EMAIL_PORT || 587,
       EMAIL_USER: process.env.EMAIL_USER || '',
       EMAIL_PASS: process.env.EMAIL_PASS || '',
-      EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@noreply.tws.enterprises',
+      EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@noreply.housesbase.com',
       
       
       // AWS Configuration

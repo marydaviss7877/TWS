@@ -1,7 +1,7 @@
 # TWS — Claude Code Instructions
 
-Multi-tenant SaaS ERP platform (tws.enterprises). Tenants are identified by subdomain
-(`acme.tws.enterprises`). Three auth layers: Supra Admin, Software House Admin, Tenant Employee.
+Multi-tenant SaaS ERP platform (housesbase.com). Tenants are identified by subdomain
+(`acme.housesbase.com`). Three auth layers: Supra Admin, Software House Admin, Tenant Employee.
 
 ## Stack
 

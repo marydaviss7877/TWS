@@ -128,7 +128,7 @@ const SoftwareHouseSignup = () => {
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = 'Signup | TWS ERP';
+    document.title = 'Signup | HouseBase';
     return () => {
       document.title = previousTitle;
     };
@@ -418,7 +418,7 @@ const SoftwareHouseSignup = () => {
               <CheckCircleIcon className="sh-success-icon" />
               <h2 className="sh-signup-heading">Command Center Ready</h2>
               <p className="sh-signup-subtext" style={{ marginBottom: '2rem' }}>Your workspace has been initialized. Redirecting to login...</p>
-              <button onClick={() => navigate('/login')} className="sh-signup-submit-btn" style={{ background: '#fff', color: '#000' }}>
+              <button onClick={() => navigate('/login')} className="sh-signup-submit-btn">
                 Go to Login
               </button>
             </div>
@@ -435,7 +435,7 @@ const SoftwareHouseSignup = () => {
         <SoftwareHouseNavbar isDarkMode={isDarkMode} />
         <div className="sh-signup-left">
           <div className="sh-signup-wrapper">
-            <h1 className="sh-signup-heading">Check your <span style={{ color: '#06B6D4' }}>inbox.</span></h1>
+            <h1 className="sh-signup-heading">Check your <span style={{ color: 'var(--sh-signup-accent)' }}>inbox.</span></h1>
             <p className="sh-signup-subtext">
               We sent a 6-digit code to <strong>{formData.email}</strong>. Enter it below to finish creating your workspace.
             </p>
@@ -514,7 +514,7 @@ const SoftwareHouseSignup = () => {
 
       <div className="sh-signup-left">
         <div className="sh-signup-wrapper">
-          <h1 className="sh-signup-heading">Forge your <span style={{ color: '#06B6D4' }}>Empire.</span></h1>
+          <h1 className="sh-signup-heading">Forge your <span style={{ color: 'var(--sh-signup-accent)' }}>Empire.</span></h1>
           <p className="sh-signup-subtext">Initialize your software house's operating system in seconds.</p>
 
           {error && (
@@ -556,7 +556,7 @@ const SoftwareHouseSignup = () => {
                 <div className="sh-signup-input-wrap">
                   <LockClosedIcon className="sh-signup-icon" />
                   <input ref={passwordInputRef} name="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={formData.password} onChange={handleChange} required className="sh-signup-input" style={{ paddingRight: '3rem' }} aria-invalid={Boolean(fieldErrors.password)} aria-describedby={[fieldErrors.password ? 'sh-signup-password-error' : '', error ? 'sh-signup-form-error' : ''].filter(Boolean).join(' ') || undefined} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#8B8BA8', cursor: 'pointer', zIndex: 10 }} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword}>
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--sh-signup-secondary)', cursor: 'pointer', zIndex: 10 }} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword}>
                     {showPassword ? <EyeSlashIcon style={{ width: 18, height: 18 }} /> : <EyeIcon style={{ width: 18, height: 18 }} />}
                   </button>
                 </div>
@@ -567,7 +567,7 @@ const SoftwareHouseSignup = () => {
                 <div className="sh-signup-input-wrap">
                   <LockClosedIcon className="sh-signup-icon" />
                   <input ref={confirmPasswordInputRef} name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} placeholder="••••••••" value={formData.confirmPassword} onChange={handleChange} required className="sh-signup-input" style={{ paddingRight: '3rem' }} aria-invalid={Boolean(fieldErrors.confirmPassword)} aria-describedby={[fieldErrors.confirmPassword ? 'sh-signup-confirm-password-error' : '', error ? 'sh-signup-form-error' : ''].filter(Boolean).join(' ') || undefined} />
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#8B8BA8', cursor: 'pointer', zIndex: 10 }} aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'} aria-pressed={showConfirmPassword}>
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--sh-signup-secondary)', cursor: 'pointer', zIndex: 10 }} aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'} aria-pressed={showConfirmPassword}>
                     {showConfirmPassword ? <EyeSlashIcon style={{ width: 18, height: 18 }} /> : <EyeIcon style={{ width: 18, height: 18 }} />}
                   </button>
                 </div>
@@ -592,9 +592,9 @@ const SoftwareHouseSignup = () => {
               </div>
               {fieldErrors.organizationSlug && <div id="sh-signup-org-slug-error" className="sh-signup-field-error">{fieldErrors.organizationSlug}</div>}
               <div style={{ fontSize: '0.75rem', minHeight: 20, marginBottom: '1rem' }}>
-                {checkingSlug && <span style={{ color: '#8B8BA8' }}>Checking URL...</span>}
-                {!checkingSlug && slugAvailable === true && <span style={{ color: '#06B6D4' }}><CheckCircleIcon style={{ width: 16, height: 16, verticalAlign: 'middle', marginRight: 4 }} /> URL Available</span>}
-                {!checkingSlug && slugAvailable === false && <span style={{ color: '#ef4444' }}><ExclamationTriangleIcon style={{ width: 16, height: 16, verticalAlign: 'middle', marginRight: 4 }} /> URL Taken</span>}
+                {checkingSlug && <span style={{ color: 'var(--sh-signup-secondary)' }}>Checking URL...</span>}
+                {!checkingSlug && slugAvailable === true && <span style={{ color: 'var(--sh-signup-accent)' }}><CheckCircleIcon style={{ width: 16, height: 16, verticalAlign: 'middle', marginRight: 4 }} /> URL Available</span>}
+                {!checkingSlug && slugAvailable === false && <span style={{ color: 'var(--sh-signup-caution)' }}><ExclamationTriangleIcon style={{ width: 16, height: 16, verticalAlign: 'middle', marginRight: 4 }} /> URL Taken</span>}
               </div>
             </div>
 

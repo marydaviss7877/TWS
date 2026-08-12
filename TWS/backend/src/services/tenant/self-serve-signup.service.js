@@ -347,7 +347,7 @@ class SelfServeSignupService {
       setImmediate(async () => {
         try {
           console.log('📝 Step 14: Sending welcome email (background)...');
-          const baseDomain = (process.env.BASE_DOMAIN || 'twspms.work.gd').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+          const baseDomain = (process.env.BASE_DOMAIN || 'housesbase.com').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
           const subdomain = `${organizationSlug}.${baseDomain}`;
           await emailService.sendTenantWelcomeEmail(user, tenant, subdomain);
           console.log('✅ Welcome email sent');

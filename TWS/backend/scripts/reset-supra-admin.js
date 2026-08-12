@@ -5,12 +5,17 @@
 const mongoose = require('mongoose');
 const TWSAdmin = require('../src/models/admin-platform/TWSAdmin');
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://subhan:U3SNm3nRjvtHMiN7@cluster0.rlfss7x.mongodb.net/wolfstack';
+const MONGO_URI = process.env.MONGO_URI;
 const ADMIN_EMAIL = 'admin@tws.com';
-const NEW_PASSWORD = 'admin123456';
+const NEW_PASSWORD = process.env.NEW_PASSWORD;
 
 async function resetSupraAdmin() {
   try {
+    if (!MONGO_URI) throw new Error('MONGO_URI is required');
+    if (!NEW_PASSWORD || NEW_PASSWORD.length < 12) {
+      throw new Error('NEW_PASSWORD is required and must be at least 12 characters');
+    }
+
     console.log('🔗 Connecting to MongoDB...');
     await mongoose.connect(MONGO_URI);
     console.log('✅ Connected to MongoDB\n');
@@ -18,16 +23,7 @@ async function resetSupraAdmin() {
     let admin = await TWSAdmin.findOne({ email: ADMIN_EMAIL }).select('+password');
 
     if (!admin) {
-      console.log('⚠️  TWSAdmin not found — creating one...');
-      admin = new TWSAdmin({
-        email: ADMIN_EMAIL,
-        password: NEW_PASSWORD,
-        fullName: 'TWS Platform Admin',
-        role: 'platform_super_admin',
-        status: 'active'
-      });
-      await admin.save();
-      console.log('✅ TWSAdmin created successfully\n');
+      throw new Error(`TWSAdmin not found: ${ADMIN_EMAIL}`);
     } else {
       console.log(`✅ Found TWSAdmin: ${admin.email} (role: ${admin.role})`);
       console.log('🔄 Resetting password...');
@@ -41,10 +37,10 @@ async function resetSupraAdmin() {
     const valid = await verifyAdmin.comparePassword(NEW_PASSWORD);
 
     console.log('═══════════════════════════════════════════════');
-    console.log('📋 SUPRA ADMIN CREDENTIALS:');
+    console.log('📋 SUPRA ADMIN RESET RESULT:');
     console.log('═══════════════════════════════════════════════');
     console.log(`   Email:    ${ADMIN_EMAIL}`);
-    console.log(`   Password: ${NEW_PASSWORD}`);
+    console.log('   Password: [not logged]');
     console.log(`   Role:     ${verifyAdmin.role}`);
     console.log(`   Status:   ${verifyAdmin.status}`);
     console.log(`   Verified: ${valid ? '✅ Password works!' : '❌ Verification failed'}`);

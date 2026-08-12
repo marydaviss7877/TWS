@@ -29,6 +29,8 @@ class EnvironmentConfig {
       'FIREBASE_CLIENT_EMAIL': '',
       'SENDGRID_API_KEY': '',
       'BASE_URL': 'http://localhost:4000',
+      'FRONTEND_URL': 'http://localhost:4000',
+      'BASE_DOMAIN': 'housesbase.com',
       'SOCKET_CORS_ORIGIN': 'http://localhost:4000',
       'RATE_LIMIT_WINDOW_MS': '900000',
       'RATE_LIMIT_MAX_REQUESTS': '100',
