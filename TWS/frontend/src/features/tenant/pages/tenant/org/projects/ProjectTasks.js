@@ -669,8 +669,9 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
 
   /* ── event bus hooks ── */
   useEffect(() => {
-    window.addEventListener('openCreateTaskModal', () => setIsCreateModalOpen(true));
-    return () => window.removeEventListener('openCreateTaskModal', () => setIsCreateModalOpen(true));
+    const openCreateTaskModal = () => setIsCreateModalOpen(true);
+    window.addEventListener('openCreateTaskModal', openCreateTaskModal);
+    return () => window.removeEventListener('openCreateTaskModal', openCreateTaskModal);
   }, []);
 
   useEffect(() => {

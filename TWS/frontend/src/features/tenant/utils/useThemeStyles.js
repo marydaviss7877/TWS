@@ -6,18 +6,7 @@ import { useTenantTheme } from '../providers/TenantThemeProvider';
 import { generateColorShades } from './themeConfig';
 
 export const useThemeStyles = () => {
-  let theme;
-  try {
-    const themeContext = useTenantTheme();
-    theme = themeContext.theme;
-  } catch (error) {
-    // If theme provider is not available, use default theme
-    console.warn('useThemeStyles: Theme provider not available, using defaults', error);
-    theme = {
-      colors: { primary: '#6366F1', secondary: '#10B981', accent: '#A855F7' },
-      fonts: { heading: 'Geist', body: 'Inter' }
-    };
-  }
+  const { theme } = useTenantTheme();
 
   // Get actual color values from theme (not CSS variables)
   const getPrimaryColor = (shade = 500) => {

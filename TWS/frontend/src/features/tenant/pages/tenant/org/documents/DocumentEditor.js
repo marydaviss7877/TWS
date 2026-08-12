@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import toast from 'react-hot-toast';
+import DOMPurify from 'dompurify';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
 import '@blocknote/core/fonts/inter.css';
@@ -370,8 +371,10 @@ const DocumentEditor = () => {
     }
   }, [tenantSlug, docId, handleSave]);
 
-  const getSafeFilename = () =>
-    (title.trim() || 'Untitled').replace(/[^a-z0-9-_]/gi, '_');
+  const getSafeFilename = useCallback(
+    () => (title.trim() || 'Untitled').replace(/[^a-z0-9-_]/gi, '_'),
+    [title]
+  );
 
   const getFullHtml = useCallback(async () => {
     if (!editor) return '';
@@ -419,7 +422,7 @@ const DocumentEditor = () => {
     try {
       const fullHtml = await getFullHtml();
       const wrapper = document.createElement('div');
-      wrapper.innerHTML = fullHtml;
+      wrapper.innerHTML = DOMPurify.sanitize(fullHtml);
       wrapper.style.position = 'absolute';
       wrapper.style.left = '-9999px';
       wrapper.style.width = '210mm';

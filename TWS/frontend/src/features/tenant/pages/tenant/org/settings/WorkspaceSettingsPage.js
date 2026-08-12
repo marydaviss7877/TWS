@@ -108,11 +108,9 @@ const WorkspaceSettingsPage = () => {
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
 
   const set = (key) => (val) => {
-    setForm(p => {
-      const next = { ...p, [key]: val };
-      setDirty(JSON.stringify(next) !== JSON.stringify(savedForm));
-      return next;
-    });
+    const next = { ...form, [key]: val };
+    setForm(next);
+    setDirty(JSON.stringify(next) !== JSON.stringify(savedForm));
   };
 
   const load = useCallback(async () => {

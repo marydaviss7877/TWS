@@ -65,7 +65,7 @@ const EmployeeDocumentsView = ({ tenantSlug }) => {
   const downloadDocument = async (document) => {
     try {
       if (document.fileUrl) {
-        window.open(document.fileUrl, '_blank');
+        window.open(document.fileUrl, '_blank', 'noopener,noreferrer');
       } else {
         toast.error('Document URL not available');
       }
@@ -77,7 +77,7 @@ const EmployeeDocumentsView = ({ tenantSlug }) => {
 
   const viewDocument = (document) => {
     if (document.fileUrl) {
-      window.open(document.fileUrl, '_blank');
+      window.open(document.fileUrl, '_blank', 'noopener,noreferrer');
     } else {
       toast.error('Document URL not available');
     }
