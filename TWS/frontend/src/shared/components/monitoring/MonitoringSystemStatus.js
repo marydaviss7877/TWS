@@ -1,5 +1,5 @@
 ﻿import { API_BASE_URL } from '../../../constants/apiEndpoints';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const MonitoringSystemStatus = () => {
@@ -15,8 +15,16 @@ const MonitoringSystemStatus = () => {
   const [redisStatus, setRedisStatus] = useState('checking');
   const [monitoringMessage, setMonitoringMessage] = useState('');
 
+  const wsRef = useRef(null);
+
   useEffect(() => {
     checkSystemStatus();
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
   }, []);
 
   const checkSystemStatus = async () => {
@@ -45,12 +53,15 @@ const MonitoringSystemStatus = () => {
     // Check WebSocket
     try {
       const ws = new WebSocket(monitoringWsUrl);
+      wsRef.current = ws;
       ws.onopen = () => {
         setWebsocketStatus('online');
         ws.close();
+        wsRef.current = null;
       };
       ws.onerror = () => {
         setWebsocketStatus('offline');
+        wsRef.current = null;
       };
     } catch (error) {
       setWebsocketStatus('offline');

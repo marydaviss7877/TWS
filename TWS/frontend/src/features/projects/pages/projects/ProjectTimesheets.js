@@ -272,8 +272,8 @@ const ProjectTimesheets = () => {
           Project Time Breakdown
         </h3>
         <div className="space-y-4">
-          {weekSummary.projectBreakdown.map((project, idx) => (
-            <div key={idx}>
+          {weekSummary.projectBreakdown.map((project) => (
+            <div key={project.project}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">{project.project}</span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white">{project.hours}h ({project.percentage}%)</span>

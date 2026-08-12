@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import toast from 'react-hot-toast';
@@ -107,6 +107,11 @@ const SettingsOverview = () => {
   const [saving,  setSaving]  = useState(false);
   const [tab,     setTab]     = useState('general');
   const [profilePicPreview, setProfilePicPreview] = useState(null);
+  const profilePicPreviewRef = useRef(null);
+
+  useEffect(() => () => {
+    if (profilePicPreviewRef.current) URL.revokeObjectURL(profilePicPreviewRef.current);
+  }, []);
 
   const [general, setGeneral] = useState({
     organizationName: '', timezone: 'Asia/Karachi',
@@ -259,7 +264,10 @@ const SettingsOverview = () => {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.message || 'Failed to upload profile picture');
-      setProfilePicPreview(URL.createObjectURL(file));
+      if (profilePicPreviewRef.current) URL.revokeObjectURL(profilePicPreviewRef.current);
+      const preview = URL.createObjectURL(file);
+      profilePicPreviewRef.current = preview;
+      setProfilePicPreview(preview);
       if (json?.data?.profilePicUrl) {
         updateUser?.({ profilePicUrl: json.data.profilePicUrl });
       }

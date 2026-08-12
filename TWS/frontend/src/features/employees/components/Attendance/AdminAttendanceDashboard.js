@@ -150,7 +150,8 @@ const AdminAttendanceDashboard = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+      window.URL.revokeObjectURL(url);
+
       toast.success(`Attendance data exported as ${format.toUpperCase()}`);
     } catch (error) {
       console.error('Error exporting data:', error);

@@ -30,6 +30,7 @@ const useSocket = () => {
     setSocket(newSocket);
 
     return () => {
+      newSocket.removeAllListeners();
       newSocket.close();
     };
   }, []);

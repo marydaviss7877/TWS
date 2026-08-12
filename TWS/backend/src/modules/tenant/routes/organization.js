@@ -3552,6 +3552,27 @@ router.get('/settings', verifyERPToken, denyClientSettingsAccess, requireSetting
   }
 });
 
+// Get the org's configured currency only. Unlike GET /settings above, this is NOT gated by
+// requireSettingsAdmin: currency is non-sensitive display/formatting config that every module
+// rendering money (Finance, Projects, HR payroll, etc.) needs to read regardless of role, not
+// just settings admins.
+router.get('/settings/currency', verifyERPToken, async (req, res) => {
+  try {
+    const tenantContext = req.tenantContext || await buildTenantContext(req);
+    const { tenantId, orgId } = tenantContext;
+
+    const settings = await TenantSettings.getOrCreate(tenantId, orgId);
+
+    res.json({
+      success: true,
+      data: { currency: settings.general.currency }
+    });
+  } catch (error) {
+    console.error('Get tenant currency error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch currency setting' });
+  }
+});
+
 // Update general settings
 router.put('/settings/general', verifyERPToken, denyClientSettingsAccess, requireSettingsAdmin, async (req, res) => {
   try {

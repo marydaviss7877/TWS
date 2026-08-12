@@ -163,8 +163,8 @@ const ProjectOverview = () => {
     <div className="space-y-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
-          <div key={index} className="glass-card-premium p-6 hover-glow">
+        {stats.map((stat) => (
+          <div key={stat.label} className="glass-card-premium p-6 hover-glow">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">

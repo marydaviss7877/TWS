@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   UserIcon,
@@ -91,6 +91,11 @@ const EmployeeCreate = () => {
   const [skillsInput, setSkillsInput] = useState('');
   const [profilePicFile, setProfilePicFile] = useState(null);
   const [profilePicPreview, setProfilePicPreview] = useState(null);
+  const profilePicPreviewRef = useRef(null);
+
+  useEffect(() => () => {
+    if (profilePicPreviewRef.current) URL.revokeObjectURL(profilePicPreviewRef.current);
+  }, []);
   // Departments loaded from API; falls back to the hardcoded list
   const [departmentOptions, setDepartmentOptions] = useState(SOFTWARE_HOUSE_DEPARTMENTS);
 
@@ -182,7 +187,10 @@ const EmployeeCreate = () => {
       return;
     }
     setProfilePicFile(file);
-    setProfilePicPreview(URL.createObjectURL(file));
+    if (profilePicPreviewRef.current) URL.revokeObjectURL(profilePicPreviewRef.current);
+    const preview = URL.createObjectURL(file);
+    profilePicPreviewRef.current = preview;
+    setProfilePicPreview(preview);
   };
 
   const handleSubmit = async (e) => {

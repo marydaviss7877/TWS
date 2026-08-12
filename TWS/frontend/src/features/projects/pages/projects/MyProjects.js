@@ -279,9 +279,9 @@ const MyProjects = () => {
             <div className="mb-4">
               <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Team Members</p>
               <div className="flex items-center gap-2">
-                {project.team.map((member, idx) => (
-                  <div 
-                    key={idx}
+                {project.team.map((member) => (
+                  <div
+                    key={member.name}
                     className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-white text-xs font-bold"
                     title={`${member.name} - ${member.role}`}
                   >

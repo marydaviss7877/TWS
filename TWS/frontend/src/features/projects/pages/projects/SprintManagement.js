@@ -352,8 +352,8 @@ const SprintManagement = () => {
                 <div className="glass-card p-4">
                   <h3 className="font-bold text-gray-900 dark:text-white mb-2">Team Members</h3>
                   <div className="space-y-2">
-                    {selectedSprint.team.map((member, index) => (
-                      <div key={index} className="flex items-center justify-between text-sm">
+                    {selectedSprint.team.map((member) => (
+                      <div key={member.name} className="flex items-center justify-between text-sm">
                         <span className="text-gray-900 dark:text-white">{member.name}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-gray-600 dark:text-gray-400">{member.role}</span>

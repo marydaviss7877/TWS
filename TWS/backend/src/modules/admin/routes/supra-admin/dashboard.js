@@ -88,6 +88,8 @@ const {
  *                       items:
  *                         type: object
  *                         properties:
+ *                           _id:
+ *                             type: string
  *                           name:
  *                             type: string
  *                           createdAt:
@@ -213,6 +215,7 @@ router.get('/dashboard', requirePlatformPermission(PLATFORM_PERMISSIONS.ANALYTIC
       recentActivity: {
         recentTenants: recentTenants.length > 0
           ? recentTenants.map(t => ({
+              _id: t._id,
               name: t.name || 'Unnamed Tenant',
               createdAt: t.createdAt,
               status: t.status

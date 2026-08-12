@@ -9,7 +9,7 @@
  *   • All Apps        (everything the user can access)
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
@@ -153,14 +153,14 @@ const SectionLabel = ({ emoji, title, count, bookmarkSection }) => (
 );
 
 // ── AppGrid ────────────────────────────────────────────────────────────────────
-const AppGrid = ({ items, activeAppKey, favoriteKeys, onNavigate, onToggleFav }) => (
+const AppGrid = ({ items, activeAppKey, favoriteKeySet, onNavigate, onToggleFav }) => (
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 sm:gap-3 lg:gap-4">
     {items.map(item => (
       <AppCard
         key={item.key}
         item={item}
         isActive={item.key === activeAppKey}
-        isFav={favoriteKeys.includes(item.key)}
+        isFav={favoriteKeySet.has(item.key)}
         onNavigate={onNavigate}
         onToggleFav={onToggleFav}
       />
@@ -199,6 +199,7 @@ const AppHome = () => {
     hasModulePermission?.('payroll', 'admin') ||
     hasElevatedRole;
   const showEmployeeApps = !isClientUser && !isAdminUser;
+  const favoriteKeySet = useMemo(() => new Set(favoriteKeys), [favoriteKeys]);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -234,11 +235,9 @@ const AppHome = () => {
 
   const persistRecentApp = (appKey) => {
     if (!appKey) return;
-    setRecentKeys((prev) => {
-      const next = pushRecentApp(prev, appKey);
-      saveRecentApps(tenantSlug, next);
-      return next;
-    });
+    const next = pushRecentApp(recentKeys, appKey);
+    saveRecentApps(tenantSlug, next);
+    setRecentKeys(next);
   };
 
   const handleNavigate = (path) => {
@@ -247,7 +246,8 @@ const AppHome = () => {
     navigate(path);
   };
 
-  const recentItems = filteredMenuItems.filter((m) => recentKeys.includes(m.key));
+  const recentKeySet = new Set(recentKeys);
+  const recentItems = filteredMenuItems.filter((m) => recentKeySet.has(m.key));
   recentItems.sort((a, b) => recentKeys.indexOf(a.key) - recentKeys.indexOf(b.key));
   const employeeApps = [
     { key: 'employee-profile', label: 'My Profile', path: `/${tenantSlug}/org/employee/profile`, icon: UserIcon },
@@ -450,7 +450,7 @@ const AppHome = () => {
               <AppGrid
                 items={employeeApps}
                 activeAppKey={activeAppKey}
-                favoriteKeys={favoriteKeys}
+                favoriteKeySet={favoriteKeySet}
                 onNavigate={handleNavigate}
                 onToggleFav={toggleFavorite}
               />
@@ -464,7 +464,7 @@ const AppHome = () => {
                 <AppGrid
                   items={visible}
                   activeAppKey={activeAppKey}
-                  favoriteKeys={favoriteKeys}
+                  favoriteKeySet={favoriteKeySet}
                   onNavigate={handleNavigate}
                   onToggleFav={toggleFavorite}
                 />
@@ -509,7 +509,7 @@ const AppHome = () => {
                     <AppGrid
                       items={recentItems}
                       activeAppKey={activeAppKey}
-                      favoriteKeys={favoriteKeys}
+                      favoriteKeySet={favoriteKeySet}
                       onNavigate={handleNavigate}
                       onToggleFav={toggleFavorite}
                     />
@@ -519,7 +519,7 @@ const AppHome = () => {
                 <AppGrid
                   items={visible}
                   activeAppKey={activeAppKey}
-                  favoriteKeys={favoriteKeys}
+                  favoriteKeySet={favoriteKeySet}
                   onNavigate={handleNavigate}
                   onToggleFav={toggleFavorite}
                 />

@@ -24,10 +24,13 @@ import {
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import { useTenantCurrency } from '../../../../../../shared/hooks/useTenantCurrency';
+import { formatCurrency as formatCurrencyBase } from '../../../../../../shared/utils/currency';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 
 const FinanceOverview = () => {
   const tenantSlug = useTenantSlug();
+  const currency = useTenantCurrency(tenantSlug);
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useTenantAuth();
   const [loading, setLoading] = useState(true);
@@ -242,12 +245,7 @@ const FinanceOverview = () => {
 
   const profitMargin = totalRevenue > 0 ? ((netIncome / totalRevenue) * 100) : 0;
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+  const formatCurrency = (amount) => formatCurrencyBase(amount, currency);
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString();

@@ -17,10 +17,13 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import { useTenantCurrency } from '../../../../../../shared/hooks/useTenantCurrency';
+import { formatCurrency as formatCurrencyBase } from '../../../../../../shared/utils/currency';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 
 const TimeExpenses = () => {
   const tenantSlug = useTenantSlug();
+  const currency = useTenantCurrency(tenantSlug);
   const [timeEntries, setTimeEntries] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -174,12 +177,7 @@ const TimeExpenses = () => {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+  const formatCurrency = (amount) => formatCurrencyBase(amount, currency);
 
   const formatDate = (date) => {
     if (!date) return '';

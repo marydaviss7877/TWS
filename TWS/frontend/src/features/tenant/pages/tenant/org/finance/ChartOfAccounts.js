@@ -20,11 +20,17 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import { useTenantCurrency } from '../../../../../../shared/hooks/useTenantCurrency';
+import { formatCurrency } from '../../../../../../shared/utils/currency';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import toast from 'react-hot-toast';
+import ConfirmDialog from '../../../../../../components/ConfirmDialog/ConfirmDialog';
 
 const ChartOfAccounts = () => {
   const tenantSlug = useTenantSlug();
+  const currency = useTenantCurrency(tenantSlug);
   const [accounts, setAccounts] = useState([]);
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, onConfirm: null, title: '', message: '', confirmText: 'Confirm', variant: 'danger' });
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
@@ -549,40 +555,53 @@ const ChartOfAccounts = () => {
       await fetchAccounts();
     } catch (error) {
       console.error('Error saving account:', error);
-      alert(error.message || 'Failed to save account. Please try again.');
+      toast.error(error.message || 'Failed to save account. Please try again.');
     }
   };
 
-  const handleDeleteAccount = async (accountId) => {
-    if (!window.confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
-      return;
-    }
-    try {
-      await tenantApiService.deleteAccountOrg(tenantSlug, accountId);
-      await fetchAccounts();
-    } catch (error) {
-      console.error('Error deleting account:', error);
-      alert(error.message || 'Failed to delete account. Please try again.');
-    }
+  const handleDeleteAccount = (accountId) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete account',
+      message: 'Are you sure you want to delete this account? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await tenantApiService.deleteAccountOrg(tenantSlug, accountId);
+          await fetchAccounts();
+          toast.success('Account deleted');
+        } catch (error) {
+          console.error('Error deleting account:', error);
+          toast.error(error.message || 'Failed to delete account. Please try again.');
+        }
+      }
+    });
   };
 
-  const loadTemplate = async (template) => {
-    if (!window.confirm(`Load ${template} chart of accounts template? This will create all accounts from the template.`)) {
-      return;
-    }
-    try {
-      setLoading(true);
-      await tenantApiService.loadChartOfAccountsTemplateOrg(tenantSlug, template);
-      setSelectedTemplate(template);
-      setShowTemplates(false);
-      await fetchAccounts();
-      alert(`${template} template loaded successfully!`);
-    } catch (error) {
-      console.error('Error loading template:', error);
-      alert(error.message || 'Failed to load template. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+  const loadTemplate = (template) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Load chart of accounts template',
+      message: `Load the ${template} chart of accounts template? This will create all accounts from the template.`,
+      confirmText: 'Load template',
+      variant: 'warning',
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          await tenantApiService.loadChartOfAccountsTemplateOrg(tenantSlug, template);
+          setSelectedTemplate(template);
+          setShowTemplates(false);
+          await fetchAccounts();
+          toast.success(`${template} template loaded successfully`);
+        } catch (error) {
+          console.error('Error loading template:', error);
+          toast.error(error.message || 'Failed to load template. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   const renderAccountTree = (account, level = 0) => {
@@ -656,7 +675,7 @@ const ChartOfAccounts = () => {
           <div className="flex items-center space-x-2">
             {account.budgetAmount > 0 && (
               <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                ${account.budgetAmount.toLocaleString()}
+                {formatCurrency(account.budgetAmount, currency)}
               </span>
             )}
             
@@ -1198,6 +1217,17 @@ const ChartOfAccounts = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false, onConfirm: null, title: '', message: '', confirmText: 'Confirm', variant: 'danger' })}
+        onConfirm={confirmDialog.onConfirm || (() => {})}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText}
+        cancelText="Cancel"
+        variant={confirmDialog.variant}
+      />
     </div>
   );
 };

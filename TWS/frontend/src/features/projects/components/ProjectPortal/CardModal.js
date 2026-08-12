@@ -26,6 +26,9 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
   const [checklists, setChecklists] = useState(card?.checklists || []);
   const [newChecklistTitle, setNewChecklistTitle] = useState('');
   const [isAddingChecklist, setIsAddingChecklist] = useState(false);
+  const [isSavingCard, setIsSavingCard] = useState(false);
+  const [isPostingComment, setIsPostingComment] = useState(false);
+  const [isSavingChecklist, setIsSavingChecklist] = useState(false);
 
   useEffect(() => {
     if (card) {
@@ -40,6 +43,8 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
   }, [card]);
 
   const handleSave = async () => {
+    if (isSavingCard) return;
+    setIsSavingCard(true);
     try {
       const updates = {
         title: title.trim(),
@@ -50,7 +55,7 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
       };
 
       const response = await axiosInstance.patch(`/api/cards/${card._id}`, updates);
-      
+
       if (response.data?.success) {
         handleSuccess(SUCCESS_MESSAGES.CARD_UPDATED);
         onUpdate(updates);
@@ -60,12 +65,14 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
       }
     } catch (error) {
       handleApiError(error, 'Failed to update card');
+    } finally {
+      setIsSavingCard(false);
     }
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
-
+    if (!newComment.trim() || isPostingComment) return;
+    setIsPostingComment(true);
     try {
       const response = await axiosInstance.post(`/api/cards/${card._id}/comments`, {
         text: newComment.trim()
@@ -80,11 +87,14 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
       }
     } catch (error) {
       handleApiError(error, 'Failed to add comment');
+    } finally {
+      setIsPostingComment(false);
     }
   };
 
   const handleAddChecklist = async () => {
-    if (!newChecklistTitle.trim()) return;
+    if (!newChecklistTitle.trim() || isSavingChecklist) return;
+    setIsSavingChecklist(true);
 
     const newChecklist = {
       title: newChecklistTitle.trim(),
@@ -107,6 +117,8 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
       }
     } catch (error) {
       handleApiError(error, 'Failed to add checklist');
+    } finally {
+      setIsSavingChecklist(false);
     }
   };
 
@@ -284,7 +296,7 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
             <div className="flex flex-wrap gap-2">
               {assignees.map((assignee, index) => (
                 <div
-                  key={index}
+                  key={assignee._id || assignee}
                   className="flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm"
                 >
                   {assignee.fullName}
@@ -317,14 +329,14 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
             </div>
 
             {checklists.map((checklist, checklistIndex) => (
-              <div key={checklistIndex} className="mb-3">
+              <div key={checklist.id || checklistIndex} className="mb-3">
                 <h5 className="text-sm font-medium text-gray-600 mb-2">
                   {checklist.title}
                 </h5>
                 <div className="space-y-1">
                   {checklist.items.map((item, itemIndex) => (
                     <label
-                      key={itemIndex}
+                      key={item.id || itemIndex}
                       className="flex items-center space-x-2 cursor-pointer"
                     >
                       <input
@@ -354,7 +366,8 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
                 <div className="flex space-x-2">
                   <button
                     onClick={handleAddChecklist}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                    disabled={isSavingChecklist}
+                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Add
                   </button>
@@ -381,7 +394,7 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
             
             <div className="space-y-3 mb-4">
               {comments.map((comment, index) => (
-                <div key={index} className="bg-gray-50 rounded p-3">
+                <div key={comment._id || index} className="bg-gray-50 rounded p-3">
                   <div className="flex items-center space-x-2 mb-1">
                     <span className="text-sm font-medium text-gray-900">
                       {comment.userId?.fullName || 'Unknown User'}
@@ -406,7 +419,7 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
               />
               <button
                 onClick={handleAddComment}
-                disabled={!newComment.trim()}
+                disabled={!newComment.trim() || isPostingComment}
                 className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <CheckIcon className="h-4 w-4" />
@@ -423,7 +436,7 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
               </h4>
               <div className="space-y-2">
                 {card.attachments.map((attachment, index) => (
-                  <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                  <div key={attachment.id || attachment.url || index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
                     <PaperClipIcon className="h-4 w-4 text-gray-400" />
                     <span className="text-sm text-gray-700">{attachment.fileName}</span>
                     <span className="text-xs text-gray-500">
@@ -447,9 +460,10 @@ const CardModal = ({ isOpen, onClose, card, onUpdate, projectId, boardId, listId
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              disabled={isSavingCard}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Save Changes
+              {isSavingCard ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
         )}

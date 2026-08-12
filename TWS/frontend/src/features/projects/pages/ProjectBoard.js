@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeftIcon,
@@ -23,36 +23,42 @@ const ProjectBoard = () => {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('board');
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
+  const fetchProject = useCallback(async () => {
+    try {
+      const response = await projectApiService.getProject(projectId);
+      if (isMountedRef.current && response.success && response.data?.project) {
+        setProject(response.data.project);
+      }
+    } catch (error) {
+      if (isMountedRef.current) handleApiError(error, 'Failed to load project');
+    }
+  }, [projectId]);
+
+  const fetchBoardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await projectApiService.getProjectBoards(projectId);
+      if (isMountedRef.current && response.success && response.data?.boards) {
+        setBoardData(response.data.boards[0]);
+      }
+    } catch (error) {
+      if (isMountedRef.current) handleApiError(error, 'Failed to load board data');
+    } finally {
+      if (isMountedRef.current) setLoading(false);
+    }
+  }, [projectId]);
 
   useEffect(() => {
     fetchProject();
     fetchBoardData();
-  }, [projectId]);
-
-  const fetchProject = async () => {
-    try {
-      const response = await projectApiService.getProject(projectId);
-      if (response.success && response.data?.project) {
-        setProject(response.data.project);
-      }
-    } catch (error) {
-      handleApiError(error, 'Failed to load project');
-    }
-  };
-
-  const fetchBoardData = async () => {
-    try {
-      setLoading(true);
-      const response = await projectApiService.getProjectBoards(projectId);
-      if (response.success && response.data?.boards) {
-        setBoardData(response.data.boards[0]);
-      }
-    } catch (error) {
-      handleApiError(error, 'Failed to load board data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchProject, fetchBoardData]);
 
   const handleBoardUpdate = () => {
     fetchBoardData();

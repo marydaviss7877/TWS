@@ -33,15 +33,22 @@ import { useTenantAuth } from '../../../../../../app/providers/TenantAuthContext
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
 import EmptyState from '../../../../../../shared/components/feedback/EmptyState';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import { useTenantCurrency } from '../../../../../../shared/hooks/useTenantCurrency';
+import { formatCurrency as formatCurrencyBase } from '../../../../../../shared/utils/currency';
+import toast from 'react-hot-toast';
+import ConfirmDialog from '../../../../../../components/ConfirmDialog/ConfirmDialog';
 
 const AccountsPayable = () => {
   const tenantSlug = useTenantSlug();
+  const currency = useTenantCurrency(tenantSlug);
   const { isAuthenticated, loading: authLoading, user } = useTenantAuth();
   const [loading, setLoading] = useState(true);
   const [bills, setBills] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [projects, setProjects] = useState([]);
   const [accounts, setAccounts] = useState([]);
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, onConfirm: null, title: '', message: '' });
+  const [agingReport, setAgingReport] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showVendorForm, setShowVendorForm] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -234,12 +241,7 @@ const AccountsPayable = () => {
     return colors[category] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+  const formatCurrency = (amount) => formatCurrencyBase(amount, currency);
 
   const formatDate = (date) => {
     if (!date) return '';
@@ -397,49 +399,56 @@ const AccountsPayable = () => {
         accountCode: '1110'
       });
       fetchData();
-      alert('Payment recorded successfully!');
+      toast.success('Payment recorded successfully');
     } catch (error) {
       console.error('Error recording payment:', error);
-      alert(error.message || 'Failed to record payment. Please try again.');
+      toast.error(error.message || 'Failed to record payment. Please try again.');
     }
   };
 
   const handleSchedulePayment = async (billId, scheduleData) => {
     try {
       await tenantApiService.scheduleBillPayment(tenantSlug, billId, scheduleData);
-      alert('Payment scheduled successfully!');
+      toast.success('Payment scheduled successfully');
       fetchData();
     } catch (error) {
       console.error('Error scheduling payment:', error);
-      alert(error.message || 'Failed to schedule payment. Please try again.');
+      toast.error(error.message || 'Failed to schedule payment. Please try again.');
     }
   };
 
-  const handleApproveBill = async (billId) => {
-    if (!window.confirm('Approve this bill for payment?')) {
-      return;
-    }
-    try {
-      // Get current user ID - in production, get from auth context
-      const approvedBy = user?._id || user?.id || '';
-      await tenantApiService.approveBill(tenantSlug, billId, approvedBy);
-      alert('Bill approved successfully!');
-      fetchData();
-    } catch (error) {
-      console.error('Error approving bill:', error);
-      alert(error.message || 'Failed to approve bill. Please try again.');
-    }
+  const handleApproveBill = (billId) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Approve bill for payment',
+      message: 'This marks the bill as approved and clears it for payment. This action cannot be undone.',
+      onConfirm: async () => {
+        try {
+          // Get current user ID - in production, get from auth context
+          const approvedBy = user?._id || user?.id || '';
+          await tenantApiService.approveBill(tenantSlug, billId, approvedBy);
+          toast.success('Bill approved successfully');
+          fetchData();
+        } catch (error) {
+          console.error('Error approving bill:', error);
+          toast.error(error.message || 'Failed to approve bill. Please try again.');
+        }
+      }
+    });
   };
 
   const handleViewAgingReport = async () => {
     try {
       const agingData = await tenantApiService.getAgingReportAP(tenantSlug);
-      // Display aging report
-      console.log('Aging Report:', agingData);
-      alert(`Aging Report:\n0-30 days: ${formatCurrency(agingData?.agingBuckets?.['0-30'] || 0)}\n31-60 days: ${formatCurrency(agingData?.agingBuckets?.['31-60'] || 0)}\n61-90 days: ${formatCurrency(agingData?.agingBuckets?.['61-90'] || 0)}\n90+ days: ${formatCurrency(agingData?.agingBuckets?.['90+'] || 0)}`);
+      setAgingReport({
+        '0-30': agingData?.agingBuckets?.['0-30'] || 0,
+        '31-60': agingData?.agingBuckets?.['31-60'] || 0,
+        '61-90': agingData?.agingBuckets?.['61-90'] || 0,
+        '90+': agingData?.agingBuckets?.['90+'] || 0
+      });
     } catch (error) {
       console.error('Error fetching aging report:', error);
-      alert(error.message || 'Failed to fetch aging report.');
+      toast.error(error.message || 'Failed to fetch aging report.');
     }
   };
 
@@ -1275,6 +1284,53 @@ const AccountsPayable = () => {
           </div>
         </div>
       )}
+
+      {/* Aging Report Panel */}
+      {agingReport && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="glass-card-premium w-full max-w-md">
+            <div className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between">
+              <h3 className="text-lg font-bold font-heading text-gray-900 dark:text-white">Aging Report</h3>
+              <button
+                onClick={() => setAgingReport(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                aria-label="Close"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">0&ndash;30 days</span>
+                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(agingReport['0-30'])}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">31&ndash;60 days</span>
+                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(agingReport['31-60'])}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">61&ndash;90 days</span>
+                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(agingReport['61-90'])}</span>
+              </div>
+              <div className="flex justify-between text-sm border-t border-gray-200/50 dark:border-gray-700/50 pt-3">
+                <span className="text-red-600 dark:text-red-400 font-medium">90+ days</span>
+                <span className="font-medium text-red-600 dark:text-red-400">{formatCurrency(agingReport['90+'])}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false, onConfirm: null, title: '', message: '' })}
+        onConfirm={confirmDialog.onConfirm || (() => {})}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText="Approve"
+        cancelText="Cancel"
+        variant="warning"
+      />
 
     </div>
   );

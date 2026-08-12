@@ -311,9 +311,9 @@ const ProjectTasks = () => {
                       {/* Labels */}
                       {task.labels.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-3">
-                          {task.labels.map((label, idx) => (
+                          {task.labels.map((label) => (
                             <span
-                              key={idx}
+                              key={label}
                               className="px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded text-xs"
                             >
                               {label}

@@ -3616,7 +3616,7 @@ exports.syncTask = async (req, res) => {
     }
 
     const task = await Task.findById(taskId);
-    if (!task) {
+    if (!task || task.orgId.toString() !== orgId.toString()) {
       return res.status(404).json({
         success: false,
         message: 'Task not found'
@@ -3818,7 +3818,9 @@ exports.addProjectMember = async (req, res) => {
     if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
 
     const user = await User.findById(userId).lean();
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (!user || user.orgId.toString() !== orgId.toString()) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
     const rolePermissions = {
       owner:       { canCreateCards: true, canEditCards: true, canDeleteCards: true, canManageMembers: true, canViewBudget: true, canManageFiles: true, canTrackTime: true, canApproveDeliverables: true },

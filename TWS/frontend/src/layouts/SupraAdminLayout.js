@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useFullscreen } from '../hooks/useFullscreen';
 import {
@@ -32,70 +32,162 @@ import {
 import { useAuth } from '../app/providers/AuthContext';
 import ThemeToggle from '../shared/components/ui/ThemeToggle';
 
+const navigation = [
+  { name: 'Dashboard', href: '/supra-admin', icon: HomeIcon },
+
+  // ERP Management
+  {
+    name: 'ERP Management',
+    icon: CircleStackIcon,
+    children: [
+      { name: 'All ERP Categories', href: '/supra-admin/erp-management', icon: CircleStackIcon },
+      { name: 'Hospital ERP', href: '/supra-admin/erp-management/healthcare', icon: ShieldCheckIcon },
+      { name: 'Software House ERP', href: '/supra-admin/erp-management/software_house', icon: CogIcon }
+    ]
+  },
+
+  // Finance & Billing
+  {
+    name: 'Finance',
+    icon: CurrencyDollarIcon,
+    children: [
+      { name: 'All Organizations', href: '/supra-admin/tenants', icon: BuildingOffice2Icon },
+      { name: 'Billing Management', href: '/supra-admin/billing', icon: CurrencyDollarIcon },
+      { name: 'Revenue Analytics', href: '/supra-admin/analytics', icon: ChartPieIcon }
+    ]
+  },
+
+  // User Management
+  {
+    name: 'User Management',
+    icon: UserGroupIcon,
+    children: [
+      { name: 'All Users', href: '/supra-admin/users', icon: UserGroupIcon },
+      { name: 'Department Management', href: '/supra-admin/department-management', icon: BuildingOfficeIcon }
+    ]
+  },
+
+  // System
+  {
+    name: 'System',
+    icon: ServerIcon,
+    children: [
+      { name: 'System Health', href: '/supra-admin/system-health', icon: ShieldCheckIcon },
+      { name: 'Session Management', href: '/supra-admin/session-management', icon: ClockIcon },
+      { name: 'Session Analytics', href: '/supra-admin/session-analytics', icon: ChartPieIcon }
+    ]
+  },
+
+  // Infrastructure
+  {
+    name: 'Infrastructure',
+    icon: CloudIcon,
+    children: [
+      { name: 'Infrastructure Overview', href: '/supra-admin/infrastructure', icon: CloudIcon },
+      { name: 'Server Management', href: '/supra-admin/infrastructure', icon: ServerIcon }
+    ]
+  },
+
+  // Settings
+  { name: 'Settings', href: '/supra-admin/settings', icon: CogIcon },
+];
+
+const NavItem = ({
+  item,
+  index,
+  isMobile = false,
+  expandedMenus,
+  isParentActive,
+  isCurrentPath,
+  onToggleMenu,
+  onMobileNavigate,
+}) => {
+  if (item.children) {
+    const isExpanded = expandedMenus[item.name];
+    const isActive = isParentActive(item);
+
+    return (
+      <div
+        key={item.name}
+        className="group"
+        style={{
+          animationDelay: `${index * 30}ms`
+        }}
+      >
+        <button
+          onClick={() => onToggleMenu(item.name)}
+          type="button"
+          className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer ${
+            isActive
+              ? 'bg-gradient-to-r from-primary-500/20 to-accent-500/20 dark:from-primary-500/30 dark:to-accent-500/30 text-primary-700 dark:text-primary-300 border border-primary-200/50 dark:border-primary-700/50 shadow-lg shadow-primary-500/10'
+              : 'bg-white/50 dark:bg-gray-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 backdrop-blur-sm'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+              isActive
+                ? 'bg-gradient-to-br from-primary-500 to-accent-600 text-white shadow-lg shadow-primary-500/50'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+            }`}>
+              <item.icon className="w-5 h-5" />
+            </div>
+            <span className="flex-1 text-sm font-semibold">{item.name}</span>
+          </div>
+          <ChevronDownIcon className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+        </button>
+        {isExpanded && (
+          <div className="mt-2 ml-4 pl-4 border-l-2 border-primary-200 dark:border-primary-800 space-y-1 animate-fade-in">
+            {item.children.map((child) => {
+              const isChildCurrent = isCurrentPath(child.href);
+              return (
+                <Link
+                  key={child.name}
+                  to={child.href}
+                  onClick={() => isMobile && onMobileNavigate()}
+                  className={`block px-4 py-2.5 text-sm rounded-lg transition-all duration-200 cursor-pointer ${
+                    isChildCurrent
+                      ? 'bg-gradient-to-r from-primary-500/20 to-accent-500/20 dark:from-primary-500/30 text-primary-700 dark:text-primary-300 font-semibold shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-gray-700/60 hover:text-primary-600 dark:hover:text-primary-400'
+                  }`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {child.name}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const isCurrent = isCurrentPath(item.href);
+  return (
+    <Link
+      key={item.name}
+      to={item.href}
+      onClick={() => isMobile && onMobileNavigate()}
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer ${
+        isCurrent
+          ? 'bg-gradient-to-r from-primary-500/20 to-accent-500/20 dark:from-primary-500/30 dark:to-accent-500/30 text-primary-700 dark:text-primary-300 border border-primary-200/50 dark:border-primary-700/50 shadow-lg shadow-primary-500/10'
+          : 'bg-white/50 dark:bg-gray-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 backdrop-blur-sm'
+      }`}
+    >
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+        isCurrent
+          ? 'bg-gradient-to-br from-primary-500 to-accent-600 text-white shadow-lg shadow-primary-500/50'
+          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+      }`}>
+        <item.icon className="w-5 h-5" />
+      </div>
+      <span className="flex-1 text-sm font-semibold">{item.name}</span>
+    </Link>
+  );
+};
+
 const SupraAdminLayout = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
-  
-  // Define navigation array first (before useState that uses it)
-  const navigation = [
-    { name: 'Dashboard', href: '/supra-admin', icon: HomeIcon },
-    
-    // ERP Management
-    { 
-      name: 'ERP Management', 
-      icon: CircleStackIcon, 
-      children: [
-        { name: 'All ERP Categories', href: '/supra-admin/erp-management', icon: CircleStackIcon },
-        { name: 'Hospital ERP', href: '/supra-admin/erp-management/healthcare', icon: ShieldCheckIcon },
-        { name: 'Software House ERP', href: '/supra-admin/erp-management/software_house', icon: CogIcon }
-      ]
-    },
-    
-    // Finance & Billing
-    { 
-      name: 'Finance', 
-      icon: CurrencyDollarIcon, 
-      children: [
-        { name: 'All Organizations', href: '/supra-admin/tenants', icon: BuildingOffice2Icon },
-        { name: 'Billing Management', href: '/supra-admin/billing', icon: CurrencyDollarIcon },
-        { name: 'Revenue Analytics', href: '/supra-admin/analytics', icon: ChartPieIcon }
-      ]
-    },
-    
-    // User Management
-    { 
-      name: 'User Management', 
-      icon: UserGroupIcon, 
-      children: [
-        { name: 'All Users', href: '/supra-admin/users', icon: UserGroupIcon },
-        { name: 'Department Management', href: '/supra-admin/department-management', icon: BuildingOfficeIcon }
-      ]
-    },
-    
-    // System
-    {
-      name: 'System',
-      icon: ServerIcon,
-      children: [
-        { name: 'System Health', href: '/supra-admin/system-health', icon: ShieldCheckIcon },
-        { name: 'Session Management', href: '/supra-admin/session-management', icon: ClockIcon },
-        { name: 'Session Analytics', href: '/supra-admin/session-analytics', icon: ChartPieIcon }
-      ]
-    },
-    
-    // Infrastructure
-    { 
-      name: 'Infrastructure', 
-      icon: CloudIcon, 
-      children: [
-        { name: 'Infrastructure Overview', href: '/supra-admin/infrastructure', icon: CloudIcon },
-        { name: 'Server Management', href: '/supra-admin/infrastructure', icon: ServerIcon }
-      ]
-    },
-    
-    // Settings
-    { name: 'Settings', href: '/supra-admin/settings', icon: CogIcon },
-  ];
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -171,127 +263,34 @@ const SupraAdminLayout = ({ children }) => {
     return breadcrumbs;
   };
 
-  const isCurrentPath = (path) => {
+  const isCurrentPath = useCallback((path) => {
     if (!path) return false;
     // Exact match
     if (location.pathname === path) return true;
     // Check if current path starts with the menu path (for nested routes)
     if (location.pathname.startsWith(path) && path !== '/supra-admin') return true;
     return false;
-  };
+  }, [location.pathname]);
 
-  const isParentActive = (item) => {
+  const isParentActive = useCallback((item) => {
     if (!item.children) return false;
-    return item.children.some(child => {
-      const pathSegments = location.pathname.split('/').filter(Boolean);
-      return isCurrentPath(child.href);
-    });
-  };
+    return item.children.some(child => isCurrentPath(child.href));
+  }, [isCurrentPath]);
 
   // Auto-expand active menus on location change
   useEffect(() => {
     navigation.forEach(item => {
-      if (item.children) {
-        const hasActiveChild = isParentActive(item);
-        if (hasActiveChild && !expandedMenus[item.name]) {
-          setExpandedMenus(prev => ({
-            ...prev,
-            [item.name]: true
-          }));
-        }
+      if (item.children && isParentActive(item)) {
+        setExpandedMenus(prev => (prev[item.name] ? prev : { ...prev, [item.name]: true }));
       }
     });
-  }, [location.pathname]);
+  }, [isParentActive]);
 
   const toggleMenu = (menuName) => {
     setExpandedMenus(prev => ({
       ...prev,
       [menuName]: !prev[menuName]
     }));
-  };
-
-  const NavItem = ({ item, index, isMobile = false }) => {
-    if (item.children) {
-      const isExpanded = expandedMenus[item.name];
-      const isActive = isParentActive(item);
-      
-      return (
-        <div 
-          key={item.name}
-          className="group"
-          style={{
-            animationDelay: `${index * 30}ms`
-          }}
-        >
-          <button
-            onClick={() => toggleMenu(item.name)}
-            type="button"
-            className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer ${
-              isActive
-                ? 'bg-gradient-to-r from-primary-500/20 to-accent-500/20 dark:from-primary-500/30 dark:to-accent-500/30 text-primary-700 dark:text-primary-300 border border-primary-200/50 dark:border-primary-700/50 shadow-lg shadow-primary-500/10'
-                : 'bg-white/50 dark:bg-gray-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 backdrop-blur-sm'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                isActive 
-                  ? 'bg-gradient-to-br from-primary-500 to-accent-600 text-white shadow-lg shadow-primary-500/50' 
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-              }`}>
-                <item.icon className="w-5 h-5" />
-              </div>
-              <span className="flex-1 text-sm font-semibold">{item.name}</span>
-            </div>
-            <ChevronDownIcon className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-          </button>
-          {isExpanded && (
-            <div className="mt-2 ml-4 pl-4 border-l-2 border-primary-200 dark:border-primary-800 space-y-1 animate-fade-in">
-              {item.children.map((child) => {
-                const isChildCurrent = isCurrentPath(child.href);
-                return (
-                  <Link
-                    key={child.name}
-                    to={child.href}
-                    onClick={() => isMobile && setSidebarOpen(false)}
-                    className={`block px-4 py-2.5 text-sm rounded-lg transition-all duration-200 cursor-pointer ${
-                      isChildCurrent 
-                        ? 'bg-gradient-to-r from-primary-500/20 to-accent-500/20 dark:from-primary-500/30 text-primary-700 dark:text-primary-300 font-semibold shadow-sm' 
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-gray-700/60 hover:text-primary-600 dark:hover:text-primary-400'
-                    }`}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {child.name}
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      );
-    } else {
-      const isCurrent = isCurrentPath(item.href);
-      return (
-        <Link
-          key={item.name}
-          to={item.href}
-          onClick={() => isMobile && setSidebarOpen(false)}
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 cursor-pointer ${
-            isCurrent
-              ? 'bg-gradient-to-r from-primary-500/20 to-accent-500/20 dark:from-primary-500/30 dark:to-accent-500/30 text-primary-700 dark:text-primary-300 border border-primary-200/50 dark:border-primary-700/50 shadow-lg shadow-primary-500/10'
-              : 'bg-white/50 dark:bg-gray-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 backdrop-blur-sm'
-          }`}
-        >
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-            isCurrent 
-              ? 'bg-gradient-to-br from-primary-500 to-accent-600 text-white shadow-lg shadow-primary-500/50' 
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-          }`}>
-            <item.icon className="w-5 h-5" />
-          </div>
-          <span className="flex-1 text-sm font-semibold">{item.name}</span>
-        </Link>
-      );
-    }
   };
 
   return (
@@ -335,6 +334,7 @@ const SupraAdminLayout = ({ children }) => {
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
+              aria-label="Close menu"
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               <XMarkIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
@@ -344,7 +344,17 @@ const SupraAdminLayout = ({ children }) => {
           {/* Mobile Navigation - Scrollable */}
           <nav className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-2 min-h-0">
             {navigation.map((item, index) => (
-              <NavItem key={item.name} item={item} index={index} isMobile={true} />
+              <NavItem
+                key={item.name}
+                item={item}
+                index={index}
+                isMobile={true}
+                expandedMenus={expandedMenus}
+                isParentActive={isParentActive}
+                isCurrentPath={isCurrentPath}
+                onToggleMenu={toggleMenu}
+                onMobileNavigate={() => setSidebarOpen(false)}
+              />
             ))}
           </nav>
 
@@ -386,7 +396,16 @@ const SupraAdminLayout = ({ children }) => {
           {/* Desktop Navigation - Scrollable */}
           <nav className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-2 custom-scrollbar min-h-0" style={{ pointerEvents: 'auto' }}>
             {navigation.map((item, index) => (
-              <NavItem key={item.name} item={item} index={index} />
+              <NavItem
+                key={item.name}
+                item={item}
+                index={index}
+                expandedMenus={expandedMenus}
+                isParentActive={isParentActive}
+                isCurrentPath={isCurrentPath}
+                onToggleMenu={toggleMenu}
+                onMobileNavigate={() => setSidebarOpen(false)}
+              />
             ))}
           </nav>
 
@@ -413,6 +432,7 @@ const SupraAdminLayout = ({ children }) => {
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setSidebarOpen(true)}
+                aria-label="Open menu"
                 className="md:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <Bars3Icon className="w-6 h-6 text-gray-700 dark:text-gray-300" />
@@ -456,6 +476,7 @@ const SupraAdminLayout = ({ children }) => {
                   ref={searchInputRef}
                   type="text"
                   placeholder="Search... (Ctrl+K)"
+                  aria-label="Search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-64 pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
@@ -486,6 +507,7 @@ const SupraAdminLayout = ({ children }) => {
                     setShowNotifications(!showNotifications);
                     setShowUserMenu(false);
                   }}
+                  aria-label="Notifications"
                   className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
                 >
                   <BellIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />

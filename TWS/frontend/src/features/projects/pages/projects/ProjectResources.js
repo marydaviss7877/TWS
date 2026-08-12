@@ -286,9 +286,9 @@ const ProjectResources = () => {
               <div className="mb-4">
                 <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Skills</p>
                 <div className="flex flex-wrap gap-2">
-                  {resource.skills.map((skill, idx) => (
-                    <span 
-                      key={idx}
+                  {resource.skills.map((skill) => (
+                    <span
+                      key={skill}
                       className="px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded text-xs font-medium"
                     >
                       {skill}
@@ -302,8 +302,8 @@ const ProjectResources = () => {
                 <div className="mb-4">
                   <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-semibold">Current Projects</p>
                   <div className="space-y-2">
-                    {resource.projects.map((project, idx) => (
-                      <div key={idx} className="glass-card p-2 flex items-center justify-between">
+                    {resource.projects.map((project) => (
+                      <div key={project.name} className="glass-card p-2 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <FolderIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                           <span className="text-xs text-gray-900 dark:text-white font-medium">{project.name}</span>

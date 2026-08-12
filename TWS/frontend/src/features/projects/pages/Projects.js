@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon,
@@ -133,6 +133,12 @@ const Projects = () => {
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, onConfirm: null, title: '', message: '' });
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -146,13 +152,13 @@ const Projects = () => {
     try {
       setLoading(true);
       const response = await projectApiService.getProjects();
-      if (response.success && response.data?.projects) {
+      if (isMountedRef.current && response.success && response.data?.projects) {
         setProjects(response.data.projects);
       }
     } catch (error) {
-      handleApiError(error, 'Failed to load projects');
+      if (isMountedRef.current) handleApiError(error, 'Failed to load projects');
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
     }
   };
 
@@ -160,13 +166,13 @@ const Projects = () => {
     try {
       setClientsLoading(true);
       const response = await projectApiService.getClients();
-      if (response.success && response.data?.clients) {
+      if (isMountedRef.current && response.success && response.data?.clients) {
         setClients(response.data.clients);
       }
     } catch (error) {
-      handleApiError(error, 'Failed to load clients');
+      if (isMountedRef.current) handleApiError(error, 'Failed to load clients');
     } finally {
-      setClientsLoading(false);
+      if (isMountedRef.current) setClientsLoading(false);
     }
   };
 
@@ -174,14 +180,14 @@ const Projects = () => {
     try {
       setMetricsLoading(true);
       const response = await projectApiService.getProjectMetrics();
-      if (response.success && response.data) {
+      if (isMountedRef.current && response.success && response.data) {
         setPortfolioMetrics(response.data);
       }
     } catch (error) {
       // Silently fail for metrics - not critical
-      handleApiError(error, null, { showToast: false });
+      if (isMountedRef.current) handleApiError(error, null, { showToast: false });
     } finally {
-      setMetricsLoading(false);
+      if (isMountedRef.current) setMetricsLoading(false);
     }
   };
 

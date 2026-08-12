@@ -105,7 +105,8 @@ const EmployeeRecordsView = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+      window.URL.revokeObjectURL(url);
+
       toast.success('Records exported successfully');
     } catch (error) {
       toast.error('Failed to export records');

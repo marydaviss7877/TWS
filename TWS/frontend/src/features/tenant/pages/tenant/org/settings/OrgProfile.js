@@ -158,11 +158,20 @@ const OrgProfile = () => {
     finally { setSaving(false); }
   };
 
+  const logoPreviewRef = useRef(null);
+
+  useEffect(() => () => {
+    if (logoPreviewRef.current) URL.revokeObjectURL(logoPreviewRef.current);
+  }, []);
+
   const handleLogoSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { toast.error('Max 2 MB'); return; }
-    setLogoPreview(URL.createObjectURL(file));
+    if (logoPreviewRef.current) URL.revokeObjectURL(logoPreviewRef.current);
+    const preview = URL.createObjectURL(file);
+    logoPreviewRef.current = preview;
+    setLogoPreview(preview);
     uploadLogo(file);
   };
 

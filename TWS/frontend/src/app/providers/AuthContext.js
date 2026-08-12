@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, [location.pathname]); // Re-run when route changes (e.g. navigate from signup to dashboard)
 
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (email, password, { silent = false } = {}) => {
     try {
       const loginUrl = buildApiUrl('/api/auth/login');
       // Trim only; backend applies the same validator.normalizeEmail options as user creation.
@@ -169,7 +169,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         const errorMessage = responseData.message || 'Login failed';
         console.error('❌ Login failed:', errorMessage);
-        toast.error(errorMessage);
+        if (!silent) toast.error(errorMessage);
         return { success: false, error: errorMessage };
       }
     } catch (error) {
@@ -179,13 +179,13 @@ export const AuthProvider = ({ children }) => {
       } else if (error.message) {
         message = error.message;
       }
-      toast.error(message);
+      if (!silent) toast.error(message);
       return { success: false, error: message };
     }
   }, []);
 
 
-  const loginSupraAdmin = useCallback(async (email, password) => {
+  const loginSupraAdmin = useCallback(async (email, password, { silent = false } = {}) => {
     try {
       const normalizedEmail = (email || '').toLowerCase().trim();
       const response = await fetch(buildApiUrl('/api/auth/supra-admin/login'), {
@@ -213,7 +213,7 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user };
       } else {
         const errorMessage = responseData.message || 'Login failed';
-        toast.error(errorMessage);
+        if (!silent) toast.error(errorMessage);
         return { success: false, error: errorMessage };
       }
     } catch (error) {
@@ -223,7 +223,7 @@ export const AuthProvider = ({ children }) => {
       } else if (error.message) {
         message = error.message;
       }
-      toast.error(message);
+      if (!silent) toast.error(message);
       return { success: false, error: message };
     }
   }, []);

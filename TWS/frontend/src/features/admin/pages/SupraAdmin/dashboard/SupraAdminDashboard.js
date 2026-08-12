@@ -52,6 +52,54 @@ ChartJS.register(
   Filler
 );
 
+const STAT_CARD_COLOR_CLASSES = {
+  blue: 'from-blue-500 to-blue-600',
+  green: 'from-green-500 to-green-600',
+  purple: 'from-purple-500 to-purple-600',
+  orange: 'from-orange-500 to-orange-600',
+  pink: 'from-pink-500 to-pink-600',
+};
+
+const StatCard = ({ title, value, change, changeType, icon: Icon, color = 'blue', gradient }) => {
+  const gradientClass = gradient || STAT_CARD_COLOR_CLASSES[color];
+
+  // Only show change if it exists and value is not zero (unless it's a new addition)
+  const shouldShowChange = change !== null && change !== undefined && (value > 0 || change === 100);
+
+  return (
+    <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:scale-[1.02] overflow-hidden">
+      {/* Gradient background effect */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradientClass} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${gradientClass} flex items-center justify-center shadow-lg`}>
+            <Icon className="w-7 h-7 text-white" />
+          </div>
+          {shouldShowChange && (
+            <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${
+              changeType === 'increase'
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+            }`}>
+              {changeType === 'increase' ? (
+                <ArrowUpIcon className="w-4 h-4" />
+              ) : (
+                <ArrowDownIcon className="w-4 h-4" />
+              )}
+              <span>{change > 0 ? '+' : ''}{change}%</span>
+            </div>
+          )}
+        </div>
+        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+          {value}
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{title}</p>
+      </div>
+    </div>
+  );
+};
+
 const SupraAdminDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -197,54 +245,6 @@ const SupraAdminDashboard = () => {
         }
       }
     }
-  };
-
-  const StatCard = ({ title, value, change, changeType, icon: Icon, color = 'blue', gradient }) => {
-    const colorClasses = {
-      blue: 'from-blue-500 to-blue-600',
-      green: 'from-green-500 to-green-600',
-      purple: 'from-purple-500 to-purple-600',
-      orange: 'from-orange-500 to-orange-600',
-      pink: 'from-pink-500 to-pink-600',
-    };
-
-    const gradientClass = gradient || colorClasses[color];
-
-    // Only show change if it exists and value is not zero (unless it's a new addition)
-    const shouldShowChange = change !== null && change !== undefined && (value > 0 || change === 100);
-
-    return (
-      <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:scale-[1.02] overflow-hidden">
-        {/* Gradient background effect */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${gradientClass} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
-        
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4">
-            <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${gradientClass} flex items-center justify-center shadow-lg`}>
-              <Icon className="w-7 h-7 text-white" />
-            </div>
-            {shouldShowChange && (
-              <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${
-                changeType === 'increase' 
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
-                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-              }`}>
-                {changeType === 'increase' ? (
-                  <ArrowUpIcon className="w-4 h-4" />
-                ) : (
-                  <ArrowDownIcon className="w-4 h-4" />
-                )}
-                <span>{change > 0 ? '+' : ''}{change}%</span>
-              </div>
-            )}
-          </div>
-          <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-            {value}
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{title}</p>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -454,9 +454,9 @@ const SupraAdminDashboard = () => {
             </div>
           </div>
           <div className="space-y-3 flex-1">
-            {(recentActivity.recentTenants || []).slice(0, 5).map((tenant, index) => (
-              <div 
-                key={index} 
+            {(recentActivity.recentTenants || []).slice(0, 5).map((tenant) => (
+              <div
+                key={tenant._id}
                 className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
               >
                 <div className="flex items-center gap-3">
@@ -523,9 +523,9 @@ const SupraAdminDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {(topTenants.topRevenue || []).slice(0, 5).map((tenant, index) => (
-                <tr 
-                  key={index} 
+              {(topTenants.topRevenue || []).slice(0, 5).map((tenant) => (
+                <tr
+                  key={tenant._id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
                   <td className="px-6 py-4">

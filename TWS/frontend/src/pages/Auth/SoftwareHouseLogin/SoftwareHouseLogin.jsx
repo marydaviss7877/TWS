@@ -17,7 +17,7 @@ import BrandMark from '../../../shared/components/ui/BrandMark';
 import { getTenantWorkspaceUrl, navigateTo, isAdminHost, isSubdomainContext } from '../../../shared/utils/subdomain';
 
 const SoftwareHouseLogin = () => {
-    const { login, logout } = useAuth();
+    const { login, loginSupraAdmin, logout } = useAuth();
     const { isDarkMode } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
@@ -100,7 +100,22 @@ const SoftwareHouseLogin = () => {
         setInfoMessage('');
         setFieldErrors({});
         try {
-            const result = await login(trimmedEmail, trimmedPassword);
+            // admin.housesbase.com/login is the single entry point for both
+            // Software House Admins (User model) and the platform Supra Admin
+            // (TWSAdmin model — a completely separate collection/auth route).
+            // Try the tenant-admin login first; only on a credential failure,
+            // silently retry against the Supra Admin endpoint so one URL works
+            // for both without merging the two auth flows on the backend.
+            let result = await login(trimmedEmail, trimmedPassword, { silent: isAdmin });
+            if (!result.success && isAdmin && /invalid email or password/i.test(result.error || '')) {
+                const supraResult = await loginSupraAdmin(trimmedEmail, trimmedPassword);
+                if (supraResult.success) {
+                    navigate('/supra-admin');
+                    setLoading(false);
+                    return;
+                }
+                result = supraResult;
+            }
             if (result.success) {
                 const userRole = result.user?.role;
                 const adminRoles    = ['admin', 'owner', 'super_admin', 'org_manager'];

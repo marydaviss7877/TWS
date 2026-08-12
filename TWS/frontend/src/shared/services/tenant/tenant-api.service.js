@@ -574,6 +574,18 @@ const tenantApiService = {
     return makeRequest(`/api/tenant/${tenantSlug}/organization/settings`);
   },
 
+  // Read-only, available to every authenticated tenant role (not just settings admins) —
+  // used by money-formatting code across Finance/Projects/HR so it renders in the org's
+  // configured currency instead of a hardcoded one.
+  getTenantCurrency: async (tenantSlug) => {
+    try {
+      const result = await makeRequest(`/api/tenant/${tenantSlug}/organization/settings/currency`);
+      return result?.currency || 'USD';
+    } catch (error) {
+      return 'USD';
+    }
+  },
+
   // Update settings
   updateSettings: async (tenantSlug, settingsData) => {
     return makeRequest(`/api/tenant/${tenantSlug}/organization/settings`, {

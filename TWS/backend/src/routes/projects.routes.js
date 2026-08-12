@@ -121,7 +121,7 @@ router.get('/', verifyERPToken, (req, res, next) => {
   console.log('🔵 Request query:', req.query);
   next();
 }, projectController.getProjects);
-router.get('/metrics', (req, res, next) => {
+router.get('/metrics', verifyERPToken, (req, res, next) => {
   console.log('🔵 Projects router GET /metrics hit - calling getProjectMetrics controller');
   next();
 }, projectController.getProjectMetrics);
@@ -181,7 +181,7 @@ const projectLogoUploadMiddleware = (req, res, next) => {
 };
 
 // Clients endpoints - MUST come before /:id route
-router.get('/clients', projectController.getClients);
+router.get('/clients', verifyERPToken, projectController.getClients);
 router.post('/clients',
   verifyERPToken,
   checkReadOnlySoftwareHouseOnly,
@@ -212,8 +212,8 @@ router.delete('/clients/:id',
   projectController.deleteClient);
 
 // Tasks endpoints - MUST come before /:id route
-router.get('/tasks', projectController.getTasks);
-router.get('/tasks/:taskId', projectController.getTask);
+router.get('/tasks', verifyERPToken, projectController.getTasks);
+router.get('/tasks/:taskId', verifyERPToken, projectController.getTask);
 router.post('/tasks', 
   verifyERPToken,
   [
@@ -243,7 +243,7 @@ router.delete('/tasks/:id',
   projectController.deleteTask);
 
 // Milestones endpoints
-router.get('/milestones', projectController.getMilestones);
+router.get('/milestones', verifyERPToken, projectController.getMilestones);
 router.post('/milestones', 
   verifyERPToken,
   [
@@ -261,11 +261,11 @@ router.post('/milestones',
   ],
   injectOwnership,
   projectController.createMilestone);
-router.patch('/milestones/:id', projectController.updateMilestone);
-router.delete('/milestones/:id', projectController.deleteMilestone);
+router.patch('/milestones/:id', verifyERPToken, projectController.updateMilestone);
+router.delete('/milestones/:id', verifyERPToken, projectController.deleteMilestone);
 
 // Resources endpoints
-router.get('/resources', projectController.getResources);
+router.get('/resources', verifyERPToken, projectController.getResources);
 router.post('/resources', 
   verifyERPToken,
   [
@@ -292,10 +292,10 @@ router.delete('/resources/:id',
   verifyERPToken,
   validateResourceAccess('Resource', 'id'),
   projectController.deleteResource);
-router.post('/resources/:resourceId/allocate', projectController.allocateResource);
+router.post('/resources/:resourceId/allocate', verifyERPToken, projectController.allocateResource);
 
 // Timesheets endpoints
-router.get('/timesheets', projectController.getTimesheets);
+router.get('/timesheets', verifyERPToken, projectController.getTimesheets);
 router.post('/timesheets', 
   verifyERPToken,
   [
@@ -313,11 +313,11 @@ router.post('/timesheets',
   ],
   injectOwnership,
   projectController.createTimesheet);
-router.patch('/timesheets/:id', projectController.updateTimesheet);
-router.delete('/timesheets/:id', projectController.deleteTimesheet);
+router.patch('/timesheets/:id', verifyERPToken, projectController.updateTimesheet);
+router.delete('/timesheets/:id', verifyERPToken, projectController.deleteTimesheet);
 
 // Sprints endpoints
-router.get('/sprints', projectController.getSprints);
+router.get('/sprints', verifyERPToken, projectController.getSprints);
 router.post('/sprints', 
   verifyERPToken,
   [
@@ -345,10 +345,10 @@ router.delete('/sprints/:id',
   verifyERPToken,
   validateResourceAccess('Sprint', 'id'),
   projectController.deleteSprint);
-router.patch('/sprints/:id/velocity', projectController.calculateVelocity);
+router.patch('/sprints/:id/velocity', verifyERPToken, projectController.calculateVelocity);
 
 // Boards endpoints (multiple boards per project — e.g. "Dev Board", "Bug Board")
-router.get('/boards', projectController.getBoards);
+router.get('/boards', verifyERPToken, projectController.getBoards);
 router.post('/boards',
   verifyERPToken,
   [
@@ -375,23 +375,23 @@ router.delete('/boards/:id',
   validateResourceAccess('Board', 'id'),
   projectController.deleteBoard);
 
-// Task-specific routes (these use :taskId, not :id, so they're safe)
-router.post('/tasks/:taskId/dependencies', projectController.createTaskDependency);
-router.delete('/tasks/:taskId/dependencies/:dependencyId', projectController.deleteTaskDependency);
-router.put('/tasks/:taskId/reschedule', projectController.rescheduleTask);
-router.post('/tasks/:taskId/validate-completion', projectController.validateTaskCompletion);
-router.post('/tasks/:taskId/sync', projectController.syncTask);
+// Task-specific routes (these use :taskId, not :id)
+router.post('/tasks/:taskId/dependencies', verifyERPToken, projectController.createTaskDependency);
+router.delete('/tasks/:taskId/dependencies/:dependencyId', verifyERPToken, projectController.deleteTaskDependency);
+router.put('/tasks/:taskId/reschedule', verifyERPToken, projectController.rescheduleTask);
+router.post('/tasks/:taskId/validate-completion', verifyERPToken, projectController.validateTaskCompletion);
+router.post('/tasks/:taskId/sync', verifyERPToken, projectController.syncTask);
 
 // Parameterized routes with specific prefixes - MUST come before generic /:id route
 // These use :projectId which could match "clients", so we validate in the controller
-router.get('/:projectId/gantt/timeline', projectController.getGanttTimeline);
-router.get('/:projectId/gantt/tasks', projectController.getGanttTasks);
-router.get('/:projectId/gantt/critical-path', projectController.getCriticalPath);
-router.post('/:projectId/gantt/settings', projectController.saveGanttSettings);
-router.post('/:projectId/gantt/timeline', projectController.saveProjectTimeline);
-router.get('/:projectId/dashboard', projectController.getProjectDashboard);
-router.get('/:projectId/tasks-with-context', projectController.getTasksWithContext);
-router.get('/:projectId/integration-status', projectController.getIntegrationStatus);
+router.get('/:projectId/gantt/timeline', verifyERPToken, projectController.getGanttTimeline);
+router.get('/:projectId/gantt/tasks', verifyERPToken, projectController.getGanttTasks);
+router.get('/:projectId/gantt/critical-path', verifyERPToken, projectController.getCriticalPath);
+router.post('/:projectId/gantt/settings', verifyERPToken, projectController.saveGanttSettings);
+router.post('/:projectId/gantt/timeline', verifyERPToken, projectController.saveProjectTimeline);
+router.get('/:projectId/dashboard', verifyERPToken, projectController.getProjectDashboard);
+router.get('/:projectId/tasks-with-context', verifyERPToken, projectController.getTasksWithContext);
+router.get('/:projectId/integration-status', verifyERPToken, projectController.getIntegrationStatus);
 
 // Project Member routes - must be before generic /:id to avoid route conflict
 router.get('/:projectId/members', verifyERPToken, projectController.getProjectMembers);
@@ -423,7 +423,7 @@ router.delete(
 // This will match any remaining paths, but we validate ObjectId format in the controller
 // :id is shared with sibling resource routes above (tasks/:id, sprints/:id, ...), so it can't use
 // router.param — resolveProjectIdParam('id') is applied explicitly per-route instead.
-router.get('/:id', resolveProjectIdParam('id'), projectController.getProject);
+router.get('/:id', verifyERPToken, resolveProjectIdParam('id'), projectController.getProject);
 
 // SECURITY: Add comprehensive security middleware for project creation
 // Only admins, project managers, and org managers can create projects

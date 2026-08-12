@@ -127,6 +127,7 @@ export const SocketProvider = ({ children }) => {
       setSocket(newSocket);
 
       return () => {
+        newSocket.removeAllListeners();
         newSocket.close();
       };
     } else {

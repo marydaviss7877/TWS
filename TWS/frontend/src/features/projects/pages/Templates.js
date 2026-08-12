@@ -213,8 +213,8 @@ const Templates = () => {
                   <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Project Phases</h4>
                   <div className="flex flex-wrap gap-2">
                     {template.phases.map((phase, idx) => (
-                      <span 
-                        key={idx}
+                      <span
+                        key={phase}
                         className="px-3 py-1 glass-card text-xs font-medium text-gray-900 dark:text-white"
                       >
                         {idx + 1}. {phase}
@@ -227,8 +227,8 @@ const Templates = () => {
                 <div className="mb-6">
                   <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Included Features</h4>
                   <div className="space-y-2">
-                    {template.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    {template.features.map((feature) => (
+                      <div key={feature} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                         <CheckCircleIcon className="w-4 h-4 text-green-600 flex-shrink-0" />
                         <span>{feature}</span>
                       </div>

@@ -10,9 +10,12 @@ import {
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import FeatureUnavailable from '../../../../../../shared/components/feedback/FeatureUnavailable';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import { useTenantCurrency } from '../../../../../../shared/hooks/useTenantCurrency';
+import { formatCompactCurrency } from '../../../../../../shared/utils/currency';
 
 const FinanceBudgeting = () => {
   const tenantSlug = useTenantSlug();
+  const currency = useTenantCurrency(tenantSlug);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [budgets, setBudgets] = useState([]);
@@ -42,7 +45,7 @@ const FinanceBudgeting = () => {
     acc.departments.add(budget.department);
     return acc;
   }, { total: 0, allocated: 0, departments: new Set() }), [budgets]);
-  const money = value => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(value);
+  const money = value => formatCompactCurrency(value, currency);
   const stats = [
     { label: 'Total Budget', value: money(totals.total), icon: CurrencyDollarIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400' },
     { label: 'Allocated', value: money(totals.allocated), icon: ChartPieIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
@@ -224,9 +227,9 @@ const FinanceBudgeting = () => {
               {budgetByDepartment.map((dept, index) => (
                 <tr key={index} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                   <td className="py-3 px-4 text-sm font-bold text-gray-900 dark:text-white">{dept.department}</td>
-                  <td className="py-3 px-4 text-sm text-right text-gray-700 dark:text-gray-300">${(dept.allocated / 1000).toFixed(0)}K</td>
-                  <td className="py-3 px-4 text-sm text-right text-gray-700 dark:text-gray-300">${(dept.spent / 1000).toFixed(0)}K</td>
-                  <td className="py-3 px-4 text-sm text-right text-gray-700 dark:text-gray-300">${((dept.allocated - dept.spent) / 1000).toFixed(0)}K</td>
+                  <td className="py-3 px-4 text-sm text-right text-gray-700 dark:text-gray-300">{money(dept.allocated)}</td>
+                  <td className="py-3 px-4 text-sm text-right text-gray-700 dark:text-gray-300">{money(dept.spent)}</td>
+                  <td className={`py-3 px-4 text-sm text-right font-medium ${dept.allocated - dept.spent < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>{money(dept.allocated - dept.spent)}</td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <div className="w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">

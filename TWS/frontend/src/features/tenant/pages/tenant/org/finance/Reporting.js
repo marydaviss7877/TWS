@@ -19,6 +19,8 @@ import {
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import toast from 'react-hot-toast';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import { useTenantCurrency } from '../../../../../../shared/hooks/useTenantCurrency';
+import { formatCurrency as formatCurrencyBase } from '../../../../../../shared/utils/currency';
 
 const REPORT_CATALOG = [
   {
@@ -96,7 +98,13 @@ const CATEGORY_COLORS = {
   'Trend Reports':        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
 };
 
-const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0);
+// The report sub-components below are rendered as plain presentational children of
+// Reporting, sharing this module-scoped fmt() rather than each taking a currency prop.
+// currentReportCurrency is set once per Reporting render, before any child renders it —
+// safe within React's synchronous render pass — so every report reflects the org's
+// configured currency without threading a prop through nine components.
+let currentReportCurrency = 'USD';
+const fmt = (n) => formatCurrencyBase(n || 0, currentReportCurrency);
 const fmtN = (n, dp = 0) => (+n || 0).toFixed(dp);
 
 // ─── Sub-components for each report type ───────────────────────────────────
@@ -560,6 +568,8 @@ const REPORT_RENDERERS = {
 
 const Reporting = () => {
   const tenantSlug = useTenantSlug();
+  const currency = useTenantCurrency(tenantSlug);
+  currentReportCurrency = currency;
   const [generating, setGenerating] = useState(false);
   const [activeReportId, setActiveReportId] = useState(null);
   const [reportData, setReportData] = useState(null);

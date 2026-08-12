@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../../app/providers/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -54,16 +54,23 @@ const ModernAttendanceDashboard = () => {
     { id: 5, employee: 'David Wilson', action: 'Checked In', time: '09:30 AM', status: 'late' }
   ]);
 
+  const loadingTimerRef = useRef(null);
+
   useEffect(() => {
     fetchAttendanceData();
+    return () => {
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+    };
   }, [filters, timeRange]);
 
   const fetchAttendanceData = async () => {
     try {
       setLoading(true);
       // Mock API call - replace with actual API
-      setTimeout(() => {
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
+      loadingTimerRef.current = setTimeout(() => {
         setLoading(false);
+        loadingTimerRef.current = null;
       }, 1000);
     } catch (error) {
       console.error('Error fetching attendance data:', error);

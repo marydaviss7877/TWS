@@ -16,24 +16,26 @@ const ProjectSidebar = ({ project, onClose, onUpdate }) => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchMembers = async () => {
-    setLoading(true);
-    try {
-      const response = await axiosInstance.get(`/api/projects/${project._id}/members`);
-      if (response.data?.success && response.data?.data?.members) {
-        setMembers(response.data.data.members);
-      }
-    } catch (error) {
-      handleApiError(error, 'Failed to load members', { showToast: false });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   React.useEffect(() => {
-    if (activeSection === 'members') {
-      fetchMembers();
-    }
+    if (activeSection !== 'members') return;
+    let cancelled = false;
+
+    const fetchMembers = async () => {
+      setLoading(true);
+      try {
+        const response = await axiosInstance.get(`/api/projects/${project._id}/members`);
+        if (!cancelled && response.data?.success && response.data?.data?.members) {
+          setMembers(response.data.data.members);
+        }
+      } catch (error) {
+        if (!cancelled) handleApiError(error, 'Failed to load members', { showToast: false });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchMembers();
+    return () => { cancelled = true; };
   }, [activeSection, project._id]);
 
   const formatCurrency = (amount, currency = 'USD') => {
@@ -192,7 +194,7 @@ const ProjectSidebar = ({ project, onClose, onUpdate }) => {
             {project.files && project.files.length > 0 ? (
               <div className="space-y-2">
                 {project.files.map((file, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
+                  <div key={file.fileId || index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
                     <DocumentTextIcon className="h-5 w-5 text-gray-400" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
@@ -283,9 +285,9 @@ const ProjectSidebar = ({ project, onClose, onUpdate }) => {
             <h4 className="text-sm font-medium text-gray-900 mb-4">Project Tags</h4>
             {project.tags && project.tags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {project.tags.map((tag, index) => (
+                {project.tags.map((tag) => (
                   <span
-                    key={index}
+                    key={tag}
                     className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
                   >
                     {tag}

@@ -8,12 +8,11 @@ import { handleApiError } from '../../utils/errorHandler';
 import { SUCCESS_MESSAGES } from '../../constants/projectConstants';
 
 const Board = ({ projectId, boardId, initialData, onUpdate }) => {
-  const [board, setBoard] = useState(initialData);
+  const board = initialData;
   const [lists, setLists] = useState(initialData?.lists || []);
   const socket = useSocket();
 
   useEffect(() => {
-    setBoard(initialData);
     setLists(initialData?.lists || []);
   }, [initialData]);
 
@@ -24,53 +23,41 @@ const Board = ({ projectId, boardId, initialData, onUpdate }) => {
     const handleCardMove = (data) => {
       if (data.boardId === boardId) {
         setLists(prevLists => {
-          const newLists = [...prevLists];
-          const sourceList = newLists.find(list => list._id === data.sourceListId);
-          const destList = newLists.find(list => list._id === data.destinationListId);
-          
-          if (sourceList && destList) {
-            // Remove card from source list
-            sourceList.cards = sourceList.cards.filter(card => card._id !== data.cardId);
-            
-            // Add card to destination list
-            destList.cards.push(data.card);
-          }
-          
-          return newLists;
+          const hasSource = prevLists.some(list => list._id === data.sourceListId);
+          const hasDest = prevLists.some(list => list._id === data.destinationListId);
+          if (!hasSource || !hasDest) return prevLists;
+
+          return prevLists.map(list => {
+            if (list._id === data.sourceListId) {
+              return { ...list, cards: list.cards.filter(card => card._id !== data.cardId) };
+            }
+            if (list._id === data.destinationListId) {
+              return { ...list, cards: [...list.cards, data.card] };
+            }
+            return list;
+          });
         });
       }
     };
 
     const handleCardUpdate = (data) => {
       if (data.boardId === boardId) {
-        setLists(prevLists => {
-          const newLists = [...prevLists];
-          const list = newLists.find(list => list._id === data.listId);
-          
-          if (list) {
-            const cardIndex = list.cards.findIndex(card => card._id === data.cardId);
-            if (cardIndex !== -1) {
-              list.cards[cardIndex] = { ...list.cards[cardIndex], ...data.updates };
-            }
-          }
-          
-          return newLists;
-        });
+        setLists(prevLists => prevLists.map(list => {
+          if (list._id !== data.listId) return list;
+          const cardIndex = list.cards.findIndex(card => card._id === data.cardId);
+          if (cardIndex === -1) return list;
+          const newCards = [...list.cards];
+          newCards[cardIndex] = { ...newCards[cardIndex], ...data.updates };
+          return { ...list, cards: newCards };
+        }));
       }
     };
 
     const handleNewCard = (data) => {
       if (data.boardId === boardId) {
-        setLists(prevLists => {
-          const newLists = [...prevLists];
-          const list = newLists.find(list => list._id === data.listId);
-          
-          if (list) {
-            list.cards.push(data.card);
-          }
-          
-          return newLists;
-        });
+        setLists(prevLists => prevLists.map(list =>
+          list._id === data.listId ? { ...list, cards: [...list.cards, data.card] } : list
+        ));
       }
     };
 
@@ -105,18 +92,22 @@ const Board = ({ projectId, boardId, initialData, onUpdate }) => {
 
     // Optimistic update
     setLists(prevLists => {
-      const newLists = [...prevLists];
-      const sourceListIndex = newLists.findIndex(list => list._id === source.droppableId);
-      const destListIndex = newLists.findIndex(list => list._id === destination.droppableId);
+      const sourceListIndex = prevLists.findIndex(list => list._id === source.droppableId);
+      const destListIndex = prevLists.findIndex(list => list._id === destination.droppableId);
+      if (sourceListIndex === -1 || destListIndex === -1) return prevLists;
 
       // Remove card from source list
-      newLists[sourceListIndex].cards = newLists[sourceListIndex].cards.filter(
-        card => card._id !== draggableId
+      const newLists = prevLists.map((list, idx) =>
+        idx === sourceListIndex
+          ? { ...list, cards: list.cards.filter(c => c._id !== draggableId) }
+          : list
       );
 
-      // Add card to destination list
+      // Add card to destination list (same list ref if source === destination)
       const updatedCard = { ...card, listId: destination.droppableId };
-      newLists[destListIndex].cards.splice(destination.index, 0, updatedCard);
+      const destCards = [...newLists[destListIndex].cards];
+      destCards.splice(destination.index, 0, updatedCard);
+      newLists[destListIndex] = { ...newLists[destListIndex], cards: destCards };
 
       return newLists;
     });
@@ -163,19 +154,14 @@ const Board = ({ projectId, boardId, initialData, onUpdate }) => {
   };
 
   const handleCardUpdate = (listId, cardId, updates) => {
-    setLists(prevLists => {
-      const newLists = [...prevLists];
-      const list = newLists.find(list => list._id === listId);
-      
-      if (list) {
-        const cardIndex = list.cards.findIndex(card => card._id === cardId);
-        if (cardIndex !== -1) {
-          list.cards[cardIndex] = { ...list.cards[cardIndex], ...updates };
-        }
-      }
-      
-      return newLists;
-    });
+    setLists(prevLists => prevLists.map(list => {
+      if (list._id !== listId) return list;
+      const cardIndex = list.cards.findIndex(card => card._id === cardId);
+      if (cardIndex === -1) return list;
+      const newCards = [...list.cards];
+      newCards[cardIndex] = { ...newCards[cardIndex], ...updates };
+      return { ...list, cards: newCards };
+    }));
   };
 
   if (!board) {

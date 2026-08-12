@@ -17,10 +17,14 @@ import {
 } from '@heroicons/react/24/outline';
 import { tenantApiService } from '../../../../../../shared/services/tenant/tenant-api.service';
 import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
+import { useTenantCurrency } from '../../../../../../shared/hooks/useTenantCurrency';
+import { formatCurrency as formatCurrencyBase } from '../../../../../../shared/utils/currency';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 const BillingEngine = () => {
   const tenantSlug = useTenantSlug();
+  const currency = useTenantCurrency(tenantSlug);
   const [invoices, setInvoices] = useState([]);
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -117,12 +121,7 @@ const BillingEngine = () => {
     return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+  const formatCurrency = (amount) => formatCurrencyBase(amount, currency);
 
   const formatDate = (date) => {
     if (!date) return '';
@@ -255,7 +254,7 @@ const BillingEngine = () => {
         );
 
         if (projectTimeEntries.length === 0) {
-          alert('No unbilled time entries found for this project');
+          toast.error('No unbilled time entries found for this project');
           return;
         }
 
@@ -292,7 +291,7 @@ const BillingEngine = () => {
       }
     } catch (error) {
       console.error('Error auto-generating invoice:', error);
-      alert(error.message || 'Failed to generate invoice. Please try again.');
+      toast.error(error.message || 'Failed to generate invoice. Please try again.');
     } finally {
       setLoading(false);
     }

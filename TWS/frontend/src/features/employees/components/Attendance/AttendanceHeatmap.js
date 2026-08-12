@@ -269,7 +269,7 @@ const AttendanceHeatmap = ({ timeRange, filters }) => {
         <div className="border border-gray-200 rounded p-4">
           <h3 className="text-sm font-medium text-gray-900 mb-4">Peak Hours Analysis</h3>
           <div className="space-y-2">
-            {heatmapData.hourly
+            {[...heatmapData.hourly]
               .sort((a, b) => b[selectedMetric] - a[selectedMetric])
               .slice(0, 5)
               .map((hour, index) => (

@@ -280,8 +280,8 @@ const DevelopmentAnalytics = () => {
         <div className="glass-card-premium p-6">
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Velocity Trend</h3>
           <div className="space-y-3">
-            {metrics.velocity.data.map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
+            {metrics.velocity.data.map((item) => (
+              <div key={item.week} className="flex items-center justify-between">
                 <span className="text-sm text-gray-600 dark:text-gray-400">{item.week}</span>
                 <div className="flex items-center gap-3">
                   <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">

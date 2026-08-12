@@ -186,6 +186,11 @@ const UserList = () => {
   const [createDepartmentOptions, setCreateDepartmentOptions] = useState(DEFAULT_DEPARTMENT_OPTIONS);
   const [createProfilePicFile, setCreateProfilePicFile] = useState(null);
   const [createProfilePicPreview, setCreateProfilePicPreview] = useState(null);
+  const createProfilePicPreviewRef = useRef(null);
+
+  useEffect(() => () => {
+    if (createProfilePicPreviewRef.current) URL.revokeObjectURL(createProfilePicPreviewRef.current);
+  }, []);
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -278,7 +283,10 @@ const UserList = () => {
       return;
     }
     setCreateProfilePicFile(file);
-    setCreateProfilePicPreview(URL.createObjectURL(file));
+    if (createProfilePicPreviewRef.current) URL.revokeObjectURL(createProfilePicPreviewRef.current);
+    const preview = URL.createObjectURL(file);
+    createProfilePicPreviewRef.current = preview;
+    setCreateProfilePicPreview(preview);
   };
 
   const handleCreateUserSubmit = async (e) => {
