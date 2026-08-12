@@ -15,6 +15,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const router = express.Router({ mergeParams: true });
 const projectController = require('../controllers/tenant/projectsController');
+const projectAgentController = require('../controllers/tenant/projectAgentController');
 const { requireRole } = require('../middleware/auth/rbac');
 const { strictLimiter } = require('../middleware/rateLimiting/rateLimiter');
 const { body, validationResult } = require('express-validator');
@@ -26,6 +27,26 @@ const { idempotencyMiddleware } = require('../middleware/common/idempotency');
 const verifyERPToken = require('../middleware/auth/verifyERPToken');
 const { tokenVerificationLimiter } = require('../middleware/rateLimiting/rateLimiter');
 const { checkUsageLimitSoftwareHouseOnly, checkReadOnlySoftwareHouseOnly } = require('../middleware/common/featureGate');
+
+const validateProjectAgentRequest = [
+  body('message')
+    .trim()
+    .notEmpty()
+    .withMessage('A project request or answer is required')
+    .isLength({ min: 2, max: 4000 })
+    .withMessage('Message must be between 2 and 4000 characters'),
+  body('history').optional().isArray({ max: 10 }).withMessage('History must contain at most 10 turns'),
+  body('history.*.role').optional().isIn(['user', 'assistant']).withMessage('Invalid conversation role'),
+  body('history.*.text').optional().isString().isLength({ max: 4000 }).withMessage('Conversation turn is too long'),
+  body('currentDraft').optional().isObject().withMessage('Current draft must be an object'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() });
+    }
+    next();
+  }
+];
 
 // SECURITY FIX: Input validation middleware for project creation
 const validateProjectCreation = [
@@ -423,6 +444,15 @@ router.delete(
 // This will match any remaining paths, but we validate ObjectId format in the controller
 // :id is shared with sibling resource routes above (tasks/:id, sprints/:id, ...), so it can't use
 // router.param — resolveProjectIdParam('id') is applied explicitly per-route instead.
+router.post('/agent/scope',
+  verifyERPToken,
+  validateRequestSize('64kb'),
+  strictLimiter,
+  requireRole(['admin', 'super_admin', 'org_manager', 'project_manager', 'pmo', 'owner']),
+  validateProjectAgentRequest,
+  projectAgentController.scopeProject
+);
+
 router.get('/:id', verifyERPToken, resolveProjectIdParam('id'), projectController.getProject);
 
 // SECURITY: Add comprehensive security middleware for project creation
@@ -557,4 +587,3 @@ router.post('/:id/restore',
 );
 
 module.exports = router;
-

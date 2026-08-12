@@ -5,6 +5,7 @@ import { validateProjectForm, sanitizeProjectData } from '../utils/validation';
 import { handleApiError, handleSuccess } from '../utils/errorHandler';
 import { SUCCESS_MESSAGES, PROJECT_PRIORITY, CURRENCIES, PROJECT_TYPE } from '../constants/projectConstants';
 import { useTenantSlug } from '../../../../../../../shared/hooks/useTenantSlug';
+import AIProjectCreator from './AIProjectCreator';
 
 const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
   const tenantSlug = useTenantSlug();
@@ -32,6 +33,8 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
   const [errors, setErrors] = useState({});
   const [clients, setClients] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [creationMode, setCreationMode] = useState('ai');
+  const [aiDraftReady, setAiDraftReady] = useState(false);
 
   useEffect(() => {
     if (isOpen && tenantSlug) {
@@ -214,6 +217,24 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
       // Client Portal - REMOVED COMPLETELY
     });
     setErrors({});
+    setCreationMode('ai');
+    setAiDraftReady(false);
+  };
+
+  const handleAgentDraftReady = (projectDraft) => {
+    if (!projectDraft) {
+      setAiDraftReady(false);
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      ...projectDraft,
+      budget: { ...prev.budget, ...(projectDraft.budget || {}) },
+      timeline: { ...prev.timeline, ...(projectDraft.timeline || {}) },
+      departments: Array.isArray(projectDraft.departments) ? projectDraft.departments : []
+    }));
+    setErrors({});
+    setAiDraftReady(true);
   };
 
   const handleClose = () => {
@@ -235,7 +256,28 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
       <div className="glass-card-premium max-w-2xl w-full max-h-[90vh] overflow-hidden rounded-xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold font-heading text-gray-900 dark:text-white">Create New Project</h2>
+          <div>
+            <h2 className="text-xl font-bold font-heading text-gray-900 dark:text-white">Create New Project</h2>
+            <div className="mt-3 flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
+              <button
+                type="button"
+                onClick={() => {
+                  if (creationMode !== 'ai') setAiDraftReady(false);
+                  setCreationMode('ai');
+                }}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${creationMode === 'ai' ? 'bg-white text-violet-700 shadow-sm dark:bg-gray-700 dark:text-violet-300' : 'text-gray-500 dark:text-gray-400'}`}
+              >
+                Create with AI
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreationMode('manual')}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${creationMode === 'manual' ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}
+              >
+                Manual form
+              </button>
+            </div>
+          </div>
           <button
             onClick={handleClose}
             className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -245,7 +287,8 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        {creationMode === 'manual' ? (
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-190px)]">
           <div className="space-y-6">
             {/* Basic Information */}
             <div>
@@ -503,6 +546,15 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
             )}
           </div>
         </form>
+        ) : (
+          <AIProjectCreator tenantSlug={tenantSlug} onDraftReady={handleAgentDraftReady} />
+        )}
+
+        {creationMode === 'ai' && Object.keys(errors).length > 0 && (
+          <div className="mx-6 mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-300" role="alert">
+            {errors.submit || Object.values(errors)[0]}
+          </div>
+        )}
 
         {/* Footer */}
         <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
@@ -516,10 +568,10 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={isLoading}
+            disabled={isLoading || (creationMode === 'ai' && !aiDraftReady)}
             className="glass-button px-4 py-2 rounded-xl hover-scale bg-gradient-to-r from-primary-500 to-accent-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Creating...' : 'Create Project'}
+            {isLoading ? 'Creating...' : creationMode === 'ai' ? 'Create scoped project' : 'Create Project'}
           </button>
         </div>
       </div>
@@ -528,4 +580,3 @@ const CreateProjectModal = ({ isOpen, onClose, onProjectCreated }) => {
 };
 
 export default CreateProjectModal;
-

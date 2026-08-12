@@ -195,6 +195,20 @@ class TenantProjectApiService {
   }
 
   /**
+   * Ask the Gemini project agent to clarify or prepare a validated project draft.
+   */
+  async scopeProjectWithAI(tenantSlug, agentInput) {
+    try {
+      return await makeRequest(API_ENDPOINTS.PROJECT_AGENT_SCOPE(tenantSlug), {
+        method: 'POST',
+        body: JSON.stringify(agentInput)
+      });
+    } catch (error) {
+      throw this.handleError(error, 'AI project planning is temporarily unavailable.');
+    }
+  }
+
+  /**
    * Update a project
    * @param {string} tenantSlug - Tenant slug
    * @param {string} projectId - Project ID
@@ -1333,4 +1347,3 @@ class TenantProjectApiService {
 // Export singleton instance
 const tenantProjectApiService = new TenantProjectApiService();
 export default tenantProjectApiService;
-

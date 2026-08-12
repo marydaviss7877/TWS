@@ -1,0 +1,363 @@
+{
+  "generated_at": "2026-07-31T10:34:47.959Z",
+  "category": "dentist",
+  "country": "US",
+  "target_per_state": 500,
+  "total_api_results": 99773,
+  "pages_fetched": 20,
+  "records_scanned": 99773,
+  "unmatched_region_records": 247,
+  "total_records_stored": 22224,
+  "states": [
+    {
+      "state_code": "AL",
+      "state": "Alabama",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "AK",
+      "state": "Alaska",
+      "records": 210,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "AZ",
+      "state": "Arizona",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "AR",
+      "state": "Arkansas",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "CA",
+      "state": "California",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "CO",
+      "state": "Colorado",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "CT",
+      "state": "Connecticut",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "DE",
+      "state": "Delaware",
+      "records": 176,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "FL",
+      "state": "Florida",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "GA",
+      "state": "Georgia",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "HI",
+      "state": "Hawaii",
+      "records": 426,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "ID",
+      "state": "Idaho",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "IL",
+      "state": "Illinois",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "IN",
+      "state": "Indiana",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "IA",
+      "state": "Iowa",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "KS",
+      "state": "Kansas",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "KY",
+      "state": "Kentucky",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "LA",
+      "state": "Louisiana",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "ME",
+      "state": "Maine",
+      "records": 369,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "MD",
+      "state": "Maryland",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "MA",
+      "state": "Massachusetts",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "MI",
+      "state": "Michigan",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "MN",
+      "state": "Minnesota",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "MS",
+      "state": "Mississippi",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "MO",
+      "state": "Missouri",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "MT",
+      "state": "Montana",
+      "records": 284,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "NE",
+      "state": "Nebraska",
+      "records": 492,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "NV",
+      "state": "Nevada",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "NH",
+      "state": "New Hampshire",
+      "records": 403,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "NJ",
+      "state": "New Jersey",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "NM",
+      "state": "New Mexico",
+      "records": 479,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "NY",
+      "state": "New York",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "NC",
+      "state": "North Carolina",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "ND",
+      "state": "North Dakota",
+      "records": 177,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "OH",
+      "state": "Ohio",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "OK",
+      "state": "Oklahoma",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "OR",
+      "state": "Oregon",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "PA",
+      "state": "Pennsylvania",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "RI",
+      "state": "Rhode Island",
+      "records": 249,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "SC",
+      "state": "South Carolina",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "SD",
+      "state": "South Dakota",
+      "records": 203,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "TN",
+      "state": "Tennessee",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "TX",
+      "state": "Texas",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "UT",
+      "state": "Utah",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "VT",
+      "state": "Vermont",
+      "records": 140,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "VA",
+      "state": "Virginia",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "WA",
+      "state": "Washington",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "WV",
+      "state": "West Virginia",
+      "records": 450,
+      "target": 500,
+      "complete": false
+    },
+    {
+      "state_code": "WI",
+      "state": "Wisconsin",
+      "records": 500,
+      "target": 500,
+      "complete": true
+    },
+    {
+      "state_code": "WY",
+      "state": "Wyoming",
+      "records": 166,
+      "target": 500,
+      "complete": false
+    }
+  ]
+}
