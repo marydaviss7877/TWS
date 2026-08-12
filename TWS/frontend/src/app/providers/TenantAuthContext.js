@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { getSubdomainSlug } from '../../shared/utils/subdomain';
+import { getSubdomainSlug, getForeignTenantWorkspaceUrl, navigateTo } from '../../shared/utils/subdomain';
 
 const TenantAuthContext = createContext();
 
@@ -251,10 +251,13 @@ export const TenantAuthProvider = ({ children }) => {
             }
           }
           if (userTenantSlug && tenantSlug && userTenantSlug !== tenantSlug && !isOnLoginPage) {
-            const correctPath = location.pathname.replace(new RegExp(`^/${tenantSlug}(/|$)`), `/${userTenantSlug}$1`);
+            // This session belongs to a different org than the subdomain we're
+            // on (e.g. a shared *.housesbase.com cookie from a prior visit to a
+            // different tenant). Never render this tenant's dashboard for it —
+            // send the browser to the org the session actually belongs to.
             setLoading(false);
             setIsAuthenticated(false);
-            navigate(correctPath, { replace: true });
+            navigateTo(getForeignTenantWorkspaceUrl(userTenantSlug, 'home'), navigate);
             return;
           }
         } catch (e) {
@@ -538,21 +541,20 @@ export const TenantAuthProvider = ({ children }) => {
       const mergedBranding = tenantData.branding
         ? { ...(prev.branding || {}), ...tenantData.branding }
         : prev.branding;
-      const updated = { ...prev, ...tenantData, branding: mergedBranding };
-      // Keep localStorage in sync
-      try {
-        const stored = JSON.parse(localStorage.getItem('tenantData') || '{}');
-        const mergedStoredBranding = tenantData.branding
-          ? { ...(stored.branding || {}), ...tenantData.branding }
-          : stored.branding;
-        localStorage.setItem('tenantData', JSON.stringify({
-          ...stored,
-          ...tenantData,
-          branding: mergedStoredBranding,
-        }));
-      } catch { /* ignore */ }
-      return updated;
+      return { ...prev, ...tenantData, branding: mergedBranding };
     });
+    // Keep localStorage in sync
+    try {
+      const stored = JSON.parse(localStorage.getItem('tenantData') || '{}');
+      const mergedStoredBranding = tenantData.branding
+        ? { ...(stored.branding || {}), ...tenantData.branding }
+        : stored.branding;
+      localStorage.setItem('tenantData', JSON.stringify({
+        ...stored,
+        ...tenantData,
+        branding: mergedStoredBranding,
+      }));
+    } catch { /* ignore */ }
   };
 
   const value = {

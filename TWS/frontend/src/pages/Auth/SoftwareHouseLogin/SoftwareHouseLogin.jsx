@@ -14,7 +14,7 @@ import {
     ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import BrandMark from '../../../shared/components/ui/BrandMark';
-import { getTenantWorkspaceUrl, navigateTo } from '../../../shared/utils/subdomain';
+import { getTenantWorkspaceUrl, navigateTo, isAdminHost, isSubdomainContext } from '../../../shared/utils/subdomain';
 
 const SoftwareHouseLogin = () => {
     const { login, logout } = useAuth();
@@ -58,6 +58,14 @@ const SoftwareHouseLogin = () => {
             errorBoxRef.current.focus();
         }
     }, [error]);
+
+    // admin.housesbase.com is the Software House Admin's own dedicated login
+    // host — there's no employee/client ambiguity there, so it gets distinct
+    // copy and skips the portal selector and org-signup link entirely.
+    const isAdmin = isAdminHost();
+    // /signup only renders on the root domain (App.jsx) — on a tenant
+    // subdomain or admin host, "Create account" would be a dead link.
+    const canSignUp = !isAdmin && !isSubdomainContext();
 
     const portals = [
         { id: 'admin',    icon: ShieldCheckIcon,    title: 'Admin' },
@@ -197,22 +205,26 @@ const SoftwareHouseLogin = () => {
                         <div style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '0.04em' }}>HouseBase</div>
                     </div>
 
-                    <h1 className="sh-heading">Login</h1>
+                    <h1 className="sh-heading">{isAdmin ? 'Software House Admin Login' : 'Login'}</h1>
 
-                    {/* Portal selector */}
-                    <div className="sh-portal-row">
-                        {portals.map((portal) => (
-                            <button
-                                key={portal.id}
-                                type="button"
-                                onClick={() => selectPortal(portal.id)}
-                                className={`sh-portal-btn${selectedPortal === portal.id ? ' active' : ''}`}
-                            >
-                                <portal.icon style={{ width: 18, height: 18 }} />
-                                {portal.title}
-                            </button>
-                        ))}
-                    </div>
+                    {/* Portal selector — only relevant on a tenant subdomain
+                        (admin/employee/client all share that login form);
+                        admin.housesbase.com is admin-only, so skip it. */}
+                    {!isAdmin && (
+                        <div className="sh-portal-row">
+                            {portals.map((portal) => (
+                                <button
+                                    key={portal.id}
+                                    type="button"
+                                    onClick={() => selectPortal(portal.id)}
+                                    className={`sh-portal-btn${selectedPortal === portal.id ? ' active' : ''}`}
+                                >
+                                    <portal.icon style={{ width: 18, height: 18 }} />
+                                    {portal.title}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     {infoMessage && (
                         <div className="sh-info-box" role="status" aria-live="polite">{infoMessage}</div>
@@ -291,7 +303,7 @@ const SoftwareHouseLogin = () => {
 
                     <div className="sh-footer-row">
                         <Link to="/forgot-password" className="sh-footer-link">Forgot password?</Link>
-                        <Link to="/signup" className="sh-footer-link">Create account</Link>
+                        {canSignUp && <Link to="/signup" className="sh-footer-link">Create account</Link>}
                     </div>
                 </div>
             </div>

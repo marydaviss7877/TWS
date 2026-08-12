@@ -1,5 +1,6 @@
 const { Resend } = require('resend');
 const envConfig = require('../../config/environment-validator');
+const { getSanitizedBaseDomain } = require('../../utils/baseDomain');
 
 /**
  * Email Service for Education System
@@ -381,7 +382,7 @@ class EmailService {
    */
   async sendWorkspaceLookupEmail(user, org) {
     const subject = 'Your HouseBase workspace';
-    const baseDomain = process.env.BASE_DOMAIN || 'housesbase.com';
+    const baseDomain = getSanitizedBaseDomain();
     const workspaceUrl = `https://${org.slug}.${baseDomain}/login`;
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

@@ -74,6 +74,28 @@ export function getTenantWorkspaceUrl(slug, ...pathParts) {
 }
 
 /**
+ * Like getTenantWorkspaceUrl, but always builds a URL for `slug` explicitly
+ * — never assumes the current subdomain already matches. Use this whenever
+ * redirecting to a DIFFERENT tenant than whatever subdomain is currently
+ * loaded (e.g. correcting a cross-tenant session/subdomain mismatch).
+ * getTenantWorkspaceUrl's "already on a subdomain → relative path" shortcut
+ * would be wrong there — it would return a same-origin path on the WRONG
+ * tenant's subdomain instead of crossing over to the right one.
+ *
+ * Usage: getForeignTenantWorkspaceUrl('acme', 'home')
+ *   prod  → 'https://acme.housesbase.com/home', always, regardless of current host
+ *   dev   → '/acme/home'   (keeps legacy path for dev, no real subdomains there)
+ */
+export function getForeignTenantWorkspaceUrl(slug, ...pathParts) {
+  if (isDev()) {
+    return `/${[slug, ...pathParts].filter(Boolean).join('/')}`;
+  }
+  const cleanParts = pathParts.filter(p => p && p !== 'org');
+  const cleanPath = cleanParts.length ? `/${cleanParts.join('/')}` : '/home';
+  return `${window.location.protocol}//${slug}.${BASE_DOMAIN}${cleanPath}`;
+}
+
+/**
  * Build a URL on the tenant's subdomain for NON-workspace paths
  * (e.g. /login, /invite/accept).
  *

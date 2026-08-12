@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import ThemeToggle from '../../../shared/components/ui/ThemeToggle';
 import BrandMark from '../../../shared/components/ui/BrandMark';
+import { isSubdomainContext, isAdminHost } from '../../../shared/utils/subdomain';
 import './SoftwareHouseNavbar.css';
 
 const SoftwareHouseNavbar = ({
@@ -32,6 +33,12 @@ const SoftwareHouseNavbar = ({
 
   const isPublicShell = location.pathname.startsWith('/software-house');
 
+  // On a tenant subdomain or admin.housesbase.com, none of the marketing
+  // links (Story/Platform/Projects/HRM/Finance) or Sign in/Start free make
+  // sense — Projects/Finance in particular route into the tenant's real
+  // internal modules, not a marketing page, when mounted on a subdomain.
+  const isTenantOrAdminContext = isSubdomainContext() || isAdminHost();
+
   return (
     <header className={`sh-nav-shell ${fixed ? 'sh-nav-fixed' : ''} ${isPublicShell ? 'sh-nav-landing' : ''} ${className}`.trim()}>
       <nav
@@ -39,7 +46,7 @@ const SoftwareHouseNavbar = ({
         aria-label="Software House navigation"
       >
         <div className="sh-nav-inner">
-          <Link to="/" className="sh-brand" onClick={() => setMobileOpen(false)}>
+          <Link to={isTenantOrAdminContext ? '/login' : '/'} className="sh-brand" onClick={() => setMobileOpen(false)}>
             <span className="sh-brand-mark" aria-hidden="true">
               <BrandMark simple size={18} />
             </span>
@@ -49,49 +56,55 @@ const SoftwareHouseNavbar = ({
             </span>
           </Link>
 
-          <div className="sh-nav-links-desktop">
-            {navLinks.map((link) =>
-              link.isRoute ? (
-                <Link
-                  key={link.id}
-                  to={link.href}
-                  className={`sh-nav-link ${isActive(link) ? 'active' : ''}`}
-                >
-                  {link.label}
-                </Link>
-              ) : (
-                <a
-                  key={link.id}
-                  href={link.href}
-                  className={`sh-nav-link ${isActive(link) ? 'active' : ''}`}
-                >
-                  {link.label}
-                </a>
-              )
-            )}
-          </div>
+          {!isTenantOrAdminContext && (
+            <div className="sh-nav-links-desktop">
+              {navLinks.map((link) =>
+                link.isRoute ? (
+                  <Link
+                    key={link.id}
+                    to={link.href}
+                    className={`sh-nav-link ${isActive(link) ? 'active' : ''}`}
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.id}
+                    href={link.href}
+                    className={`sh-nav-link ${isActive(link) ? 'active' : ''}`}
+                  >
+                    {link.label}
+                  </a>
+                )
+              )}
+            </div>
+          )}
 
           <div className="sh-nav-actions">
             {showThemeToggle ? <ThemeToggle size="sm" shortcut={true} /> : null}
-            <Link to="/login" className="sh-nav-login">
-              Sign in
-            </Link>
-            <Link to="/signup" className="sh-nav-cta">
-              Start free <span aria-hidden="true">↗</span>
-            </Link>
-            <button
-              type="button"
-              className="sh-nav-mobile-toggle"
-              onClick={() => setMobileOpen((prev) => !prev)}
-              aria-expanded={mobileOpen}
-              aria-label="Toggle navigation"
-            >
-              {mobileOpen ? <XMarkIcon /> : <Bars3Icon />}
-            </button>
+            {!isTenantOrAdminContext && (
+              <>
+                <Link to="/login" className="sh-nav-login">
+                  Sign in
+                </Link>
+                <Link to="/signup" className="sh-nav-cta">
+                  Start free <span aria-hidden="true">↗</span>
+                </Link>
+                <button
+                  type="button"
+                  className="sh-nav-mobile-toggle"
+                  onClick={() => setMobileOpen((prev) => !prev)}
+                  aria-expanded={mobileOpen}
+                  aria-label="Toggle navigation"
+                >
+                  {mobileOpen ? <XMarkIcon /> : <Bars3Icon />}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
-        {mobileOpen && (
+        {!isTenantOrAdminContext && mobileOpen && (
           <div className="sh-nav-mobile-menu">
             {navLinks.map((link) =>
               link.isRoute ? (

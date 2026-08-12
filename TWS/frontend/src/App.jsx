@@ -295,19 +295,22 @@ function App() {
               : (isSubdomain || isAdminHost() ? <SoftwareHouseLogin /> : <FindWorkspace />)
             }
           />
-          <Route
-            path="/signup"
-            element={user ? <Navigate to="/" replace /> : <SoftwareHouseSignup />}
-          />
-          <Route path="/software-house-signup" element={<Navigate to="/signup" replace />} />
+          <Route path="/software-house" element={<LegacyLandingRedirect />} />
+          {/* Password recovery is about regaining access to an existing
+              account, not creating a new org — unlike /signup, it's fine
+              (and necessary) everywhere, including admin.housesbase.com. */}
           <Route
             path="/forgot-password"
             element={user ? <Navigate to="/" replace /> : <SoftwareHouseForgotPassword />}
           />
           <Route path="/software-house-forgot-password" element={<Navigate to="/forgot-password" replace />} />
-          <Route path="/software-house" element={<LegacyLandingRedirect />} />
-          {!isSubdomain && (
+          {!isSubdomain && !isAdminHost() && (
             <>
+              <Route
+                path="/signup"
+                element={user ? <Navigate to="/" replace /> : <SoftwareHouseSignup />}
+              />
+              <Route path="/software-house-signup" element={<Navigate to="/signup" replace />} />
               <Route path="/finance" element={<FinanceSystemPage />} />
               <Route path="/hrm" element={<HRMSystemPage />} />
               <Route path="/projects" element={<ProjectSystemPage />} />

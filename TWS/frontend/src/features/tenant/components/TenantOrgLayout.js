@@ -99,15 +99,18 @@ const TenantOrgLayout = ({ children }) => {
     const [userPermissions, setUserPermissions] = useState(null);
 
     // ── Auth loading safety timeout ───────────────────────────────────────────
-    const [loadingTimeout, setLoadingTimeout] = useState(false);
+    // If the auth check hangs, fail closed (send to /login) instead of forcing
+    // the dashboard shell to render without a confirmed session. 8s (not 3s)
+    // because a first-load/new-device check in TenantAuthContext can involve
+    // up to 3 sequential (non-parallel) round trips before resolving.
     useEffect(() => {
-        if (!authLoading) { setLoadingTimeout(false); return; }
+        if (!authLoading) return;
         const t = setTimeout(() => {
-            console.warn('⚠️ Auth loading timeout — forcing render');
-            setLoadingTimeout(true);
-        }, 3000);
+            console.warn('⚠️ Auth loading timeout — redirecting to login');
+            navigate('/login', { replace: true });
+        }, 8000);
         return () => clearTimeout(t);
-    }, [authLoading]);
+    }, [authLoading, navigate]);
 
     // ── Close mobile menu on route change ────────────────────────────────────
     useEffect(() => {
@@ -183,21 +186,17 @@ const TenantOrgLayout = ({ children }) => {
     }, [location.pathname, menuItems]);
 
     const toggleMenuExpansion = (key) => {
-        setExpandedMenus(prev => {
-            const next = { ...prev, [key]: !prev[key] };
-            if (expandedMenuStorageKey) {
-                try { localStorage.setItem(expandedMenuStorageKey, JSON.stringify(next)); } catch (_) {}
-            }
-            return next;
-        });
+        const next = { ...expandedMenus, [key]: !expandedMenus[key] };
+        if (expandedMenuStorageKey) {
+            try { localStorage.setItem(expandedMenuStorageKey, JSON.stringify(next)); } catch (_) {}
+        }
+        setExpandedMenus(next);
     };
 
     const toggleSidebar = () => {
-        setSidebarCollapsed(prev => {
-            const next = !prev;
-            try { localStorage.setItem('tws-sidebar-collapsed', String(next)); } catch (_) {}
-            return next;
-        });
+        const next = !sidebarCollapsed;
+        try { localStorage.setItem('tws-sidebar-collapsed', String(next)); } catch (_) {}
+        setSidebarCollapsed(next);
     };
 
     // ── Keyboard shortcuts ────────────────────────────────────────────────────
@@ -213,7 +212,11 @@ const TenantOrgLayout = ({ children }) => {
 
     // ── Handlers ──────────────────────────────────────────────────────────────
     // ── Loading guard (must be after all hooks) ───────────────────────────────
-    if (authLoading && !loadingTimeout && !isAuthenticated) {
+    // Only ever render the dashboard shell once isAuthenticated is confirmed
+    // true — never on "still loading" or "not authenticated" (including an
+    // org/subdomain mismatch), so a wrong or expired session can't flash
+    // protected content before its redirect takes effect.
+    if (!isAuthenticated) {
         return (
             <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-clean-light-pure via-clean-light-soft to-primary-50/30 dark:from-glass-dark-deepest dark:via-glass-dark-deep dark:to-glass-dark-base ${themeTransition ? 'theme-transition' : ''}`}>
                 <div className="text-center">
