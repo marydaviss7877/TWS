@@ -17,7 +17,7 @@ const OrgLeavePolicy = require('../../../models/org/OrgLeavePolicy');
 const TenantSettings = require('../../../models/tenant/TenantSettings');
 const TenantAuditLog = require('../../../models/tenant/TenantAuditLog');
 const bcrypt = require('bcryptjs');
-const { authenticateToken } = require('../../../middleware/auth/auth');
+const { authenticateToken, requireRole } = require('../../../middleware/auth/auth');
 const tenantOrgService = require('../../../services/tenant/tenant-org.service');
 const recruitmentService = require('../../../services/hr/recruitment.service');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
@@ -2837,7 +2837,7 @@ const normalizeCustomPermissionCodes = (codes = []) => {
 };
 
 // Get users
-router.get('/users', verifyERPToken, async (req, res) => {
+router.get('/users', verifyERPToken, requireUserManagementAdmin, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const { page = 1, limit = 20, role, department, status } = req.query;
@@ -2860,6 +2860,39 @@ router.post('/users', verifyERPToken, requireUserManagementAdmin, checkReadOnlyS
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const userData = req.body;
     const user = await tenantOrgService.createUser(tenantContext, userData);
+    const departmentName = String(userData?.department || '').trim();
+    if (departmentName && tenantContext.tenantId && tenantContext.orgId) {
+      try {
+        const Department = require('../../../models/org/Department');
+        const TenantDepartmentAccess = require('../../../models/tenant/TenantDepartmentAccess');
+        const escapedName = departmentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const department = await Department.findOne({
+          name: { $regex: `^${escapedName}$`, $options: 'i' },
+          $or: [{ tenantId: tenantContext.tenantId }, { orgId: tenantContext.orgId }],
+          status: 'active'
+        }).select('_id name').lean();
+        if (department) {
+          await TenantDepartmentAccess.findOneAndUpdate(
+            { tenantId: tenantContext.tenantId, userId: user._id, departmentId: department._id },
+            {
+              $set: {
+                orgId: tenantContext.orgId,
+                department: department.name,
+                permissions: ['read'],
+                accessLevel: 'viewer',
+                status: 'active',
+                grantedBy: req.user._id,
+                grantedAt: new Date()
+              },
+              $push: { auditLog: { action: 'granted', performedBy: req.user._id } }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+          );
+        }
+      } catch (departmentGrantError) {
+        console.warn('User created, but department access sync failed:', departmentGrantError.message);
+      }
+    }
     const temp = user._temporaryPassword;
     const payload = typeof user.toJSON === 'function' ? user.toJSON() : { ...user };
     if (temp) {
@@ -2879,7 +2912,10 @@ router.post('/users', verifyERPToken, requireUserManagementAdmin, checkReadOnlyS
 });
 
 // Get user by ID (includes TenantUser.role and hrSubRole for UI)
-router.get('/users/:id', verifyERPToken, async (req, res) => {
+router.get('/users/:id', verifyERPToken, (req, res, next) => {
+  if (req.params.id === 'profile') return next();
+  return requireUserManagementAdmin(req, res, next);
+}, async (req, res) => {
   try {
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const tenantId = req.tenant?._id || tenantContext?.tenantId;
@@ -2888,7 +2924,7 @@ router.get('/users/:id', verifyERPToken, async (req, res) => {
     const userObj = user?.toObject ? user.toObject() : { ...user };
     const TenantUser = require('../../../models/tenant/TenantUser');
     const tenantUser = await TenantUser.findOne({ userId: id, tenantId })
-      .select('roles hrSubRole financeSubRole status metadata.customFields.permissionOverrides')
+      .select('roles hrSubRole financeSubRole status metadata.customFields.permissionOverrides metadata.customFields.assignedRoleId')
       .lean();
     if (tenantUser) {
       userObj.role = tenantUser.roles?.[0]?.role || userObj.role;
@@ -2908,6 +2944,7 @@ router.get('/users/:id', verifyERPToken, async (req, res) => {
       userObj.deniedPermissionCodes = Array.isArray(tenantUser?.metadata?.customFields?.permissionOverrides?.deny)
         ? tenantUser.metadata.customFields.permissionOverrides.deny
         : [];
+      userObj.assignedRoleId = tenantUser?.metadata?.customFields?.assignedRoleId || null;
     }
     res.json({ success: true, data: userObj });
   } catch (error) {
@@ -2947,7 +2984,7 @@ router.put('/users/:id', verifyERPToken, requireUserManagementAdmin, async (req,
     const tenantContext = req.tenantContext || await buildTenantContext(req);
     const tenantId = req.tenant?._id || tenantContext?.tenantId;
     const { id } = req.params;
-    const { hrSubRole, financeSubRole, role, erpRole, customPermissionCodes, deniedPermissionCodes, ...userData } = req.body;
+    const { hrSubRole, financeSubRole, role, erpRole, assignedRoleId, customPermissionCodes, deniedPermissionCodes, ...userData } = req.body;
     const requesterRole = String(req.user?.role || '').toLowerCase();
     const isSelf = String(id) === String(req.user?._id || '');
     console.log('[UPRDBG][PUT incoming]', {
@@ -2961,6 +2998,7 @@ router.put('/users/:id', verifyERPToken, requireUserManagementAdmin, async (req,
     const roleToApply = requestedRole && TENANT_ROLE_ENUM.includes(requestedRole) ? requestedRole : null;
     const hasCustomOverridePayload = customPermissionCodes !== undefined;
     const hasDeniedOverridePayload = deniedPermissionCodes !== undefined;
+    const hasAssignedRolePayload = assignedRoleId !== undefined;
 
     if (requestedRole && !roleToApply) {
       return res.status(400).json({
@@ -2980,6 +3018,61 @@ router.put('/users/:id', verifyERPToken, requireUserManagementAdmin, async (req,
     const TenantUser = require('../../../models/tenant/TenantUser');
     const { invalidateResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
     const tenantUser = await TenantUser.findOne({ userId: id, tenantId });
+
+    if (hasAssignedRolePayload) {
+      if (!tenantUser) {
+        return res.status(404).json({ success: false, message: 'Tenant user not found for role assignment' });
+      }
+      const normalizedAssignedRoleId = String(assignedRoleId || '').trim();
+      let assignedRole = null;
+      if (normalizedAssignedRoleId) {
+        if (!/^[0-9a-f]{24}$/i.test(normalizedAssignedRoleId)) {
+          return res.status(400).json({ success: false, message: 'Invalid assigned role ID' });
+        }
+        const CoreRole = require('../../../models/core/Role');
+        assignedRole = await CoreRole.findOne({
+          _id: normalizedAssignedRoleId,
+          tenantId,
+          isActive: true
+        }).select('name permissions').lean();
+        if (!assignedRole) {
+          return res.status(400).json({ success: false, message: 'Assigned role was not found in this organization' });
+        }
+        if (requesterRole !== 'owner' && assignedRole.permissions?.includes('*:*')) {
+          return res.status(403).json({ success: false, message: 'Only an owner can assign a role with unrestricted access' });
+        }
+      }
+      tenantUser.metadata = tenantUser.metadata || {};
+      tenantUser.metadata.customFields = tenantUser.metadata.customFields || {};
+      if (assignedRole) {
+        tenantUser.metadata.customFields.assignedRoleId = assignedRole._id;
+        tenantUser.metadata.customFields.assignedRoleName = assignedRole.name;
+      } else {
+        delete tenantUser.metadata.customFields.assignedRoleId;
+        delete tenantUser.metadata.customFields.assignedRoleName;
+      }
+      tenantUser.markModified('metadata.customFields');
+    }
+
+    if (hasCustomOverridePayload || hasDeniedOverridePayload) {
+      const submittedCodes = [
+        ...(hasCustomOverridePayload ? normalizeCustomPermissionCodes(customPermissionCodes) : []),
+        ...(hasDeniedOverridePayload ? normalizeCustomPermissionCodes(deniedPermissionCodes) : [])
+      ].map((permission) => `${permission.resource}:${permission.actions[0]}`);
+      const uniqueCodes = [...new Set(submittedCodes)];
+      if (uniqueCodes.length > 0) {
+        const Permission = require('../../../models/core/Permission');
+        const validCodes = await Permission.distinct('code', {
+          code: { $in: uniqueCodes },
+          $or: [{ tenantId }, { orgId: tenantContext.orgId }, { tenantId: null, orgId: null }],
+          isActive: true
+        });
+        const validCodeSet = new Set(validCodes.map((code) => String(code).trim().toLowerCase()));
+        if (uniqueCodes.some((code) => !validCodeSet.has(code))) {
+          return res.status(400).json({ success: false, message: 'One or more permission overrides are not in the active permission catalog' });
+        }
+      }
+    }
 
     if (roleToApply && tenantUser) {
       if (!Array.isArray(tenantUser.roles) || tenantUser.roles.length === 0) {
@@ -3037,7 +3130,7 @@ router.put('/users/:id', verifyERPToken, requireUserManagementAdmin, async (req,
       }
     }
 
-    if (tenantUser && (roleToApply || hasCustomOverridePayload || hasDeniedOverridePayload || hrSubRole !== undefined || financeSubRole !== undefined)) {
+    if (tenantUser && (roleToApply || hasAssignedRolePayload || hasCustomOverridePayload || hasDeniedOverridePayload || hrSubRole !== undefined || financeSubRole !== undefined)) {
       if (tenantUser.roles?.[0]?.role !== 'hr') {
         tenantUser.hrSubRole = undefined;
       }
@@ -3742,7 +3835,7 @@ router.get('/me/permissions', verifyERPToken, async (req, res) => {
 });
 
 // Read-only catalog: enforced permissions (SH project roles + UPR base roles)
-router.get('/permission-catalog', verifyTenantOrgAccess, async (req, res) => {
+router.get('/permission-catalog', verifyTenantOrgAccess, requireRole(['owner', 'admin', 'super_admin']), async (req, res) => {
   try {
     const { buildPermissionCatalog } = require('../../../services/tenant/permissionCatalog.service');
     const data = buildPermissionCatalog();
@@ -3754,7 +3847,7 @@ router.get('/permission-catalog', verifyTenantOrgAccess, async (req, res) => {
 });
 
 // Read-only catalog: UPR primary + HR sub-roles + Software House project roles
-router.get('/role-catalog', verifyTenantOrgAccess, async (req, res) => {
+router.get('/role-catalog', verifyTenantOrgAccess, requireRole(['owner', 'admin', 'super_admin']), async (req, res) => {
   try {
     const { buildRoleCatalog } = require('../../../services/tenant/roleCatalog.service');
     const data = buildRoleCatalog();
@@ -3817,7 +3910,7 @@ router.get('/user-departments', verifyTenantOrgAccess, async (req, res) => {
 
 // Projects routes - New comprehensive project management API
 const projectsRoutes = require('../../../routes/projects.routes');
-// Rate limiting and ERP token verification (module access control removed per product decision)
+// Rate limiting and ERP authentication; projectsRoutes applies unified module read/write authorization.
 router.use('/projects', tokenVerificationLimiter, verifyERPToken, projectsRoutes);
 
 // Nucleus — optional organization-wide operational agent

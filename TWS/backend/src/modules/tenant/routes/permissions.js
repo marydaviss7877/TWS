@@ -5,13 +5,8 @@ const ErrorHandler = require('../../../middleware/common/errorHandler');
 const Permission = require('../../../models/core/Permission');
 const { syncCatalogToOrgPermissions } = require('../../../services/tenant/permissionCatalogSync.service');
 
-// Test route to verify router is working
-router.get('/test', (req, res) => {
-  res.json({ success: true, message: 'Permissions route is working', tenantSlug: req.params.tenantSlug });
-});
-
 // Get all permissions
-router.get('/', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/', authenticateToken, requireRole(['owner', 'admin', 'super_admin']), ErrorHandler.asyncHandler(async (req, res) => {
   const tenantId = req.user.tenantId;
   const orgId = req.user.orgId;
   const { includeInactive } = req.query;
@@ -60,7 +55,7 @@ router.post(
 );
 
 // Get permission by ID
-router.get('/:id', authenticateToken, ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/:id', authenticateToken, requireRole(['owner', 'admin', 'super_admin']), ErrorHandler.asyncHandler(async (req, res) => {
   const { id } = req.params;
   const tenantId = req.user.tenantId;
   const orgId = req.user.orgId;
@@ -213,4 +208,3 @@ router.delete('/:id', authenticateToken, requireRole(['owner', 'admin', 'super_a
 }));
 
 module.exports = router;
-

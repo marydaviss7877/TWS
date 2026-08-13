@@ -27,6 +27,7 @@ const validator = require('validator');
 const User = require('../../../models/users-auth/User');
 const Organization = require('../../../models/org/Organization');
 const TWSAdmin = require('../../../models/admin-platform/TWSAdmin');
+const { resolvePortalForRole } = require('../../../services/auth/portalRole.service');
 
 const router = express.Router();
 
@@ -338,6 +339,7 @@ router.post('/login',
   checkDatabaseConnection,
   body('email').isEmail().normalizeEmail(AUTH_EMAIL_NORMALIZE),
   body('password').notEmpty(),
+  body('portal').optional().isIn(['admin', 'employee', 'client']),
   handleValidationErrors,
   ErrorHandler.asyncHandler(async (req, res) => {
     const password = String(req.body.password ?? '').trim();
@@ -359,6 +361,18 @@ router.post('/login',
     const isPasswordValid = await user.comparePassword(password).catch(() => false);
     if (!isPasswordValid) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    const requestedPortal = String(req.body.portal || '').trim().toLowerCase();
+    if (requestedPortal) {
+      const actualPortal = resolvePortalForRole(user.role);
+      if (requestedPortal !== actualPortal) {
+        return res.status(403).json({
+          success: false,
+          message: `This account does not have access to the ${requestedPortal} portal`,
+          code: 'PORTAL_ROLE_MISMATCH'
+        });
+      }
     }
 
     // Update last login without triggering password re-hash

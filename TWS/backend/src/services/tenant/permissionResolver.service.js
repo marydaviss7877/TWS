@@ -8,6 +8,7 @@
 const TenantUser = require('../../models/tenant/TenantUser');
 const TenantDepartmentAccess = require('../../models/tenant/TenantDepartmentAccess');
 const TenantRole = require('../../models/tenant/TenantRole');
+const CoreRole = require('../../models/core/Role');
 const permissionCache = require('./permissionCache.service');
 
 // ---------------------------------------------------------------------------
@@ -103,24 +104,22 @@ const FINANCE_SUBROLE_PERMISSIONS = {
 };
 
 /**
- * Normalize department permission string to module:action.
- * TenantDepartmentAccess.permissions are 'read'|'write'|'admin'|'delete'|...
- * We map to module from department or use a generic 'department' module.
+ * Normalize department permission strings without granting business-module access.
+ *
+ * Department membership is a scope constraint, not a source of global module
+ * permissions. Module access must come from the primary role or an explicit
+ * per-user permission. Resource middleware then intersects that permission with
+ * the user's departmentIds.
  */
 function deptPermsToModuleActions(permissions, _departmentId) {
   if (!Array.isArray(permissions)) return [];
-  const out = [];
-  const modules = [
-    'projects', 'hr', 'finance', 'payroll', 'documents', 'sheets', 'portfolio', 'analytics', 'audit', 'clients', 'settings', 'nucleus',
-    'attendance', 'leave', 'teams'
-  ];
-  for (const p of permissions) {
-    if (p === 'read') modules.forEach(m => out.push(m + ':read'));
-    else if (p === 'write') modules.forEach(m => out.push(m + ':write'));
-    else if (p === 'admin') modules.forEach(m => out.push(m + ':read', m + ':write'));
-    else out.push('department:' + p);
-  }
-  return [...new Set(out)];
+  const allowed = new Set(['read', 'write', 'admin', 'delete', 'manage_users', 'view_analytics', 'export_data']);
+  return [...new Set(
+    permissions
+      .map((permission) => String(permission || '').trim().toLowerCase())
+      .filter((permission) => allowed.has(permission))
+      .map((permission) => `department:${permission}`)
+  )];
 }
 
 /**
@@ -140,45 +139,13 @@ async function resolveUserPermissions(userId, tenantId, opts = {}) {
   const tenantUser = await TenantUser.findOne({
     userId,
     tenantId,
-    status: { $in: ['active', 'pending'] }
+    status: 'active'
   })
-    .select('roles status hrSubRole financeSubRole metadata.customFields.permissionOverrides')
+    .select('roles status hrSubRole financeSubRole metadata.customFields.permissionOverrides metadata.customFields.assignedRoleId')
     .lean();
   if (!tenantUser) {
-    // Legacy / edge: active User in tenant org but no TenantUser row yet — grant base role perms
-    // so employee portal (attendance, self employee record) is not hard-denied.
-    try {
-      const Tenant = require('../../models/tenant/Tenant');
-      const User = require('../../models/users-auth/User');
-      const [tenantDoc, userDoc] = await Promise.all([
-        Tenant.findById(tenantId).select('organizationId orgId').lean(),
-        User.findById(userId).select('orgId role status').lean()
-      ]);
-      if (!tenantDoc || !userDoc || userDoc.status !== 'active') {
-        return { permissions: [], departmentIds: [], hrSubRole: null, financeSubRole: null };
-      }
-      const tOrg = (tenantDoc.organizationId || tenantDoc.orgId)?.toString();
-      const uOrgRaw = userDoc.orgId;
-      const uOrg = (uOrgRaw && (typeof uOrgRaw === 'object' && uOrgRaw._id ? uOrgRaw._id : uOrgRaw))?.toString();
-      if (tOrg && uOrg && tOrg === uOrg) {
-        const primaryRole = userDoc.role || 'employee';
-        let basePerms = BASE_ROLE_PERMISSIONS[primaryRole] || BASE_ROLE_PERMISSIONS.employee;
-        if (primaryRole === 'hr') {
-          basePerms = HR_SUBROLE_PERMISSIONS.manager || [];
-        }
-        if (primaryRole === 'finance') {
-          basePerms = FINANCE_SUBROLE_PERMISSIONS.manager || [];
-        }
-        return {
-          permissions: [...basePerms],
-          departmentIds: [],
-          hrSubRole: null,
-          financeSubRole: null
-        };
-      }
-    } catch (e) {
-      console.warn('resolveUserPermissions org fallback failed:', e.message);
-    }
+    // Fail closed. Every tenant portal identity must have an active TenantUser
+    // membership; a same-organization User record is not sufficient authority.
     return { permissions: [], departmentIds: [], hrSubRole: null, financeSubRole: null };
   }
 
@@ -234,6 +201,22 @@ async function resolveUserPermissions(userId, tenantId, opts = {}) {
     }
   }
 
+  const assignedRoleId = tenantUser?.metadata?.customFields?.assignedRoleId;
+  if (assignedRoleId) {
+    try {
+      const assignedRole = await CoreRole.findOne({
+        _id: assignedRoleId,
+        tenantId,
+        isActive: true
+      }).select('permissions').lean();
+      if (assignedRole?.permissions?.length) {
+        rolePerms.push(...assignedRole.permissions.filter((code) => typeof code === 'string' && code.includes(':')));
+      }
+    } catch (_) {
+      // Invalid, deleted, inactive, or cross-tenant role references grant nothing.
+    }
+  }
+
   try {
     const tenantRole = await TenantRole.findOne({
       tenantId,
@@ -269,6 +252,7 @@ async function resolveUserPermissions(userId, tenantId, opts = {}) {
     departmentIds: primaryRole === 'owner' ? ['*'] : departmentIds,
     hrSubRole: primaryRole === 'hr' ? hrSubRole : null,
     financeSubRole: primaryRole === 'finance' ? financeSubRole : null,
+    assignedRoleId: assignedRoleId ? String(assignedRoleId) : null,
     deniedPermissionCodes
   };
   return result;
@@ -318,8 +302,6 @@ function hasPermission(permissions, module, action) {
   if (permissions.includes('*:*')) return true;
   if (permissions.includes(module + ':*')) return true;
   if (permissions.includes(module + ':' + action)) return true;
-  // 'admin' implies 'write' (Plan Phase 2.2 — payroll:admin = owner/custom role)
-  if (action === 'admin' && permissions.includes(module + ':write')) return true;
   return false;
 }
 
@@ -362,6 +344,7 @@ module.exports = {
   BASE_ROLE_PERMISSIONS,
   HR_SUBROLE_PERMISSIONS,
   FINANCE_SUBROLE_PERMISSIONS,
+  deptPermsToModuleActions,
   resolveUserPermissions,
   getResolvedPermissions,
   hasPermission,

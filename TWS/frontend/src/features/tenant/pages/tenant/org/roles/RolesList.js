@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../..
 import { Button } from '../../../../../../components/ui/Button/Button';
 import { Input } from '../../../../../../components/ui/Input/Input';
 import LoadingSpinner from '../../../../../../shared/components/feedback/LoadingSpinner';
+import AccessControlPills from '../AccessControlPills';
 
 const EMPTY_ROLE_FORM = { name: '', slug: '', description: '', permissions: [] };
 
@@ -290,11 +291,18 @@ const RolesList = () => {
   );
 
   if (catalogLoading) {
-    return <LoadingSpinner message="Resolving roles and access…" className="min-h-[40vh] bg-transparent" />;
+    return (
+      <div className="space-y-6">
+        <AccessControlPills />
+        <LoadingSpinner message="Resolving roles and access…" className="min-h-[40vh] bg-transparent" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-8">
+      <AccessControlPills />
+
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Roles</h1>

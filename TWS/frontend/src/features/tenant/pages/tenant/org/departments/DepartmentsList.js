@@ -17,6 +17,7 @@ import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../../../components/ui/Dialog/Dialog';
 import { Button } from '../../../../../../components/ui/Button/Button';
 import { Input } from '../../../../../../components/ui/Input/Input';
+import AccessControlPills from '../AccessControlPills';
 
 const EMPTY_FORM = { name: '', code: '', description: '', departmentHead: '' };
 
@@ -242,15 +243,27 @@ const DepartmentsList = () => {
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading departments..." className="min-h-[40vh] bg-transparent" />;
+    return (
+      <div className="space-y-6">
+        <AccessControlPills />
+        <LoadingSpinner message="Loading departments..." className="min-h-[40vh] bg-transparent" />
+      </div>
+    );
   }
 
   if (error) {
-    return <ErrorState title="Departments unavailable" message={error} onRetry={fetchDepartments} className="max-w-xl mx-auto" />;
+    return (
+      <div className="space-y-6">
+        <AccessControlPills />
+        <ErrorState title="Departments unavailable" message={error} onRetry={fetchDepartments} className="max-w-xl mx-auto" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <AccessControlPills />
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -460,4 +473,3 @@ const DepartmentsList = () => {
 };
 
 export default DepartmentsList;
-

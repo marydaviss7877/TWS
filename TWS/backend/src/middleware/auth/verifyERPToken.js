@@ -657,8 +657,7 @@ const verifyERPToken = async (req, res, next) => {
       }).lean();
       if (tenantUser && tenantUser.roles && tenantUser.roles.length > 0) {
         const primaryRole = tenantUser.roles[0].role;
-        // Map 'manager' to 'project_manager' for ERP routes that expect project_manager
-        roleForRequest = (primaryRole === 'manager') ? 'project_manager' : primaryRole;
+        roleForRequest = primaryRole;
         if (primaryRole === 'hr' && tenantUser.hrSubRole) {
           hrSubRole = tenantUser.hrSubRole;
         }
@@ -741,4 +740,3 @@ const verifyERPToken = async (req, res, next) => {
 };
 
 module.exports = verifyERPToken;
-

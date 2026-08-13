@@ -351,8 +351,8 @@ const SoftwareHouseLanding = () => {
               </div>
             </div>
             <div className="shx-footer-bottom">
-              <p>© {new Date().getFullYear()} TWS Enterprises</p>
-              <span>Built for teams that ship.</span>
+              <p>© {new Date().getFullYear()} TWS · An official Delta Labs product</p>
+              <a className="shx-footer-powered" href="https://deltalabs.tech" target="_blank" rel="noopener noreferrer">Powered by Delta Labs <ArrowUpRightIcon /></a>
               <div><a href="#story">Privacy</a><a href="#story">Terms</a></div>
             </div>
           </div>

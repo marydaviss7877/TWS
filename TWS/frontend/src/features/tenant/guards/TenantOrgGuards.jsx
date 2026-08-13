@@ -134,6 +134,15 @@ export const AdminOnlySettingsRoute = ({ children }) => {
   return children;
 };
 
+export const AccessControlAdminRoute = ({ children }) => {
+  const { user } = useTenantAuth();
+  const normalizedRole = String(user?.role || '').toLowerCase();
+  if (!ELEVATED_ADMIN_ROLES.includes(normalizedRole)) {
+    return <Navigate to="../home" replace />;
+  }
+  return children;
+};
+
 export const AuditAccessRoute = ({ children }) => {
   const { user } = useTenantAuth();
   const { hasModulePermission } = useTenantPermissions();

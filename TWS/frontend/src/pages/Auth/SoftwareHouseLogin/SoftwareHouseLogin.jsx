@@ -14,7 +14,7 @@ import {
     ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import BrandMark from '../../../shared/components/ui/BrandMark';
-import { getTenantWorkspaceUrl, navigateTo, isAdminHost, isSubdomainContext } from '../../../shared/utils/subdomain';
+import { getTenantWorkspaceUrl, navigateTo, isAdminHost, isSubdomainContext, getSubdomainSlug } from '../../../shared/utils/subdomain';
 
 const SoftwareHouseLogin = () => {
     const { login, loginSupraAdmin, logout } = useAuth();
@@ -28,6 +28,7 @@ const SoftwareHouseLogin = () => {
     const [fieldErrors, setFieldErrors] = useState({});
     const [infoMessage, setInfoMessage] = useState(location.state?.signupSuccess ? 'Account created successfully. Please sign in.' : '');
     const [selectedPortal, setSelectedPortal] = useState('admin');
+    const [workspaceName, setWorkspaceName] = useState('');
     const validationBlockedRef = useRef(false);
     const emailInputRef = useRef(null);
     const passwordInputRef = useRef(null);
@@ -35,10 +36,37 @@ const SoftwareHouseLogin = () => {
 
     useEffect(() => {
         const previousTitle = document.title;
-        document.title = 'Login | HouseBase';
+        document.title = 'Sign in | HouseBase';
         return () => {
             document.title = previousTitle;
         };
+    }, []);
+
+    useEffect(() => {
+        const tenantSlug = getSubdomainSlug();
+        if (!tenantSlug) return undefined;
+
+        const controller = new AbortController();
+
+        const loadWorkspaceName = async () => {
+            try {
+                const response = await fetch(`/api/tenant/${encodeURIComponent(tenantSlug)}/info`, {
+                    signal: controller.signal,
+                });
+                if (!response.ok) return;
+
+                const result = await response.json();
+                const name = String(result?.data?.name || '').trim();
+                if (name) setWorkspaceName(name);
+            } catch (fetchError) {
+                if (fetchError.name !== 'AbortError') {
+                    console.warn('Unable to load workspace name for sign-in page.');
+                }
+            }
+        };
+
+        loadWorkspaceName();
+        return () => controller.abort();
     }, []);
 
     useEffect(() => {
@@ -106,7 +134,10 @@ const SoftwareHouseLogin = () => {
             // Try the tenant-admin login first; only on a credential failure,
             // silently retry against the Supra Admin endpoint so one URL works
             // for both without merging the two auth flows on the backend.
-            let result = await login(trimmedEmail, trimmedPassword, { silent: isAdmin });
+            let result = await login(trimmedEmail, trimmedPassword, {
+                silent: isAdmin,
+                portal: isAdmin ? 'admin' : selectedPortal,
+            });
             if (!result.success && isAdmin && /invalid email or password/i.test(result.error || '')) {
                 const supraResult = await loginSupraAdmin(trimmedEmail, trimmedPassword);
                 if (supraResult.success) {
@@ -118,19 +149,8 @@ const SoftwareHouseLogin = () => {
             }
             if (result.success) {
                 const userRole = result.user?.role;
-                const adminRoles    = ['admin', 'owner', 'super_admin', 'org_manager'];
                 const employeeRoles = ['employee', 'staff', 'developer', 'engineer', 'programmer', 'project_manager', 'manager', 'ceo', 'cfo', 'finance', 'hr', 'department_lead', 'pmo', 'contributor', 'contractor'];
                 const clientRoles   = ['client', 'customer'];
-
-                let allowedPortal = null;
-                if (adminRoles.includes(userRole))         allowedPortal = 'admin';
-                else if (employeeRoles.includes(userRole)) allowedPortal = 'employee';
-                else if (clientRoles.includes(userRole))   allowedPortal = 'client';
-
-                if (allowedPortal && selectedPortal !== allowedPortal) {
-                    // Auto-align the portal selector with authenticated role to avoid false logout loops.
-                    setSelectedPortal(allowedPortal);
-                }
 
                 let tenantSlug = result.user?.tenantId || (typeof result.user?.orgId === 'object' ? result.user.orgId.slug : null) || result.user?.orgId?.slug;
                 const isObjectId = (str) => str && /^[0-9a-f]{24}$/i.test(str);
@@ -220,7 +240,13 @@ const SoftwareHouseLogin = () => {
                         <div style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '0.04em' }}>HouseBase</div>
                     </div>
 
-                    <h1 className="sh-heading">{isAdmin ? 'Software House Admin Login' : 'Login'}</h1>
+                    <h1 className="sh-heading">
+                        {isAdmin
+                            ? 'Sign in to HouseBase Admin'
+                            : workspaceName
+                                ? `Sign in to ${workspaceName}\u2019s workspace`
+                                : 'Sign in'}
+                    </h1>
 
                     {/* Portal selector — only relevant on a tenant subdomain
                         (admin/employee/client all share that login form);

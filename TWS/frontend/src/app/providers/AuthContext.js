@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, [location.pathname]); // Re-run when route changes (e.g. navigate from signup to dashboard)
 
-  const login = useCallback(async (email, password, { silent = false } = {}) => {
+  const login = useCallback(async (email, password, { silent = false, portal } = {}) => {
     try {
       const loginUrl = buildApiUrl('/api/auth/login');
       // Trim only; backend applies the same validator.normalizeEmail options as user creation.
@@ -135,7 +135,8 @@ export const AuthProvider = ({ children }) => {
         },
         body: JSON.stringify({
           email: emailForLogin,
-          password: passwordForLogin
+          password: passwordForLogin,
+          ...(portal ? { portal } : {})
         }),
         credentials: 'include' // SECURITY FIX: Include cookies (HttpOnly tokens)
       });

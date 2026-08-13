@@ -10,6 +10,7 @@ const Task = require('../../../models/project-delivery/Task');
 const TenantDataService = require('../../../services/tenant/tenant-data.service');
 const verifyERPToken = require('../../../middleware/auth/verifyERPToken');
 const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl');
+const { getResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
 
 // Use simplified ERP token verification middleware (replaces verifyTenantOwner + TenantMiddleware.setTenantContext)
 router.use(verifyERPToken);
@@ -18,6 +19,8 @@ const adminDashAccess = requireErpAccess({
   allowedRoles: ['owner', 'admin', 'super_admin', 'ceo', 'manager', 'project_manager', 'pmo']
 });
 const ownerAdminOnly = requireErpAccess({ allowedRoles: ['owner', 'admin', 'super_admin'] });
+const departmentRead = requireErpAccess({ module: 'hr', action: 'read' });
+const DEPARTMENT_SCOPE_BYPASS_ROLES = new Set(['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner']);
 
 // Get tenant dashboard overview
 router.get('/overview', adminDashAccess, async (req, res) => {
@@ -31,10 +34,19 @@ router.get('/overview', adminDashAccess, async (req, res) => {
 });
 
 // Get tenant departments with real-time data
-router.get('/departments', async (req, res) => {
+router.get('/departments', departmentRead, async (req, res) => {
   try {
     const departments = await TenantDataService.getDepartments(req.tenantId);
-    res.json({ success: true, data: departments });
+    const role = String(req.user?.role || '').toLowerCase();
+    if (DEPARTMENT_SCOPE_BYPASS_ROLES.has(role)) {
+      return res.json({ success: true, data: departments });
+    }
+    const resolved = await getResolvedPermissions(req.user?._id, req.tenantId);
+    const visibleIds = new Set((resolved.departmentIds || []).map(String));
+    return res.json({
+      success: true,
+      data: departments.filter((department) => visibleIds.has(String(department?._id || department?.id)))
+    });
   } catch (error) {
     console.error('Departments error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch departments' });
@@ -42,7 +54,7 @@ router.get('/departments', async (req, res) => {
 });
 
 // Get tenant users with real-time data
-router.get('/users', adminDashAccess, async (req, res) => {
+router.get('/users', ownerAdminOnly, async (req, res) => {
   try {
     const { page = 1, limit = 20, department, status } = req.query;
     const result = await TenantDataService.getUsers(req.tenantId, { page, limit, department, status });

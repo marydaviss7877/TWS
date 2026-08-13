@@ -2,7 +2,7 @@
  * UPR Phase 2.4: Provides resolved permissions to tenant pages for sub-action gating.
  * e.g. "Run Payroll" visible only when modules.payroll.write === true
  */
-import React, { createContext, useContext } from 'react';
+import { createContext, useContext } from 'react';
 
 const TenantPermissionsContext = createContext({ userPermissions: null });
 
@@ -15,6 +15,7 @@ export function useTenantPermissions() {
     if (action === 'read') return !!mod.read;
     if (action === 'read_own') return !!mod.read_own || !!mod.read;
     if (action === 'write') return !!mod.write;
+    if (action === 'write_own') return !!mod.write_own || !!mod.write;
     if (action === 'delete') return !!mod.delete;
     if (action === 'admin') return !!mod.admin;
     return !!mod.read;

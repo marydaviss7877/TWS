@@ -25,10 +25,11 @@ describe('permissionProjection.service', () => {
       deniedPermissionCodes: []
     });
 
-    expect(modules.portfolio).toEqual({
+    expect(modules.portfolio).toMatchObject({
       read: true,
       write: true,
-      delete: false
+      delete: false,
+      admin: false
     });
   });
 
@@ -40,5 +41,17 @@ describe('permissionProjection.service', () => {
 
     expect(modules.portfolio.read).toBe(true);
     expect(modules.portfolio.write).toBe(false);
+  });
+
+  it('projects own-only and admin actions without escalating write to admin', () => {
+    const modules = buildModuleAccessFromResolved({
+      permissions: ['employees:read_own', 'attendance:write_own', 'settings:write'],
+      deniedPermissionCodes: []
+    });
+
+    expect(modules.employees.read).toBe(false);
+    expect(modules.employees.read_own).toBe(true);
+    expect(modules.attendance.write_own).toBe(true);
+    expect(modules.settings.admin).toBe(false);
   });
 });

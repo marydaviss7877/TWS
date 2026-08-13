@@ -153,6 +153,7 @@ import {
   OrganizationProfileAccessRoute,
   SettingsRoute,
   AdminOnlySettingsRoute,
+  AccessControlAdminRoute,
   AuditAccessRoute,
 } from './features/tenant/guards/TenantOrgGuards';
 
@@ -398,23 +399,23 @@ function App() {
             <Route path="analytics" element={<AnalyticsOverview />} />
 
             {/* User management */}
-            <Route path="users" element={<UserList />} />
+            <Route path="users" element={<AccessControlAdminRoute><UserList /></AccessControlAdminRoute>} />
             <Route path="users/create" element={<Navigate to="../users?create=user" replace />} />
-            <Route path="users/:id" element={<UserProfile />} />
+            <Route path="users/:id" element={<AccessControlAdminRoute><UserProfile /></AccessControlAdminRoute>} />
 
             {/* Permissions */}
-            <Route path="permissions" element={<PermissionsList />} />
+            <Route path="permissions" element={<AccessControlAdminRoute><PermissionsList /></AccessControlAdminRoute>} />
             <Route path="permissions/create" element={<Navigate to="../permissions?create=permission" replace />} />
 
             {/* Roles */}
-            <Route path="roles" element={<RolesList />} />
+            <Route path="roles" element={<AccessControlAdminRoute><RolesList /></AccessControlAdminRoute>} />
             <Route path="roles/create" element={<Navigate to="../roles?create=role" replace />} />
 
             {/* Departments */}
-            <Route path="departments" element={<DepartmentsList />} />
+            <Route path="departments" element={<HROnlyRoute><DepartmentsList /></HROnlyRoute>} />
             <Route path="departments/create" element={<Navigate to="../departments?create=department" replace />} />
-            <Route path="departments/access" element={<DepartmentAccessManagement />} />
-            <Route path="departments/:departmentId/dashboard" element={<DepartmentDashboard />} />
+            <Route path="departments/access" element={<AccessControlAdminRoute><DepartmentAccessManagement /></AccessControlAdminRoute>} />
+            <Route path="departments/:departmentId/dashboard" element={<HROnlyRoute><DepartmentDashboard /></HROnlyRoute>} />
 
             {/* Audit */}
             <Route path="audit" element={<AuditAccessRoute><AuditLogPage /></AuditAccessRoute>} />

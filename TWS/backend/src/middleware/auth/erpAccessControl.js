@@ -74,10 +74,16 @@ function requireErpAccess(options = {}) {
       if (resourceDepartmentIdParam) {
         const resourceDeptId = req.params[resourceDepartmentIdParam] || req.body?.[resourceDepartmentIdParam];
         if (resourceDeptId) {
-          const userDepts = await TenantDepartmentAccess.findActiveForUser(tenantId, req.user._id);
-          const userDeptIds = userDepts.map(d => (d.departmentId && (d.departmentId._id || d.departmentId)).toString()).filter(Boolean);
-          if (userDeptIds.length > 0 && !userDeptIds.includes(resourceDeptId.toString())) {
-            return res.status(403).json({ success: false, message: GENERIC_FORBIDDEN_MESSAGE });
+          const role = String(req.user.role || req.user.roles?.[0]?.role || '').toLowerCase();
+          const tenantWideRoles = new Set(['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner']);
+          if (!tenantWideRoles.has(role)) {
+            const userDepts = await TenantDepartmentAccess.findActiveForUser(tenantId, req.user._id);
+            const userDeptIds = userDepts
+              .map(d => (d.departmentId && (d.departmentId._id || d.departmentId)).toString())
+              .filter(Boolean);
+            if (!userDeptIds.includes(resourceDeptId.toString())) {
+              return res.status(403).json({ success: false, message: GENERIC_FORBIDDEN_MESSAGE });
+            }
           }
         }
       }

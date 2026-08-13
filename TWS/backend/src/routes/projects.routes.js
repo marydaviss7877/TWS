@@ -24,8 +24,27 @@ const { validateRequestSize } = require('../middleware/validation/requestValidat
 const { idempotencyMiddleware } = require('../middleware/common/idempotency');
 // Client Portal - REMOVED COMPLETELY
 const verifyERPToken = require('../middleware/auth/verifyERPToken');
+const { requireErpAccess } = require('../middleware/auth/erpAccessControl');
 const { tokenVerificationLimiter } = require('../middleware/rateLimiting/rateLimiter');
 const { checkUsageLimitSoftwareHouseOnly, checkReadOnlySoftwareHouseOnly } = require('../middleware/common/featureGate');
+
+// One authorization policy for every route in this mixed project/task/client router.
+// Authentication alone is never sufficient: the HTTP method selects read/write,
+// while the first path segment selects the permission module.
+router.use(verifyERPToken, (req, res, next) => {
+  const firstSegment = String(req.path || '').split('/').filter(Boolean)[0] || '';
+  const permissionModule = firstSegment === 'tasks'
+    ? 'tasks'
+    : firstSegment === 'clients'
+      ? 'clients'
+      : 'projects';
+  const permissionAction = ['GET', 'HEAD', 'OPTIONS'].includes(req.method) ? 'read' : 'write';
+  return requireErpAccess({
+    module: permissionModule,
+    action: permissionAction,
+    checkRevocation: permissionAction === 'write'
+  })(req, res, next);
+});
 
 // SECURITY FIX: Input validation middleware for project creation
 const validateProjectCreation = [

@@ -6,6 +6,7 @@ const { requireErpAccess } = require('../../../middleware/auth/erpAccessControl'
 const ErrorHandler = require('../../../middleware/common/errorHandler');
 const Department = require('../../../models/org/Department');
 const DepartmentDashboardService = require('../../../services/analytics/department-dashboard.service');
+const { getResolvedPermissions } = require('../../../services/tenant/permissionResolver.service');
 const {
   DEFAULT_DEPARTMENT_TEMPLATE,
   seedDepartmentTemplate,
@@ -42,6 +43,16 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 const deptListAccess = requireErpAccess({ module: 'hr', action: 'read' });
+const deptResourceAccess = requireErpAccess({ module: 'hr', action: 'read', resourceDepartmentIdParam: 'id' });
+const DEPARTMENT_SCOPE_BYPASS_ROLES = new Set(['owner', 'admin', 'super_admin', 'org_manager', 'org_admin', 'tenant_owner']);
+
+const getVisibleDepartmentIds = async (req) => {
+  const role = String(req.user?.role || '').toLowerCase();
+  if (DEPARTMENT_SCOPE_BYPASS_ROLES.has(role)) return null;
+  const tenantId = req.tenant?._id || req.tenantId || req.user?.tenantId;
+  const resolved = await getResolvedPermissions(req.user?._id, tenantId);
+  return Array.isArray(resolved.departmentIds) ? resolved.departmentIds.filter((id) => id !== '*') : [];
+};
 
 // Get all departments
 router.get('/', deptListAccess, ErrorHandler.asyncHandler(async (req, res) => {
@@ -56,6 +67,8 @@ router.get('/', deptListAccess, ErrorHandler.asyncHandler(async (req, res) => {
   }
 
   let query = { ...filter };
+  const visibleDepartmentIds = await getVisibleDepartmentIds(req);
+  if (visibleDepartmentIds) query._id = { $in: visibleDepartmentIds };
   if (includeInactive !== 'true') {
     query.status = 'active';
   }
@@ -100,7 +113,7 @@ router.post('/template',
 );
 
 // Get all departments with their statistics (for overview) - must be before /:id
-router.get('/dashboard/overview', ErrorHandler.asyncHandler(async (req, res) => {
+router.get('/dashboard/overview', deptListAccess, ErrorHandler.asyncHandler(async (req, res) => {
   const orgId = req.tenantContext?.orgId || req.user?.orgId || req.orgId;
   if (!orgId) {
     return res.status(400).json({
@@ -109,14 +122,20 @@ router.get('/dashboard/overview', ErrorHandler.asyncHandler(async (req, res) => 
     });
   }
   const departmentsWithStats = await DepartmentDashboardService.getAllDepartmentsWithStats(orgId);
+  const visibleDepartmentIds = await getVisibleDepartmentIds(req);
+  const scopedDepartments = visibleDepartmentIds
+    ? departmentsWithStats.filter((department) => visibleDepartmentIds.includes(String(department?._id || department?.id)))
+    : departmentsWithStats;
   res.json({
     success: true,
-    data: departmentsWithStats
+    data: scopedDepartments
   });
 }));
 
 // Get department by ID
 router.get('/:id', 
+  deptListAccess,
+  deptResourceAccess,
   validateResourceAccess('Department', 'id'), // ✅ IDOR Fix
   ErrorHandler.asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -661,4 +680,3 @@ router.get('/:id/dashboard/workload', validateResourceAccess('Department', 'id')
 }));
 
 module.exports = router;
-

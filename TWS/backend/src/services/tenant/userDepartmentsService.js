@@ -22,20 +22,14 @@ async function getUserDepartmentIds(tenantId, userId) {
 
 /**
  * Check if we should apply department-based visibility for this user in this tenant.
- * When user has at least one TenantDepartmentAccess record, apply filter; otherwise show all (backward compat).
+ * Non-admin callers are always department-scoped. Zero grants means zero scoped rows.
  * @param {string|ObjectId} tenantId
  * @param {string|ObjectId} userId
  * @returns {Promise<boolean>}
  */
 async function shouldFilterByDepartment(tenantId, userId) {
   if (!tenantId || !userId) return false;
-  const count = await TenantDepartmentAccess.countDocuments({
-    tenantId,
-    userId,
-    status: 'active',
-    $or: [{ expiresAt: { $exists: false } }, { expiresAt: { $gt: new Date() } }]
-  });
-  return count > 0;
+  return true;
 }
 
 module.exports = {

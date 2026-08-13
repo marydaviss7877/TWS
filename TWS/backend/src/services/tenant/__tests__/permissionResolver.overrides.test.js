@@ -10,6 +10,10 @@ jest.mock('../../../models/tenant/TenantRole', () => ({
   findOne: jest.fn()
 }));
 
+jest.mock('../../../models/core/Role', () => ({
+  findOne: jest.fn()
+}));
+
 jest.mock('../permissionCache.service', () => ({
   getResolved: jest.fn(),
   setResolved: jest.fn(),
@@ -21,6 +25,7 @@ jest.mock('../permissionCache.service', () => ({
 const TenantUser = require('../../../models/tenant/TenantUser');
 const TenantDepartmentAccess = require('../../../models/tenant/TenantDepartmentAccess');
 const TenantRole = require('../../../models/tenant/TenantRole');
+const CoreRole = require('../../../models/core/Role');
 const { resolveUserPermissions } = require('../permissionResolver.service');
 
 const makeLeanChain = (value) => ({
@@ -36,6 +41,11 @@ describe('permissionResolver.service permission override precedence', () => {
       lean: jest.fn().mockResolvedValue([])
     });
     TenantRole.findOne.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue(null)
+      })
+    });
+    CoreRole.findOne.mockReturnValue({
       select: jest.fn().mockReturnValue({
         lean: jest.fn().mockResolvedValue(null)
       })
@@ -82,24 +92,35 @@ describe('permissionResolver.service permission override precedence', () => {
     expect(resolved.deniedPermissionCodes).toEqual([]);
   });
 
-  it('applies deny overrides for pending tenant users', async () => {
-    TenantUser.findOne.mockReturnValue(
-      makeLeanChain({
-        status: 'pending',
-        roles: [{ role: 'project_manager', permissions: [] }],
-        metadata: {
-          customFields: {
-            permissionOverrides: {
-              deny: ['finance:read']
-            }
-          }
-        }
-      })
-    );
+  it('only resolves active tenant memberships', async () => {
+    TenantUser.findOne.mockReturnValue(makeLeanChain(null));
 
     const resolved = await resolveUserPermissions('user-1', 'tenant-1');
 
-    expect(resolved.permissions).not.toContain('finance:read');
-    expect(resolved.deniedPermissionCodes).toEqual(['finance:read']);
+    expect(TenantUser.findOne).toHaveBeenCalledWith(expect.objectContaining({ status: 'active' }));
+    expect(resolved.permissions).toEqual([]);
+  });
+
+  it('applies permissions from an active assigned organization role', async () => {
+    TenantUser.findOne.mockReturnValue(
+      makeLeanChain({
+        roles: [{ role: 'employee', permissions: [] }],
+        metadata: { customFields: { assignedRoleId: 'role-1' } }
+      })
+    );
+    CoreRole.findOne.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({ permissions: ['reports:read', 'analytics:read'] })
+      })
+    });
+
+    const resolved = await resolveUserPermissions('user-1', 'tenant-1');
+
+    expect(CoreRole.findOne).toHaveBeenCalledWith(expect.objectContaining({
+      _id: 'role-1',
+      tenantId: 'tenant-1',
+      isActive: true
+    }));
+    expect(resolved.permissions).toEqual(expect.arrayContaining(['reports:read', 'analytics:read']));
   });
 });

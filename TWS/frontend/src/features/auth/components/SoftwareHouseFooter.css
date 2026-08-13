@@ -3,6 +3,9 @@
 
 .sh-public-footer--compact{padding:26px 0 18px;color:#526d82;background:transparent;border-color:rgba(113,148,174,.2)}.sh-public-footer--compact .sh-public-footer__bottom{border-color:rgba(113,148,174,.18);color:var(--sh-muted,#71879a)}.sh-public-footer--compact .sh-public-footer__brand a b{color:var(--sh-text,#102a43)}.sh-public-footer--compact .sh-public-footer__inner nav a{color:var(--sh-muted,#627d98)}
 
+.sh-public-footer__meta{display:flex;align-items:center;justify-content:flex-end;gap:22px}.sh-public-footer__meta a{display:inline-flex;align-items:center;gap:5px;color:inherit;text-decoration:none;transition:color .2s}.sh-public-footer__meta a:hover{color:#fff}.sh-public-footer__meta a svg{width:11px}.sh-public-footer--compact .sh-public-footer__meta a:hover{color:var(--sh-text,#102a43)}
+@media(max-width:700px){.sh-public-footer__meta{width:100%;justify-content:flex-start;flex-wrap:wrap}}
+
 /* HouseBase brand mark: fixed lockup, independent of page theme */
 .sh-public-footer:before{background:radial-gradient(circle at 12% 0,rgba(31,58,99,.15),transparent 30%),radial-gradient(circle at 84% 30%,rgba(31,58,99,.1),transparent 30%)}
 .sh-public-footer__brand>a>strong{background:#1f3a63;box-shadow:0 10px 24px rgba(31,58,99,.28)}

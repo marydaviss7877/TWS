@@ -38,11 +38,6 @@ const CREATE_ERP_ROLES = [
   { value: 'client', label: 'Client' }
 ];
 
-const DEFAULT_DEPARTMENT_OPTIONS = [
-  'Engineering', 'Frontend', 'Backend', 'Full-Stack', 'DevOps',
-  'QA', 'Design', 'Project Management', 'Product', 'HR', 'Finance', 'Operations'
-];
-
 const EMPTY_CREATE_USER_FORM = {
   firstName: '',
   lastName: '',
@@ -183,7 +178,7 @@ const UserList = () => {
   const [createError, setCreateError] = useState(null);
   const [createSuccess, setCreateSuccess] = useState(false);
   const [createTempPassword, setCreateTempPassword] = useState(null);
-  const [createDepartmentOptions, setCreateDepartmentOptions] = useState(DEFAULT_DEPARTMENT_OPTIONS);
+  const [createDepartmentOptions, setCreateDepartmentOptions] = useState([]);
   const [createProfilePicFile, setCreateProfilePicFile] = useState(null);
   const [createProfilePicPreview, setCreateProfilePicPreview] = useState(null);
   const createProfilePicPreviewRef = useRef(null);
@@ -208,6 +203,8 @@ const UserList = () => {
   const [editRole, setEditRole] = useState('employee');
   const [editHrSubRole, setEditHrSubRole] = useState('');
   const [editFinanceSubRole, setEditFinanceSubRole] = useState('');
+  const [editAssignedRoleId, setEditAssignedRoleId] = useState('');
+  const [organizationRoles, setOrganizationRoles] = useState([]);
   const [permissionCatalogEntries, setPermissionCatalogEntries] = useState([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [selectedCustomPermissions, setSelectedCustomPermissions] = useState([]);
@@ -251,7 +248,7 @@ const UserList = () => {
       .then((depts) => {
         if (Array.isArray(depts) && depts.length > 0) {
           const names = depts.map((d) => d.name).filter(Boolean);
-          setCreateDepartmentOptions([...new Set([...names, ...DEFAULT_DEPARTMENT_OPTIONS])]);
+          setCreateDepartmentOptions([...new Set(names)]);
         }
       })
       .catch(() => {});
@@ -421,6 +418,7 @@ const UserList = () => {
     setEditRole(initialRole);
     setEditHrSubRole(sourceUser?.hrSubRole ?? '');
     setEditFinanceSubRole(sourceUser?.financeSubRole ?? '');
+    setEditAssignedRoleId(String(sourceUser?.assignedRoleId || ''));
     const normalizedCustom = normalizePermissionCodeList(sourceUser?.customPermissionCodes);
     const normalizedDenied = normalizePermissionCodeList(sourceUser?.deniedPermissionCodes);
     customPermissionsRef.current = normalizedCustom;
@@ -429,7 +427,7 @@ const UserList = () => {
     setSelectedDeniedPermissions(normalizedDenied);
     setRoleDefaultPermissionCodes(ROLE_DEFAULT_PERMISSIONS[initialRole] || []);
     setEditModalOpen(true);
-    fetchPermissionCatalog();
+    await Promise.all([fetchPermissionCatalog(), fetchOrganizationRoles()]);
   };
 
   const closeEditModal = () => {
@@ -438,6 +436,7 @@ const UserList = () => {
     setEditRole('employee');
     setEditHrSubRole('');
     setEditFinanceSubRole('');
+    setEditAssignedRoleId('');
     customPermissionsRef.current = [];
     deniedPermissionsRef.current = [];
     setSelectedCustomPermissions([]);
@@ -537,6 +536,19 @@ const UserList = () => {
     }
   };
 
+  const fetchOrganizationRoles = async () => {
+    if (!tenantSlug) return;
+    try {
+      const data = await tenantApiService.getRoles(tenantSlug);
+      setOrganizationRoles(Array.isArray(data)
+        ? data.filter((entry) => entry?.isActive !== false && entry?.tenantId)
+        : []);
+    } catch (error) {
+      console.warn('Could not load organization roles', error);
+      setOrganizationRoles([]);
+    }
+  };
+
   const toggleCustomPermission = (code) => {
     if (roleDefaultPermissionCodes.includes(code)) return;
     const current = customPermissionsRef.current;
@@ -564,6 +576,7 @@ const UserList = () => {
         .filter((code) => roleDefaults.includes(code));
       const payload = {
         role: normalizedRole,
+        assignedRoleId: editAssignedRoleId || null,
         customPermissionCodes: normalizePermissionCodeList(customPermissionsRef.current),
         deniedPermissionCodes: effectiveDenied
       };
@@ -870,6 +883,22 @@ const UserList = () => {
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Organization role</label>
+                <select
+                  value={editAssignedRoleId}
+                  onChange={(e) => setEditAssignedRoleId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">— No additional organization role —</option>
+                  {organizationRoles.map((orgRole) => (
+                    <option key={orgRole._id} value={orgRole._id}>{orgRole.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Adds the permissions maintained in Roles. Changes to that role take effect for every assigned user.
+                </p>
               </div>
               {editRole === 'hr' && (
                 <div className="mb-4">

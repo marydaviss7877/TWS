@@ -25,8 +25,13 @@ const SoftwareHouseFooter = ({ moduleName, compact = false, children }) => (
       {compact && <nav><Link to="/">Platform</Link><Link to="/projects">Projects</Link><Link to="/hrm">HRM</Link><Link to="/finance">Finance</Link></nav>}
     </div>
     <div className="sh-public-footer__bottom">
-      <span>© 2026 HouseBase</span>
-      {children || <span>Software House Operating System</span>}
+      <span>© {new Date().getFullYear()} HouseBase · An official Delta Labs product</span>
+      <div className="sh-public-footer__meta">
+        {children || <span>Software House Operating System</span>}
+        <a href="https://deltalabs.tech" target="_blank" rel="noopener noreferrer">
+          Powered by Delta Labs <ArrowUpRightIcon />
+        </a>
+      </div>
     </div>
   </footer>
 );

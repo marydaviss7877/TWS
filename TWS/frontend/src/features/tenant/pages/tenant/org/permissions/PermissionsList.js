@@ -13,6 +13,7 @@ import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../../../components/ui/Dialog/Dialog';
 import { Button } from '../../../../../../components/ui/Button/Button';
 import { Input } from '../../../../../../components/ui/Input/Input';
+import AccessControlPills from '../AccessControlPills';
 
 const EMPTY_PERMISSION_FORM = { code: '', permissionGroup: '', description: '' };
 
@@ -258,10 +259,13 @@ const PermissionsList = () => {
 
   if (catalogLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="tws-loading-pulse rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto" />
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading enforced permissions…</p>
+      <div className="space-y-6">
+        <AccessControlPills />
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="tws-loading-pulse rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto" />
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading enforced permissions…</p>
+          </div>
         </div>
       </div>
     );
@@ -269,6 +273,8 @@ const PermissionsList = () => {
 
   return (
     <div className="space-y-8">
+      <AccessControlPills />
+
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Permissions</h1>

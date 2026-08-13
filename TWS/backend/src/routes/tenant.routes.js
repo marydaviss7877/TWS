@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/api/tenant/:tenantSlug/info', async (req, res) => {
   try {
     const { tenantSlug } = req.params;
-    const Organization = require('../models/organization/Organization');
+    const Organization = require('../models/org/Organization');
     const org = await Organization.findOne({ slug: tenantSlug })
       .select('name slug industry status createdAt')
       .lean();
