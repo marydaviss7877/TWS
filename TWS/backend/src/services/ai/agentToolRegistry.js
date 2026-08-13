@@ -274,6 +274,79 @@ const definitions = [
     }
   },
   {
+    name: 'create_tasks',
+    description: 'Prepare creation of 2 to 15 tasks inside one project as a single batch. Use this instead of repeated create_task calls when the user requests multiple tasks. The complete batch requires one user approval before execution.',
+    risk: 'write', roles: PROJECT_WRITE_ROLES,
+    parameters: {
+      type: 'object',
+      properties: {
+        project: { type: 'string' },
+        tasks: {
+          type: 'array', minItems: 2, maxItems: 15,
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              description: { type: 'string' },
+              priority: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+              status: { type: 'string', enum: ['todo', 'in_progress', 'under_review'] },
+              dueDate: { type: 'string' },
+              estimatedHours: { type: 'number' },
+              assigneeEmail: { type: 'string' },
+              checklistItems: { type: 'array', items: { type: 'string' }, description: 'Action items extracted from the conversation' }
+            },
+            required: ['title']
+          }
+        }
+      },
+      required: ['project', 'tasks']
+    },
+    validate: (args) => {
+      if (!text(args.project, 150) || !Array.isArray(args.tasks) || args.tasks.length < 2 || args.tasks.length > 15) return false;
+      return args.tasks.every((task) => task && text(task.title, 255).length >= 2);
+    },
+    summarize: (args) => `Create ${args.tasks.length} tasks in project “${text(args.project, 150)}” as one batch.`,
+    execute: async (args, context) => {
+      await assertWriteAllowed(context);
+      const reference = args.project;
+      const project = await Project.findOne({ orgId: context.orgId, ...(await projectScope(context)), ...(isId(reference) ? { _id: reference } : { $or: [{ slug: text(reference, 150).toLowerCase() }, { name: safeRegex(reference) }] }) });
+      if (!project) throw new Error('Project not found');
+
+      const requestedEmails = [...new Set(args.tasks.map((task) => text(task.assigneeEmail, 254).toLowerCase()).filter(Boolean))];
+      const assignees = requestedEmails.length
+        ? await User.find({ orgId: context.orgId, email: { $in: requestedEmails } }).select('_id email').lean()
+        : [];
+      const assigneeByEmail = new Map(assignees.map((assignee) => [String(assignee.email).toLowerCase(), assignee._id]));
+      const missingEmails = requestedEmails.filter((email) => !assigneeByEmail.has(email));
+      if (missingEmails.length) throw new Error(`Assignee not found: ${missingEmails.join(', ')}`);
+
+      const taskDocuments = args.tasks.map((task) => {
+        const assigneeEmail = text(task.assigneeEmail, 254).toLowerCase();
+        return {
+          orgId: context.orgId,
+          tenantId: context.tenantId,
+          projectId: project._id,
+          title: text(task.title, 255),
+          description: text(task.description, 5000),
+          priority: task.priority || 'medium',
+          status: task.status || 'todo',
+          dueDate: task.dueDate || undefined,
+          estimatedHours: Math.max(0, Number(task.estimatedHours) || 0) || undefined,
+          assignee: assigneeEmail ? assigneeByEmail.get(assigneeEmail) : undefined,
+          reporter: context.user._id,
+          subtasks: (task.checklistItems || []).map((item) => ({ title: text(item, 255), completed: false })).filter((item) => item.title).slice(0, 20)
+        };
+      });
+      const tasks = await Task.insertMany(taskDocuments);
+      return {
+        createdCount: tasks.length,
+        project: project.name,
+        tasks: tasks.map((task) => ({ _id: task._id, title: task.title, status: task.status })),
+        url: `/${context.tenantSlug}/org/projects/${project.slug}/board`
+      };
+    }
+  },
+  {
     name: 'update_task',
     description: 'Prepare an update to a task status, priority, due date, estimate, description, or assignee. Requires approval.',
     risk: 'write', roles: PROJECT_WRITE_ROLES,
