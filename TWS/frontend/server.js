@@ -10,7 +10,7 @@ const http = require('http');
 const https = require('https');
 const path = require('path');
 const fs = require('fs');
-const url = require('url');
+const zlib = require('zlib');
 
 const PORT = process.env.PORT || 3000;
 const BACKEND_URL = (
@@ -79,8 +79,8 @@ function proxyToBackend(req, res) {
   req.pipe(proxyReq, { end: true });
 }
 
-function serveStaticFile(filePath, res) {
-  fs.readFile(filePath, (err, data) => {
+function serveStaticFile(filePath, req, res) {
+  fs.stat(filePath, (err, stats) => {
     if (err) {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('Not Found');
@@ -94,18 +94,46 @@ function serveStaticFile(filePath, res) {
     const cacheControl = isHashed
       ? 'public, max-age=31536000, immutable'
       : 'no-cache, no-store, must-revalidate';
+    const etag = `W/\"${stats.size.toString(16)}-${Math.floor(stats.mtimeMs).toString(16)}\"`;
+    if (req.headers['if-none-match'] === etag) {
+      res.writeHead(304, { ETag: etag, 'Cache-Control': cacheControl });
+      return res.end();
+    }
 
-    res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': cacheControl });
-    res.end(data);
+    const compressible = /^(text\/|application\/(javascript|json|manifest\+json)|image\/svg\+xml)/.test(contentType);
+    const accepts = req.headers['accept-encoding'] || '';
+    const useGzip = compressible && stats.size > 1024 && /\bgzip\b/.test(accepts);
+    const headers = {
+      'Content-Type': contentType,
+      'Cache-Control': cacheControl,
+      ETag: etag,
+      'X-Content-Type-Options': 'nosniff'
+    };
+    if (compressible) headers.Vary = 'Accept-Encoding';
+    if (useGzip) headers['Content-Encoding'] = 'gzip';
+    else headers['Content-Length'] = stats.size;
+
+    res.writeHead(200, headers);
+    if (req.method === 'HEAD') return res.end();
+    const stream = fs.createReadStream(filePath);
+    stream.on('error', () => res.destroy());
+    if (useGzip) stream.pipe(zlib.createGzip({ level: 6 })).pipe(res);
+    else stream.pipe(res);
   });
 }
 
-function serveIndexHtml(res) {
-  serveStaticFile(path.join(BUILD_DIR, 'index.html'), res);
+function serveIndexHtml(req, res) {
+  serveStaticFile(path.join(BUILD_DIR, 'index.html'), req, res);
 }
 
 const server = http.createServer((req, res) => {
-  const { pathname } = url.parse(req.url);
+  let pathname;
+  try {
+    pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+  } catch (_) {
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    return res.end('Bad Request');
+  }
 
   // Proxy API and uploaded-file requests to the backend
   if (pathname.startsWith('/api') || pathname.startsWith('/uploads')) {
@@ -113,14 +141,18 @@ const server = http.createServer((req, res) => {
   }
 
   // Attempt to serve a static file
-  const filePath = path.join(BUILD_DIR, pathname);
+  const filePath = path.resolve(BUILD_DIR, `.${pathname}`);
+  if (filePath !== BUILD_DIR && !filePath.startsWith(`${BUILD_DIR}${path.sep}`)) {
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    return res.end('Bad Request');
+  }
 
   fs.stat(filePath, (err, stats) => {
     if (!err && stats.isFile()) {
-      return serveStaticFile(filePath, res);
+      return serveStaticFile(filePath, req, res);
     }
     // SPA fallback
-    serveIndexHtml(res);
+    serveIndexHtml(req, res);
   });
 });
 

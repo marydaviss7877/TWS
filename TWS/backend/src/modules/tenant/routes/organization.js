@@ -3820,6 +3820,10 @@ const projectsRoutes = require('../../../routes/projects.routes');
 // Rate limiting and ERP token verification (module access control removed per product decision)
 router.use('/projects', tokenVerificationLimiter, verifyERPToken, projectsRoutes);
 
+// Nucleus — optional organization-wide operational agent
+const agentRoutes = require('./agent');
+router.use('/agent', tokenVerificationLimiter, verifyERPToken, agentRoutes);
+
 // Nucleus Project OS - Approval and Change Request routes
 const approvalsRoutes = require('./approvals');
 const changeRequestsRoutes = require('./changeRequests');

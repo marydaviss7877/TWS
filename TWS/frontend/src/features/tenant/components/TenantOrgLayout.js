@@ -40,6 +40,7 @@ import { TenantNavProvider } from '../contexts/TenantNavContext';
 import CommandPalette from './CommandPalette';
 import OdooTopBar from './OdooTopBar';
 import BookmarkBar from './BookmarkBar';
+import NucleusAgent from './NucleusAgent';
 import SidebarNav from '../../../shared/components/navigation/SidebarNav';
 import IdleSessionGuard from './IdleSessionGuard';
 import { TenantPermissionsProvider } from '../contexts/TenantPermissionsContext';
@@ -445,6 +446,7 @@ const TenantOrgLayout = ({ children }) => {
             tenantSlug={tenantSlug}
             initialSearchTerm={commandPaletteQuery}
         />
+        <NucleusAgent tenantSlug={tenantSlug} />
         <Toaster
             position="top-center"
             gutter={8}

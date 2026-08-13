@@ -7,6 +7,6 @@ builder = "RAILPACK"
 buildCommand = "CI=false npm run build"
 
 [deploy]
-startCommand = "npm run start:prod"
+startCommand = "node server.js"
 healthcheckPath = "/"
 healthcheckTimeout = 30

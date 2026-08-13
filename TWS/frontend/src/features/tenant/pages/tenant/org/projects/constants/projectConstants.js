@@ -231,7 +231,6 @@ export const PRIORITY_COLORS = {
 // API Endpoints (tenant-specific)
 export const API_ENDPOINTS = {
   PROJECTS: (tenantSlug) => `/api/tenant/${tenantSlug}/organization/projects`,
-  PROJECT_AGENT_SCOPE: (tenantSlug) => `/api/tenant/${tenantSlug}/organization/projects/agent/scope`,
   PROJECT: (tenantSlug, id) => `/api/tenant/${tenantSlug}/organization/projects/${id}`,
   PROJECT_METRICS: (tenantSlug) => `/api/tenant/${tenantSlug}/organization/projects/metrics`,
   PROJECT_TASKS: (tenantSlug) => `/api/tenant/${tenantSlug}/organization/projects/tasks`,
