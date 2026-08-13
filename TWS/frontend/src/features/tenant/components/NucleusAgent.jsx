@@ -136,11 +136,11 @@ const NucleusAgent = ({ tenantSlug }) => {
     <div className="fixed bottom-3 right-3 z-[80] sm:bottom-5 sm:right-5">
       {open && (
         <section
-          className="relative mb-3 flex h-[min(680px,calc(100dvh-98px))] w-[calc(100vw-24px)] flex-col overflow-hidden rounded-[28px] border border-blue-200/80 bg-white/95 shadow-[0_28px_80px_-28px_rgba(37,99,235,0.5)] backdrop-blur-xl sm:h-[min(680px,calc(100dvh-110px))] sm:w-[420px] dark:border-blue-400/20 dark:bg-slate-950/95 dark:shadow-[0_28px_80px_-28px_rgba(30,64,175,0.5)]"
+          className="relative mb-3 flex h-[min(680px,calc(100dvh-98px))] w-[calc(100vw-24px)] flex-col overflow-hidden rounded-[28px] border border-blue-200/80 bg-[linear-gradient(160deg,rgba(255,255,255,0.98)_0%,rgba(239,246,255,0.98)_100%)] shadow-[0_28px_80px_-28px_rgba(37,99,235,0.5)] backdrop-blur-xl sm:h-[min(680px,calc(100dvh-110px))] sm:w-[420px] dark:border-blue-300/30 dark:bg-[linear-gradient(155deg,rgba(30,58,138,0.98)_0%,rgba(29,78,216,0.96)_48%,rgba(30,64,175,0.98)_100%)] dark:shadow-[0_28px_80px_-22px_rgba(37,99,235,0.75)]"
           aria-label="Nucleus agent"
         >
           <div className="pointer-events-none absolute -right-20 -top-20 h-52 w-52 rounded-full bg-blue-400/20 blur-3xl dark:bg-blue-500/15" aria-hidden="true" />
-          <header className="relative flex items-center justify-between border-b border-blue-100 bg-blue-50/70 px-4 py-3.5 dark:border-blue-400/15 dark:bg-blue-950/25">
+          <header className="relative flex items-center justify-between border-b border-blue-100 bg-blue-50/70 px-4 py-3.5 dark:border-blue-200/20 dark:bg-blue-950/20">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-[0_10px_24px_-10px_rgba(37,99,235,0.9)]">
                 <SparklesIcon className="h-5 w-5" />
@@ -161,7 +161,7 @@ const NucleusAgent = ({ tenantSlug }) => {
             </div>
           </header>
 
-          <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_90%_0%,rgba(59,130,246,0.11),transparent_34%)] px-4 py-4 dark:bg-[radial-gradient(circle_at_90%_0%,rgba(59,130,246,0.12),transparent_38%)]">
+          <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_90%_0%,rgba(59,130,246,0.11),transparent_34%)] px-4 py-4 dark:bg-[radial-gradient(circle_at_90%_0%,rgba(147,197,253,0.22),transparent_42%)]">
             {messages.length === 0 && (
               <div className="flex h-full flex-col justify-between">
                 <div className="pt-6">
@@ -175,7 +175,7 @@ const NucleusAgent = ({ tenantSlug }) => {
                 </div>
                 <div className="space-y-2 pb-1 pt-6">
                   {starterMessages.map(({ text, icon: StarterIcon }) => (
-                    <button key={text} onClick={(event) => send(event, text)} className="group flex w-full items-center gap-3 rounded-xl border border-blue-100 bg-white/80 px-3 py-2.5 text-left text-sm font-medium text-slate-700 shadow-[0_8px_24px_-20px_rgba(37,99,235,0.8)] transition-[border-color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-[0_14px_30px_-20px_rgba(37,99,235,0.9)] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-blue-400/15 dark:bg-blue-400/5 dark:text-slate-100 dark:hover:border-blue-400/35 dark:hover:bg-blue-400/10 dark:focus-visible:ring-offset-slate-950">
+                    <button key={text} onClick={(event) => send(event, text)} className="group flex w-full items-center gap-3 rounded-xl border border-blue-100 bg-white/80 px-3 py-2.5 text-left text-sm font-medium text-slate-700 shadow-[0_8px_24px_-20px_rgba(37,99,235,0.8)] transition-[border-color,background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-[0_14px_30px_-20px_rgba(37,99,235,0.9)] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-blue-200/25 dark:bg-blue-950/25 dark:text-white dark:hover:border-blue-200/50 dark:hover:bg-blue-950/40 dark:focus-visible:ring-offset-blue-900">
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-400/15 dark:text-blue-300 dark:group-hover:bg-blue-500 dark:group-hover:text-white">
                         <StarterIcon className="h-4 w-4" />
                       </span>
@@ -200,7 +200,7 @@ const NucleusAgent = ({ tenantSlug }) => {
                         ? 'rounded-br-md bg-blue-600 text-white shadow-blue-700/15'
                         : message.role === 'error'
                           ? 'rounded-bl-md border border-red-200 bg-red-50 text-red-700 shadow-red-900/5 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300'
-                          : 'rounded-bl-md border border-blue-100 bg-white text-slate-800 shadow-blue-900/5 dark:border-blue-400/15 dark:bg-blue-400/10 dark:text-slate-100'
+                          : 'rounded-bl-md border border-blue-100 bg-white text-slate-800 shadow-blue-900/5 dark:border-blue-200/25 dark:bg-blue-950/35 dark:text-white'
                     }`}>
                       {message.content}
                       {message.activity?.length > 0 && (
@@ -218,7 +218,7 @@ const NucleusAgent = ({ tenantSlug }) => {
                   <p className="text-[11px] font-bold text-amber-800 dark:text-amber-300">Approval required</p>
                   <p className="mt-2 text-sm leading-6 text-slate-800 dark:text-slate-100">{pendingAction.summary}</p>
                   <div className="mt-3 flex gap-2">
-                    <button onClick={() => decide('approve')} disabled={loading} className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-slate-950"><CheckIcon className="h-4 w-4" /> Approve</button>
+                    <button onClick={() => decide('approve')} disabled={loading} className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:bg-white dark:text-blue-800 dark:hover:bg-blue-50 dark:focus-visible:ring-offset-blue-900"><CheckIcon className="h-4 w-4" /> Approve</button>
                     <button onClick={() => decide('reject')} disabled={loading} className="flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white/60 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-white active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-50 dark:border-amber-600/40 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"><XMarkIcon className="h-4 w-4" /> Cancel</button>
                   </div>
                 </div>
@@ -229,7 +229,7 @@ const NucleusAgent = ({ tenantSlug }) => {
                   <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white">
                     <SparklesIcon className="h-3.5 w-3.5" />
                   </span>
-                  <div className="flex h-10 items-center gap-1 rounded-2xl rounded-bl-md border border-blue-100 bg-white px-4 shadow-sm shadow-blue-900/5 dark:border-blue-400/15 dark:bg-blue-400/10">
+                  <div className="flex h-10 items-center gap-1 rounded-2xl rounded-bl-md border border-blue-100 bg-white px-4 shadow-sm shadow-blue-900/5 dark:border-blue-200/25 dark:bg-blue-950/35">
                     {[0, 1, 2].map((dot) => (
                       <span key={dot} className={`h-1.5 w-1.5 rounded-full bg-blue-500 motion-safe:animate-bounce motion-reduce:animate-none ${dot === 1 ? '[animation-delay:120ms]' : dot === 2 ? '[animation-delay:240ms]' : ''}`} />
                     ))}
@@ -240,7 +240,7 @@ const NucleusAgent = ({ tenantSlug }) => {
             </div>
           </div>
 
-          <form onSubmit={send} className="relative border-t border-blue-100 bg-white/90 p-3 dark:border-blue-400/15 dark:bg-slate-950/90">
+          <form onSubmit={send} className="relative border-t border-blue-100 bg-white/90 p-3 dark:border-blue-200/20 dark:bg-blue-950/25">
             <div className="flex items-end gap-2 rounded-2xl border border-blue-200 bg-blue-50/50 p-2 transition-[border-color,box-shadow] duration-200 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 dark:border-blue-400/20 dark:bg-blue-400/5 dark:focus-within:border-blue-400">
               <textarea
                 value={input}
@@ -252,7 +252,7 @@ const NucleusAgent = ({ tenantSlug }) => {
                 aria-label="Message Nucleus"
                 disabled={loading}
               />
-              <button type="submit" disabled={loading || input.trim().length < 2} className="mb-0.5 rounded-xl bg-blue-600 p-2.5 text-white shadow-[0_8px_18px_-8px_rgba(37,99,235,0.9)] transition-[background-color,transform] hover:bg-blue-700 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none dark:focus-visible:ring-offset-slate-950" aria-label="Send message"><PaperAirplaneIcon className="h-4 w-4" /></button>
+              <button type="submit" disabled={loading || input.trim().length < 2} className="mb-0.5 rounded-xl bg-blue-600 p-2.5 text-white shadow-[0_8px_18px_-8px_rgba(37,99,235,0.9)] transition-[background-color,transform] hover:bg-blue-700 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none dark:bg-white dark:text-blue-800 dark:hover:bg-blue-50 dark:focus-visible:ring-offset-blue-900" aria-label="Send message"><PaperAirplaneIcon className="h-4 w-4" /></button>
             </div>
             <p className="mt-2 px-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">Review proposed changes before approval. Nucleus can make mistakes.</p>
           </form>
@@ -261,7 +261,7 @@ const NucleusAgent = ({ tenantSlug }) => {
 
       <button
         onClick={() => setOpen((current) => !current)}
-        className="ml-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-400/50 bg-blue-600 text-white shadow-[0_18px_38px_-14px_rgba(37,99,235,0.95)] transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-1 hover:bg-blue-700 hover:shadow-[0_22px_44px_-14px_rgba(37,99,235,0.95)] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-blue-300/30 dark:focus-visible:ring-offset-slate-950"
+        className="ml-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-400/50 bg-blue-600 text-white shadow-[0_18px_38px_-14px_rgba(37,99,235,0.95)] transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-1 hover:bg-blue-700 hover:shadow-[0_22px_44px_-14px_rgba(37,99,235,0.95)] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-blue-300/30 dark:focus-visible:ring-offset-blue-900"
         aria-label={open ? 'Close Nucleus' : 'Open Nucleus'}
       >
         {open ? <XMarkIcon className="h-6 w-6" /> : <SparklesIcon className="h-6 w-6" />}
