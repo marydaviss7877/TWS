@@ -20,6 +20,7 @@ import InviteAccept from './pages/Auth/InviteAccept/InviteAccept';
 import FinanceSystemPage from './pages/Auth/FinanceSystemPage/FinanceSystemPage';
 import HRMSystemPage from './pages/Auth/HRMSystemPage/HRMSystemPage';
 import ProjectSystemPage from './pages/Auth/ProjectSystemPage/ProjectSystemPage';
+import Changelog from './pages/Auth/Changelog/Changelog';
 
 // ── Shared UI ─────────────────────────────────────────────────────────────────
 import LoadingSpinner from './shared/components/feedback/LoadingSpinner';
@@ -315,6 +316,7 @@ function App() {
               <Route path="/finance" element={<FinanceSystemPage />} />
               <Route path="/hrm" element={<HRMSystemPage />} />
               <Route path="/projects" element={<ProjectSystemPage />} />
+              <Route path="/changelog" element={<Changelog />} />
               <Route path="/software-house/finance" element={<Navigate to="/finance" replace />} />
               <Route path="/software-house/hrm" element={<Navigate to="/hrm" replace />} />
               <Route path="/software-house/projects" element={<Navigate to="/projects" replace />} />

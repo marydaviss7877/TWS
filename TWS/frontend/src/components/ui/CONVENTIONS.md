@@ -61,6 +61,10 @@ looked (a dead unused `Transfer` import in `SessionManagement.js`; a shallow 2-l
 read-only `Tree` in `DepartmentManagement.js`) and are handled inline during their file's
 Phase 6 migration instead.
 
+Added later: `Timeline` (scroll-linked changelog/journey layout, ported from Aceternity UI —
+`framer-motion` only, no Radix dependency). `Timeline.demo.jsx` sits alongside it as a usage
+reference; it's intentionally not exported from `index.js` and not wired into any route.
+
 `message.*` → already replaced with `react-hot-toast` in Phase 1 — no new toast primitive
 needed here.
 

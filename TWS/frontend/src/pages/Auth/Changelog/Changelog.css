@@ -1,0 +1,84 @@
+.changelog-page {
+  min-height: 100vh;
+  background: #f8fcff;
+  color: #102a43;
+}
+
+.changelog-main {
+  overflow: hidden;
+}
+
+.changelog-hero {
+  padding: 154px 20px 60px;
+  max-width: 780px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.changelog-eyebrow {
+  display: inline-flex;
+  padding: 8px 12px;
+  border: 1px solid rgba(33, 142, 228, 0.25);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #218ee4;
+}
+
+.changelog-hero h1 {
+  font-family: Sora, Inter, sans-serif;
+  font-size: clamp(36px, 4.5vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+  margin: 20px 0 14px;
+  color: #102a43;
+}
+
+.changelog-hero p {
+  font-size: 17px;
+  line-height: 1.7;
+  color: #627d98;
+  margin: 0 auto;
+}
+
+.changelog-entry-lede {
+  color: rgb(38 38 38 / 1);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.dark .changelog-entry-lede {
+  color: rgb(229 229 229 / 1);
+}
+
+.changelog-update-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.changelog-update-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 10px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #486581;
+}
+
+.changelog-update-list li svg {
+  width: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #218ee4;
+}
+
+@media (max-width: 720px) {
+  .changelog-hero {
+    padding: 120px 20px 44px;
+  }
+}
