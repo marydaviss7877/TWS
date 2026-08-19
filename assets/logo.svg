@@ -1,0 +1,39 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="1448"
+  height="1086"
+  viewBox="0 0 1448 1086"
+  fill="none"
+>
+  <!-- NAVY LOGO SHAPE -->
+  <path
+    d="
+      M273 64
+      H1176
+      V1027
+      L976 921
+      V260
+      H821
+      V401
+      L626 503
+      V260
+      H473
+      V921
+      L273 1027
+      Z
+    "
+    fill="#103D67"
+  />
+
+  <!-- ORANGE CENTER SHAPE -->
+  <path
+    d="
+      M626 566
+      L820 462
+      L820 953
+      L626 873
+      Z
+    "
+    fill="#F04E25"
+  />
+</svg>

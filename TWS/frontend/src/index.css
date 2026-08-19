@@ -53,50 +53,50 @@ svg.tws-loading-pulse {
 
 /* Premium Modern Design System */
 :root {
-  /* Primary Colors - Deep Ocean & Electric Blue */
-  --wolfstack-primary: #0A0E27;
-  --wolfstack-primary-dark: #050711;
-  --wolfstack-primary-light: #1A1F3A;
-  --wolfstack-primary-50: #F0F4FF;
-  --wolfstack-primary-100: #E0E7FF;
-  --wolfstack-primary-200: #C7D2FE;
-  --wolfstack-primary-300: #A5B4FC;
-  --wolfstack-primary-400: #818CF8;
-  --wolfstack-primary-500: #6366F1;
-  --wolfstack-primary-600: #4F46E5;
-  --wolfstack-primary-700: #4338CA;
-  --wolfstack-primary-800: #3730A3;
-  --wolfstack-primary-900: #312E81;
-
-  /* Secondary Colors - Vibrant Emerald */
-  --wolfstack-secondary: #059669;
-  --wolfstack-secondary-dark: #047857;
-  --wolfstack-secondary-light: #10B981;
+  /* Brand Foundation - Premium enterprise software house */
+  --wolfstack-primary: #103D67;
+  --wolfstack-primary-dark: #0C3157;
+  --wolfstack-primary-light: #1B507E;
+  --wolfstack-primary-50: #EEF6FF;
+  --wolfstack-primary-100: #DFEEFF;
+  --wolfstack-primary-200: #C4DDFF;
+  --wolfstack-primary-300: #9FC1F7;
+  --wolfstack-primary-400: #6D93DC;
+  --wolfstack-primary-500: #103D67;
+  --wolfstack-primary-600: #0C3157;
+  --wolfstack-primary-700: #0A2746;
+  --wolfstack-primary-800: #081F3A;
+  --wolfstack-primary-900: #061A2D;
+ 
+  /* Secondary Colors - Trust and delivery confidence */
+  --wolfstack-secondary: #10B981;
+  --wolfstack-secondary-dark: #0B8F66;
+  --wolfstack-secondary-light: #34D399;
   --wolfstack-secondary-50: #ECFDF5;
   --wolfstack-secondary-100: #D1FAE5;
   --wolfstack-secondary-200: #A7F3D0;
   --wolfstack-secondary-300: #6EE7B7;
   --wolfstack-secondary-400: #34D399;
   --wolfstack-secondary-500: #10B981;
-  --wolfstack-secondary-600: #059669;
-  --wolfstack-secondary-700: #047857;
-  --wolfstack-secondary-800: #065F46;
+  --wolfstack-secondary-600: #0A9B6D;
+  --wolfstack-secondary-700: #087E59;
+  --wolfstack-secondary-800: #066A4D;
   --wolfstack-secondary-900: #064E3B;
-
-  /* Accent Colors - Electric Purple */
-  --wolfstack-accent: #8B5CF6;
-  --wolfstack-accent-dark: #7C3AED;
-  --wolfstack-accent-light: #A78BFA;
-  --wolfstack-accent-50: #FAF5FF;
-  --wolfstack-accent-100: #F3E8FF;
-  --wolfstack-accent-200: #E9D5FF;
-  --wolfstack-accent-300: #D8B4FE;
-  --wolfstack-accent-400: #C084FC;
-  --wolfstack-accent-500: #A855F7;
-  --wolfstack-accent-600: #9333EA;
-  --wolfstack-accent-700: #7C3AED;
-  --wolfstack-accent-800: #6B21A8;
-  --wolfstack-accent-900: #581C87;
+ 
+  /* Accent Colors - Brand energy */
+  --wolfstack-accent: #F04E25;
+  --wolfstack-accent-dark: #D8431B;
+  --wolfstack-accent-light: #FF7A5B;
+  --wolfstack-accent-50: #FFF1EE;
+  --wolfstack-accent-100: #FFE0D8;
+  --wolfstack-accent-200: #FFC3B0;
+  --wolfstack-accent-300: #FF9B7F;
+  --wolfstack-accent-400: #FF7A5B;
+  --wolfstack-accent-500: #F04E25;
+  --wolfstack-accent-600: #D8431B;
+  --wolfstack-accent-700: #B83515;
+  --wolfstack-accent-800: #962A12;
+  --wolfstack-accent-900: #731F10;
 
   /* Neutral Colors - Sophisticated Grays */
   --wolfstack-gray-50: #FAFAFA;
@@ -195,7 +195,7 @@ body {
   font-family: var(--wolfstack-font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #FAFAFA 0%, #F0F4FF 100%);
+  background: linear-gradient(135deg, #F7FAFC 0%, #F4F8FD 35%, #EEF4FF 100%);
   color: var(--wolfstack-gray-900);
   line-height: var(--wolfstack-line-height-normal);
   letter-spacing: var(--wolfstack-letter-spacing-normal);
@@ -205,13 +205,13 @@ body {
 
 /* Clean Light Mode Body */
 body.light-mode {
-  background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 50%, #F0F4FF 100%);
+  background: linear-gradient(135deg, #FFFFFF 0%, #F5F9FF 50%, #EEF4FF 100%);
 }
 
-/* Glassmorphism Dark Mode Body */
+/* Premium dark mode body */
 .dark body {
-  background: linear-gradient(135deg, #050711 0%, #0A0E27 50%, #1A1F3A 100%);
-  color: #F5F5F5;
+  background: linear-gradient(135deg, #07111c 0%, #0D1628 45%, #101E35 100%);
+  color: #EDF4FF;
 }
 
 code {

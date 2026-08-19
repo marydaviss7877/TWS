@@ -10,31 +10,43 @@
      COLOR SYSTEM
      ============================================ */
   
-  /* Primary Colors */
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
-  --color-primary-950: #172554;
+  /* Brand Foundation */
+  --brand-primary: #103D67;
+  --brand-primary-dark: #0C3157;
+  --brand-primary-light: #1B507E;
+  --brand-accent: #F04E25;
+  --brand-accent-dark: #D8431B;
+  --brand-accent-light: #FF7A5B;
+  --brand-support: #4F7EF7;
+  --brand-success: #10B981;
+  --brand-surface: #F4F8FD;
+  --brand-ink: #0F172A;
 
+  /* Primary Colors */
+  --color-primary-50: #eef6ff;
+  --color-primary-100: #dfeeff;
+  --color-primary-200: #c4ddff;
+  --color-primary-300: #9fc1f7;
+  --color-primary-400: #6d93dc;
+  --color-primary-500: #103D67;
+  --color-primary-600: #0c3157;
+  --color-primary-700: #0a2746;
+  --color-primary-800: #081f3a;
+  --color-primary-900: #061a2d;
+  --color-primary-950: #041421;
+ 
   /* Accent Colors */
-  --color-accent-50: #faf5ff;
-  --color-accent-100: #f3e8ff;
-  --color-accent-200: #e9d5ff;
-  --color-accent-300: #d8b4fe;
-  --color-accent-400: #c084fc;
-  --color-accent-500: #a855f7;
-  --color-accent-600: #9333ea;
-  --color-accent-700: #7e22ce;
-  --color-accent-800: #6b21a8;
-  --color-accent-900: #581c87;
-  --color-accent-950: #3b0764;
+  --color-accent-50: #fff1ee;
+  --color-accent-100: #ffe0d8;
+  --color-accent-200: #ffc3b0;
+  --color-accent-300: #ff9b7f;
+  --color-accent-400: #ff7a5b;
+  --color-accent-500: #F04E25;
+  --color-accent-600: #d8431b;
+  --color-accent-700: #b83515;
+  --color-accent-800: #962a12;
+  --color-accent-900: #731f10;
+  --color-accent-950: #4f180d;
 
   /* Neutral Colors */
   --color-gray-50: #f9fafb;

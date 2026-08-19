@@ -8,29 +8,29 @@ export const PREDEFINED_THEMES = {
   default: {
     name: 'Default',
     colors: {
-      primary: '#6366F1',
+      primary: '#103D67',
       secondary: '#10B981',
-      accent: '#A855F7'
+      accent: '#F04E25'
     },
-    description: 'The default Wolfstack theme'
+    description: 'The default TWS premium enterprise theme'
   },
   light: {
     name: 'Light',
     colors: {
-      primary: '#3B82F6',
-      secondary: '#059669',
-      accent: '#8B5CF6'
+      primary: '#103D67',
+      secondary: '#10B981',
+      accent: '#F04E25'
     },
-    description: 'Bright and professional'
+    description: 'Premium and professional'
   },
   dark: {
     name: 'Dark',
     colors: {
-      primary: '#818CF8',
-      secondary: '#34D399',
-      accent: '#C084FC'
+      primary: '#7EA7D9',
+      secondary: '#4ADEA5',
+      accent: '#FF7D5E'
     },
-    description: 'Modern dark theme'
+    description: 'Dark premium theme'
   },
   blue: {
     name: 'Ocean Blue',
@@ -228,12 +228,12 @@ export const loadFontOnDemand = (fontFamily) => {
 export const DEFAULT_THEME = {
   name: 'default',
   colors: {
-    primary: '#6366F1',
+    primary: '#103D67',
     secondary: '#10B981',
-    accent: '#A855F7'
+    accent: '#F04E25'
   },
   fonts: {
-    heading: 'Geist',
+    heading: 'Manrope',
     body: 'Inter'
   }
 };

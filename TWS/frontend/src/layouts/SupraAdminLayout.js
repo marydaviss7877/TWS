@@ -320,7 +320,7 @@ const SupraAdminLayout = ({ children }) => {
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center overflow-hidden bg-white dark:bg-gray-800 shadow-lg">
                 <img 
-                  src="/favicon.png" 
+                  src="/logo.svg" 
                   alt="TWS Logo" 
                   className="w-full h-full object-contain p-1"
                 />
@@ -379,7 +379,7 @@ const SupraAdminLayout = ({ children }) => {
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center overflow-hidden bg-white dark:bg-gray-800 shadow-lg">
                 <img 
-                  src="/favicon.png" 
+                  src="/logo.svg" 
                   alt="TWS Logo" 
                   className="w-full h-full object-contain p-1"
                 />
