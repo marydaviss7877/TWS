@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!--
+    HousesBase — Favicon / Micro Mark (32×32)
+    Simplified #4 gateway geometry for pixel grid.
+    Navy rounded background, ivory mark, terracotta accent.
+  -->
+
+  <!-- Background -->
+  <rect width="32" height="32" rx="7" fill="#17324D"/>
+
+  <!-- Gateway frame — simplified for small size -->
+  <path
+    d="
+      M4,4 H28 V28 H21 V12 H16 V28
+      H13 L14,12 H9 V28 H4 Z
+    "
+    fill="#F5F1E8"
+  />
+
+  <!-- Door accent — simplified angle -->
+  <path d="M16,20 L21,13 V28 H16 Z" fill="#C84A32"/>
+</svg>

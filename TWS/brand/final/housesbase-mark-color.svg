@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!--
+    HousesBase — Open Doorway Mark (Full Color) — PRODUCTION
+    Faithfully reproduces Direction 04 from the identity exploration.
+
+    ANATOMY
+    =======
+    A solid navy rectangle with two vertical notches cut from the bottom:
+
+    1. LEFT NOTCH  — narrower, with a diagonal inner-right wall
+                     (slopes inward from bottom to top), creating
+                     a sharp architectural perspective line.
+
+    2. RIGHT NOTCH — the primary "open doorway", wider, both walls
+                     vertical. A terracotta accent shape sits inside
+                     the lower portion with a diagonal top edge
+                     (like a door swinging open in perspective).
+
+    The positive navy shape reads as an architectural M / gateway.
+    The negative space creates the doorway. The terracotta accent
+    adds depth and warmth — the view through the open door.
+
+    GRID: 120 × 120 viewBox
+    ========================
+    Outer rectangle: 10,10 → 110,110  (100 × 100)
+
+    Left notch:
+      - Left wall:   x = 28  (vertical)
+      - Right wall:  diagonal from (48, 44) → (42, 110)
+      - Width at bottom: 14px, at top: narrower (tapers)
+
+    Right notch:
+      - Left wall:   x = 56  (vertical)
+      - Right wall:  x = 80  (vertical)
+      - Height: from top ~44 to bottom 110
+
+    Center pillar: x = 42–56  (14px wide at bottom)
+    Left pillar:   x = 10–28  (18px wide)
+    Right pillar:  x = 80–110 (30px wide)
+
+    Terracotta accent: fills lower-right of right notch
+      - Diagonal top edge from ~(56, 80) to (80, 48)
+      - Bottom edge at y = 110
+
+    Palette
+    -------
+    Architectural navy  #17324D
+    Terracotta accent   #C84A32
+  -->
+
+  <!-- Navy gateway — outer block with two notches cut out -->
+  <path
+    d="
+      M10,10
+      H110
+      V110
+      H80
+      V44
+      H56
+      V110
+      H42
+      L48,44
+      H28
+      V110
+      H10
+      Z
+    "
+    fill="#17324D"
+  />
+
+  <!-- Terracotta accent — angled door shape in the right opening -->
+  <path
+    d="
+      M56,80
+      L80,48
+      V110
+      H56
+      Z
+    "
+    fill="#C84A32"
+  />
+</svg>

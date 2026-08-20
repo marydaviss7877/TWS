@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!--
+    HousesBase — Open Doorway Mark (Reversed / Dark Backgrounds)
+    Same geometry as the color mark, but frame in warm ivory.
+  -->
+
+  <!-- Navy gateway — ivory on dark backgrounds -->
+  <path
+    d="
+      M10,10 H110 V110 H80 V44 H56 V110
+      H42 L48,44 H28 V110 H10 Z
+    "
+    fill="#F5F1E8"
+  />
+
+  <!-- Terracotta accent — same angle, same warmth -->
+  <path d="M56,80 L80,48 V110 H56 Z" fill="#C84A32"/>
+</svg>

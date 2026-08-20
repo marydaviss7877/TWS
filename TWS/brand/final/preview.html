@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HousesBase Logo — Side-by-Side Comparison</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    background: #f4f0e8;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+    align-items: center;
+  }
+  h1 { font-size: 14px; letter-spacing: 3px; text-transform: uppercase; color: #17324D; opacity: 0.5; }
+  .comparison {
+    display: flex;
+    gap: 60px;
+    align-items: flex-start;
+  }
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+    text-align: center;
+  }
+  .card img, .card object {
+    display: block;
+    margin: 0 auto 16px;
+  }
+  .card .label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #17324D;
+    opacity: 0.4;
+  }
+
+  .variants {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    max-width: 900px;
+  }
+  .variant-card {
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+  }
+  .variant-card.light { background: white; }
+  .variant-card.dark { background: #17324D; }
+  .variant-card.mono { background: #f4f0e8; color: #17324D; }
+  .variant-card .label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 16px;
+  }
+  .variant-card.light .label { color: #17324D; opacity: 0.4; }
+  .variant-card.dark .label { color: #F5F1E8; opacity: 0.5; }
+  .variant-card.mono .label { color: #17324D; opacity: 0.4; }
+
+  .lockup-section {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    max-width: 900px;
+    width: 100%;
+  }
+  .lockup-card {
+    background: white;
+    border-radius: 12px;
+    padding: 48px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06);
+  }
+  .lockup-card object, .lockup-card img {
+    display: block;
+    max-width: 100%;
+  }
+
+  .favicon-row {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    justify-content: center;
+  }
+  .favicon-frame {
+    background: #e8e4dc;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .favicon-frame span {
+    font-size: 11px;
+    color: #17324D;
+    opacity: 0.5;
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300..800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <h1>HousesBase — Logo Comparison & Production Preview</h1>
+
+  <!-- Side-by-side: Original concept vs SVG rebuild -->
+  <div class="comparison">
+    <div class="card">
+      <img src="../../logo/05-open-doorway.png" width="240" alt="Original concept #4">
+      <div class="label">Original Concept #4</div>
+    </div>
+    <div class="card">
+      <object data="housesbase-mark-color.svg" type="image/svg+xml" width="240" height="240"></object>
+      <div class="label">SVG Rebuild</div>
+    </div>
+  </div>
+
+  <!-- Mark variants -->
+  <h1>Mark Variants</h1>
+  <div class="variants">
+    <div class="variant-card light">
+      <object data="housesbase-mark-color.svg" type="image/svg+xml" width="140" height="140"></object>
+      <div class="label">Full Color</div>
+    </div>
+    <div class="variant-card dark">
+      <object data="housesbase-mark-reversed.svg" type="image/svg+xml" width="140" height="140"></object>
+      <div class="label">Reversed</div>
+    </div>
+    <div class="variant-card mono">
+      <object data="housesbase-mark-mono.svg" type="image/svg+xml" width="140" height="140"></object>
+      <div class="label">Mono</div>
+    </div>
+  </div>
+
+  <!-- Lockups -->
+  <h1>Lockups</h1>
+  <div class="lockup-section">
+    <div class="lockup-card">
+      <object data="housesbase-lockup-horizontal.svg" type="image/svg+xml" width="480" height="120"></object>
+      <div class="label" style="margin-top:16px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#17324D;opacity:0.4">Horizontal Lockup</div>
+    </div>
+    <div class="lockup-card" style="text-align:center">
+      <object data="housesbase-lockup-stacked.svg" type="image/svg+xml" width="300" height="200" style="margin:0 auto;display:block"></object>
+      <div class="label" style="margin-top:16px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#17324D;opacity:0.4">Stacked Lockup</div>
+    </div>
+  </div>
+
+  <!-- Favicon -->
+  <h1>Favicon</h1>
+  <div class="favicon-row">
+    <div class="favicon-frame">
+      <object data="housesbase-favicon.svg" type="image/svg+xml" width="16" height="16"></object>
+      <span>16px</span>
+    </div>
+    <div class="favicon-frame">
+      <object data="housesbase-favicon.svg" type="image/svg+xml" width="32" height="32"></object>
+      <span>32px</span>
+    </div>
+    <div class="favicon-frame">
+      <object data="housesbase-favicon.svg" type="image/svg+xml" width="64" height="64"></object>
+      <span>64px</span>
+    </div>
+    <div class="favicon-frame">
+      <object data="housesbase-favicon.svg" type="image/svg+xml" width="128" height="128"></object>
+      <span>128px</span>
+    </div>
+  </div>
+
+</body>
+</html>

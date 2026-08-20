@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120">
+  <!--
+    HousesBase — Primary Horizontal Lockup
+    Open Doorway mark (#4) + HousesBase wordmark + SOFTWARE HOUSE OS descriptor.
+    Convert <text> to outlines before final production delivery.
+  -->
+
+  <!-- ─── Mark ─── -->
+  <path
+    d="
+      M10,10 H110 V110 H80 V44 H56 V110
+      H42 L48,44 H28 V110 H10 Z
+    "
+    fill="#17324D"
+  />
+  <path d="M56,80 L80,48 V110 H56 Z" fill="#C84A32"/>
+
+  <!-- ─── Wordmark ─── -->
+  <text
+    x="148" y="73"
+    font-family="'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif"
+    font-size="38" font-weight="800" letter-spacing="-1"
+    fill="#17324D"
+  >HousesBase</text>
+
+  <!-- ─── Descriptor ─── -->
+  <text
+    x="149" y="93"
+    font-family="'Plus Jakarta Sans','Inter','Helvetica Neue',Arial,sans-serif"
+    font-size="10" font-weight="600" letter-spacing="3"
+    fill="#17324D" opacity="0.45"
+  >SOFTWARE HOUSE OS</text>
+</svg>

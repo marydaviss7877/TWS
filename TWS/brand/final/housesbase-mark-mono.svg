@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!--
+    HousesBase — Open Doorway Mark (Mono / Single-Color)
+    Uses currentColor — inherits from parent CSS `color`.
+    Door accent at 30% opacity for visual distinction.
+    Works in pure black, pure white, or any spot color.
+  -->
+
+  <!-- Gateway frame -->
+  <path
+    d="
+      M10,10 H110 V110 H80 V44 H56 V110
+      H42 L48,44 H28 V110 H10 Z
+    "
+    fill="currentColor"
+  />
+
+  <!-- Door accent — reduced opacity -->
+  <path d="M56,80 L80,48 V110 H56 Z" fill="currentColor" opacity="0.3"/>
+</svg>
