@@ -78,8 +78,8 @@ const TenantSelector = ({ currentTenant, onTenantSwitch, onTenantCreate }) => {
     const planConfig = {
       trial: { color: 'bg-gray-100 text-gray-800', label: 'Trial' },
       basic: { color: 'bg-blue-100 text-blue-800', label: 'Basic' },
-      professional: { color: 'bg-purple-100 text-purple-800', label: 'Pro' },
-      enterprise: { color: 'bg-indigo-100 text-indigo-800', label: 'Enterprise' }
+      professional: { color: 'bg-accent-100 text-accent-800', label: 'Pro' },
+      enterprise: { color: 'bg-primary-100 text-primary-800', label: 'Enterprise' }
     };
     
     const config = planConfig[plan] || planConfig.trial;

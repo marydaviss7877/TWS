@@ -94,7 +94,7 @@ const MyProjects = () => {
       case 'in_progress':
         return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
       case 'planning':
-        return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+        return 'bg-accent-100 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300';
       case 'on_hold':
         return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
       case 'completed':
@@ -149,7 +149,7 @@ const MyProjects = () => {
         </div>
         <div className="glass-card-premium p-4 hover-glow">
           <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Planning</p>
-          <p className="text-2xl font-bold text-purple-600">{stats.planning}</p>
+          <p className="text-2xl font-bold text-accent-600">{stats.planning}</p>
         </div>
         <div className="glass-card-premium p-4 hover-glow">
           <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Avg Progress</p>

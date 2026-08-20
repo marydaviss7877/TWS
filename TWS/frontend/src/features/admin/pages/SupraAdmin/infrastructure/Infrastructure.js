@@ -445,7 +445,7 @@ const Infrastructure = () => {
               <span>APIs</span>
               <SignalIcon className="h-4 w-4" />
             </div>
-            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            <p className="text-2xl font-bold text-accent-600 dark:text-accent-400">
               {infrastructureStats.activeAPIs || 0} <span className="text-sm text-gray-400 font-normal">/ {infrastructureStats.totalAPIs || 0}</span>
             </p>
           </CardContent>

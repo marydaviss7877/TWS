@@ -273,7 +273,7 @@ const JobPostingSystem = () => {
         {[
           { label: 'Active Jobs', value: jobPostings.filter(j => j.status === 'active').length, icon: BriefcaseIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
           { label: 'Total Applicants', value: jobPostings.reduce((sum, job) => sum + job.applicants, 0), icon: UsersIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400' },
-          { label: 'Total Views', value: jobPostings.reduce((sum, job) => sum + job.views, 0), icon: EyeIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' },
+          { label: 'Total Views', value: jobPostings.reduce((sum, job) => sum + job.views, 0), icon: EyeIcon, iconBg: 'bg-accent-50 dark:bg-accent-900/20', iconColor: 'text-accent-600 dark:text-accent-400' },
           { label: 'Draft Jobs', value: jobPostings.filter(j => j.status === 'draft').length, icon: DocumentTextIcon, iconBg: 'bg-gray-100 dark:bg-gray-800', iconColor: 'text-gray-600 dark:text-gray-400' }
         ].map((stat, index) => (
           <div key={index} className="glass-card-premium p-6 hover-glow">
@@ -458,7 +458,7 @@ const JobPostingSystem = () => {
                   <ShareIcon className="w-4 h-4" />
                 </button>
                 <button
-                  className="glass-button p-2 text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                  className="glass-button p-2 text-accent-500 hover:bg-accent-50 dark:hover:bg-accent-900/20"
                   title="View Analytics"
                 >
                   <ChartBarIcon className="w-4 h-4" />

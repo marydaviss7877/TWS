@@ -264,7 +264,7 @@ const AttendanceReports = () => {
                 <div className="text-sm text-gray-500">Avg Overtime</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
+                <div className="text-2xl font-bold text-accent-600">
                   {generatedReport.statistics?.avgQualityScore ? 
                     Math.round(generatedReport.statistics.avgQualityScore) : 100}%
                 </div>

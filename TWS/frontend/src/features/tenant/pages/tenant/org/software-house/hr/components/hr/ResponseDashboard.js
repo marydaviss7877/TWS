@@ -343,7 +343,7 @@ const ResponseDashboard = () => {
         {[
           { label: 'Total Responses', value: analytics.total, icon: DocumentTextIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400', trend: '+12%' },
           { label: 'Acceptance Rate', value: `${analytics.acceptanceRate}%`, icon: CheckCircleIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400', trend: '+5%' },
-          { label: 'Avg Score', value: analytics.avgScore, icon: StarIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400', trend: '+0.3' },
+          { label: 'Avg Score', value: analytics.avgScore, icon: StarIcon, iconBg: 'bg-accent-50 dark:bg-accent-900/20', iconColor: 'text-accent-600 dark:text-accent-400', trend: '+0.3' },
           { label: 'Response Rate', value: `${analytics.responseRate}%`, icon: ArrowTrendingUpIcon, iconBg: 'bg-orange-50 dark:bg-orange-900/20', iconColor: 'text-orange-600 dark:text-orange-400', trend: '+8%' }
         ].map((metric, index) => (
           <div key={index} className="glass-card-premium p-6 hover-glow">
@@ -535,7 +535,7 @@ const ResponseDashboard = () => {
                       {response.status.replace('_', ' ').charAt(0).toUpperCase() + response.status.replace('_', ' ').slice(1)}
                     </span>
                     {response.score && (
-                      <span className="inline-block px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300 text-xs rounded-full">
+                      <span className="inline-block px-2 py-1 bg-accent-100 text-accent-800 dark:bg-accent-900/20 dark:text-accent-300 text-xs rounded-full">
                         Score: {response.score}
                       </span>
                     )}
@@ -601,7 +601,7 @@ const ResponseDashboard = () => {
                   <ArrowDownTrayIcon className="w-4 h-4" />
                 </button>
                 <button
-                  className="glass-button p-2 text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                  className="glass-button p-2 text-accent-500 hover:bg-accent-50 dark:hover:bg-accent-900/20"
                   title="Share Response"
                 >
                   <ShareIcon className="w-4 h-4" />

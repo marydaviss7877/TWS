@@ -233,10 +233,10 @@ const AccountsPayable = () => {
     const colors = {
       cloud_services: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
       software_licenses: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
-      contractor_services: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
+      contractor_services: 'bg-accent-100 text-accent-800 dark:bg-accent-900/20 dark:text-accent-400',
       office_expenses: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400',
       marketing_expenses: 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400',
-      technology: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400'
+      technology: 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400'
     };
     return colors[category] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
   };
@@ -900,7 +900,7 @@ const AccountsPayable = () => {
       <div className="glass-card-premium">
         <div className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
           <h2 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white flex items-center">
-            <MagnifyingGlassIcon className="h-5 w-5 mr-2 text-indigo-600 dark:text-indigo-400" />
+            <MagnifyingGlassIcon className="h-5 w-5 mr-2 text-primary-600 dark:text-primary-400" />
             Search & Filter
           </h2>
         </div>
@@ -1010,7 +1010,7 @@ const AccountsPayable = () => {
                         <div className="flex items-center space-x-2">
                           <div className="text-sm font-medium text-gray-900 dark:text-white">{bill.billNumber}</div>
                           {bill.recurring && (
-                            <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">
+                            <span className="text-xs text-accent-600 dark:text-accent-400 bg-accent-50 dark:bg-accent-900/20 px-2 py-1 rounded">
                               Recurring
                             </span>
                           )}

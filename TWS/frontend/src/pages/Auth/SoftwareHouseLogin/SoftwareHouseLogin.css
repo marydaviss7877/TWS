@@ -1,32 +1,34 @@
 /* ============================================================
    Software House Login — Design Tokens
    ============================================================ */
+/* Brand colors sourced from frontend/src/design/tokens.js via design-tokens.css
+   (imported globally in index.js). Never hand-type brand hex here. */
 :root {
-    --sh-login-bg:           #1F3A63;
+    --sh-login-bg:           var(--brand-primary);
     --sh-login-text:         #EEF3F9;
-    --sh-login-surface:      #24456F;
-    --sh-login-accent:       #E2694F;
-    --sh-login-accent-rgb:   226, 105, 79;
+    --sh-login-surface:      var(--color-navy-600);
+    --sh-login-accent:       var(--brand-accent);
+    --sh-login-accent-rgb:   240, 78, 37;
     --sh-login-secondary:    #A9C0D6;
     --sh-login-border:       rgba(238,243,249,0.14);
     --sh-login-input-bg:     rgba(238,243,249,0.06);
     --sh-login-input-border: rgba(238,243,249,0.18);
     --sh-login-placeholder:  #7C93B0;
-    --sh-login-caution:      #C1543E;
+    --sh-login-caution:      var(--color-orange-700);
 }
 
 .sh-login-container.day-mode {
-    --sh-login-bg:           #F4F6F9;
-    --sh-login-text:         #1F3A63;
+    --sh-login-bg:           var(--brand-surface);
+    --sh-login-text:         var(--brand-primary);
     --sh-login-surface:      #FFFFFF;
-    --sh-login-accent:       #C8402B;
-    --sh-login-accent-rgb:   200, 64, 43;
+    --sh-login-accent:       var(--color-orange-600);
+    --sh-login-accent-rgb:   216, 67, 27;
     --sh-login-secondary:    #5B6B7C;
     --sh-login-border:       #D8DFE6;
     --sh-login-input-bg:     #FFFFFF;
     --sh-login-input-border: #D8DFE6;
     --sh-login-placeholder:  #93A5B8;
-    --sh-login-caution:      #A8412F;
+    --sh-login-caution:      var(--color-orange-800);
 }
 
 /* ============================================================

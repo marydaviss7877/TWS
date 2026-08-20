@@ -174,7 +174,7 @@ const HRLeaveRequests = () => {
             <button
               onClick={applyPolicy}
               disabled={policyApplying}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60"
             >
               {policyApplying ? 'Applying...' : 'Apply to Employees'}
             </button>

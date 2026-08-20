@@ -1,31 +1,33 @@
+/* Brand colors sourced from frontend/src/design/tokens.js via design-tokens.css
+   (imported globally in index.js). Never hand-type brand hex here. */
 :root {
-    --sh-signup-bg: #1F3A63;
+    --sh-signup-bg: var(--brand-primary);
     --sh-signup-text: #EEF3F9;
-    --sh-signup-surface: #24456F;
-    --sh-signup-accent: #E2694F;
-    --sh-signup-accent-rgb: 226, 105, 79;
+    --sh-signup-surface: var(--color-navy-600);
+    --sh-signup-accent: var(--brand-accent);
+    --sh-signup-accent-rgb: 240, 78, 37;
     --sh-signup-secondary: #A9C0D6;
     --sh-signup-border: rgba(238, 243, 249, 0.12);
     --sh-signup-input-bg: rgba(238, 243, 249, 0.05);
     --sh-signup-input-border: rgba(238, 243, 249, 0.16);
     --sh-signup-placeholder: #7C93B0;
     --sh-signup-mockup-bg: rgba(238, 243, 249, 0.04);
-    --sh-signup-caution: #C1543E;
+    --sh-signup-caution: var(--color-orange-700);
 }
 
 .sh-signup-container.day-mode {
-    --sh-signup-bg: #F4F6F9;
-    --sh-signup-text: #1F3A63;
+    --sh-signup-bg: var(--brand-surface);
+    --sh-signup-text: var(--brand-primary);
     --sh-signup-surface: #FFFFFF;
-    --sh-signup-accent: #C8402B;
-    --sh-signup-accent-rgb: 200, 64, 43;
+    --sh-signup-accent: var(--color-orange-600);
+    --sh-signup-accent-rgb: 216, 67, 27;
     --sh-signup-secondary: #5B6B7C;
     --sh-signup-border: #D8DFE6;
     --sh-signup-input-bg: #FFFFFF;
     --sh-signup-input-border: #D8DFE6;
     --sh-signup-placeholder: #93A5B8;
-    --sh-signup-mockup-bg: rgba(31, 58, 99, 0.03);
-    --sh-signup-caution: #A8412F;
+    --sh-signup-mockup-bg: rgba(16, 61, 103, 0.03);
+    --sh-signup-caution: var(--color-orange-800);
 }
 
 .sh-signup-container {

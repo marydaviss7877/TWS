@@ -44,7 +44,7 @@ const ClientOrganizationProfile = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="h-8 w-8 rounded-full border-2 border-indigo-500 border-t-transparent tws-loading-pulse" />
+        <div className="h-8 w-8 rounded-full border-2 border-primary-500 border-t-transparent tws-loading-pulse" />
       </div>
     );
   }
@@ -68,7 +68,7 @@ const ClientOrganizationProfile = () => {
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
       <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900">
-        <div className="h-28 bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600" />
+        <div className="h-28 bg-gradient-to-r from-primary-600 via-accent-600 to-accent-600" />
         <div className="px-6 pb-6">
           <div className="-mt-10 flex items-end gap-4">
             <div className="h-20 w-20 rounded-xl border-4 border-white dark:border-gray-900 bg-white dark:bg-gray-800 overflow-hidden flex items-center justify-center">

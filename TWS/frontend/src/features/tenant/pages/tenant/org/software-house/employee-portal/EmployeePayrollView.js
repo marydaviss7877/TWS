@@ -128,7 +128,7 @@ const EmployeePayrollView = ({ tenantSlug }) => {
               type="month"
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500"
+              className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-500"
             />
           </div>
         </div>
@@ -139,7 +139,7 @@ const EmployeePayrollView = ({ tenantSlug }) => {
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Base Salary</h3>
-            <CurrencyDollarIcon className="h-6 w-6 text-purple-600" />
+            <CurrencyDollarIcon className="h-6 w-6 text-accent-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
             {salary ? formatCurrency(salary.base, salary.currency) : 'N/A'}
@@ -271,7 +271,7 @@ const EmployeePayrollView = ({ tenantSlug }) => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button
                         onClick={() => downloadPayslip(payslip._id)}
-                        className="text-purple-600 hover:text-purple-700 font-medium"
+                        className="text-accent-600 hover:text-accent-700 font-medium"
                       >
                         Download
                       </button>

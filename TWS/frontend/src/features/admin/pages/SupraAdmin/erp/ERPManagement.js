@@ -295,7 +295,7 @@ const ERPManagement = () => {
               <span>ERP Categories</span>
               <CircleStackIcon className="h-4 w-4" />
             </div>
-            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{moduleUsage.length}</p>
+            <p className="text-2xl font-bold text-accent-600 dark:text-accent-400">{moduleUsage.length}</p>
           </CardContent>
         </Card>
         <Card>

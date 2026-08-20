@@ -103,7 +103,7 @@ const ChangeRequestDetailPage = () => {
     const map = {
       submitted: base + 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
       acknowledged: base + 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-      evaluated: base + 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+      evaluated: base + 'bg-accent-100 text-accent-800 dark:bg-accent-900/30 dark:text-accent-300',
       accepted: base + 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
       rejected: base + 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
     };
@@ -138,7 +138,7 @@ const ChangeRequestDetailPage = () => {
         <p className="text-gray-600 dark:text-gray-400 mb-2">Change request not found</p>
         <button
           onClick={() => navigate(`/${tenantSlug}/org/projects/change-requests`)}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
         >
           Back to Change Requests
         </button>
@@ -200,7 +200,7 @@ const ChangeRequestDetailPage = () => {
                     type="button"
                     onClick={() => setShowEvaluateModal(true)}
                     disabled={actionLoading}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-600 text-white hover:bg-accent-700 disabled:opacity-50"
                   >
                     <CheckCircleIcon className="w-5 h-5" />
                     Evaluate

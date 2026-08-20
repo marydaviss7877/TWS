@@ -120,7 +120,7 @@ const DepartmentDashboard = () => {
       'at_risk': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
       'delayed': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
       'completed': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-      'planning': 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+      'planning': 'bg-accent-100 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300'
     };
     return colors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
   };
@@ -195,8 +195,8 @@ const DepartmentDashboard = () => {
 
         <div className="glass-card-premium p-5 hover-glow">
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-900/20">
-              <ChartBarIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <div className="p-2.5 rounded-lg bg-accent-50 dark:bg-accent-900/20">
+              <ChartBarIcon className="w-5 h-5 text-accent-600 dark:text-accent-400" />
             </div>
           </div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
@@ -205,7 +205,7 @@ const DepartmentDashboard = () => {
           <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Completion Rate</p>
           <div className="mt-2 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-purple-500 to-pink-600 h-2 rounded-full transition-all"
+              className="bg-gradient-to-r from-accent-500 to-pink-600 h-2 rounded-full transition-all"
               style={{ width: `${stats.completionRate}%` }}
             ></div>
           </div>

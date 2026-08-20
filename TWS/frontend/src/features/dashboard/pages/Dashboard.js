@@ -82,7 +82,7 @@ const Dashboard = () => {
                       </p>
             </div>
             <div className="hidden sm:block">
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 via-purple-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-500 via-accent-600 to-primary-700 rounded-2xl flex items-center justify-center shadow-lg">
                 <span className="text-2xl">🚀</span>
               </div>
             </div>
@@ -98,8 +98,8 @@ const Dashboard = () => {
               <div className="flex-1">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                            <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center">
-                              <stat.icon className="h-6 w-6 text-indigo-600" aria-hidden="true" />
+                            <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-accent-100 rounded-xl flex items-center justify-center">
+                              <stat.icon className="h-6 w-6 text-primary-600" aria-hidden="true" />
                             </div>
                   </div>
                   <div className="ml-4 flex-1">
@@ -132,8 +132,8 @@ const Dashboard = () => {
                       <h3 className="wolfstack-heading-4 text-gray-900 dark:text-gray-100">
                         Recent Activity
                       </h3>
-                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-lg flex items-center justify-center">
-                        <span className="text-indigo-600 dark:text-indigo-400 text-sm">📊</span>
+                      <div className="w-8 h-8 bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/50 dark:to-accent-900/50 rounded-lg flex items-center justify-center">
+                        <span className="text-primary-600 dark:text-primary-400 text-sm">📊</span>
                       </div>
             </div>
             <div className="flow-root">
@@ -149,7 +149,7 @@ const Dashboard = () => {
                       ) : null}
                       <div className="relative flex space-x-4">
                         <div>
-                                  <span className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md ring-4 ring-white">
+                                  <span className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-600 flex items-center justify-center shadow-md ring-4 ring-white">
                                     <activity.icon className="h-6 w-6 text-white" aria-hidden="true" />
                                   </span>
                         </div>
@@ -182,8 +182,8 @@ const Dashboard = () => {
                       <h3 className="wolfstack-heading-4 text-gray-900 dark:text-gray-100">
                         Quick Actions
                       </h3>
-                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-lg flex items-center justify-center">
-                        <span className="text-indigo-600 dark:text-indigo-400 text-sm">⚡</span>
+                      <div className="w-8 h-8 bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-900/50 dark:to-accent-900/50 rounded-lg flex items-center justify-center">
+                        <span className="text-primary-600 dark:text-primary-400 text-sm">⚡</span>
                       </div>
             </div>
             <div className="space-y-4">

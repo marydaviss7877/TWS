@@ -753,8 +753,8 @@ const ProjectsOverviewContent = () => {
           ? `${metrics.portfolioActivePct}% of projects are active`
           : 'Distinct people on projects',
       icon: UsersIcon,
-      iconBg: 'bg-purple-50 dark:bg-purple-900/20',
-      iconColor: 'text-purple-600 dark:text-purple-400',
+      iconBg: 'bg-accent-50 dark:bg-accent-900/20',
+      iconColor: 'text-accent-600 dark:text-accent-400',
       trend: 'up'
     },
     {
@@ -794,8 +794,8 @@ const ProjectsOverviewContent = () => {
             ? 'Log time to measure utilization'
             : 'Set timeline estimates on projects',
       icon: ClockIcon,
-      iconBg: 'bg-indigo-50 dark:bg-indigo-900/20',
-      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      iconBg: 'bg-primary-50 dark:bg-primary-900/20',
+      iconColor: 'text-primary-600 dark:text-primary-400',
       trend: 'up'
     },
     {
@@ -890,7 +890,7 @@ const ProjectsOverviewContent = () => {
           {recentProjects.length > 0 && (
             <button
               onClick={() => navigate(`/${tenantSlug}/org/projects/${recentProjects[0].slug || recentProjects[0]._id || recentProjects[0].id}/gantt`)}
-              className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+              className="glass-button px-4 py-2 rounded-xl hover-scale flex items-center gap-2 bg-gradient-to-r from-accent-500 to-pink-500 text-white"
             >
               <ChartBarIcon className="w-5 h-5" />
               <span className="font-medium">Gantt Chart</span>
@@ -1519,7 +1519,7 @@ const ProjectsOverviewContent = () => {
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <button
                       onClick={() => navigate(`/${tenantSlug}/org/projects/${project.slug || project._id || project.id}/gantt`)}
-                      className="flex-1 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-1"
+                      className="flex-1 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-accent-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-1"
                     >
                       <CalendarDaysIcon className="w-4 h-4" />
                       Gantt Chart

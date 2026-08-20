@@ -87,7 +87,7 @@ export const DOCUMENT_TEMPLATES = [
     name: 'Meeting notes',
     description: 'Structured notes for meetings and follow-ups',
     icon: 'users',
-    gradient: 'from-violet-500 to-purple-600',
+    gradient: 'from-accent-500 to-accent-600',
     html: `
       <h1>Meeting notes</h1>
       <p><strong>Meeting:</strong> [Title]</p>
@@ -122,7 +122,7 @@ export const DOCUMENT_TEMPLATES = [
     name: 'Project brief',
     description: 'One-pager for project goals and requirements',
     icon: 'briefcase',
-    gradient: 'from-blue-500 to-indigo-600',
+    gradient: 'from-blue-500 to-primary-600',
     html: `
       <h1>Project brief</h1>
       <p><strong>Project name:</strong> [Name]</p>

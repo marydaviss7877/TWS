@@ -216,11 +216,11 @@ function ProjectWorkspaceMemberAvatars({ members, tenantSlug }) {
 }
 
 const VIEW_TABS = [
-  { key: 'overview', label: 'Overview', path: 'overview', icon: ChartBarIcon, iconColor: 'text-indigo-500' },
+  { key: 'overview', label: 'Overview', path: 'overview', icon: ChartBarIcon, iconColor: 'text-primary-500' },
   { key: 'board', label: 'Board', path: 'board', icon: Squares2X2Icon, iconColor: 'text-blue-500' },
   { key: 'team', label: 'Team', path: 'team', icon: UserGroupIcon, iconColor: 'text-emerald-500' },
   { key: 'calendar', label: 'Calendar', path: 'calendar', icon: CalendarIcon, iconColor: 'text-amber-500' },
-  { key: 'gantt', label: 'Gantt', path: 'gantt', icon: ChartBarIcon, iconColor: 'text-violet-500' },
+  { key: 'gantt', label: 'Gantt', path: 'gantt', icon: ChartBarIcon, iconColor: 'text-accent-500' },
   { key: 'timeline', label: 'Timeline', path: 'timeline', icon: ClockIcon, iconColor: 'text-cyan-500' },
   { key: 'activity', label: 'Activity', path: 'activity', icon: BoltIcon, iconColor: 'text-yellow-500' },
   { key: 'workload', label: 'Workload', path: 'workload', icon: SignalIcon, iconColor: 'text-rose-500' },

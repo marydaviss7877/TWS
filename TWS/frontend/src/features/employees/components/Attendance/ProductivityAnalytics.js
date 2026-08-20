@@ -203,7 +203,7 @@ const ProductivityAnalytics = () => {
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Code Commits</div>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center">
               <CodeBracketIcon className="h-6 w-6 text-white" />
             </div>
           </div>
@@ -256,7 +256,7 @@ const ProductivityAnalytics = () => {
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="w-3 h-3 bg-purple-500 rounded-full mr-3"></div>
+                <div className="w-3 h-3 bg-accent-500 rounded-full mr-3"></div>
                 <span className="text-sm text-gray-600 dark:text-gray-400">Focus Time</span>
               </div>
               <span className="font-medium text-gray-900 dark:text-white">
@@ -274,7 +274,7 @@ const ProductivityAnalytics = () => {
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
               <div 
-                className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-blue-500 to-accent-600 h-2 rounded-full transition-all duration-500"
                 style={{ width: `${analytics.productivity.efficiency}%` }}
               ></div>
             </div>
@@ -289,7 +289,7 @@ const ProductivityAnalytics = () => {
         {/* Development Metrics */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-            <CodeBracketIcon className="h-5 w-5 mr-2 text-purple-600" />
+            <CodeBracketIcon className="h-5 w-5 mr-2 text-accent-600" />
             Development Metrics
           </h3>
           <div className="space-y-4">

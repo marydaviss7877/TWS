@@ -53,7 +53,7 @@ const REPORT_CATALOG = [
     description: 'Revenue, costs, and margin analysis per project',
     icon: ChartPieIcon,
     category: 'Project Reports',
-    color: { bg: 'bg-violet-50 dark:bg-violet-900/20', icon: 'text-violet-600 dark:text-violet-400' }
+    color: { bg: 'bg-accent-50 dark:bg-accent-900/20', icon: 'text-accent-600 dark:text-accent-400' }
   },
   {
     id: 'client-analysis',
@@ -91,7 +91,7 @@ const REPORT_CATALOG = [
 
 const CATEGORY_COLORS = {
   'Financial Statements': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  'Project Reports':      'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400',
+  'Project Reports':      'bg-accent-100 text-accent-800 dark:bg-accent-900/30 dark:text-accent-400',
   'Client Reports':       'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400',
   'HR & Operations':      'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
   'Expense Reports':      'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
@@ -112,8 +112,8 @@ const fmtN = (n, dp = 0) => (+n || 0).toFixed(dp);
 const ReportHeader = ({ title, period, onPrint }) => (
   <div className="flex items-start justify-between flex-wrap gap-4 mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
     <div className="flex items-center gap-4">
-      <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center">
-        <BuildingOffice2Icon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+      <div className="w-12 h-12 bg-primary-50 dark:bg-primary-900/20 rounded-xl flex items-center justify-center">
+        <BuildingOffice2Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
       </div>
       <div>
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
@@ -175,12 +175,12 @@ const PnLReport = ({ data }) => {
       }
       <LineRow label="Total Expenses" amount={data.expenses?.total} bold highlight />
 
-      <div className="mt-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-5">
+      <div className="mt-6 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-xl p-5">
         <div className="flex justify-between items-center">
-          <span className="text-base font-bold text-indigo-900 dark:text-indigo-200">Net Profit / (Loss)</span>
-          <span className={`text-2xl font-bold font-mono ${data.netProfit >= 0 ? 'text-indigo-700 dark:text-indigo-300' : 'text-red-600'}`}>{fmt(data.netProfit)}</span>
+          <span className="text-base font-bold text-primary-900 dark:text-primary-200">Net Profit / (Loss)</span>
+          <span className={`text-2xl font-bold font-mono ${data.netProfit >= 0 ? 'text-primary-700 dark:text-primary-300' : 'text-red-600'}`}>{fmt(data.netProfit)}</span>
         </div>
-        <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-1">Profit Margin: {fmtN(margin, 1)}%</p>
+        <p className="text-sm text-primary-600 dark:text-primary-400 mt-1">Profit Margin: {fmtN(margin, 1)}%</p>
       </div>
     </div>
   );
@@ -309,7 +309,7 @@ const CashFlowReport = ({ data }) => (
 
     {data.upcomingForecasts?.length > 0 && (
       <>
-        <SectionTitle color="text-purple-700 dark:text-purple-400">Upcoming Forecasts (Next 90 Days)</SectionTitle>
+        <SectionTitle color="text-accent-700 dark:text-accent-400">Upcoming Forecasts (Next 90 Days)</SectionTitle>
         <div className="space-y-2">
           {data.upcomingForecasts.map((f, i) => (
             <div key={i} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 rounded-lg px-4 py-2.5">
@@ -423,7 +423,7 @@ const TimeTrackingReport = ({ data }) => (
       </div>
       <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-4 text-center border border-gray-100 dark:border-gray-700">
         <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Total Entries</p>
-        <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{data.summary?.totalEntries || 0}</p>
+        <p className="text-2xl font-bold text-accent-600 dark:text-accent-400">{data.summary?.totalEntries || 0}</p>
       </div>
     </div>
 
@@ -662,8 +662,8 @@ const Reporting = () => {
                 Generate, review, and export professional financial statements and analytics
               </p>
             </div>
-            <div className="hidden sm:block w-14 h-14 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center">
-              <ChartPieIcon className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
+            <div className="hidden sm:block w-14 h-14 bg-primary-50 dark:bg-primary-900/20 rounded-2xl flex items-center justify-center">
+              <ChartPieIcon className="h-7 w-7 text-primary-600 dark:text-primary-400" />
             </div>
           </div>
 
@@ -703,7 +703,7 @@ const Reporting = () => {
               return (
                 <div
                   key={report.id}
-                  className={`glass-card-premium rounded-xl p-5 border-2 transition-all duration-200 ${isActive ? 'border-indigo-500 dark:border-indigo-400' : 'border-transparent hover:border-gray-200 dark:hover:border-gray-600'}`}
+                  className={`glass-card-premium rounded-xl p-5 border-2 transition-all duration-200 ${isActive ? 'border-primary-500 dark:border-primary-400' : 'border-transparent hover:border-gray-200 dark:hover:border-gray-600'}`}
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className={`w-10 h-10 ${report.color.bg} rounded-lg flex items-center justify-center`}>
@@ -713,7 +713,7 @@ const Reporting = () => {
                       <h3 className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">{report.name}</h3>
                     </div>
                     {isActive && reportData && (
-                      <CheckCircleIcon className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+                      <CheckCircleIcon className="w-5 h-5 text-primary-500 flex-shrink-0" />
                     )}
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">{report.description}</p>
@@ -722,13 +722,13 @@ const Reporting = () => {
                     disabled={generating}
                     className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       generating && activeReportId === report.id
-                        ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 cursor-wait'
-                        : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                        ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 cursor-wait'
+                        : 'bg-primary-600 hover:bg-primary-700 text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                   >
                     {generating && activeReportId === report.id ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-indigo-300 border-t-transparent rounded-full tws-loading-pulse" />
+                        <div className="w-4 h-4 border-2 border-primary-300 border-t-transparent rounded-full tws-loading-pulse" />
                         Generating...
                       </>
                     ) : (

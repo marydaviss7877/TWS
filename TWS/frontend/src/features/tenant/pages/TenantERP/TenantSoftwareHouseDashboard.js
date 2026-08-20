@@ -196,7 +196,7 @@ const TenantSoftwareHouseDashboard = () => {
       value: metrics.activeProjects, 
       change: '+1 this month',
       icon: FolderIcon, 
-      iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+      iconBg: 'bg-gradient-to-br from-blue-500 to-primary-600',
       trend: 'up'
     },
     { 
@@ -212,7 +212,7 @@ const TenantSoftwareHouseDashboard = () => {
       value: `${metrics.codeCoverage}%`, 
       change: '+3% this week',
       icon: CodeBracketIcon, 
-      iconBg: 'bg-gradient-to-br from-purple-500 to-violet-600',
+      iconBg: 'bg-gradient-to-br from-accent-500 to-accent-600',
       trend: 'up'
     },
     { 
@@ -313,8 +313,8 @@ const TenantSoftwareHouseDashboard = () => {
           {/* Development Settings */}
           <div className="glass-card p-4">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                <WrenchScrewdriverIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="p-2 bg-accent-100 dark:bg-accent-900 rounded-lg">
+                <WrenchScrewdriverIcon className="w-5 h-5 text-accent-600 dark:text-accent-400" />
               </div>
               <h4 className="font-semibold text-gray-900 dark:text-white">Settings</h4>
             </div>
@@ -367,8 +367,8 @@ const TenantSoftwareHouseDashboard = () => {
           {/* Team Configuration */}
           <div className="glass-card p-4">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                <UsersIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="p-2 bg-primary-100 dark:bg-primary-900 rounded-lg">
+                <UsersIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
               <h4 className="font-semibold text-gray-900 dark:text-white">Team</h4>
             </div>
@@ -584,7 +584,7 @@ const TenantSoftwareHouseDashboard = () => {
                   </div>
                   <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div 
-                      className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full"
+                      className="bg-gradient-to-r from-blue-500 to-primary-600 h-2 rounded-full"
                       style={{ width: `${sprint.progress}%` }}
                     ></div>
                   </div>
@@ -632,8 +632,8 @@ const TenantSoftwareHouseDashboard = () => {
           
           <button className="glass-card p-4 hover-glow text-left transition-all">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                <ChartBarIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="p-2 bg-accent-100 dark:bg-accent-900 rounded-lg">
+                <ChartBarIcon className="w-5 h-5 text-accent-600 dark:text-accent-400" />
               </div>
               <span className="font-semibold text-gray-900 dark:text-white">View Analytics</span>
             </div>

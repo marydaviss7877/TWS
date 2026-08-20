@@ -252,7 +252,7 @@ const SupraAdminDashboard = () => {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent mb-2">
             TWS Supra Admin Dashboard
           </h1>
           <p className="text-gray-600 dark:text-gray-400">Welcome to your enterprise command center</p>

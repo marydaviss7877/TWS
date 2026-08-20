@@ -296,11 +296,11 @@ const TimeTracking = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Active Projects</p>
-              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
+              <p className="text-2xl font-bold text-accent-600 dark:text-accent-400 mt-1">
                 {todayStats.projects.length}
               </p>
             </div>
-            <ChartBarIcon className="w-8 h-8 text-purple-500" />
+            <ChartBarIcon className="w-8 h-8 text-accent-500" />
           </div>
         </div>
       </div>

@@ -22,7 +22,7 @@ import {
 
 const sectionCardClass = 'rounded-2xl border border-gray-200/80 dark:border-gray-700/70 bg-white/95 dark:bg-gray-900/70 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow';
 const labelClass = 'block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5';
-const inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/70 dark:focus:ring-indigo-400/70 focus:border-indigo-400 dark:focus:border-indigo-500 transition';
+const inputClass = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/70 dark:focus:ring-primary-400/70 focus:border-primary-400 dark:focus:border-primary-500 transition';
 const sectionDividerClass = 'h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent transition-opacity';
 
 const EmployeeProfileView = ({ tenantSlug: tenantSlugProp }) => {
@@ -215,7 +215,7 @@ const EmployeeProfileView = ({ tenantSlug: tenantSlugProp }) => {
           {!editing ? (
             <button
               onClick={() => setEditing(true)}
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 shadow-sm transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 shadow-sm transition-colors"
             >
               <PencilIcon className="h-4 w-4" />
               <span>Edit Profile</span>
@@ -246,7 +246,7 @@ const EmployeeProfileView = ({ tenantSlug: tenantSlugProp }) => {
         {/* Profile Picture and Basic Info */}
         <div className="flex flex-col sm:flex-row sm:items-start gap-5 mb-1">
           <div className="flex flex-col items-start gap-2">
-            <div className="h-24 w-24 rounded-2xl bg-indigo-600 flex items-center justify-center overflow-hidden">
+            <div className="h-24 w-24 rounded-2xl bg-primary-600 flex items-center justify-center overflow-hidden">
               {getProfilePicApiUrl(profilePicUrl) ? (
                 <img
                   src={getProfilePicApiUrl(profilePicUrl)}
@@ -293,7 +293,7 @@ const EmployeeProfileView = ({ tenantSlug: tenantSlugProp }) => {
             </h3>
             <p className="text-gray-600 dark:text-gray-300 mt-0.5">{employee.jobTitle || 'Team member'}</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-2.5 py-1 text-xs font-medium">
+              <span className="inline-flex items-center rounded-full bg-primary-50 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 px-2.5 py-1 text-xs font-medium">
                 {employee.department || 'Department not set'}
               </span>
               <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-2.5 py-1 text-xs font-medium">

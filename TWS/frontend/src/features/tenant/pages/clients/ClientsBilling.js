@@ -201,7 +201,7 @@ const ClientsBilling = () => {
       label: 'Total Invoices', 
       value: stats.totalInvoices.toString(), 
       icon: DocumentTextIcon, 
-      iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+      iconBg: 'bg-gradient-to-br from-blue-500 to-primary-600',
       change: '+20%'
     }
   ];
@@ -297,7 +297,7 @@ const ClientsBilling = () => {
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg. Invoice Value</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">${(stats.totalRevenue / stats.totalInvoices / 1000).toFixed(0)}K</p>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-primary-600 rounded-xl flex items-center justify-center">
               <ChartBarIcon className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -339,7 +339,7 @@ const ClientsBilling = () => {
                 <tr key={invoice._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-primary-600 rounded-lg flex items-center justify-center">
                         <DocumentTextIcon className="w-5 h-5 text-white" />
                       </div>
                       <div className="ml-4">

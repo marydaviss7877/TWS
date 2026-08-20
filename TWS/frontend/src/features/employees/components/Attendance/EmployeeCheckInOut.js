@@ -403,7 +403,7 @@ const EmployeeCheckInOut = () => {
     switch (mode) {
       case 'office': return 'bg-blue-100 text-blue-800';
       case 'remote': return 'bg-green-100 text-green-800';
-      case 'hybrid': return 'bg-purple-100 text-purple-800';
+      case 'hybrid': return 'bg-accent-100 text-accent-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -413,7 +413,7 @@ const EmployeeCheckInOut = () => {
       case 'available': return 'bg-green-100 text-green-800';
       case 'busy': return 'bg-yellow-100 text-yellow-800';
       case 'away': return 'bg-gray-100 text-gray-800';
-      case 'focus': return 'bg-purple-100 text-purple-800';
+      case 'focus': return 'bg-accent-100 text-accent-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -423,13 +423,13 @@ const EmployeeCheckInOut = () => {
   const hasActiveBreak = breaks.some(breakItem => !breakItem.endTime);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-primary-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-accent-600 bg-clip-text text-transparent">
                 Employee Check-In/Out
               </h1>
               <p className="mt-2 text-lg text-gray-600 dark:text-gray-300">
@@ -443,7 +443,7 @@ const EmployeeCheckInOut = () => {
                   {employeeId || 'Not Set'}
                 </div>
               </div>
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-accent-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <IdentificationIcon className="h-8 w-8 text-white" />
               </div>
             </div>
@@ -456,7 +456,7 @@ const EmployeeCheckInOut = () => {
             {/* Check-in/Out Card */}
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8">
               <div className="text-center">
-                <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-6 shadow-lg">
+                <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-accent-600 mb-6 shadow-lg">
                   <ClockIcon className="h-10 w-10 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -595,7 +595,7 @@ const EmployeeCheckInOut = () => {
                     <button
                       onClick={handleCheckIn}
                       disabled={loading || !location || !employeeId}
-                      className="inline-flex items-center px-12 py-4 border border-transparent text-lg font-medium rounded-2xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
+                      className="inline-flex items-center px-12 py-4 border border-transparent text-lg font-medium rounded-2xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-accent-600 hover:from-blue-700 hover:to-accent-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
                     >
                       {loading ? (
                         <div className="tws-loading-pulse rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
@@ -759,7 +759,7 @@ const EmployeeCheckInOut = () => {
             {/* Focus Mode */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                <SparklesIcon className="h-5 w-5 mr-2 text-purple-600" />
+                <SparklesIcon className="h-5 w-5 mr-2 text-accent-600" />
                 Focus Mode
               </h3>
               <div className="text-center">
@@ -767,7 +767,7 @@ const EmployeeCheckInOut = () => {
                   onClick={toggleFocusMode}
                   className={`w-full py-4 px-6 rounded-2xl font-medium transition-all duration-200 transform hover:scale-105 ${
                     focusMode
-                      ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg'
+                      ? 'bg-gradient-to-r from-accent-600 to-accent-700 text-white shadow-lg'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -792,7 +792,7 @@ const EmployeeCheckInOut = () => {
                 {teamActivity.slice(0, 5).map((member, index) => (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold mr-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-accent-600 flex items-center justify-center text-white text-sm font-bold mr-3">
                         {member.name.charAt(0)}
                       </div>
                       <div>
@@ -826,7 +826,7 @@ const EmployeeCheckInOut = () => {
                   <ChatBubbleLeftRightIcon className="h-5 w-5 mr-2" />
                   Team Standup
                 </button>
-                <button className="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-200">
+                <button className="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-accent-500 to-accent-600 text-white rounded-xl hover:from-accent-600 hover:to-accent-700 transition-all duration-200">
                   <BellIcon className="h-5 w-5 mr-2" />
                   Set Reminder
                 </button>

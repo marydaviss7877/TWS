@@ -254,7 +254,7 @@ const OdooTopBar = ({
             <div className="tws-profile-menu__identity">
               <Avatar className="h-11 w-11 shrink-0">
                 {avatarSrc && !avatarError && <AvatarImage src={avatarSrc} alt={displayName} onError={() => setAvatarError(true)} />}
-                <AvatarFallback className="bg-gradient-to-br from-sky-500 to-indigo-500 text-sm font-bold text-white">
+                <AvatarFallback className="bg-gradient-to-br from-sky-500 to-primary-500 text-sm font-bold text-white">
                   {userInitial}
                 </AvatarFallback>
               </Avatar>

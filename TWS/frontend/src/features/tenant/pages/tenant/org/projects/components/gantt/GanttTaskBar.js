@@ -26,9 +26,9 @@ const GanttTaskBar = ({
                task.category === 'backend' ? 'bg-green-600' :
                task.category === 'testing' ? 'bg-orange-600' :
                task.category === 'deployment' ? 'bg-red-600' :
-               'bg-purple-600';
+               'bg-accent-600';
       }
-      return task.category === 'planning' ? 'bg-purple-500' :
+      return task.category === 'planning' ? 'bg-accent-500' :
              task.category === 'design' ? 'bg-pink-500' :
              task.category === 'frontend' ? 'bg-blue-500' :
              task.category === 'backend' ? 'bg-green-500' :

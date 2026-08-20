@@ -1,0 +1,42 @@
+/**
+ * GENERATED FILE — do not edit by hand.
+ * Source: frontend/src/design/tokens.js
+ * Regenerate: npm run tokens
+ */
+:root {
+  --color-navy-50: #eef6ff;
+  --color-navy-100: #dfeeff;
+  --color-navy-200: #c4ddff;
+  --color-navy-300: #9fc1f7;
+  --color-navy-400: #6d93dc;
+  --color-navy-500: #103D67;
+  --color-navy-600: #0c3157;
+  --color-navy-700: #0a2746;
+  --color-navy-800: #081f3a;
+  --color-navy-900: #061a2d;
+  --color-navy-950: #041421;
+  --color-orange-50: #fff1ee;
+  --color-orange-100: #ffe0d8;
+  --color-orange-200: #ffc3b0;
+  --color-orange-300: #ff9b7f;
+  --color-orange-400: #ff7a5b;
+  --color-orange-500: #f04e25;
+  --color-orange-600: #d8431b;
+  --color-orange-700: #b83515;
+  --color-orange-800: #962a12;
+  --color-orange-900: #731f10;
+  --color-orange-950: #4f180d;
+  --color-green-50: #ecfdf5;
+  --color-green-100: #d1fae5;
+  --color-green-200: #a7f3d0;
+  --color-green-300: #6ee7b7;
+  --color-green-400: #34d399;
+  --color-green-500: #10b981;
+  --color-green-600: #059669;
+  --color-green-700: #047857;
+  --color-green-800: #065f46;
+  --color-green-900: #064e3b;
+  --color-green-950: #022c22;
+  --color-ink: #0f172a;
+  --color-mist: #f4f8fd;
+}

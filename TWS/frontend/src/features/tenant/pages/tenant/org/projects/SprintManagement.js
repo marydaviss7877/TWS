@@ -252,7 +252,7 @@ const SprintManagement = () => {
             
             <div className="glass-card p-4">
               <div className="flex items-center gap-2 mb-2">
-                <UserGroupIcon className="w-5 h-5 text-purple-600" />
+                <UserGroupIcon className="w-5 h-5 text-accent-600" />
                 <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Team Size</span>
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -280,7 +280,7 @@ const SprintManagement = () => {
             </div>
             <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div 
-                className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-blue-500 to-primary-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${calculateProgress(activeSprint)}%` }}
               ></div>
             </div>

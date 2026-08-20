@@ -275,6 +275,14 @@ function App() {
             path="/login"
             element={
               user ? (() => {
+                // A TWSAdmin (Supra Admin) session has no tenant to redirect to — send
+                // it straight to the admin portal instead of falling through to the
+                // tenant-slug lookup below, which would otherwise chase whatever stale
+                // tenantData/tenantId this browser happens to have lying around from an
+                // unrelated tenant session (shared cookie domain across *.housesbase.com).
+                if (user.userType === 'twsAdmin' || user.role === 'super_admin') {
+                  return <Navigate to="/supra-admin" replace />;
+                }
                 try {
                   const td = JSON.parse(localStorage.getItem('tenantData'));
                   const slug =
@@ -349,7 +357,7 @@ function App() {
             path="/supra-admin"
             element={
               <Suspense fallback={<LoadingSpinner />}>
-                {user && user.role === 'super_admin'
+                {user && user.userType === 'twsAdmin'
                   ? <SupraAdmin />
                   : <Navigate to="/supra-admin-login" replace />}
               </Suspense>

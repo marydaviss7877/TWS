@@ -66,7 +66,7 @@ const ACCESS_LEVEL_BADGE = {
   contributor: 'border-transparent bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300',
   editor: 'border-transparent bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
   admin: 'border-transparent bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
-  owner: 'border-transparent bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+  owner: 'border-transparent bg-accent-100 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300',
 };
 
 const PERMISSION_OPTIONS = [
@@ -656,7 +656,7 @@ const SessionManagement = () => {
               <span>Unique Users</span>
               <UserIcon className="h-4 w-4" />
             </div>
-            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{sessionAnalytics.uniqueUsers || 0}</p>
+            <p className="text-2xl font-bold text-accent-600 dark:text-accent-400">{sessionAnalytics.uniqueUsers || 0}</p>
           </CardContent>
         </Card>
         <Card>

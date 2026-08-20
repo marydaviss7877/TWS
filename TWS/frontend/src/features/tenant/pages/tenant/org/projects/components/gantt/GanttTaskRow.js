@@ -58,7 +58,7 @@ const GanttTaskRow = ({
             <div className="flex items-center gap-2 mb-1">
               {task.category && (
                 <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
-                  task.category === 'planning' ? 'bg-purple-100 text-purple-700' :
+                  task.category === 'planning' ? 'bg-accent-100 text-accent-700' :
                   task.category === 'design' ? 'bg-pink-100 text-pink-700' :
                   task.category === 'frontend' ? 'bg-blue-100 text-blue-700' :
                   task.category === 'backend' ? 'bg-green-100 text-green-700' :
@@ -73,7 +73,7 @@ const GanttTaskRow = ({
                 </span>
               )}
               {task.sprint && (
-                <span className="px-1.5 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded">
+                <span className="px-1.5 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded">
                   {task.sprint}
                 </span>
               )}

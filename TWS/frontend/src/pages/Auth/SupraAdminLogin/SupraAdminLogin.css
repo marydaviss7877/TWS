@@ -1,7 +1,9 @@
+/* Brand colors sourced from frontend/src/design/tokens.js via design-tokens.css
+   (imported globally in index.js). Never hand-type brand hex here. */
 :root {
-    --supra-accent:      #8b5cf6;
-    --supra-accent-glow: rgba(139, 92, 246, 0.4);
-    --supra-secondary:   #ec4899;
+    --supra-accent:      var(--brand-primary);
+    --supra-accent-glow: color-mix(in srgb, var(--brand-primary) 40%, transparent);
+    --supra-secondary:   var(--brand-support);
     --supra-border-dark: rgba(255, 255, 255, 0.10);
 }
 

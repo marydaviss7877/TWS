@@ -157,8 +157,8 @@ const HROverview = () => {
 
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
-              <ClockIcon className="w-6 h-6 xl:w-7 xl:h-7 text-purple-600 dark:text-purple-400" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-accent-50 dark:bg-accent-900/20 flex items-center justify-center">
+              <ClockIcon className="w-6 h-6 xl:w-7 xl:h-7 text-accent-600 dark:text-accent-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Attendance Rate</p>
@@ -258,8 +258,8 @@ const HROverview = () => {
             className="glass-card p-4 hover-lift text-left group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <CurrencyDollarIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              <div className="w-12 h-12 rounded-xl bg-accent-50 dark:bg-accent-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <CurrencyDollarIcon className="w-6 h-6 text-accent-600 dark:text-accent-400" />
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900 dark:text-white">Payroll</p>

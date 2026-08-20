@@ -208,8 +208,8 @@ const ProjectBoard = () => {
 
                   <div className="bg-white p-6 rounded-lg border border-gray-200">
                     <div className="flex items-center">
-                      <div className="p-2 bg-purple-100 rounded-lg">
-                        <ChartBarIcon className="h-6 w-6 text-purple-600" />
+                      <div className="p-2 bg-accent-100 rounded-lg">
+                        <ChartBarIcon className="h-6 w-6 text-accent-600" />
                       </div>
                       <div className="ml-3">
                         <p className="text-sm font-medium text-gray-500">Progress</p>

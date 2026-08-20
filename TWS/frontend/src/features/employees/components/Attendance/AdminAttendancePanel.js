@@ -234,7 +234,7 @@ const AdminAttendancePanel = () => {
     switch (mode) {
       case 'office': return 'bg-blue-100 text-blue-800';
       case 'remote': return 'bg-green-100 text-green-800';
-      case 'hybrid': return 'bg-purple-100 text-purple-800';
+      case 'hybrid': return 'bg-accent-100 text-accent-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -558,7 +558,7 @@ const AdminAttendancePanel = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-accent-600 flex items-center justify-center text-white font-bold">
                               {record.employeeName?.charAt(0) || 'E'}
                             </div>
                           </div>

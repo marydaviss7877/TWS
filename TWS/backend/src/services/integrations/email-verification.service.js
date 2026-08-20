@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const EmailVerification = require('../../models/users-auth/EmailVerification');
 const emailService = require('./email.service');
 const envConfig = require('../../config/environment-validator');
+const { renderEmailShell, renderNotice, COLORS, FONT_STACK } = require('./emailTemplates');
 
 class EmailVerificationService {
   /**
@@ -51,37 +52,25 @@ class EmailVerificationService {
    * Send verification email with OTP
    */
   async sendVerificationEmail(verification) {
-    const subject = 'Verify Your Email Address - TWS ERP';
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Verify Your Email</h1>
-        </div>
-        <div style="padding: 30px; background: #f9fafb;">
-          <p style="font-size: 16px; color: #374151;">Hello,</p>
-          
-          <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
-            Thank you for signing up for TWS ERP! Please verify your email address by entering the code below:
-          </p>
-          
-          <div style="background: white; padding: 30px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <h2 style="color: #1f2937; margin: 0 0 10px 0;">Your Verification Code</h2>
-            <p style="font-size: 32px; font-weight: bold; color: #667eea; letter-spacing: 8px; margin: 20px 0;">
-              ${verification.otp}
-            </p>
-            <p style="font-size: 12px; color: #9ca3af;">This code expires in 15 minutes</p>
-          </div>
-          
-          <p style="font-size: 14px; color: #dc2626; background: #fef2f2; padding: 15px; border-radius: 8px;">
-            <strong>⚠️ Security Notice:</strong> Never share this code with anyone. TWS will never ask for your verification code.
-          </p>
-          
-          <p style="font-size: 12px; color: #9ca3af; margin-top: 30px;">
-            If you didn't create an account with TWS ERP, please ignore this email.
-          </p>
-        </div>
+    const subject = 'Verify your email address - HousesBase';
+    const body = `
+      <p style="font-size:16px;color:${COLORS.ink};margin:0 0 16px;">Hello,</p>
+      <p style="font-size:14px;color:${COLORS.muted};line-height:1.6;margin:0 0 8px;">
+        Thank you for signing up for HousesBase! Please verify your email address by entering the code below:
+      </p>
+      <div style="background:${COLORS.panel};border:1px solid ${COLORS.border};padding:28px;border-radius:8px;margin:20px 0;text-align:center;">
+        <h2 style="color:${COLORS.ink};margin:0 0 6px;font-size:14px;font-weight:600;">Your verification code</h2>
+        <p style="font-size:32px;font-weight:700;color:${COLORS.navy};letter-spacing:8px;margin:16px 0;font-family:${FONT_STACK};">
+          ${verification.otp}
+        </p>
+        <p style="font-size:12px;color:${COLORS.faint};margin:0;">This code expires in 15 minutes</p>
       </div>
+      ${renderNotice('<strong>Security notice:</strong> Never share this code with anyone. HousesBase will never ask for your verification code.', 'danger')}
+      <p style="font-size:12px;color:${COLORS.faint};margin-top:24px;">
+        If you didn't create an account with HousesBase, please ignore this email.
+      </p>
     `;
+    const html = renderEmailShell({ preheader: `Your verification code is ${verification.otp}`, bodyHtml: body });
 
     return await emailService.sendEmail(verification.email, subject, html);
   }

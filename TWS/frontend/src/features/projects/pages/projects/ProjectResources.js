@@ -162,7 +162,7 @@ const ProjectResources = () => {
               <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Total Resources</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalResources}</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-primary-600 flex items-center justify-center">
               <UsersIcon className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -193,9 +193,9 @@ const ProjectResources = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Avg Utilization</p>
-              <p className="text-2xl font-bold text-purple-600">{stats.avgUtilization}%</p>
+              <p className="text-2xl font-bold text-accent-600">{stats.avgUtilization}%</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-500 to-pink-600 flex items-center justify-center">
               <ChartBarIcon className="w-6 h-6 text-white" />
             </div>
           </div>

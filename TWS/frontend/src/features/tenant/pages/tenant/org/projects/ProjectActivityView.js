@@ -91,7 +91,7 @@ function ActivityItem({ item, tenantSlug }) {
     subline = milestone.status ? <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold capitalize ${STATUS_COLOR[milestone.status] || 'bg-gray-100 text-gray-600'}`}>{milestone.status.replace('_',' ')}</span> : null;
   } else if (cr) {
     Icon = DocumentTextIcon;
-    iconBg = 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400';
+    iconBg = 'bg-accent-100 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400';
     headline = <>Change request <strong className="text-gray-900 dark:text-white">"{cr.title}"</strong> {cr.status}</>;
     subline = <span className="text-xs text-gray-500 dark:text-gray-400">{cr.description?.slice(0,60)}{cr.description?.length > 60 ? '…' : ''}</span>;
   } else if (task) {

@@ -16,7 +16,7 @@ export const CompensationTab = ({ formData, handleInputChange, handleArrayChange
             type="number"
             value={formData.salary.base}
             onChange={(e) => handleInputChange('salary.base', e.target.value)}
-            className="w-full pl-7 pr-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full pl-7 pr-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="0"
             required
           />
@@ -30,7 +30,7 @@ export const CompensationTab = ({ formData, handleInputChange, handleArrayChange
         <select
           value={formData.salary.currency}
           onChange={(e) => handleInputChange('salary.currency', e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+          className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
         >
           <option value="USD">USD</option>
           <option value="EUR">EUR</option>
@@ -47,7 +47,7 @@ export const CompensationTab = ({ formData, handleInputChange, handleArrayChange
         <select
           value={formData.salary.payFrequency}
           onChange={(e) => handleInputChange('salary.payFrequency', e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+          className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
         >
           <option value="weekly">Weekly</option>
           <option value="bi-weekly">Bi-weekly</option>
@@ -65,7 +65,7 @@ export const CompensationTab = ({ formData, handleInputChange, handleArrayChange
         <button
           type="button"
           onClick={() => addArrayItem('salary.components', { name: '', amount: 0, type: 'allowance', isRecurring: true })}
-          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-lg text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 ease-out backdrop-blur-sm"
+          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-lg text-primary-700 dark:text-primary-300 bg-primary-100 dark:bg-primary-900/30 hover:bg-primary-200 dark:hover:bg-primary-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-300 ease-out backdrop-blur-sm"
         >
           <PlusIcon className="h-4 w-4 mr-1" />
           Add Component
@@ -81,7 +81,7 @@ export const CompensationTab = ({ formData, handleInputChange, handleArrayChange
                 type="text"
                 value={component.name}
                 onChange={(e) => handleArrayChange('salary.components', index, { name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-sm text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+                className="w-full px-3 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
                 placeholder="Component name"
               />
             </div>
@@ -92,7 +92,7 @@ export const CompensationTab = ({ formData, handleInputChange, handleArrayChange
                 type="number"
                 value={component.amount}
                 onChange={(e) => handleArrayChange('salary.components', index, { amount: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-sm text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+                className="w-full px-3 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
                 placeholder="0"
               />
             </div>
@@ -102,7 +102,7 @@ export const CompensationTab = ({ formData, handleInputChange, handleArrayChange
               <select
                 value={component.type}
                 onChange={(e) => handleArrayChange('salary.components', index, { type: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-sm text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+                className="w-full px-3 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
               >
                 <option value="allowance">Allowance</option>
                 <option value="deduction">Deduction</option>
@@ -118,7 +118,7 @@ export const CompensationTab = ({ formData, handleInputChange, handleArrayChange
                 type="checkbox"
                 checked={component.isRecurring}
                 onChange={(e) => handleArrayChange('salary.components', index, { isRecurring: e.target.checked })}
-                className="h-4 w-4 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
+                className="h-4 w-4 text-primary-600 dark:text-primary-400 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
               />
               <label className="ml-2 block text-sm text-gray-700 dark:text-gray-300">Recurring</label>
             </div>
@@ -158,7 +158,7 @@ export const BenefitsTab = ({ formData, handleInputChange }) => (
                 type="checkbox"
                 checked={formData.benefits[benefit.key]}
                 onChange={(e) => handleInputChange(`benefits.${benefit.key}`, e.target.checked)}
-                className="h-4 w-4 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
+                className="h-4 w-4 text-primary-600 dark:text-primary-400 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
               />
               <label className="ml-3 block text-sm text-gray-700 dark:text-gray-300">{benefit.label}</label>
             </div>
@@ -181,7 +181,7 @@ export const BenefitsTab = ({ formData, handleInputChange }) => (
                 type="checkbox"
                 checked={formData.benefits[benefit.key]}
                 onChange={(e) => handleInputChange(`benefits.${benefit.key}`, e.target.checked)}
-                className="h-4 w-4 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
+                className="h-4 w-4 text-primary-600 dark:text-primary-400 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
               />
               <label className="ml-3 block text-sm text-gray-700 dark:text-gray-300">{benefit.label}</label>
             </div>
@@ -196,7 +196,7 @@ export const BenefitsTab = ({ formData, handleInputChange }) => (
             type="number"
             value={formData.benefits.equityShares}
             onChange={(e) => handleInputChange('benefits.equityShares', parseInt(e.target.value) || 0)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="0"
           />
         </div>
@@ -212,7 +212,7 @@ export const SkillsTab = ({ formData, handleArrayChange, addArrayItem, removeArr
       <button
         type="button"
         onClick={() => addArrayItem('skills', { name: '', level: 'beginner', category: 'technical', verified: false })}
-        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-lg text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 ease-out backdrop-blur-sm"
+        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-lg text-primary-700 dark:text-primary-300 bg-primary-100 dark:bg-primary-900/30 hover:bg-primary-200 dark:hover:bg-primary-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-300 ease-out backdrop-blur-sm"
       >
         <PlusIcon className="h-4 w-4 mr-1" />
         Add Skill
@@ -228,7 +228,7 @@ export const SkillsTab = ({ formData, handleArrayChange, addArrayItem, removeArr
               type="text"
               value={skill.name}
               onChange={(e) => handleArrayChange('skills', index, { name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-sm text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+              className="w-full px-3 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
               placeholder="Skill name"
             />
           </div>
@@ -238,7 +238,7 @@ export const SkillsTab = ({ formData, handleArrayChange, addArrayItem, removeArr
             <select
               value={skill.level}
               onChange={(e) => handleArrayChange('skills', index, { level: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-sm text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+              className="w-full px-3 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
             >
               <option value="beginner">Beginner</option>
               <option value="intermediate">Intermediate</option>
@@ -252,7 +252,7 @@ export const SkillsTab = ({ formData, handleArrayChange, addArrayItem, removeArr
             <select
               value={skill.category}
               onChange={(e) => handleArrayChange('skills', index, { category: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-sm text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+              className="w-full px-3 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
             >
               <option value="technical">Technical</option>
               <option value="soft">Soft Skills</option>
@@ -266,7 +266,7 @@ export const SkillsTab = ({ formData, handleArrayChange, addArrayItem, removeArr
               type="checkbox"
               checked={skill.verified}
               onChange={(e) => handleArrayChange('skills', index, { verified: e.target.checked })}
-              className="h-4 w-4 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
+              className="h-4 w-4 text-primary-600 dark:text-primary-400 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
             />
             <label className="ml-2 block text-sm text-gray-700 dark:text-gray-300">Verified</label>
           </div>
@@ -299,7 +299,7 @@ export const ContactTab = ({ formData, handleInputChange }) => (
             type="text"
             value={formData.address.street}
             onChange={(e) => handleInputChange('address.street', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter street address"
           />
         </div>
@@ -312,7 +312,7 @@ export const ContactTab = ({ formData, handleInputChange }) => (
             type="text"
             value={formData.address.city}
             onChange={(e) => handleInputChange('address.city', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter city"
           />
         </div>
@@ -325,7 +325,7 @@ export const ContactTab = ({ formData, handleInputChange }) => (
             type="text"
             value={formData.address.state}
             onChange={(e) => handleInputChange('address.state', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter state/province"
           />
         </div>
@@ -338,7 +338,7 @@ export const ContactTab = ({ formData, handleInputChange }) => (
             type="text"
             value={formData.address.zipCode}
             onChange={(e) => handleInputChange('address.zipCode', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter ZIP/postal code"
           />
         </div>
@@ -351,7 +351,7 @@ export const ContactTab = ({ formData, handleInputChange }) => (
             type="text"
             value={formData.address.country}
             onChange={(e) => handleInputChange('address.country', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter country"
           />
         </div>
@@ -369,7 +369,7 @@ export const ContactTab = ({ formData, handleInputChange }) => (
             type="text"
             value={formData.emergencyContact.name}
             onChange={(e) => handleInputChange('emergencyContact.name', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter contact name"
           />
         </div>
@@ -382,7 +382,7 @@ export const ContactTab = ({ formData, handleInputChange }) => (
             type="text"
             value={formData.emergencyContact.relationship}
             onChange={(e) => handleInputChange('emergencyContact.relationship', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter relationship"
           />
         </div>
@@ -395,7 +395,7 @@ export const ContactTab = ({ formData, handleInputChange }) => (
             type="tel"
             value={formData.emergencyContact.phone}
             onChange={(e) => handleInputChange('emergencyContact.phone', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter phone number"
           />
         </div>
@@ -408,7 +408,7 @@ export const ContactTab = ({ formData, handleInputChange }) => (
             type="email"
             value={formData.emergencyContact.email}
             onChange={(e) => handleInputChange('emergencyContact.email', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter email address"
           />
         </div>
@@ -427,7 +427,7 @@ export const PerformanceTab = ({ formData, handleInputChange }) => (
         <select
           value={formData.performanceMetrics.overallRating}
           onChange={(e) => handleInputChange('performanceMetrics.overallRating', parseInt(e.target.value))}
-          className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+          className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
         >
           <option value={1}>1 - Needs Improvement</option>
           <option value={2}>2 - Below Expectations</option>
@@ -444,7 +444,7 @@ export const PerformanceTab = ({ formData, handleInputChange }) => (
         <select
           value={formData.performanceMetrics.careerLevel}
           onChange={(e) => handleInputChange('performanceMetrics.careerLevel', e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+          className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
         >
           <option value="entry">Entry Level</option>
           <option value="junior">Junior</option>
@@ -462,7 +462,7 @@ export const PerformanceTab = ({ formData, handleInputChange }) => (
           type="checkbox"
           checked={formData.performanceMetrics.promotionEligibility}
           onChange={(e) => handleInputChange('performanceMetrics.promotionEligibility', e.target.checked)}
-          className="h-4 w-4 text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
+          className="h-4 w-4 text-primary-600 dark:text-primary-400 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
         />
         <label className="ml-3 block text-sm text-gray-700 dark:text-gray-300">Promotion Eligible</label>
       </div>

@@ -234,8 +234,8 @@ const DevelopmentAnalytics = () => {
 
         <div className="glass-card-premium p-6 hover-glow">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
-              <StarIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <div className="p-3 bg-accent-100 dark:bg-accent-900 rounded-lg">
+              <StarIcon className="w-6 h-6 text-accent-600 dark:text-accent-400" />
             </div>
             <div className="flex items-center gap-1">
               {getTrendIcon(metrics.clientSatisfaction.trend.overallRating * 10)}
@@ -286,7 +286,7 @@ const DevelopmentAnalytics = () => {
                 <div className="flex items-center gap-3">
                   <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div 
-                      className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full"
+                      className="bg-gradient-to-r from-blue-500 to-primary-600 h-2 rounded-full"
                       style={{ width: `${(item.velocity / 40) * 100}%` }}
                     ></div>
                   </div>

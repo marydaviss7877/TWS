@@ -54,7 +54,7 @@ const Employees = () => {
       active: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
       probation: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
       'on-leave': 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
-      resigned: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
+      resigned: 'bg-accent-100 text-accent-800 dark:bg-accent-900/20 dark:text-accent-400',
       retired: 'bg-gray-100 text-gray-800 dark:bg-gray-800/20 dark:text-gray-400',
       terminated: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
     };
@@ -150,7 +150,7 @@ const Employees = () => {
               </div>
             </div>
             <div className="hidden sm:block">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 via-primary-600 to-accent-700 rounded-2xl flex items-center justify-center shadow-lg">
                 <UserGroupIcon className="h-8 w-8 text-white" />
               </div>
             </div>
@@ -172,7 +172,7 @@ const Employees = () => {
         <div className="wolfstack-stats-card-premium wolfstack-animate-fadeIn" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
                 <UserGroupIcon className="w-6 h-6 text-white" />
               </div>
             </div>
@@ -200,7 +200,7 @@ const Employees = () => {
         <div className="wolfstack-stats-card-premium wolfstack-animate-fadeIn" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center shadow-lg">
                 <BriefcaseIcon className="w-6 h-6 text-white" />
               </div>
             </div>
@@ -383,7 +383,7 @@ const Employees = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-primary-600 flex items-center justify-center shadow-lg">
                             <span className="text-white font-bold wolfstack-text-small">
                               {employee.userId.fullName.charAt(0)}
                             </span>
@@ -462,7 +462,7 @@ const Employees = () => {
         {filteredAndSortedEmployees.length === 0 && (
           <div className="wolfstack-card-glass wolfstack-animate-fadeIn" style={{ animationDelay: '0.7s' }}>
             <div className="p-12 text-center">
-              <div className="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 rounded-full flex items-center justify-center mb-6 shadow-lg">
+              <div className="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 via-primary-600 to-accent-700 rounded-full flex items-center justify-center mb-6 shadow-lg">
                 <UserPlusIcon className="h-12 w-12 text-white" />
               </div>
               <h3 className="wolfstack-heading-2 text-gray-900 dark:text-gray-100 mb-2">

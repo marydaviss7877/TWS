@@ -504,7 +504,7 @@ const ChartOfAccounts = () => {
       asset: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
       liability: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
       equity: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
-      revenue: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
+      revenue: 'bg-accent-100 text-accent-800 dark:bg-accent-900/20 dark:text-accent-400',
       expense: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
     };
     return colors[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
@@ -666,7 +666,7 @@ const ChartOfAccounts = () => {
             )}
             
             {account.projectSpecific && (
-              <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">
+              <span className="text-xs text-accent-600 dark:text-accent-400 bg-accent-50 dark:bg-accent-900/20 px-2 py-1 rounded">
                 Project
               </span>
             )}
@@ -704,7 +704,7 @@ const ChartOfAccounts = () => {
                 });
                 setShowForm(true);
               }}
-              className="p-2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all duration-200"
+              className="p-2 text-gray-400 dark:text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-all duration-200"
             >
               <PencilIcon className="h-4 w-4" />
             </button>
@@ -820,8 +820,8 @@ const ChartOfAccounts = () => {
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-xl flex items-center justify-center">
-                <CogIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              <div className="w-12 h-12 bg-accent-50 dark:bg-accent-900/20 rounded-xl flex items-center justify-center">
+                <CogIcon className="w-6 h-6 text-accent-600 dark:text-accent-400" />
               </div>
             </div>
             <div className="ml-4">
@@ -853,7 +853,7 @@ const ChartOfAccounts = () => {
       <div className="glass-card-premium">
         <div className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
           <h2 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white flex items-center">
-            <MagnifyingGlassIcon className="h-5 w-5 mr-2 text-indigo-600 dark:text-indigo-400" />
+            <MagnifyingGlassIcon className="h-5 w-5 mr-2 text-primary-600 dark:text-primary-400" />
             Search & Filter
           </h2>
         </div>

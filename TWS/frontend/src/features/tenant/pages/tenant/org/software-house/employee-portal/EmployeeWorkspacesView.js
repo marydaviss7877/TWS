@@ -94,7 +94,7 @@ const EmployeeWorkspacesView = ({ tenantSlug }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="tws-loading-pulse rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="tws-loading-pulse rounded-full h-12 w-12 border-b-2 border-accent-600"></div>
       </div>
     );
   }
@@ -115,13 +115,13 @@ const EmployeeWorkspacesView = ({ tenantSlug }) => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <UserIcon className="h-6 w-6 text-purple-600" />
+            <UserIcon className="h-6 w-6 text-accent-600" />
             <h3 className="text-lg font-semibold text-gray-900">Personal Workspace</h3>
           </div>
           {!personalWorkspace && (
             <button
               onClick={handleCreatePersonalWorkspace}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors"
             >
               <PlusIcon className="h-5 w-5" />
               <span>Create Personal Workspace</span>
@@ -161,7 +161,7 @@ const EmployeeWorkspacesView = ({ tenantSlug }) => {
             </p>
             <button
               onClick={handleCreatePersonalWorkspace}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors"
             >
               Create Personal Workspace
             </button>

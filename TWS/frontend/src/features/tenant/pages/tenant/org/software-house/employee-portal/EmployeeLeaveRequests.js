@@ -218,7 +218,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Leave Requests</h2>
           <button
             onClick={() => setShowRequestModal(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors"
           >
             <PlusIcon className="h-5 w-5" />
             <span>Request Leave</span>
@@ -247,7 +247,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Personal Leave</h3>
-            <CalendarIcon className="h-6 w-6 text-purple-600" />
+            <CalendarIcon className="h-6 w-6 text-accent-600" />
           </div>
           <p className="text-3xl font-bold text-gray-900 dark:text-white">{leaveBalance.personal}</p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">days remaining · policy: {policyBalance.personal}</p>
@@ -319,7 +319,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-500"
                 >
                   <option value="annual">Annual Leave</option>
                   <option value="sick">Sick Leave</option>
@@ -333,7 +333,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
                   type="date"
                   value={formData.startDate}
                   onChange={(e) => handleDateChange('startDate', e.target.value)}
-                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-500"
                 />
               </div>
 
@@ -344,7 +344,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
                   value={formData.endDate}
                   onChange={(e) => handleDateChange('endDate', e.target.value)}
                   min={formData.startDate}
-                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-500"
                 />
               </div>
 
@@ -367,7 +367,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                   rows={3}
-                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-500"
                   placeholder="Please provide a reason for your leave request"
                 />
               </div>
@@ -391,7 +391,7 @@ const EmployeeLeaveRequests = ({ tenantSlug }) => {
               </button>
               <button
                 onClick={handleSubmitRequest}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className="px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700"
               >
                 Submit Request
               </button>

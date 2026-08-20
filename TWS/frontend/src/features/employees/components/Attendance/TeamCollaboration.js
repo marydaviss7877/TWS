@@ -53,7 +53,7 @@ const TeamCollaboration = () => {
       case 'online': return <div className="w-3 h-3 bg-green-500 rounded-full"></div>;
       case 'busy': return <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>;
       case 'away': return <div className="w-3 h-3 bg-gray-400 rounded-full"></div>;
-      case 'focus': return <div className="w-3 h-3 bg-purple-500 rounded-full"></div>;
+      case 'focus': return <div className="w-3 h-3 bg-accent-500 rounded-full"></div>;
       default: return <div className="w-3 h-3 bg-gray-400 rounded-full"></div>;
     }
   };
@@ -72,7 +72,7 @@ const TeamCollaboration = () => {
       case 'online': return 'bg-green-100 text-green-800';
       case 'busy': return 'bg-yellow-100 text-yellow-800';
       case 'away': return 'bg-gray-100 text-gray-800';
-      case 'focus': return 'bg-purple-100 text-purple-800';
+      case 'focus': return 'bg-accent-100 text-accent-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -97,7 +97,7 @@ const TeamCollaboration = () => {
 
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
           <div className="flex items-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center">
               <SparklesIcon className="h-6 w-6 text-white" />
             </div>
             <div className="ml-4">
@@ -137,7 +137,7 @@ const TeamCollaboration = () => {
               <div key={index} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-xl">
                 <div className="flex items-center">
                   <div className="relative">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-accent-600 flex items-center justify-center text-white font-bold">
                       {member.name.charAt(0)}
                     </div>
                     {getStatusIcon(member.status)}

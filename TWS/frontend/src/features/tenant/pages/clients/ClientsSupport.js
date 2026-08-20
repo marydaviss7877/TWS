@@ -342,7 +342,7 @@ const ClientsSupport = () => {
       label: 'Total Tickets', 
       value: stats.totalTickets.toString(), 
       icon: TicketIcon, 
-      iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+      iconBg: 'bg-gradient-to-br from-blue-500 to-primary-600',
       change: '+15%'
     },
     { 
@@ -363,7 +363,7 @@ const ClientsSupport = () => {
       label: 'Avg. Resolution Time', 
       value: stats.averageResolutionTime + 'h', 
       icon: ClockIcon, 
-      iconBg: 'bg-gradient-to-br from-purple-500 to-pink-600',
+      iconBg: 'bg-gradient-to-br from-accent-500 to-pink-600',
       change: '-2h'
     }
   ];
@@ -459,7 +459,7 @@ const ClientsSupport = () => {
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">This Week</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.thisWeek}</p>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-primary-600 rounded-xl flex items-center justify-center">
               <CalendarIcon className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -519,7 +519,7 @@ const ClientsSupport = () => {
                 <tr key={ticket._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-primary-600 rounded-lg flex items-center justify-center">
                         <TicketIcon className="w-5 h-5 text-white" />
                       </div>
                       <div className="ml-4">

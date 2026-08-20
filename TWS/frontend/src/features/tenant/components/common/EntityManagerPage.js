@@ -198,7 +198,7 @@ const EntityManagerPage = ({
   const renderField = (field) => {
     const value = formData[field.name] || '';
     const error = formErrors[field.name];
-    const fieldClassName = `block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+    const fieldClassName = `block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${
       error ? 'border-red-300' : ''
     }`;
 
@@ -254,7 +254,7 @@ const EntityManagerPage = ({
               name={field.name}
               checked={!!value}
               onChange={handleInputChange}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <label className="ml-2 block text-sm text-gray-700">
               {field.label} {field.required && <span className="text-red-500">*</span>}
@@ -352,7 +352,7 @@ const EntityManagerPage = ({
         <motion.h1
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2"
+          className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-accent-600 to-primary-600 bg-clip-text text-transparent mb-2"
         >
           {title}
         </motion.h1>
@@ -383,7 +383,7 @@ const EntityManagerPage = ({
           whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => initializeForm()}
-          className="ml-4 inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-lg shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+          className="ml-4 inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-lg shadow-lg text-white bg-gradient-to-r from-blue-600 to-primary-600 hover:from-blue-700 hover:to-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
           Add New
@@ -510,7 +510,7 @@ const EntityManagerPage = ({
               <motion.h3
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-6"
+                className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-primary-600 bg-clip-text text-transparent mb-6"
               >
                 {editingEntity ? `Edit ${title}` : `Create New ${title}`}
               </motion.h3>
@@ -536,7 +536,7 @@ const EntityManagerPage = ({
                     type="submit"
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
-                    className="px-6 py-3 border border-transparent rounded-lg shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all"
+                    className="px-6 py-3 border border-transparent rounded-lg shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-primary-600 hover:from-blue-700 hover:to-primary-700 transition-all"
                   >
                     {editingEntity ? 'Update' : 'Create'}
                   </motion.button>

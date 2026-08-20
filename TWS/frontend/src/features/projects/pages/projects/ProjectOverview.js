@@ -110,7 +110,7 @@ const ProjectOverview = () => {
       value: metrics.totalProjects, 
       change: '+3 this month',
       icon: FolderIcon, 
-      iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+      iconBg: 'bg-gradient-to-br from-blue-500 to-primary-600',
       trend: 'up'
     },
     { 
@@ -126,7 +126,7 @@ const ProjectOverview = () => {
       value: metrics.totalTeamMembers, 
       change: `${metrics.utilization}% utilized`,
       icon: UsersIcon, 
-      iconBg: 'bg-gradient-to-br from-purple-500 to-pink-600'
+      iconBg: 'bg-gradient-to-br from-accent-500 to-pink-600'
     },
     { 
       label: 'Total Budget', 

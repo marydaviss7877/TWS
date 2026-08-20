@@ -12,12 +12,12 @@ import {
 import { clientPortalApi } from './clientPortalApi';
 
 const APP_GRADIENTS = {
-  projects: 'from-indigo-500 to-violet-600',
+  projects: 'from-primary-500 to-accent-600',
   invoices: 'from-emerald-500 to-teal-600',
   documents: 'from-blue-500 to-cyan-600',
   contact: 'from-amber-500 to-orange-600',
   company: 'from-fuchsia-500 to-pink-600',
-  timesheets: 'from-sky-500 to-indigo-600',
+  timesheets: 'from-sky-500 to-primary-600',
 };
 
 const AppCard = ({ to, icon: Icon, title, description, badge, gradient }) => (
@@ -34,7 +34,7 @@ const AppCard = ({ to, icon: Icon, title, description, badge, gradient }) => (
     </div>
     <div className="flex justify-center w-full">
       {badge ? (
-        <span className="text-[10px] px-2 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+        <span className="text-[10px] px-2 py-1 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
           {badge}
         </span>
       ) : null}
@@ -130,7 +130,7 @@ export const ClientPortalLauncher = () => {
         </p>
         <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
           Welcome to{' '}
-          <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-primary-600 via-accent-600 to-pink-500 bg-clip-text text-transparent">
             Client Portal
           </span>
         </h1>
@@ -146,7 +146,7 @@ export const ClientPortalLauncher = () => {
           placeholder="Search client apps…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/70 backdrop-blur-sm py-3.5 pr-4 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm outline-none transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:shadow-lg"
+          className="w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/70 backdrop-blur-sm py-3.5 pr-4 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-sm outline-none transition-all duration-200 focus:ring-2 focus:ring-primary-500 focus:shadow-lg"
           style={{ paddingLeft: '3.25rem' }}
         />
       </div>

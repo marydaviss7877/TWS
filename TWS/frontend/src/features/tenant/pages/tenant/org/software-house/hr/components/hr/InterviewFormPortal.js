@@ -485,7 +485,7 @@ const InterviewFormPortal = () => {
             const now = new Date();
             const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
             return interviewDate >= now && interviewDate <= weekFromNow;
-          }).length, icon: CalendarIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' },
+          }).length, icon: CalendarIcon, iconBg: 'bg-accent-50 dark:bg-accent-900/20', iconColor: 'text-accent-600 dark:text-accent-400' },
           { label: 'Total Interviews', value: interviews.length, icon: UserIcon, iconBg: 'bg-gray-100 dark:bg-gray-800', iconColor: 'text-gray-600 dark:text-gray-400' }
         ].map((stat, index) => (
           <div key={index} className="glass-card-premium p-6 hover-glow">

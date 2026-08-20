@@ -53,50 +53,53 @@ svg.tws-loading-pulse {
 
 /* Premium Modern Design System */
 :root {
-  /* Brand Foundation - Premium enterprise software house */
-  --wolfstack-primary: #103D67;
-  --wolfstack-primary-dark: #0C3157;
+  /* Brand Foundation - Premium enterprise software house
+     Sourced from frontend/src/design/tokens.js via tokens.generated.css
+     (imported in index.js before this file). Never hand-edit these hex
+     values here — edit tokens.js and they propagate everywhere. */
+  --wolfstack-primary: var(--color-navy-500);
+  --wolfstack-primary-dark: var(--color-navy-600);
   --wolfstack-primary-light: #1B507E;
-  --wolfstack-primary-50: #EEF6FF;
-  --wolfstack-primary-100: #DFEEFF;
-  --wolfstack-primary-200: #C4DDFF;
-  --wolfstack-primary-300: #9FC1F7;
-  --wolfstack-primary-400: #6D93DC;
-  --wolfstack-primary-500: #103D67;
-  --wolfstack-primary-600: #0C3157;
-  --wolfstack-primary-700: #0A2746;
-  --wolfstack-primary-800: #081F3A;
-  --wolfstack-primary-900: #061A2D;
- 
+  --wolfstack-primary-50: var(--color-navy-50);
+  --wolfstack-primary-100: var(--color-navy-100);
+  --wolfstack-primary-200: var(--color-navy-200);
+  --wolfstack-primary-300: var(--color-navy-300);
+  --wolfstack-primary-400: var(--color-navy-400);
+  --wolfstack-primary-500: var(--color-navy-500);
+  --wolfstack-primary-600: var(--color-navy-600);
+  --wolfstack-primary-700: var(--color-navy-700);
+  --wolfstack-primary-800: var(--color-navy-800);
+  --wolfstack-primary-900: var(--color-navy-900);
+
   /* Secondary Colors - Trust and delivery confidence */
-  --wolfstack-secondary: #10B981;
+  --wolfstack-secondary: var(--color-green-500);
   --wolfstack-secondary-dark: #0B8F66;
-  --wolfstack-secondary-light: #34D399;
-  --wolfstack-secondary-50: #ECFDF5;
-  --wolfstack-secondary-100: #D1FAE5;
-  --wolfstack-secondary-200: #A7F3D0;
-  --wolfstack-secondary-300: #6EE7B7;
-  --wolfstack-secondary-400: #34D399;
-  --wolfstack-secondary-500: #10B981;
-  --wolfstack-secondary-600: #0A9B6D;
-  --wolfstack-secondary-700: #087E59;
-  --wolfstack-secondary-800: #066A4D;
-  --wolfstack-secondary-900: #064E3B;
- 
+  --wolfstack-secondary-light: var(--color-green-400);
+  --wolfstack-secondary-50: var(--color-green-50);
+  --wolfstack-secondary-100: var(--color-green-100);
+  --wolfstack-secondary-200: var(--color-green-200);
+  --wolfstack-secondary-300: var(--color-green-300);
+  --wolfstack-secondary-400: var(--color-green-400);
+  --wolfstack-secondary-500: var(--color-green-500);
+  --wolfstack-secondary-600: var(--color-green-600);
+  --wolfstack-secondary-700: var(--color-green-700);
+  --wolfstack-secondary-800: var(--color-green-800);
+  --wolfstack-secondary-900: var(--color-green-900);
+
   /* Accent Colors - Brand energy */
-  --wolfstack-accent: #F04E25;
-  --wolfstack-accent-dark: #D8431B;
-  --wolfstack-accent-light: #FF7A5B;
-  --wolfstack-accent-50: #FFF1EE;
-  --wolfstack-accent-100: #FFE0D8;
-  --wolfstack-accent-200: #FFC3B0;
-  --wolfstack-accent-300: #FF9B7F;
-  --wolfstack-accent-400: #FF7A5B;
-  --wolfstack-accent-500: #F04E25;
-  --wolfstack-accent-600: #D8431B;
-  --wolfstack-accent-700: #B83515;
-  --wolfstack-accent-800: #962A12;
-  --wolfstack-accent-900: #731F10;
+  --wolfstack-accent: var(--color-orange-500);
+  --wolfstack-accent-dark: var(--color-orange-600);
+  --wolfstack-accent-light: var(--color-orange-400);
+  --wolfstack-accent-50: var(--color-orange-50);
+  --wolfstack-accent-100: var(--color-orange-100);
+  --wolfstack-accent-200: var(--color-orange-200);
+  --wolfstack-accent-300: var(--color-orange-300);
+  --wolfstack-accent-400: var(--color-orange-400);
+  --wolfstack-accent-500: var(--color-orange-500);
+  --wolfstack-accent-600: var(--color-orange-600);
+  --wolfstack-accent-700: var(--color-orange-700);
+  --wolfstack-accent-800: var(--color-orange-800);
+  --wolfstack-accent-900: var(--color-orange-900);
 
   /* Neutral Colors - Sophisticated Grays */
   --wolfstack-gray-50: #FAFAFA;

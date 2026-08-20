@@ -185,13 +185,13 @@ const SimpleAdminCheckInOut = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-primary-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-accent-600 bg-clip-text text-transparent">
                 Admin Check-In/Out
               </h1>
               <p className="mt-2 text-lg text-gray-600 dark:text-gray-300">
@@ -205,7 +205,7 @@ const SimpleAdminCheckInOut = () => {
                   {adminId || 'Not Set'}
                 </div>
               </div>
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-accent-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <IdentificationIcon className="h-8 w-8 text-white" />
               </div>
             </div>
@@ -224,12 +224,12 @@ const SimpleAdminCheckInOut = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
                       activeTab === tab.id
-                        ? 'border-purple-500 text-purple-600'
+                        ? 'border-accent-500 text-accent-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
                     <Icon className={`-ml-0.5 mr-2 h-5 w-5 ${
-                      activeTab === tab.id ? 'text-purple-500' : 'text-gray-400 group-hover:text-gray-500'
+                      activeTab === tab.id ? 'text-accent-500' : 'text-gray-400 group-hover:text-gray-500'
                     }`} />
                     {tab.name}
                   </button>
@@ -247,7 +247,7 @@ const SimpleAdminCheckInOut = () => {
               {/* Admin Check-in/Out Card */}
               <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8">
                 <div className="text-center">
-                  <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 mb-6 shadow-lg">
+                  <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gradient-to-br from-accent-500 to-pink-600 mb-6 shadow-lg">
                     <ClockIcon className="h-10 w-10 text-white" />
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -285,7 +285,7 @@ const SimpleAdminCheckInOut = () => {
                       <button
                         onClick={handleCheckIn}
                         disabled={loading || !adminId}
-                        className="inline-flex items-center px-12 py-4 border border-transparent text-lg font-medium rounded-2xl shadow-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
+                        className="inline-flex items-center px-12 py-4 border border-transparent text-lg font-medium rounded-2xl shadow-lg text-white bg-gradient-to-r from-accent-600 to-pink-600 hover:from-accent-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
                       >
                         {loading ? (
                           <div className="tws-loading-pulse rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
@@ -362,7 +362,7 @@ const SimpleAdminCheckInOut = () => {
               {/* Current Status */}
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                  <CalendarIcon className="h-5 w-5 mr-2 text-purple-600" />
+                  <CalendarIcon className="h-5 w-5 mr-2 text-accent-600" />
                   Current Status
                 </h3>
                 <div className="text-center">
@@ -485,7 +485,7 @@ const SimpleAdminCheckInOut = () => {
                   value={adminId}
                   onChange={(e) => setAdminId(e.target.value)}
                   placeholder="Enter your Admin ID"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500"
                 />
               </div>
               
@@ -505,7 +505,7 @@ const SimpleAdminCheckInOut = () => {
                       toast.error('Please enter a valid Admin ID');
                     }
                   }}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                  className="px-4 py-2 bg-accent-600 text-white rounded-md hover:bg-accent-700"
                 >
                   Save
                 </button>

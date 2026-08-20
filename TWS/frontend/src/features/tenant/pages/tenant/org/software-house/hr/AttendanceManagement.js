@@ -32,7 +32,7 @@ const STATUS_META = {
   present: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
   absent: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
   late: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  'work-from-home': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+  'work-from-home': 'bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300',
   'on-leave': 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300',
   default: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
 };
@@ -363,8 +363,8 @@ const AttendanceManagement = () => {
           { label: 'Present', value: kpis.present, icon: CheckCircleIcon, cls: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
           { label: 'Absent', value: kpis.absent, icon: XCircleIcon, cls: 'bg-rose-50 dark:bg-rose-900/20', iconColor: 'text-rose-600 dark:text-rose-400' },
           { label: 'Late', value: kpis.late, icon: ClockIcon, cls: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600 dark:text-amber-400' },
-          { label: 'Checked-In Now', value: kpis.checkedInNow, icon: BriefcaseIcon, cls: 'bg-indigo-50 dark:bg-indigo-900/20', iconColor: 'text-indigo-600 dark:text-indigo-400' },
-          { label: 'Corrections Pending', value: kpis.correctionPending, icon: ExclamationTriangleIcon, cls: 'bg-violet-50 dark:bg-violet-900/20', iconColor: 'text-violet-600 dark:text-violet-400' },
+          { label: 'Checked-In Now', value: kpis.checkedInNow, icon: BriefcaseIcon, cls: 'bg-primary-50 dark:bg-primary-900/20', iconColor: 'text-primary-600 dark:text-primary-400' },
+          { label: 'Corrections Pending', value: kpis.correctionPending, icon: ExclamationTriangleIcon, cls: 'bg-accent-50 dark:bg-accent-900/20', iconColor: 'text-accent-600 dark:text-accent-400' },
           { label: 'Attendance Rate', value: `${kpis.attendanceRate}%`, icon: CalendarIcon, cls: 'bg-cyan-50 dark:bg-cyan-900/20', iconColor: 'text-cyan-600 dark:text-cyan-400' }
         ].map((card) => (
           <div key={card.label} className="glass-card-premium p-4 hover-lift">
@@ -470,7 +470,7 @@ const AttendanceManagement = () => {
 
       <div className="glass-card-premium p-4">
         <div className="flex items-center gap-2 mb-3">
-          <button type="button" onClick={() => runBulk('approve_corrections')} className="text-xs px-2 py-1 rounded bg-violet-600 text-white hover:bg-violet-700">Bulk Approve Corrections</button>
+          <button type="button" onClick={() => runBulk('approve_corrections')} className="text-xs px-2 py-1 rounded bg-accent-600 text-white hover:bg-accent-700">Bulk Approve Corrections</button>
           <button type="button" onClick={() => runBulk('mark_absent')} className="text-xs px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700">Bulk Mark Absent</button>
           <button type="button" onClick={() => runBulk('mark_present')} className="text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700">Bulk Mark Present</button>
         </div>
@@ -505,11 +505,11 @@ const AttendanceManagement = () => {
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">{record.checkOut?.timestamp ? new Date(record.checkOut.timestamp).toLocaleTimeString() : '-'}</td>
                     <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">{record.durationMinutes != null ? (record.durationMinutes / 60).toFixed(2) : '-'}</td>
                     <td className="px-3 py-2">
-                      {edited ? <span className="px-2 py-1 rounded text-[11px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">Edited</span> : <span className="px-2 py-1 rounded text-[11px] bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">Original</span>}
+                      {edited ? <span className="px-2 py-1 rounded text-[11px] bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-300">Edited</span> : <span className="px-2 py-1 rounded text-[11px] bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">Original</span>}
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex flex-wrap gap-1.5">
-                        <button type="button" onClick={() => openEditPunch(record)} className="text-xs px-2 py-1 rounded bg-purple-600 text-white hover:bg-purple-700 inline-flex items-center gap-1"><PencilSquareIcon className="w-3.5 h-3.5" />Edit Punch</button>
+                        <button type="button" onClick={() => openEditPunch(record)} className="text-xs px-2 py-1 rounded bg-accent-600 text-white hover:bg-accent-700 inline-flex items-center gap-1"><PencilSquareIcon className="w-3.5 h-3.5" />Edit Punch</button>
                         <button type="button" onClick={() => openDecisionModal('mark_absent', record)} className="text-xs px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700">Mark Absent</button>
                         <button type="button" onClick={() => openDecisionModal('request_correction', record)} className="text-xs px-2 py-1 rounded bg-amber-600 text-white hover:bg-amber-700">Request Correction</button>
                         <button type="button" onClick={() => openAudit(record)} className="text-xs px-2 py-1 rounded bg-slate-600 text-white hover:bg-slate-700">Audit Trail</button>

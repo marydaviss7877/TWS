@@ -483,7 +483,7 @@ const ProjectDashboard = () => {
               <div className="glass-card-premium rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-semibold font-heading text-gray-900 dark:text-white flex items-center gap-2">
-                    <RocketLaunchIcon className="w-5 h-5 text-violet-500" />
+                    <RocketLaunchIcon className="w-5 h-5 text-accent-500" />
                     Active Sprints
                   </h2>
                   <button
@@ -505,10 +505,10 @@ const ProjectDashboard = () => {
                             {fmtDate(sprint.startDate)} → {fmtDate(sprint.endDate)}
                           </p>
                           <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div className="h-full bg-violet-500 rounded-full" style={{ width: `${sprintPct}%` }} />
+                            <div className="h-full bg-accent-500 rounded-full" style={{ width: `${sprintPct}%` }} />
                           </div>
                         </div>
-                        <span className="text-sm font-bold text-violet-600 dark:text-violet-400 shrink-0">{Math.round(sprintPct)}%</span>
+                        <span className="text-sm font-bold text-accent-600 dark:text-accent-400 shrink-0">{Math.round(sprintPct)}%</span>
                       </div>
                     );
                   })}
@@ -596,7 +596,7 @@ const ProjectDashboard = () => {
             {(project?.description || project?.scope) && (
               <div className="glass-card-premium rounded-2xl p-6">
                 <h2 className="font-semibold font-heading text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-                  <DocumentTextIcon className="w-5 h-5 text-indigo-500" />
+                  <DocumentTextIcon className="w-5 h-5 text-primary-500" />
                   Project Scope
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
@@ -658,10 +658,10 @@ const ProjectDashboard = () => {
 
             <div className="space-y-4">
               <NavTile icon={UsersIcon} label="Resources" sub="Team & allocation"
-                accent="bg-violet-50 dark:bg-violet-900/20" iconColor="text-violet-600 dark:text-violet-400"
+                accent="bg-accent-50 dark:bg-accent-900/20" iconColor="text-accent-600 dark:text-accent-400"
                 onClick={() => navigate(`/${tenantSlug}/org/projects/${projectId}/team`)} />
               <NavTile icon={DocumentTextIcon} label="Deliverables" sub="Track deliverables"
-                accent="bg-indigo-50 dark:bg-indigo-900/20" iconColor="text-indigo-600 dark:text-indigo-400"
+                accent="bg-primary-50 dark:bg-primary-900/20" iconColor="text-primary-600 dark:text-primary-400"
                 onClick={() => navigate(`/${tenantSlug}/org/projects/deliverables?projectId=${projectId}`)} />
               <NavTile icon={ExclamationTriangleIcon} label="Change Requests" sub="Scope changes"
                 accent="bg-orange-50 dark:bg-orange-900/20" iconColor="text-orange-600 dark:text-orange-400"
@@ -721,10 +721,10 @@ const ProjectDashboard = () => {
 
           <div className="space-y-4">
             <NavTile icon={UsersIcon} label="Resources" sub="Team & allocation"
-              accent="bg-violet-50 dark:bg-violet-900/20" iconColor="text-violet-600 dark:text-violet-400"
+              accent="bg-accent-50 dark:bg-accent-900/20" iconColor="text-accent-600 dark:text-accent-400"
               onClick={() => navigate(`/${tenantSlug}/org/projects/${projectId}/team`)} />
             <NavTile icon={DocumentTextIcon} label="Deliverables" sub="Track deliverables"
-              accent="bg-indigo-50 dark:bg-indigo-900/20" iconColor="text-indigo-600 dark:text-indigo-400"
+              accent="bg-primary-50 dark:bg-primary-900/20" iconColor="text-primary-600 dark:text-primary-400"
               onClick={() => navigate(`/${tenantSlug}/org/projects/deliverables?projectId=${projectId}`)} />
             <NavTile icon={ExclamationTriangleIcon} label="Change Requests" sub="Scope changes"
               accent="bg-orange-50 dark:bg-orange-900/20" iconColor="text-orange-600 dark:text-orange-400"

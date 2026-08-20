@@ -145,7 +145,7 @@ const EmployeeRecordsView = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-accent-600 rounded-xl flex items-center justify-center mr-4">
             <UserGroupIcon className="h-6 w-6 text-white" />
           </div>
           <div>
@@ -270,7 +270,7 @@ const EmployeeRecordsView = () => {
                 <tr key={record._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-accent-600 rounded-full flex items-center justify-center mr-3">
                         <span className="text-white font-semibold text-sm">
                           {record.employeeName?.charAt(0) || 'U'}
                         </span>

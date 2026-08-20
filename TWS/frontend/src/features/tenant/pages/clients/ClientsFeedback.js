@@ -258,7 +258,7 @@ const ClientsFeedback = () => {
     switch (category) {
       case 'service_quality': return 'text-blue-600 dark:text-blue-400';
       case 'technical_expertise': return 'text-green-600 dark:text-green-400';
-      case 'communication': return 'text-purple-600 dark:text-purple-400';
+      case 'communication': return 'text-accent-600 dark:text-accent-400';
       case 'support': return 'text-orange-600 dark:text-orange-400';
       case 'value_for_money': return 'text-pink-600 dark:text-pink-400';
       default: return 'text-gray-600 dark:text-gray-400';
@@ -270,7 +270,7 @@ const ClientsFeedback = () => {
       label: 'Total Feedback', 
       value: stats.totalFeedback.toString(), 
       icon: ChatBubbleLeftRightIcon, 
-      iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+      iconBg: 'bg-gradient-to-br from-blue-500 to-primary-600',
       change: '+18%'
     },
     { 
@@ -387,7 +387,7 @@ const ClientsFeedback = () => {
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">This Month</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.thisMonth}</p>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-primary-600 rounded-xl flex items-center justify-center">
               <CalendarIcon className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -447,7 +447,7 @@ const ClientsFeedback = () => {
                 <tr key={item._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-primary-600 rounded-lg flex items-center justify-center">
                         <UserIcon className="w-5 h-5 text-white" />
                       </div>
                       <div className="ml-4">

@@ -215,7 +215,7 @@ const AttendanceCalendar = ({ userId, isAdmin = false }) => {
                 h-12 relative rounded-lg transition-all duration-200 flex flex-col items-center justify-center
                 ${attendance ? getStatusColor(attendance.status) : 'bg-gray-200 hover:bg-gray-300'}
                 ${isToday ? 'ring-2 ring-blue-500' : ''}
-                ${isSelected ? 'ring-2 ring-purple-500' : ''}
+                ${isSelected ? 'ring-2 ring-accent-500' : ''}
                 ${day > new Date() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
               `}
               disabled={day > new Date()}

@@ -164,7 +164,7 @@ const ModernAttendanceDashboard = () => {
         <div className="wolfstack-stats-card-premium wolfstack-animate-fadeIn" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
                 <UserGroupIcon className="w-6 h-6 text-white" />
               </div>
             </div>
@@ -203,7 +203,7 @@ const ModernAttendanceDashboard = () => {
         <div className="wolfstack-stats-card-premium wolfstack-animate-fadeIn" style={{ animationDelay: '0.4s' }}>
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center shadow-lg">
                 <ChartBarIcon className="w-6 h-6 text-white" />
               </div>
             </div>
@@ -294,7 +294,7 @@ const ModernAttendanceDashboard = () => {
               <div key={activity.id} className="wolfstack-card-glass-subtle p-4 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg mr-4">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-primary-600 flex items-center justify-center shadow-lg mr-4">
                       <span className="text-white font-bold wolfstack-text-small">
                         {(activity.employee?.fullName || activity.employee?.name || activity.employee?.email || activity.employee || '?').toString().split(' ').map(n => n[0]).join('')}
                       </span>
@@ -331,7 +331,7 @@ const ModernAttendanceDashboard = () => {
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <button className="wolfstack-card-glass-subtle p-6 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-200 text-left group">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
                 <ChartBarIcon className="h-6 w-6 text-white" />
               </div>
               <h3 className="wolfstack-text-body font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -353,7 +353,7 @@ const ModernAttendanceDashboard = () => {
               </p>
             </button>
             <button className="wolfstack-card-glass-subtle p-6 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-200 text-left group">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
                 <ShieldCheckIcon className="h-6 w-6 text-white" />
               </div>
               <h3 className="wolfstack-text-body font-semibold text-gray-900 dark:text-gray-100 mb-2">

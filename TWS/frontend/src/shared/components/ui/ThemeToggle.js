@@ -72,7 +72,7 @@ const ThemeToggle = ({ className = '', size = 'md', showLabel = false, shortcut 
         <MoonIcon
           className={`
             ${sizeClasses[size]}
-            text-indigo-500 dark:text-indigo-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-300
+            text-primary-500 dark:text-primary-400 group-hover:text-primary-600 dark:group-hover:text-primary-300
             absolute top-0 left-0
             ${transitionClass}
             ${isDarkMode ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-180 scale-0'}

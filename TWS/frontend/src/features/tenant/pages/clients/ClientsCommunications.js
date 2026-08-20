@@ -173,7 +173,7 @@ const ClientsCommunications = () => {
     switch (type) {
       case 'email': return 'text-blue-600 dark:text-blue-400';
       case 'call': return 'text-green-600 dark:text-green-400';
-      case 'meeting': return 'text-purple-600 dark:text-purple-400';
+      case 'meeting': return 'text-accent-600 dark:text-accent-400';
       default: return 'text-gray-600 dark:text-gray-400';
     }
   };
@@ -203,7 +203,7 @@ const ClientsCommunications = () => {
       label: 'Total Communications', 
       value: stats.totalCommunications.toLocaleString(), 
       icon: ChatBubbleLeftRightIcon, 
-      iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+      iconBg: 'bg-gradient-to-br from-blue-500 to-primary-600',
       change: '+12%'
     },
     { 
@@ -217,7 +217,7 @@ const ClientsCommunications = () => {
       label: 'Calls', 
       value: stats.calls.toLocaleString(), 
       icon: PhoneIcon, 
-      iconBg: 'bg-gradient-to-br from-purple-500 to-pink-600',
+      iconBg: 'bg-gradient-to-br from-accent-500 to-pink-600',
       change: '+15%'
     },
     { 
@@ -306,7 +306,7 @@ const ClientsCommunications = () => {
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">This Week</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.thisWeek}</p>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-primary-600 rounded-xl flex items-center justify-center">
               <CalendarIcon className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -330,7 +330,7 @@ const ClientsCommunications = () => {
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Response Rate</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.responseRate}%</p>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-pink-600 rounded-xl flex items-center justify-center">
               <ExclamationTriangleIcon className="w-6 h-6 text-white" />
             </div>
           </div>

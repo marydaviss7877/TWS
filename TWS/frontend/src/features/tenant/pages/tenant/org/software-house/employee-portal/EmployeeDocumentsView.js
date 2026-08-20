@@ -84,14 +84,14 @@ const EmployeeDocumentsView = ({ tenantSlug }) => {
   };
 
   const getDocumentTypeIcon = (type) => {
-    return <DocumentTextIcon className="h-6 w-6 text-purple-600" />;
+    return <DocumentTextIcon className="h-6 w-6 text-accent-600" />;
   };
 
   const getDocumentTypeColor = (type) => {
     const colors = {
       'contract': 'bg-blue-100 text-blue-800',
       'id': 'bg-green-100 text-green-800',
-      'certificate': 'bg-purple-100 text-purple-800',
+      'certificate': 'bg-accent-100 text-accent-800',
       'other': 'bg-gray-100 text-gray-800'
     };
     return colors[type] || colors.other;
@@ -108,7 +108,7 @@ const EmployeeDocumentsView = ({ tenantSlug }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="tws-loading-pulse rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <div className="tws-loading-pulse rounded-full h-8 w-8 border-b-2 border-accent-600"></div>
       </div>
     );
   }
@@ -122,7 +122,7 @@ const EmployeeDocumentsView = ({ tenantSlug }) => {
           <button
             type="button"
             onClick={() => navigate(`/${tenantSlug}/org/documents/new`)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-accent-600 hover:bg-accent-700 transition-colors"
           >
             <PlusIcon className="h-5 w-5" />
             Create document
@@ -141,7 +141,7 @@ const EmployeeDocumentsView = ({ tenantSlug }) => {
                 className="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 p-4 hover:shadow-md transition-shadow cursor-pointer text-left"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                  <div className="w-10 h-10 rounded-lg bg-accent-100 dark:bg-accent-900/30 flex items-center justify-center text-accent-600">
                     <PencilSquareIcon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -167,7 +167,7 @@ const EmployeeDocumentsView = ({ tenantSlug }) => {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           >
             <option value="all">All Documents</option>
             <option value="contract">Contracts</option>
@@ -219,7 +219,7 @@ const EmployeeDocumentsView = ({ tenantSlug }) => {
                   </button>
                   <button
                     onClick={() => downloadDocument(document)}
-                    className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors"
                   >
                     <ArrowDownTrayIcon className="h-4 w-4" />
                     <span>Download</span>

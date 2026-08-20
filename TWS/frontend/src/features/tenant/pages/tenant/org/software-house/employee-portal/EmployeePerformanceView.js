@@ -98,7 +98,7 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="tws-loading-pulse rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <div className="tws-loading-pulse rounded-full h-8 w-8 border-b-2 border-accent-600"></div>
       </div>
     );
   }
@@ -111,10 +111,10 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
       </div>
 
       {/* Overall Rating */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg shadow-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-accent-600 to-primary-600 rounded-lg shadow-lg p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-purple-100 mb-2">Overall Performance Rating</p>
+            <p className="text-accent-100 mb-2">Overall Performance Rating</p>
             <div className="flex items-center space-x-4">
               <div className={`px-4 py-2 rounded-lg ${getRatingColor(performance?.overallRating || 0)}`}>
                 <span className="text-3xl font-bold">{performance?.overallRating?.toFixed(1) || 'N/A'}</span>
@@ -127,14 +127,14 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
                     className={`h-6 w-6 ${
                       star <= Math.round(performance?.overallRating || 0)
                         ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-purple-200'
+                        : 'text-accent-200'
                     }`}
                   />
                 ))}
               </div>
             </div>
           </div>
-          <TrophyIcon className="h-16 w-16 text-purple-200" />
+          <TrophyIcon className="h-16 w-16 text-accent-200" />
         </div>
       </div>
 
@@ -165,7 +165,7 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
-                        className="bg-purple-600 h-2 rounded-full transition-all"
+                        className="bg-accent-600 h-2 rounded-full transition-all"
                         style={{ width: `${goal.progress || 0}%` }}
                       />
                     </div>
@@ -240,7 +240,7 @@ const EmployeePerformanceView = ({ tenantSlug }) => {
                 {competency.rating && (
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
-                      className="bg-purple-600 h-2 rounded-full"
+                      className="bg-accent-600 h-2 rounded-full"
                       style={{ width: `${(competency.rating / 5) * 100}%` }}
                     />
                   </div>

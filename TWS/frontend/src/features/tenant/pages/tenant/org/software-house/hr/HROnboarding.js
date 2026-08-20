@@ -50,7 +50,7 @@ const HROnboarding = () => {
     { label: 'New Hires This Month', value: stats.newHires.toString(), icon: UserPlusIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400' },
     { label: 'In Progress', value: stats.inProgress.toString(), icon: ClipboardDocumentCheckIcon, iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600 dark:text-amber-400' },
     { label: 'Completed', value: stats.completed.toString(), icon: CheckCircleIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
-    { label: 'Training Sessions', value: stats.trainingSessions.toString(), icon: AcademicCapIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' }
+    { label: 'Training Sessions', value: stats.trainingSessions.toString(), icon: AcademicCapIcon, iconBg: 'bg-accent-50 dark:bg-accent-900/20', iconColor: 'text-accent-600 dark:text-accent-400' }
   ];
 
   if (loading) {

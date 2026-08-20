@@ -97,7 +97,7 @@ const EntityFormModal = ({
   const renderField = (field) => {
     const value = formData[field.name] || '';
     const error = formErrors[field.name];
-    const fieldClassName = `block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+    const fieldClassName = `block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${
       error ? 'border-red-300' : ''
     }`;
 
@@ -151,7 +151,7 @@ const EntityFormModal = ({
               name={field.name}
               checked={!!value}
               onChange={handleInputChange}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <label className="ml-2 block text-sm text-gray-700">
               {field.label} {field.required && <span className="text-red-500">*</span>}
@@ -222,7 +222,7 @@ const EntityFormModal = ({
             <button
               type="submit"
               disabled={isSaving}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 flex items-center"
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 flex items-center"
             >
               {isSaving && (
                 <div className="tws-loading-pulse rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

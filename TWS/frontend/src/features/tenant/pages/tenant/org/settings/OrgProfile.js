@@ -46,7 +46,7 @@ const NAV = [
 const PLAN_CLS = {
   trial:        'bg-gray-100 dark:bg-gray-800 text-gray-500',
   starter:      'bg-blue-50  dark:bg-blue-900/20  text-blue-600  dark:text-blue-400',
-  growth:       'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400',
+  growth:       'bg-accent-50 dark:bg-accent-900/20 text-accent-600 dark:text-accent-400',
   professional: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
   enterprise:   'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
 };

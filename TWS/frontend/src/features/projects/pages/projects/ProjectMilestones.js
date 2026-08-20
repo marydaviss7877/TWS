@@ -168,7 +168,7 @@ const ProjectMilestones = () => {
         </div>
         <div className="glass-card-premium p-4 hover-glow">
           <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Avg Progress</p>
-          <p className="text-2xl font-bold text-purple-600">{stats.avgProgress}%</p>
+          <p className="text-2xl font-bold text-accent-600">{stats.avgProgress}%</p>
         </div>
       </div>
 

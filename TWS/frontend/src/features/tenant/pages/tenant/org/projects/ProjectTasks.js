@@ -1004,7 +1004,7 @@ const ProjectTasks = ({ scopeProjectId = null, defaultView = 'kanban', hideScope
   const totalTasks = Object.values(tasks).reduce((a, c) => a + c.length, 0);
   const columns = [
     { id: 'todo',         title: 'To Do',      color: 'from-slate-500 to-gray-600',    dot: 'bg-gray-400' },
-    { id: 'in_progress',  title: 'Started',    color: 'from-blue-500 to-indigo-600',   dot: 'bg-blue-500' },
+    { id: 'in_progress',  title: 'Started',    color: 'from-blue-500 to-primary-600',   dot: 'bg-blue-500' },
     { id: 'under_review', title: 'In Review',  color: 'from-amber-500 to-orange-500',  dot: 'bg-amber-500' },
     { id: 'completed',    title: 'Done',       color: 'from-emerald-500 to-green-600', dot: 'bg-emerald-500' },
   ];

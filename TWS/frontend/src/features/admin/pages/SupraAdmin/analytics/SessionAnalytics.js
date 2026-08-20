@@ -150,7 +150,7 @@ const SessionAnalytics = () => {
       <div className="glass-card-premium p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-pink-500 rounded-xl flex items-center justify-center">
               <ChartPieIcon className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -216,8 +216,8 @@ const SessionAnalytics = () => {
         
         <div className="glass-card p-6">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <ChartPieIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <div className="w-10 h-10 bg-accent-100 dark:bg-accent-900/30 rounded-lg flex items-center justify-center">
+              <ChartPieIcon className="w-6 h-6 text-accent-600 dark:text-accent-400" />
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Avg Duration</p>

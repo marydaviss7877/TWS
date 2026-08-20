@@ -76,7 +76,7 @@ const Templates = () => {
               <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Total Templates</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalTemplates}</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-primary-600 flex items-center justify-center">
               <DocumentDuplicateIcon className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -107,9 +107,9 @@ const Templates = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">Avg Duration</p>
-              <p className="text-2xl font-bold text-purple-600">{stats.avgDuration}</p>
+              <p className="text-2xl font-bold text-accent-600">{stats.avgDuration}</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-500 to-pink-600 flex items-center justify-center">
               <ClockIcon className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -200,7 +200,7 @@ const Templates = () => {
                   </div>
                   <div className="glass-card p-3 text-center">
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Duration</p>
-                    <p className="text-sm font-bold text-purple-600">{template.estimatedDuration.split(' ')[0]}w</p>
+                    <p className="text-sm font-bold text-accent-600">{template.estimatedDuration.split(' ')[0]}w</p>
                   </div>
                   <div className="glass-card p-3 text-center">
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Used</p>

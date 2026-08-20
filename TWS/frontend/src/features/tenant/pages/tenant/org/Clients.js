@@ -54,8 +54,8 @@ const ClientMetrics = ({ metrics }) => {
         {/* Total Clients */}
         <div className="glass-card p-6 hover-scale group">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
-              <BuildingOfficeIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+            <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl">
+              <BuildingOfficeIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
             </div>
             <span className="text-2xl font-bold text-gray-900 dark:text-white">
               {metrics.total || 0}
@@ -113,8 +113,8 @@ const ClientMetrics = ({ metrics }) => {
         {/* Projects */}
         <div className="glass-card p-5 hover-scale">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <BriefcaseIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <div className="p-2 bg-accent-100 dark:bg-accent-900/30 rounded-lg">
+              <BriefcaseIcon className="h-5 w-5 text-accent-600 dark:text-accent-400" />
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Projects</p>
@@ -126,8 +126,8 @@ const ClientMetrics = ({ metrics }) => {
         {/* Portal Enabled */}
         <div className="glass-card p-5 hover-scale">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-              <ArrowTopRightOnSquareIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+              <ArrowTopRightOnSquareIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Portal Enabled</p>
@@ -178,11 +178,11 @@ const ClientCard = ({ client, onEdit, onDelete, onView, deletingClientId }) => {
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-3 mb-2">
-            <div className="flex-shrink-0 w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center">
-              <BuildingOfficeIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+            <div className="flex-shrink-0 w-12 h-12 bg-primary-50 dark:bg-primary-900/20 rounded-xl flex items-center justify-center">
+              <BuildingOfficeIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                 {client.name}
               </h3>
               {client.company?.name && (
@@ -197,7 +197,7 @@ const ClientCard = ({ client, onEdit, onDelete, onView, deletingClientId }) => {
           {onView && (
             <button
               onClick={() => onView(client)}
-              className="p-2 glass-button hover-scale text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+              className="p-2 glass-button hover-scale text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
               title="View details"
             >
               <EyeIcon className="h-4 w-4" />
@@ -229,33 +229,33 @@ const ClientCard = ({ client, onEdit, onDelete, onView, deletingClientId }) => {
       <div className="space-y-2 mb-4">
         {client.contact?.primary?.email && (
           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-            <EnvelopeIcon className="h-4 w-4 mr-2 flex-shrink-0 text-indigo-500" />
+            <EnvelopeIcon className="h-4 w-4 mr-2 flex-shrink-0 text-primary-500" />
             <span className="truncate">{client.contact.primary.email}</span>
           </div>
         )}
         
         {client.contact?.primary?.phone && (
           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-            <PhoneIcon className="h-4 w-4 mr-2 flex-shrink-0 text-indigo-500" />
+            <PhoneIcon className="h-4 w-4 mr-2 flex-shrink-0 text-primary-500" />
             <span className="truncate">{client.contact.primary.phone}</span>
           </div>
         )}
 
         {client.contact?.primary?.title && (
           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-            <UserCircleIcon className="h-4 w-4 mr-2 flex-shrink-0 text-indigo-500" />
+            <UserCircleIcon className="h-4 w-4 mr-2 flex-shrink-0 text-primary-500" />
             <span className="truncate">{client.contact.primary.title}</span>
           </div>
         )}
 
         {client.company?.website && (
           <div className="flex items-center text-sm">
-            <GlobeAltIcon className="h-4 w-4 mr-2 flex-shrink-0 text-indigo-500" />
+            <GlobeAltIcon className="h-4 w-4 mr-2 flex-shrink-0 text-primary-500" />
             <a 
               href={client.company.website} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-indigo-600 dark:text-indigo-400 hover:underline truncate"
+              className="text-primary-600 dark:text-primary-400 hover:underline truncate"
             >
               {client.company.website.replace(/^https?:\/\//, '')}
             </a>
@@ -264,7 +264,7 @@ const ClientCard = ({ client, onEdit, onDelete, onView, deletingClientId }) => {
 
         {client.address && (client.address.city || client.address.country) && (
           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-            <MapPinIcon className="h-4 w-4 mr-2 flex-shrink-0 text-indigo-500" />
+            <MapPinIcon className="h-4 w-4 mr-2 flex-shrink-0 text-primary-500" />
             <span className="truncate">
               {[client.address.city, client.address.country].filter(Boolean).join(', ')}
             </span>
@@ -278,7 +278,7 @@ const ClientCard = ({ client, onEdit, onDelete, onView, deletingClientId }) => {
           {client.tags.slice(0, 3).map((tag, index) => (
             <span
               key={index}
-              className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800"
+              className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 border border-primary-200 dark:border-primary-800"
             >
               <TagIcon className="h-3 w-3 mr-1" />
               {tag}
@@ -688,7 +688,7 @@ const Clients = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center space-y-4">
-          <div className="tws-loading-pulse rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent"></div>
+          <div className="tws-loading-pulse rounded-full h-16 w-16 border-4 border-primary-600 border-t-transparent"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading clients...</p>
         </div>
       </div>
@@ -768,7 +768,7 @@ const Clients = () => {
                   onClick={() => setViewMode('grid')}
                   className={`p-2 rounded-lg transition-all ${
                     viewMode === 'grid'
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                   title="Grid view"
@@ -781,7 +781,7 @@ const Clients = () => {
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded-lg transition-all ${
                     viewMode === 'list'
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                   title="List view"
@@ -813,8 +813,8 @@ const Clients = () => {
             </div>
           ) : (
             <div className="glass-card-premium p-16 text-center wolfstack-animate-fadeIn">
-              <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-full w-24 h-24 mx-auto mb-8 flex items-center justify-center">
-                <BuildingOfficeIcon className="h-12 w-12 text-indigo-600 dark:text-indigo-400" />
+              <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-full w-24 h-24 mx-auto mb-8 flex items-center justify-center">
+                <BuildingOfficeIcon className="h-12 w-12 text-primary-600 dark:text-primary-400" />
               </div>
               <h3 className="text-2xl font-bold font-heading text-gray-900 dark:text-white mb-4">
                 No clients found
@@ -870,8 +870,8 @@ const Clients = () => {
                 {/* ── Section 1: Basic Information ── */}
                 <div className="glass-card p-6 space-y-4">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                      <BuildingOfficeIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                    <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                      <BuildingOfficeIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                     </div>
                     <div>
                       <h4 className="text-base font-bold font-heading text-gray-900 dark:text-white">Basic Information</h4>
@@ -912,8 +912,8 @@ const Clients = () => {
                 {/* ── Section 2: Company Information ── */}
                 <div className="glass-card p-6 space-y-4">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                      <BriefcaseIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    <div className="p-2 bg-accent-100 dark:bg-accent-900/30 rounded-lg">
+                      <BriefcaseIcon className="h-5 w-5 text-accent-600 dark:text-accent-400" />
                     </div>
                     <div>
                       <h4 className="text-base font-bold font-heading text-gray-900 dark:text-white">Company Information</h4>
@@ -1260,13 +1260,13 @@ const Clients = () => {
                         {formData.tags.map((tag, index) => (
                           <span
                             key={index}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 border border-primary-200 dark:border-primary-800"
                           >
                             {tag}
                             <button
                               type="button"
                               onClick={() => removeTag(tag)}
-                              className="text-indigo-500 hover:text-red-500 transition-colors"
+                              className="text-primary-500 hover:text-red-500 transition-colors"
                             >
                               <XCircleIcon className="h-3.5 w-3.5" />
                             </button>
@@ -1316,7 +1316,7 @@ const Clients = () => {
                   </button>
                   <button
                     type="submit"
-                    className="glass-button px-8 py-3 rounded-xl font-semibold hover-scale bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-0 shadow-lg shadow-indigo-500/25"
+                    className="glass-button px-8 py-3 rounded-xl font-semibold hover-scale bg-gradient-to-r from-primary-500 to-accent-600 text-white border-0 shadow-lg shadow-primary-500/25"
                   >
                     {editingClient ? 'Save Changes' : 'Create Client'}
                   </button>

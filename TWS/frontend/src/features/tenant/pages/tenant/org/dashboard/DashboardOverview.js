@@ -27,7 +27,7 @@ const STATUS_STYLES = {
   in_progress: 'bg-blue-100   dark:bg-blue-900/30   text-blue-700   dark:text-blue-300',
   pending:     'bg-amber-100  dark:bg-amber-900/30  text-amber-700  dark:text-amber-300',
   planning:    'bg-sky-100    dark:bg-sky-900/30    text-sky-700    dark:text-sky-300',
-  on_hold:     'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+  on_hold:     'bg-accent-100 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300',
   cancelled:   'bg-red-100    dark:bg-red-900/30    text-red-700    dark:text-red-300',
 };
 const badge = (s) => STATUS_STYLES[s] || 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400';
@@ -155,8 +155,8 @@ const DashboardOverview = () => {
         />
         <KpiCard
           label="Active Projects" value={overview.totalProjects}
-          icon={ClipboardDocumentListIcon} color="text-violet-600 dark:text-violet-400"
-          bg="bg-violet-50 dark:bg-violet-900/30"
+          icon={ClipboardDocumentListIcon} color="text-accent-600 dark:text-accent-400"
+          bg="bg-accent-50 dark:bg-accent-900/30"
         />
         <KpiCard
           label="Total Tasks"     value={overview.totalTasks}
@@ -169,7 +169,7 @@ const DashboardOverview = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ProgressCard
           title="Projects"  total={totalProjects} completed={completedProjects}
-          pct={projectPct}  breakdown={projectStatus} barColor="bg-violet-500"
+          pct={projectPct}  breakdown={projectStatus} barColor="bg-accent-500"
         />
         <ProgressCard
           title="Tasks"     total={totalTasks}    completed={completedTasks}

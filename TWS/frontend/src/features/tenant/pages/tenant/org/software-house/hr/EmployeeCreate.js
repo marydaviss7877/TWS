@@ -490,7 +490,7 @@ const EmployeeCreate = () => {
                   type="checkbox"
                   checked={sendPortalInvite}
                   onChange={(e) => setSendPortalInvite(e.target.checked)}
-                  className="mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  className="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
                 <span>
                   <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">Send portal invite email</span>

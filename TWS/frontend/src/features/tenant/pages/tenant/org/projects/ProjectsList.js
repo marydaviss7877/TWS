@@ -248,7 +248,7 @@ const ProjectsList = () => {
       'delayed': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
       'active': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
       'completed': 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
-      'planning': 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+      'planning': 'bg-accent-100 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300'
     };
     return statusColors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
   };

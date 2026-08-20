@@ -81,6 +81,7 @@
     "jest": "^30.4.2",
     "jest-axe": "^7.0.0",
     "jest-watch-typeahead": "^2.2.2",
+    "lint-staged": "^17.3.0",
     "prop-types": "^15.8.1",
     "source-map-explorer": "^2.5.3",
     "typescript": "^4.9.5",
@@ -88,6 +89,10 @@
     "webpack": "^5.102.0"
   },
   "scripts": {
+    "tokens": "node src/design/generate-tokens-css.js",
+    "prestart": "npm run tokens",
+    "prebuild": "npm run tokens",
+    "predev": "npm run tokens",
     "start": "craco start",
     "start:prod": "node server.js",
     "dev": "craco start",
@@ -100,6 +105,9 @@
     "eject": "react-scripts eject",
     "test:all": "npm run test",
     "analyze": "source-map-explorer 'build/static/js/*.js' --no-border-checks --gzip --html build/bundle-report.html"
+  },
+  "lint-staged": {
+    "*.{css,js,jsx}": "node scripts/check-brand-colors.js"
   },
   "eslintConfig": {
     "extends": [

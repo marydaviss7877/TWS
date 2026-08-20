@@ -50,7 +50,7 @@ const ChangeRequestAuditTrail = ({ changeRequestId }) => {
       case 'acknowledged':
         return <CheckCircleIcon className="w-5 h-5 text-yellow-500" />;
       case 'recommended':
-        return <CheckCircleIcon className="w-5 h-5 text-purple-500" />;
+        return <CheckCircleIcon className="w-5 h-5 text-accent-500" />;
       case 'decided':
         return <CheckCircleIcon className="w-5 h-5 text-green-500" />;
       default:

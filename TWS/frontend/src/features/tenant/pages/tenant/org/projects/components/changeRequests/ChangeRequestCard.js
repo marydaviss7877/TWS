@@ -23,7 +23,7 @@ const ChangeRequestCard = ({ changeRequest, onAcknowledge, onEvaluate, onView })
       case 'acknowledged':
         return `${baseClasses} bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300`;
       case 'evaluated':
-        return `${baseClasses} bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300`;
+        return `${baseClasses} bg-accent-100 text-accent-800 dark:bg-accent-900/30 dark:text-accent-300`;
       case 'accepted':
         return `${baseClasses} bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300`;
       case 'rejected':
@@ -82,32 +82,32 @@ const ChangeRequestCard = ({ changeRequest, onAcknowledge, onEvaluate, onView })
 
       {/* PM Evaluation Summary */}
       {changeRequest.status === 'evaluated' && (
-        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mb-4">
-          <h4 className="text-sm font-medium text-purple-800 dark:text-purple-300 mb-2">
+        <div className="bg-accent-50 dark:bg-accent-900/20 border border-accent-200 dark:border-accent-800 rounded-lg p-4 mb-4">
+          <h4 className="text-sm font-medium text-accent-800 dark:text-accent-300 mb-2">
             PM Evaluation:
           </h4>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
-              <span className="text-purple-600 dark:text-purple-400">Effort:</span>
-              <span className="ml-2 text-purple-800 dark:text-purple-300">
+              <span className="text-accent-600 dark:text-accent-400">Effort:</span>
+              <span className="ml-2 text-accent-800 dark:text-accent-300">
                 {changeRequest.effort_days || 0} days
               </span>
             </div>
             <div>
-              <span className="text-purple-600 dark:text-purple-400">Cost:</span>
-              <span className="ml-2 text-purple-800 dark:text-purple-300">
+              <span className="text-accent-600 dark:text-accent-400">Cost:</span>
+              <span className="ml-2 text-accent-800 dark:text-accent-300">
                 ${changeRequest.cost_impact || 0}
               </span>
             </div>
             <div>
-              <span className="text-purple-600 dark:text-purple-400">Date Impact:</span>
-              <span className="ml-2 text-purple-800 dark:text-purple-300">
+              <span className="text-accent-600 dark:text-accent-400">Date Impact:</span>
+              <span className="ml-2 text-accent-800 dark:text-accent-300">
                 +{changeRequest.date_impact_days || 0} days
               </span>
             </div>
           </div>
           {changeRequest.pm_notes && (
-            <p className="mt-2 text-sm text-purple-700 dark:text-purple-400">
+            <p className="mt-2 text-sm text-accent-700 dark:text-accent-400">
               {changeRequest.pm_notes}
             </p>
           )}
@@ -161,7 +161,7 @@ const ChangeRequestCard = ({ changeRequest, onAcknowledge, onEvaluate, onView })
         {canEvaluate && (
           <button
             onClick={() => onEvaluate(changeRequest)}
-            className="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md flex items-center space-x-1"
+            className="px-4 py-2 text-sm font-medium text-white bg-accent-600 hover:bg-accent-700 rounded-md flex items-center space-x-1"
           >
             <CheckCircleIcon className="w-4 h-4" />
             <span>Evaluate</span>

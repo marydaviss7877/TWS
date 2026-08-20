@@ -54,7 +54,7 @@ function actionBadgeClass(action) {
   if (a.includes('DELETE') || a.includes('FAIL')) return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200';
   if (a.includes('CREATE') || a.includes('POST')) return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200';
   if (a.includes('UPDATE') || a.includes('PUT') || a.includes('PATCH')) return 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100';
-  if (a.includes('EXPORT') || a.includes('IMPORT')) return 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200';
+  if (a.includes('EXPORT') || a.includes('IMPORT')) return 'bg-accent-100 text-accent-800 dark:bg-accent-900/40 dark:text-accent-200';
   if (a.includes('READ') || a === 'GET') return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200';
   return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
 }
@@ -239,8 +239,8 @@ export default function AuditLogPage() {
       {/* Compact title bar */}
       <div className="glass-card-premium rounded-xl px-3 py-2 sm:px-4 flex flex-wrap items-center justify-between gap-2 border border-gray-200/60 dark:border-gray-700/50 shadow-sm">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
-            <ClipboardDocumentListIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-900/20">
+            <ClipboardDocumentListIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
           </div>
           <div className="min-w-0">
             <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold truncate">
@@ -272,7 +272,7 @@ export default function AuditLogPage() {
             type="button"
             title="Export CSV"
             onClick={exportCsv}
-            className="inline-flex items-center justify-center h-8 gap-1 rounded-lg border border-indigo-200/80 bg-indigo-50/80 px-2 text-[11px] font-medium text-indigo-900 hover:bg-indigo-100/90 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-100 dark:hover:bg-indigo-900/60"
+            className="inline-flex items-center justify-center h-8 gap-1 rounded-lg border border-primary-200/80 bg-primary-50/80 px-2 text-[11px] font-medium text-primary-900 hover:bg-primary-100/90 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-100 dark:hover:bg-primary-900/60"
           >
             <ArrowDownTrayIcon className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">CSV</span>
@@ -440,7 +440,7 @@ export default function AuditLogPage() {
                   setCommittedSearch(filters.searchDraft.trim());
                   setPage(1);
                 }}
-                className="h-7 px-3 rounded-md bg-gray-900 text-white text-[11px] font-semibold hover:bg-gray-800 dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                className="h-7 px-3 rounded-md bg-gray-900 text-white text-[11px] font-semibold hover:bg-gray-800 dark:bg-primary-600 dark:hover:bg-primary-500"
               >
                 Run selection
               </button>
@@ -472,7 +472,7 @@ export default function AuditLogPage() {
                       <span className="tabular-nums text-gray-400">{row.count}</span>
                     </div>
                     <div className="h-1 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                      <div className="h-full rounded-full bg-indigo-500 dark:bg-indigo-400" style={{ width: `${pct}%` }} />
+                      <div className="h-full rounded-full bg-primary-500 dark:bg-primary-400" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 );
@@ -546,7 +546,7 @@ export default function AuditLogPage() {
                     return (
                       <tr
                         key={log._id}
-                        className="bg-white/80 dark:bg-gray-950/40 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/25 transition-colors"
+                        className="bg-white/80 dark:bg-gray-950/40 hover:bg-primary-50/60 dark:hover:bg-primary-950/25 transition-colors"
                       >
                         <td className="px-2 py-1 align-top whitespace-nowrap tabular-nums text-gray-800 dark:text-gray-200">
                           {log.createdAt ? new Date(log.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
@@ -588,7 +588,7 @@ export default function AuditLogPage() {
                             type="button"
                             title="Line detail"
                             onClick={() => setDetail(log)}
-                            className="inline-flex p-1 rounded-md text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100/80 dark:hover:bg-indigo-950/50"
+                            className="inline-flex p-1 rounded-md text-primary-600 dark:text-primary-400 hover:bg-primary-100/80 dark:hover:bg-primary-950/50"
                           >
                             <EyeIcon className="w-3.5 h-3.5" />
                           </button>

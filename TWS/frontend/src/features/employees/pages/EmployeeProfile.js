@@ -369,9 +369,9 @@ const EmployeeProfile = () => {
                               {skill.level}
                             </span>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              skill.category === 'technical' ? 'bg-purple-100 text-purple-800' :
+                              skill.category === 'technical' ? 'bg-accent-100 text-accent-800' :
                               skill.category === 'soft' ? 'bg-pink-100 text-pink-800' :
-                              skill.category === 'language' ? 'bg-indigo-100 text-indigo-800' :
+                              skill.category === 'language' ? 'bg-primary-100 text-primary-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
                               {skill.category}

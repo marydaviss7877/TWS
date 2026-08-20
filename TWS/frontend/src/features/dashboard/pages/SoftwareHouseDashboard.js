@@ -172,8 +172,8 @@ const SoftwareHouseDashboard = () => {
         />
         <KpiCard
           label="Active Sprints"     value={sprints.activeSprints}
-          icon={RocketLaunchIcon}    color="text-violet-600 dark:text-violet-400"
-          bg="bg-violet-50 dark:bg-violet-900/30"
+          icon={RocketLaunchIcon}    color="text-accent-600 dark:text-accent-400"
+          bg="bg-accent-50 dark:bg-accent-900/30"
           sub={avgVelocity != null && avgVelocity > 0 ? `Avg velocity: ${avgVelocity}` : undefined}
         />
         <KpiCard
@@ -256,7 +256,7 @@ const SoftwareHouseDashboard = () => {
                       <p className="text-xs text-gray-400 dark:text-gray-500 shrink-0 ml-2">{fmtDate(s.endDate)}</p>
                     </div>
                     <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-accent-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                     </div>
                     <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{done} / {total} pts</p>
                   </li>

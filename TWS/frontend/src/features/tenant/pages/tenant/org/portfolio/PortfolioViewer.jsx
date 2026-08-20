@@ -6,17 +6,19 @@ import {
 } from '@heroicons/react/24/outline';
 import { useTenantPermissions } from '../../../../contexts/TenantPermissionsContext';
 import * as portfolioApi from './portfolioApi';
+import { useTenantSlug } from '../../../../../../shared/hooks/useTenantSlug';
 
 function Media({ asset }) {
   if (!asset) return null;
   if (asset.kind === 'image') return <img src={asset.url} alt={asset.altText || ''} className="max-h-[680px] w-full rounded-2xl object-contain" />;
   if (asset.kind === 'video') return <video src={asset.url} controls preload="metadata" className="max-h-[680px] w-full rounded-2xl bg-black">Your browser does not support video playback.</video>;
   if (asset.kind === 'audio') return <audio src={asset.url} controls className="w-full" />;
-  return <a href={asset.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 text-sm font-semibold text-violet-700 hover:bg-violet-50 dark:border-slate-700 dark:text-violet-300 dark:hover:bg-violet-500/10"><DocumentIcon className="h-6 w-6" /> {asset.originalName}<ArrowTopRightOnSquareIcon className="ml-auto h-4 w-4" /></a>;
+  return <a href={asset.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 text-sm font-semibold text-accent-700 hover:bg-accent-50 dark:border-slate-700 dark:text-accent-300 dark:hover:bg-accent-500/10"><DocumentIcon className="h-6 w-6" /> {asset.originalName}<ArrowTopRightOnSquareIcon className="ml-auto h-4 w-4" /></a>;
 }
 
 export default function PortfolioViewer() {
-  const { tenantSlug, id } = useParams();
+  const { id } = useParams();
+  const tenantSlug = useTenantSlug();
   const navigate = useNavigate();
   const { hasModulePermission } = useTenantPermissions();
   const canWrite = hasModulePermission('portfolio', 'write') || hasModulePermission('portfolio', 'admin');
@@ -66,7 +68,7 @@ export default function PortfolioViewer() {
             <button type="button" disabled={busy} onClick={duplicate} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold dark:border-slate-700"><Square2StackIcon className="h-4 w-4" /> Duplicate</button>
             <button type="button" disabled={busy || item.status === 'archived'} onClick={archive} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold disabled:opacity-40 dark:border-slate-700"><ArchiveBoxIcon className="h-4 w-4" /> Archive</button>
             <button type="button" disabled={busy} onClick={remove} className="rounded-lg border border-red-200 p-2 text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10" aria-label="Delete portfolio item"><TrashIcon className="h-4 w-4" /></button>
-            <button type="button" onClick={() => navigate(`/${tenantSlug}/org/portfolio/${id}/edit`)} className="flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-700"><PencilSquareIcon className="h-4 w-4" /> Edit</button>
+            <button type="button" onClick={() => navigate(`/${tenantSlug}/org/portfolio/${id}/edit`)} className="flex items-center gap-2 rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white hover:bg-accent-700"><PencilSquareIcon className="h-4 w-4" /> Edit</button>
           </div>}
         </div>
       </header>
@@ -74,7 +76,7 @@ export default function PortfolioViewer() {
       <article className="mx-auto max-w-6xl px-5 py-10 md:py-16">
         <div className="mx-auto max-w-4xl text-center">
           <div className="mb-5 flex flex-wrap justify-center gap-2">
-            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">{item.type.replace('_', ' ')}</span>
+            <span className="rounded-full bg-accent-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-accent-700 dark:bg-accent-500/15 dark:text-accent-300">{item.type.replace('_', ' ')}</span>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">Internal · {item.visibility?.scope === 'organization' ? 'Organization' : 'Sales / GTM'}</span>
             {item.featured && <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">Featured</span>}
           </div>
@@ -87,24 +89,24 @@ export default function PortfolioViewer() {
 
         {(item.metrics || []).length > 0 && <section className="my-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {item.metrics.map(metric => <div key={metric._id} className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="text-3xl font-black text-violet-600 dark:text-violet-400">{metric.value}</div><div className="mt-2 font-semibold">{metric.label}</div><div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{metric.context}</div>
+            <div className="text-3xl font-black text-accent-600 dark:text-accent-400">{metric.value}</div><div className="mt-2 font-semibold">{metric.label}</div><div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{metric.context}</div>
           </div>)}
         </section>}
 
         <div className="mx-auto max-w-3xl space-y-12">
-          {[['Challenge', item.challenge], ['Approach', item.approach], ['Solution', item.solution], ['Outcome', item.outcome]].filter(([, body]) => body).map(([title, body]) => <section key={title}><p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-600 dark:text-violet-400">{title}</p><p className="mt-3 whitespace-pre-wrap text-lg leading-8 text-slate-700 dark:text-slate-300">{body}</p></section>)}
+          {[['Challenge', item.challenge], ['Approach', item.approach], ['Solution', item.solution], ['Outcome', item.outcome]].filter(([, body]) => body).map(([title, body]) => <section key={title}><p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-600 dark:text-accent-400">{title}</p><p className="mt-3 whitespace-pre-wrap text-lg leading-8 text-slate-700 dark:text-slate-300">{body}</p></section>)}
 
           {(item.blocks || []).map(block => {
             if (block.type === 'embed' && block.embed?.embedUrl) return <section key={block._id} className="overflow-hidden rounded-2xl border border-slate-200 bg-black dark:border-slate-800"><div className="aspect-video"><iframe src={block.embed.embedUrl} title={block.title || `${block.embed.provider} embed`} className="h-full w-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen /></div></section>;
             if (['image', 'video', 'document', 'gallery'].includes(block.type)) return <section key={block._id} className="grid gap-4">{(block.assetIds || []).map(assetId => <Media key={assetId} asset={assetMap.get(String(assetId))} />)}</section>;
             if (block.type === 'divider') return <hr key={block._id} className="border-slate-200 dark:border-slate-800" />;
-            if (block.type === 'cta' && block.cta?.url) return <a key={block._id} href={block.cta.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white">{block.cta.label || 'Open resource'}<ArrowTopRightOnSquareIcon className="h-4 w-4" /></a>;
+            if (block.type === 'cta' && block.cta?.url) return <a key={block._id} href={block.cta.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-accent-600 px-5 py-3 font-semibold text-white">{block.cta.label || 'Open resource'}<ArrowTopRightOnSquareIcon className="h-4 w-4" /></a>;
             if (block.type === 'heading') return <h2 key={block._id} className="text-2xl font-bold">{block.title || block.body}</h2>;
-            if (block.type === 'quote') return <blockquote key={block._id} className="border-l-4 border-violet-500 pl-6 text-xl italic leading-8 text-slate-700 dark:text-slate-300">{block.body}</blockquote>;
+            if (block.type === 'quote') return <blockquote key={block._id} className="border-l-4 border-accent-500 pl-6 text-xl italic leading-8 text-slate-700 dark:text-slate-300">{block.body}</blockquote>;
             return block.body ? <p key={block._id} className="whitespace-pre-wrap text-lg leading-8 text-slate-700 dark:text-slate-300">{block.body}</p> : null;
           })}
 
-          {item.testimonial?.quote && <blockquote className="rounded-3xl bg-violet-600 p-8 text-white"><p className="text-xl font-medium leading-8">“{item.testimonial.quote}”</p><footer className="mt-5 text-sm text-violet-100">{item.testimonial.author}{item.testimonial.role ? ` — ${item.testimonial.role}` : ''}</footer></blockquote>}
+          {item.testimonial?.quote && <blockquote className="rounded-3xl bg-accent-600 p-8 text-white"><p className="text-xl font-medium leading-8">“{item.testimonial.quote}”</p><footer className="mt-5 text-sm text-accent-100">{item.testimonial.author}{item.testimonial.role ? ` — ${item.testimonial.role}` : ''}</footer></blockquote>}
         </div>
 
         {(item.assets || []).filter(asset => String(asset._id) !== String(item.coverAssetId)).length > 0 && <section className="mt-16"><h2 className="mb-5 text-2xl font-bold">Project media</h2><div className="grid gap-5 md:grid-cols-2">{item.assets.filter(asset => String(asset._id) !== String(item.coverAssetId)).map(asset => <Media key={asset._id} asset={asset} />)}</div></section>}

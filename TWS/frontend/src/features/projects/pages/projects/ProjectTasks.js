@@ -91,7 +91,7 @@ const ProjectTasks = () => {
 
   const columns = [
     { id: 'todo', title: 'To Do', color: 'from-gray-500 to-gray-600', count: tasks.todo.length },
-    { id: 'in_progress', title: 'In Progress', color: 'from-blue-500 to-indigo-600', count: tasks.in_progress.length },
+    { id: 'in_progress', title: 'In Progress', color: 'from-blue-500 to-primary-600', count: tasks.in_progress.length },
     { id: 'under_review', title: 'Under Review', color: 'from-yellow-500 to-orange-600', count: tasks.under_review.length },
     { id: 'completed', title: 'Completed', color: 'from-green-500 to-emerald-600', count: tasks.completed.length }
   ];

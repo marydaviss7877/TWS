@@ -243,7 +243,7 @@ const UserProfile = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="tws-loading-pulse rounded-full h-12 w-12 border-4 border-indigo-200 border-t-indigo-600 mx-auto"></div>
+          <div className="tws-loading-pulse rounded-full h-12 w-12 border-4 border-primary-200 border-t-primary-600 mx-auto"></div>
           <p className="mt-4 text-gray-500 dark:text-gray-400">Loading profile...</p>
         </div>
       </div>
@@ -256,7 +256,7 @@ const UserProfile = () => {
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
     <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
               Account Profile
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your personal information and account settings</p>
@@ -264,7 +264,7 @@ const UserProfile = () => {
           {!editing && (
             <button
               onClick={() => setEditing(true)}
-              className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-md"
+              className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors shadow-md"
             >
               <PencilIcon className="h-5 w-5 mr-2" />
               Edit Profile
@@ -279,7 +279,7 @@ const UserProfile = () => {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <div className="text-center">
               <div className="relative inline-block">
-                <div className="relative h-32 w-32 rounded-full bg-indigo-600 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-white overflow-hidden">
+                <div className="relative h-32 w-32 rounded-full bg-primary-600 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-white overflow-hidden">
                   <span className="absolute inset-0 flex items-center justify-center" aria-hidden={!!profileImageBlobUrl}>
                     {profileData.fullName?.charAt(0) || user?.email?.charAt(0) || 'U'}
                   </span>
@@ -293,7 +293,7 @@ const UserProfile = () => {
                   ) : null}
                 </div>
                 {editing && (
-                  <label className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full cursor-pointer hover:bg-indigo-700 shadow-lg">
+                  <label className="absolute bottom-0 right-0 bg-primary-600 text-white p-2 rounded-full cursor-pointer hover:bg-primary-700 shadow-lg">
                     <CameraIcon className="h-5 w-5" />
                     <input
                       type="file"
@@ -307,7 +307,7 @@ const UserProfile = () => {
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-4">{profileData.fullName || 'User'}</h2>
               <p className="text-gray-600 dark:text-gray-400 mt-1">{profileData.email}</p>
               <div className="mt-3 space-y-2">
-                <span className="inline-block px-3 py-1 text-sm font-semibold bg-indigo-100 text-indigo-700 rounded-full">
+                <span className="inline-block px-3 py-1 text-sm font-semibold bg-primary-100 text-primary-700 rounded-full">
                   {user.role || 'Member'}
                 </span>
                 {user.roles && user.roles.length > 0 && (
@@ -332,7 +332,7 @@ const UserProfile = () => {
           {(hasModulePermission?.('users', 'admin') || hasModulePermission?.('settings', 'admin')) && (
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 mt-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                <ShieldCheckIcon className="h-5 w-5 mr-2 text-indigo-600" />
+                <ShieldCheckIcon className="h-5 w-5 mr-2 text-primary-600" />
                 Role Management
               </h3>
               <RoleAssignment
@@ -349,7 +349,7 @@ const UserProfile = () => {
           {/* Account Security */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 mt-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-              <ShieldCheckIcon className="h-5 w-5 mr-2 text-indigo-600" />
+              <ShieldCheckIcon className="h-5 w-5 mr-2 text-primary-600" />
               Account Security
             </h3>
             <button
@@ -367,7 +367,7 @@ const UserProfile = () => {
           {/* Personal Information */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-              <UserIcon className="h-5 w-5 mr-2 text-indigo-600" />
+              <UserIcon className="h-5 w-5 mr-2 text-primary-600" />
               Personal Information
             </h3>
             
@@ -382,7 +382,7 @@ const UserProfile = () => {
                       type="text"
                       value={profileData.fullName}
                       onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
-                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       required
                     />
                   </div>
@@ -410,7 +410,7 @@ const UserProfile = () => {
                       type="tel"
                       value={profileData.phone}
                       onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="+92-300-1234567"
                     />
                   </div>
@@ -424,7 +424,7 @@ const UserProfile = () => {
                       type="text"
                       value={profileData.jobTitle}
                       onChange={(e) => setProfileData({ ...profileData, jobTitle: e.target.value })}
-                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="e.g., Principal, Teacher, Admin"
                     />
                   </div>
@@ -438,7 +438,7 @@ const UserProfile = () => {
                       type="text"
                       value={profileData.department}
                       onChange={(e) => setProfileData({ ...profileData, department: e.target.value })}
-                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="e.g., Administration, Academic"
                     />
                   </div>
@@ -469,7 +469,7 @@ const UserProfile = () => {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {saving ? (
                       <>
@@ -544,7 +544,7 @@ const UserProfile = () => {
           {showPasswordChange && (
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                <LockClosedIcon className="h-5 w-5 mr-2 text-indigo-600" />
+                <LockClosedIcon className="h-5 w-5 mr-2 text-primary-600" />
                 Change Password
               </h3>
               
@@ -558,7 +558,7 @@ const UserProfile = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={passwordData.currentPassword}
                       onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent pr-10"
                       required
                     />
                     <button
@@ -580,7 +580,7 @@ const UserProfile = () => {
                       type={showNewPassword ? 'text' : 'password'}
                       value={passwordData.newPassword}
                       onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent pr-10"
                       required
                       minLength={6}
                     />
@@ -603,7 +603,7 @@ const UserProfile = () => {
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={passwordData.confirmPassword}
                       onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                      className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent pr-10"
                       required
                       minLength={6}
                     />
@@ -635,7 +635,7 @@ const UserProfile = () => {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {saving ? 'Changing...' : 'Change Password'}
                   </button>

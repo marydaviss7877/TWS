@@ -195,9 +195,9 @@ const AttendanceManagement = ({ attendanceData, employees, onDataUpdate }) => {
           </button>
           <button
             onClick={() => handleBulkStatusUpdate('on-leave')}
-            className="flex items-center justify-center px-4 py-3 border border-purple-300 rounded-md hover:bg-purple-50 transition-colors"
+            className="flex items-center justify-center px-4 py-3 border border-accent-300 rounded-md hover:bg-accent-50 transition-colors"
           >
-            <CalendarIcon className="h-5 w-5 mr-2 text-purple-600" />
+            <CalendarIcon className="h-5 w-5 mr-2 text-accent-600" />
             Mark as On Leave
           </button>
         </div>

@@ -1,6 +1,7 @@
 const { Resend } = require('resend');
 const envConfig = require('../../config/environment-validator');
 const { getSanitizedBaseDomain } = require('../../utils/baseDomain');
+const { renderEmailShell, renderButton, renderCard, renderRow, renderNotice, renderBadge, COLORS } = require('./emailTemplates');
 
 /**
  * Email Service for Education System
@@ -115,43 +116,25 @@ class EmailService {
    */
   async sendPasswordResetEmail(user, tempPassword) {
     const subject = 'Password Reset - Your Temporary Password';
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Password Reset Request</h1>
-        </div>
-        <div style="padding: 30px; background: #f9fafb;">
-          <p style="font-size: 16px; color: #374151;">Dear ${user.fullName || user.firstName || 'User'},</p>
-          
-          <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
-            You requested a password reset for your account. A temporary password has been generated for you.
-          </p>
-          
-          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #1f2937; margin-top: 0;">Your Temporary Password:</h3>
-            <p style="margin: 10px 0; font-size: 18px; font-weight: bold; color: #667eea; background: #f3f4f6; padding: 15px; border-radius: 6px; text-align: center; letter-spacing: 2px;">
-              ${tempPassword}
-            </p>
-          </div>
-          
-          <p style="font-size: 14px; color: #dc2626; background: #fef2f2; padding: 15px; border-radius: 8px;">
-            <strong>⚠️ Important:</strong> Please login with this temporary password and change it immediately for security.
-          </p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${envConfig.get('FRONTEND_URL')}/login"
-               style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
-              Login to Portal
-            </a>
-          </div>
-          
-          <p style="font-size: 12px; color: #9ca3af; margin-top: 30px;">
-            If you did not request this password reset, please contact your administrator immediately.
-          </p>
-        </div>
-      </div>
+    const body = `
+      <p style="font-size:16px;color:${COLORS.ink};margin:0 0 16px;">Dear ${user.fullName || user.firstName || 'User'},</p>
+      <p style="font-size:14px;color:${COLORS.muted};line-height:1.6;margin:0 0 8px;">
+        You requested a password reset for your account. A temporary password has been generated for you.
+      </p>
+      ${renderCard(`
+        <h3 style="color:${COLORS.ink};margin:0 0 12px;font-size:15px;">Your temporary password</h3>
+        <p style="margin:0;font-size:20px;font-weight:700;color:${COLORS.navy};background:#FFFFFF;border:1px solid ${COLORS.border};padding:14px;border-radius:6px;text-align:center;letter-spacing:3px;">
+          ${tempPassword}
+        </p>
+      `)}
+      ${renderNotice('<strong>Important:</strong> Please login with this temporary password and change it immediately for security.', 'warning')}
+      ${renderButton({ href: `${envConfig.get('FRONTEND_URL')}/login`, label: 'Login to Portal' })}
+      <p style="font-size:12px;color:${COLORS.faint};margin-top:24px;">
+        If you did not request this password reset, please contact your administrator immediately.
+      </p>
     `;
-    
+    const html = renderEmailShell({ preheader: 'Your temporary password is ready.', bodyHtml: body });
+
     return await this.sendEmail(user.email, subject, html);
   }
 
@@ -311,7 +294,7 @@ class EmailService {
    * Tenant Signup Welcome Email
    */
   async sendTenantWelcomeEmail(user, tenant, subdomain) {
-    const subject = `Welcome to ${tenant.name || tenant.organizationName} - Your TWS ERP is Ready!`;
+    const subject = `Welcome to ${tenant.name || tenant.organizationName} - Your HousesBase workspace is ready!`;
     // The tenant slug lives in the hostname in production. Build this link from
     // the provisioned subdomain instead of a central frontend URL so welcome
     // emails cannot accidentally point at a placeholder or duplicate the slug.
@@ -320,56 +303,37 @@ class EmailService {
       .replace(/^https?:\/\//i, '')
       .replace(/\/+$/, '');
     const tenantOrigin = `https://${tenantHost}`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Welcome to TWS ERP!</h1>
-        </div>
-        <div style="padding: 30px; background: #f9fafb;">
-          <p style="font-size: 16px; color: #374151;">Dear ${user.fullName},</p>
-          
-          <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
-            Congratulations! Your TWS ERP tenant has been successfully created and provisioned. You're all set to start managing your business operations.
-          </p>
-          
-          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #1f2937; margin-top: 0;">Your Tenant Details:</h3>
-            <p style="margin: 10px 0;"><strong>Organization:</strong> ${tenant.name || tenant.organizationName}</p>
-            <p style="margin: 10px 0;"><strong>Subdomain:</strong> ${subdomain}</p>
-            <p style="margin: 10px 0;"><strong>Industry:</strong> ${tenant.erpCategory || tenant.industry || 'Business'}</p>
-            <p style="margin: 10px 0;"><strong>Status:</strong> <span style="background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 4px;">Active</span></p>
-          </div>
-          
-          <div style="background: #eff6ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6;">
-            <h3 style="color: #1e40af; margin-top: 0;">🚀 Quick Start Guide</h3>
-            <ol style="color: #374151; line-height: 1.8;">
-              <li>Complete your company profile and add your logo</li>
-              <li>Configure your chart of accounts</li>
-              <li>Invite your team members</li>
-              <li>Set up approval workflows</li>
-              <li>Review security settings and enable MFA</li>
-            </ol>
-          </div>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${tenantOrigin}/onboarding"
-               style="background: #667eea; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">
-              Complete Your Setup
-            </a>
-          </div>
-          
-          <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="font-size: 12px; color: #6b7280; margin: 0;">
-              <strong>Need Help?</strong> <a href="mailto:hello@housesbase.com" style="color: #667eea;">Contact support</a>.
-            </p>
-          </div>
-          
-          <p style="font-size: 12px; color: #9ca3af; margin-top: 30px;">
-            This email was sent to ${user.email}. If you didn't create this account, please contact support immediately.
-          </p>
-        </div>
+    const body = `
+      <p style="font-size:16px;color:${COLORS.ink};margin:0 0 16px;">Dear ${user.fullName},</p>
+      <p style="font-size:14px;color:${COLORS.muted};line-height:1.6;margin:0 0 8px;">
+        Congratulations! Your HousesBase tenant has been successfully created and provisioned. You're all set to start managing your business operations.
+      </p>
+      ${renderCard(`
+        <h3 style="color:${COLORS.ink};margin:0 0 12px;font-size:15px;">Your tenant details</h3>
+        ${renderRow('Organization', tenant.name || tenant.organizationName)}
+        ${renderRow('Subdomain', subdomain)}
+        ${renderRow('Industry', tenant.erpCategory || tenant.industry || 'Business')}
+        ${renderRow('Status', '<span style="color:#047857;font-weight:600;">Active</span>')}
+      `)}
+      <div style="border-left:3px solid ${COLORS.navy};background:${COLORS.panel};padding:18px 20px;border-radius:0 8px 8px 0;margin:20px 0;">
+        <h3 style="color:${COLORS.navy};margin:0 0 10px;font-size:14px;">Quick start guide</h3>
+        <ol style="color:${COLORS.ink};font-size:13px;line-height:1.8;margin:0;padding-left:18px;">
+          <li>Complete your company profile and add your logo</li>
+          <li>Configure your chart of accounts</li>
+          <li>Invite your team members</li>
+          <li>Set up approval workflows</li>
+          <li>Review security settings and enable MFA</li>
+        </ol>
       </div>
+      ${renderButton({ href: `${tenantOrigin}/onboarding`, label: 'Complete Your Setup' })}
+      <p style="font-size:12px;color:${COLORS.muted};margin:20px 0 0;">
+        <strong>Need help?</strong> <a href="mailto:hello@housesbase.com" style="color:${COLORS.navy};">Contact support</a>.
+      </p>
+      <p style="font-size:12px;color:${COLORS.faint};margin-top:20px;">
+        This email was sent to ${user.email}. If you didn't create this account, please contact support immediately.
+      </p>
     `;
+    const html = renderEmailShell({ preheader: 'Your HousesBase tenant is ready to go.', bodyHtml: body });
 
     return await this.sendEmail(user.email, subject, html);
   }
@@ -381,44 +345,26 @@ class EmailService {
    * no login token or auth material.
    */
   async sendWorkspaceLookupEmail(user, org) {
-    const subject = 'Your HouseBase workspace';
+    const subject = 'Your HousesBase workspace';
     const baseDomain = getSanitizedBaseDomain();
     const workspaceUrl = `https://${org.slug}.${baseDomain}/login`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">Your Workspace</h1>
-        </div>
-        <div style="padding: 30px; background: #f9fafb;">
-          <p style="font-size: 16px; color: #374151;">Dear ${user.fullName || 'there'},</p>
-
-          <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
-            Here's the link to your organization's workspace on HouseBase:
-          </p>
-
-          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 10px 0;"><strong>Organization:</strong> ${org.name}</p>
-          </div>
-
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${workspaceUrl}"
-               style="background: #667eea; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">
-              Go to Your Workspace
-            </a>
-          </div>
-
-          <p style="font-size: 12px; color: #9ca3af;">
-            Or copy this link into your browser:<br/>
-            <a href="${workspaceUrl}" style="color: #667eea;">${workspaceUrl}</a>
-          </p>
-
-          <p style="font-size: 12px; color: #9ca3af; margin-top: 30px;">
-            This email was sent to ${user.email} because someone requested this workspace link. If that
-            wasn't you, you can safely ignore this email.
-          </p>
-        </div>
-      </div>
+    const body = `
+      <p style="font-size:16px;color:${COLORS.ink};margin:0 0 16px;">Dear ${user.fullName || 'there'},</p>
+      <p style="font-size:14px;color:${COLORS.muted};line-height:1.6;margin:0 0 8px;">
+        Here's the link to your organization's workspace on HousesBase:
+      </p>
+      ${renderCard(renderRow('Organization', org.name))}
+      ${renderButton({ href: workspaceUrl, label: 'Go to Your Workspace' })}
+      <p style="font-size:12px;color:${COLORS.faint};">
+        Or copy this link into your browser:<br/>
+        <a href="${workspaceUrl}" style="color:${COLORS.navy};">${workspaceUrl}</a>
+      </p>
+      <p style="font-size:12px;color:${COLORS.faint};margin-top:20px;">
+        This email was sent to ${user.email} because someone requested this workspace link. If that
+        wasn't you, you can safely ignore this email.
+      </p>
     `;
+    const html = renderEmailShell({ preheader: `The link to your ${org.name} workspace.`, bodyHtml: body });
 
     return await this.sendEmail(user.email, subject, html);
   }
@@ -473,18 +419,13 @@ class EmailService {
       return { success: false, error: 'No tenant email' };
     }
     const subject = `Overdue Invoice: ${invoice.invoiceNumber || invoice._id}`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #dc2626; padding: 16px; text-align: center;">
-          <h2 style="color: white; margin: 0;">Invoice Overdue</h2>
-        </div>
-        <div style="padding: 24px; background: #f9fafb;">
-          <p style="font-size: 14px; color: #374151;">Invoice <strong>${invoice.invoiceNumber || 'N/A'}</strong> is overdue.</p>
-          <p style="font-size: 14px; color: #6b7280;">Due date: ${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}. Please follow up with the client and update payment status.</p>
-          <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">TWS ERP – ${tenant.name || 'Tenant'}</p>
-        </div>
-      </div>
+    const body = `
+      <p style="margin:0 0 14px;">${renderBadge('Invoice overdue', 'danger')}</p>
+      <p style="font-size:15px;color:${COLORS.ink};margin:0 0 8px;">Invoice <strong>${invoice.invoiceNumber || 'N/A'}</strong> is overdue.</p>
+      <p style="font-size:14px;color:${COLORS.muted};line-height:1.6;">Due date: ${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}. Please follow up with the client and update payment status.</p>
+      <p style="font-size:12px;color:${COLORS.faint};margin-top:24px;">HousesBase – ${tenant.name || 'Tenant'}</p>
     `;
+    const html = renderEmailShell({ preheader: `Invoice ${invoice.invoiceNumber || ''} is overdue.`, bodyHtml: body });
     return await this.sendEmail(to, subject, html);
   }
 
@@ -499,18 +440,13 @@ class EmailService {
     }
     const pct = limit > 0 ? Math.round((value / limit) * 100) : 0;
     const subject = `Usage alert: ${metric} at ${pct}% of limit`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #f59e0b; padding: 16px; text-align: center;">
-          <h2 style="color: white; margin: 0;">Usage Alert</h2>
-        </div>
-        <div style="padding: 24px; background: #f9fafb;">
-          <p style="font-size: 14px; color: #374151;"><strong>${metric}</strong> is at ${pct}% of your plan limit (${value} / ${limit}).</p>
-          <p style="font-size: 14px; color: #6b7280;">Consider upgrading or reducing usage to avoid hitting the limit.</p>
-          <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">TWS ERP – ${tenant.name || 'Tenant'}</p>
-        </div>
-      </div>
+    const body = `
+      <p style="margin:0 0 14px;">${renderBadge('Usage alert', 'warning')}</p>
+      <p style="font-size:15px;color:${COLORS.ink};margin:0 0 8px;"><strong>${metric}</strong> is at ${pct}% of your plan limit (${value} / ${limit}).</p>
+      <p style="font-size:14px;color:${COLORS.muted};line-height:1.6;">Consider upgrading or reducing usage to avoid hitting the limit.</p>
+      <p style="font-size:12px;color:${COLORS.faint};margin-top:24px;">HousesBase – ${tenant.name || 'Tenant'}</p>
     `;
+    const html = renderEmailShell({ preheader: `${metric} is at ${pct}% of your plan limit.`, bodyHtml: body });
     return await this.sendEmail(to, subject, html);
   }
 
@@ -524,17 +460,12 @@ class EmailService {
       return { success: false, error: 'No tenant email' };
     }
     const subject = 'Payment Reminder: Your subscription is past due';
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #dc2626; padding: 16px; text-align: center;">
-          <h2 style="color: white; margin: 0;">Payment Past Due</h2>
-        </div>
-        <div style="padding: 24px; background: #f9fafb;">
-          <p style="font-size: 14px; color: #374151;">Your subscription payment is past due. Please update your billing details to avoid service interruption.</p>
-          <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">TWS ERP – ${tenant.name || 'Tenant'}</p>
-        </div>
-      </div>
+    const body = `
+      <p style="margin:0 0 14px;">${renderBadge('Payment past due', 'danger')}</p>
+      <p style="font-size:15px;color:${COLORS.ink};line-height:1.6;">Your subscription payment is past due. Please update your billing details to avoid service interruption.</p>
+      <p style="font-size:12px;color:${COLORS.faint};margin-top:24px;">HousesBase – ${tenant.name || 'Tenant'}</p>
     `;
+    const html = renderEmailShell({ preheader: 'Your subscription payment is past due.', bodyHtml: body });
     return await this.sendEmail(to, subject, html);
   }
 
@@ -548,17 +479,12 @@ class EmailService {
       return { success: false, error: 'No tenant email' };
     }
     const subject = 'Your trial has expired';
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #dc2626; padding: 16px; text-align: center;">
-          <h2 style="color: white; margin: 0;">Trial Expired</h2>
-        </div>
-        <div style="padding: 24px; background: #f9fafb;">
-          <p style="font-size: 14px; color: #374151;">Your trial period has ended and your account has been suspended. Subscribe to a plan to restore access.</p>
-          <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">TWS ERP – ${tenant.name || 'Tenant'}</p>
-        </div>
-      </div>
+    const body = `
+      <p style="margin:0 0 14px;">${renderBadge('Trial expired', 'danger')}</p>
+      <p style="font-size:15px;color:${COLORS.ink};line-height:1.6;">Your trial period has ended and your account has been suspended. Subscribe to a plan to restore access.</p>
+      <p style="font-size:12px;color:${COLORS.faint};margin-top:24px;">HousesBase – ${tenant.name || 'Tenant'}</p>
     `;
+    const html = renderEmailShell({ preheader: 'Your trial has ended and your account is suspended.', bodyHtml: body });
     return await this.sendEmail(to, subject, html);
   }
 
@@ -572,17 +498,12 @@ class EmailService {
       return { success: false, error: 'No tenant email' };
     }
     const subject = 'Your trial expires in 24 hours';
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #f59e0b; padding: 16px; text-align: center;">
-          <h2 style="color: white; margin: 0;">Trial Ending Soon</h2>
-        </div>
-        <div style="padding: 24px; background: #f9fafb;">
-          <p style="font-size: 14px; color: #374151;">Your trial period ends in less than 24 hours. Subscribe to a plan now to avoid losing access.</p>
-          <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">TWS ERP – ${tenant.name || 'Tenant'}</p>
-        </div>
-      </div>
+    const body = `
+      <p style="margin:0 0 14px;">${renderBadge('Trial ending soon', 'warning')}</p>
+      <p style="font-size:15px;color:${COLORS.ink};line-height:1.6;">Your trial period ends in less than 24 hours. Subscribe to a plan now to avoid losing access.</p>
+      <p style="font-size:12px;color:${COLORS.faint};margin-top:24px;">HousesBase – ${tenant.name || 'Tenant'}</p>
     `;
+    const html = renderEmailShell({ preheader: 'Your trial ends in less than 24 hours.', bodyHtml: body });
     return await this.sendEmail(to, subject, html);
   }
 
@@ -593,36 +514,25 @@ class EmailService {
    */
   async sendEmployeeInviteEmail(invitee, opts = {}) {
     const { inviteLink, orgName = 'your organisation', role = 'employee', inviterName = 'An admin' } = opts;
-    const subject = `You've been invited to join ${orgName} on TWS`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0;">You're Invited!</h1>
-        </div>
-        <div style="padding: 30px; background: #f9fafb;">
-          <p style="font-size: 16px; color: #374151;">Hi ${invitee.fullName || invitee.email},</p>
-          <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
-            ${inviterName} has invited you to join <strong>${orgName}</strong> as a <strong>${role}</strong> on the TWS ERP portal.
-          </p>
-          <p style="font-size: 14px; color: #6b7280; line-height: 1.6;">
-            Click the button below to accept your invitation and set your password. This link expires in <strong>7 days</strong>.
-          </p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${inviteLink}"
-               style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 14px 36px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">
-              Accept Invitation
-            </a>
-          </div>
-          <p style="font-size: 12px; color: #9ca3af;">
-            Or copy this link into your browser:<br/>
-            <a href="${inviteLink}" style="color: #667eea;">${inviteLink}</a>
-          </p>
-          <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">
-            If you did not expect this invitation, you can safely ignore this email.
-          </p>
-        </div>
-      </div>
+    const subject = `You've been invited to join ${orgName} on HousesBase`;
+    const body = `
+      <p style="font-size:16px;color:${COLORS.ink};margin:0 0 16px;">Hi ${invitee.fullName || invitee.email},</p>
+      <p style="font-size:14px;color:${COLORS.muted};line-height:1.6;margin:0 0 12px;">
+        ${inviterName} has invited you to join <strong style="color:${COLORS.ink};">${orgName}</strong> as a <strong style="color:${COLORS.ink};">${role}</strong> on HousesBase.
+      </p>
+      <p style="font-size:14px;color:${COLORS.muted};line-height:1.6;">
+        Click the button below to accept your invitation and set your password. This link expires in <strong style="color:${COLORS.ink};">7 days</strong>.
+      </p>
+      ${renderButton({ href: inviteLink, label: 'Accept Invitation' })}
+      <p style="font-size:12px;color:${COLORS.faint};">
+        Or copy this link into your browser:<br/>
+        <a href="${inviteLink}" style="color:${COLORS.navy};">${inviteLink}</a>
+      </p>
+      <p style="font-size:12px;color:${COLORS.faint};margin-top:20px;">
+        If you did not expect this invitation, you can safely ignore this email.
+      </p>
     `;
+    const html = renderEmailShell({ preheader: `${inviterName} invited you to join ${orgName}.`, bodyHtml: body });
     return this.sendEmail(invitee.email, subject, html);
   }
 }

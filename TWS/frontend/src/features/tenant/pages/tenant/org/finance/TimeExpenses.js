@@ -188,10 +188,10 @@ const TimeExpenses = () => {
     const colors = {
       travel: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
       software: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
-      office: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
+      office: 'bg-accent-100 text-accent-800 dark:bg-accent-900/20 dark:text-accent-400',
       marketing: 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400',
       equipment: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400',
-      cloud: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400',
+      cloud: 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400',
       other: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
     };
     return colors[category?.toLowerCase()] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
@@ -498,8 +498,8 @@ const TimeExpenses = () => {
               </div>
             </div>
             <div className="hidden sm:block">
-              <div className="w-16 h-16 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center">
-                <ClockIcon className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+              <div className="w-16 h-16 bg-accent-50 dark:bg-accent-900/20 rounded-2xl flex items-center justify-center">
+                <ClockIcon className="h-8 w-8 text-accent-600 dark:text-accent-400" />
               </div>
             </div>
           </div>
@@ -556,8 +556,8 @@ const TimeExpenses = () => {
         </div>
         <div className="glass-card-premium p-5 xl:p-6 hover-lift">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
-              <CurrencyDollarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-purple-600 dark:text-purple-400" />
+            <div className="w-12 h-12 xl:w-14 xl:h-14 rounded-2xl bg-accent-50 dark:bg-accent-900/20 flex items-center justify-center">
+              <CurrencyDollarIcon className="w-6 h-6 xl:w-7 xl:h-7 text-accent-600 dark:text-accent-400" />
             </div>
             <div>
               <p className="text-xs xl:text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
@@ -590,7 +590,7 @@ const TimeExpenses = () => {
       <div className="glass-card-premium">
         <div className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50">
           <h2 className="text-lg xl:text-xl font-bold font-heading text-gray-900 dark:text-white flex items-center">
-            <MagnifyingGlassIcon className="h-5 w-5 mr-2 text-indigo-600 dark:text-indigo-400" />
+            <MagnifyingGlassIcon className="h-5 w-5 mr-2 text-primary-600 dark:text-primary-400" />
             Search & Filter
           </h2>
         </div>

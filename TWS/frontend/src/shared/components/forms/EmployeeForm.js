@@ -312,7 +312,7 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
             type="text"
             value={formData.fullName}
             onChange={(e) => handleInputChange('fullName', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter full name"
             required
           />
@@ -326,7 +326,7 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
             type="email"
             value={formData.email}
             onChange={(e) => handleInputChange('email', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter email address"
             required
           />
@@ -340,7 +340,7 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
             type="tel"
             value={formData.phone}
             onChange={(e) => handleInputChange('phone', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter phone number"
           />
         </div>
@@ -353,7 +353,7 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
             type="text"
             value={formData.employeeId}
             onChange={(e) => handleInputChange('employeeId', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter employee ID"
             required
           />
@@ -375,7 +375,7 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
             <button
               type="button"
               onClick={generatePassword}
-              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ease-out shadow-lg hover:shadow-xl hover:shadow-blue-500/25 transform hover:-translate-y-0.5"
+              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-primary-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-primary-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ease-out shadow-lg hover:shadow-xl hover:shadow-blue-500/25 transform hover:-translate-y-0.5"
             >
               Generate Password
             </button>
@@ -440,7 +440,7 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
             type="text"
             value={formData.jobTitle}
             onChange={(e) => handleInputChange('jobTitle', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Enter job title"
             required
           />
@@ -453,7 +453,7 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
           <select
             value={formData.department}
             onChange={(e) => handleInputChange('department', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
             required
           >
             <option value="">Select department</option>
@@ -477,7 +477,7 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
           <select
             value={formData.contractType}
             onChange={(e) => handleInputChange('contractType', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
           >
             <option value="full-time">Full-time</option>
             <option value="part-time">Part-time</option>
@@ -493,7 +493,7 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
           <select
             value={formData.status}
             onChange={(e) => handleInputChange('status', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
           >
             <option value="active">Active</option>
             <option value="probation">Probation</option>
@@ -512,7 +512,7 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
             type="date"
             value={formData.hireDate}
             onChange={(e) => handleInputChange('hireDate', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
             required
           />
         </div>
@@ -525,7 +525,7 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
             type="date"
             value={formData.probationEndDate}
             onChange={(e) => handleInputChange('probationEndDate', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+            className="w-full px-4 py-3 border border-gray-300/60 dark:border-gray-600/60 rounded-xl shadow-sm focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all duration-300 ease-out text-gray-900 dark:text-gray-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
           />
         </div>
       </div>
@@ -571,7 +571,7 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`${
                     activeTab === tab.id
-                      ? 'border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400'
+                      ? 'border-primary-500 dark:border-primary-400 text-primary-600 dark:text-primary-400'
                       : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                   } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
                 >
@@ -630,14 +630,14 @@ const EmployeeForm = ({ employee, onClose, onSuccess, mode = 'create' }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-gray-700/80 hover:bg-gray-50/90 dark:hover:bg-gray-600/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors backdrop-blur-sm"
+              className="px-4 py-2 border border-gray-300/60 dark:border-gray-600/60 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-gray-700/80 hover:bg-gray-50/90 dark:hover:bg-gray-600/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors backdrop-blur-sm"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:via-purple-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-out shadow-lg hover:shadow-xl hover:shadow-indigo-500/25 transform hover:-translate-y-0.5"
+              className="px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-primary-600 via-accent-600 to-primary-700 hover:from-primary-700 hover:via-accent-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-out shadow-lg hover:shadow-xl hover:shadow-primary-500/25 transform hover:-translate-y-0.5"
             >
               {loading ? 'Saving...' : (mode === 'create' ? 'Create Employee' : 'Update Employee')}
             </button>

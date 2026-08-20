@@ -10,43 +10,45 @@
      COLOR SYSTEM
      ============================================ */
   
-  /* Brand Foundation */
-  --brand-primary: #103D67;
-  --brand-primary-dark: #0C3157;
+  /* Brand Foundation — sourced from frontend/src/design/tokens.js via
+     tokens.generated.css (imported globally in index.js). Never hand-edit
+     these hex values here — edit tokens.js and they propagate everywhere. */
+  --brand-primary: var(--color-navy-500);
+  --brand-primary-dark: var(--color-navy-600);
   --brand-primary-light: #1B507E;
-  --brand-accent: #F04E25;
-  --brand-accent-dark: #D8431B;
-  --brand-accent-light: #FF7A5B;
+  --brand-accent: var(--color-orange-500);
+  --brand-accent-dark: var(--color-orange-600);
+  --brand-accent-light: var(--color-orange-400);
   --brand-support: #4F7EF7;
-  --brand-success: #10B981;
-  --brand-surface: #F4F8FD;
-  --brand-ink: #0F172A;
+  --brand-success: var(--color-green-500);
+  --brand-surface: var(--color-mist);
+  --brand-ink: var(--color-ink);
 
   /* Primary Colors */
-  --color-primary-50: #eef6ff;
-  --color-primary-100: #dfeeff;
-  --color-primary-200: #c4ddff;
-  --color-primary-300: #9fc1f7;
-  --color-primary-400: #6d93dc;
-  --color-primary-500: #103D67;
-  --color-primary-600: #0c3157;
-  --color-primary-700: #0a2746;
-  --color-primary-800: #081f3a;
-  --color-primary-900: #061a2d;
-  --color-primary-950: #041421;
- 
+  --color-primary-50: var(--color-navy-50);
+  --color-primary-100: var(--color-navy-100);
+  --color-primary-200: var(--color-navy-200);
+  --color-primary-300: var(--color-navy-300);
+  --color-primary-400: var(--color-navy-400);
+  --color-primary-500: var(--color-navy-500);
+  --color-primary-600: var(--color-navy-600);
+  --color-primary-700: var(--color-navy-700);
+  --color-primary-800: var(--color-navy-800);
+  --color-primary-900: var(--color-navy-900);
+  --color-primary-950: var(--color-navy-950);
+
   /* Accent Colors */
-  --color-accent-50: #fff1ee;
-  --color-accent-100: #ffe0d8;
-  --color-accent-200: #ffc3b0;
-  --color-accent-300: #ff9b7f;
-  --color-accent-400: #ff7a5b;
-  --color-accent-500: #F04E25;
-  --color-accent-600: #d8431b;
-  --color-accent-700: #b83515;
-  --color-accent-800: #962a12;
-  --color-accent-900: #731f10;
-  --color-accent-950: #4f180d;
+  --color-accent-50: var(--color-orange-50);
+  --color-accent-100: var(--color-orange-100);
+  --color-accent-200: var(--color-orange-200);
+  --color-accent-300: var(--color-orange-300);
+  --color-accent-400: var(--color-orange-400);
+  --color-accent-500: var(--color-orange-500);
+  --color-accent-600: var(--color-orange-600);
+  --color-accent-700: var(--color-orange-700);
+  --color-accent-800: var(--color-orange-800);
+  --color-accent-900: var(--color-orange-900);
+  --color-accent-950: var(--color-orange-950);
 
   /* Neutral Colors */
   --color-gray-50: #f9fafb;

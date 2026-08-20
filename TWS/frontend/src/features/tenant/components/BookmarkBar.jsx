@@ -25,7 +25,7 @@ const BookmarkBar = ({ items = [], activeAppKey, onRemove }) => {
 
         {/* ── "Bookmarks" label ─────────────────────────────────────────── */}
         <div className="flex items-center gap-1.5 pr-3 mr-1 border-r border-[#d7ddf3] dark:border-gray-700/70 flex-shrink-0">
-          <BookmarkIcon className="h-3.5 w-3.5 text-indigo-400 dark:text-indigo-500" />
+          <BookmarkIcon className="h-3.5 w-3.5 text-primary-400 dark:text-primary-500" />
           <span className="text-[11px] font-semibold text-slate-500 dark:text-gray-500 tracking-wide select-none">
             Bookmarks
           </span>

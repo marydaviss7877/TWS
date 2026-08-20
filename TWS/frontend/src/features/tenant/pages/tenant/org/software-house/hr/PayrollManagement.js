@@ -177,8 +177,8 @@ const PayrollManagement = () => {
       label: 'Payroll Cycles',
       value: (payrollData?.cycleCount || 0).toString(),
       icon: BanknotesIcon,
-      iconBg: 'bg-purple-50 dark:bg-purple-900/20',
-      iconColor: 'text-purple-600 dark:text-purple-400'
+      iconBg: 'bg-accent-50 dark:bg-accent-900/20',
+      iconColor: 'text-accent-600 dark:text-accent-400'
     }
   ];
 

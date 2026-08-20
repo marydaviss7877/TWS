@@ -666,7 +666,7 @@ const UserList = () => {
             </div>
             <div>
               <select
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 onChange={(e) => handleFilterChange('role', e.target.value)}
               >
                 <option value="">Filter by role</option>
@@ -678,7 +678,7 @@ const UserList = () => {
             </div>
             <div>
               <select
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 onChange={(e) => handleFilterChange('status', e.target.value)}
               >
                 <option value="">Filter by status</option>
@@ -730,7 +730,7 @@ const UserList = () => {
                 <tr>
                   <td colSpan="7" className="px-6 py-12 text-center">
                     <div className="flex items-center justify-center">
-                      <div className="tws-loading-pulse rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+                      <div className="tws-loading-pulse rounded-full h-8 w-8 border-b-2 border-primary-600 dark:border-primary-400"></div>
                       <span className="ml-2 text-gray-600 dark:text-gray-400">Loading users...</span>
                     </div>
                   </td>
@@ -780,7 +780,7 @@ const UserList = () => {
                         <button
                           type="button"
                           onClick={() => openEditModal(user)}
-                          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 p-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                          className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 p-1 rounded hover:bg-primary-50 dark:hover:bg-primary-900/30"
                           title="Edit user"
                         >
                           <PencilIcon className="h-4 w-4" />
@@ -877,7 +877,7 @@ const UserList = () => {
                 <select
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   {ERP_ROLES.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -889,7 +889,7 @@ const UserList = () => {
                 <select
                   value={editAssignedRoleId}
                   onChange={(e) => setEditAssignedRoleId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="">— No additional organization role —</option>
                   {organizationRoles.map((orgRole) => (
@@ -906,7 +906,7 @@ const UserList = () => {
                   <select
                     value={editHrSubRole}
                     onChange={(e) => setEditHrSubRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   >
                     {HR_SUB_ROLES.map((opt) => (
                       <option key={opt.value || 'none'} value={opt.value}>{opt.label}</option>
@@ -921,7 +921,7 @@ const UserList = () => {
                   <select
                     value={editFinanceSubRole}
                     onChange={(e) => setEditFinanceSubRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   >
                     {FINANCE_SUB_ROLES.map((opt) => (
                       <option key={opt.value || 'none'} value={opt.value}>{opt.label}</option>
@@ -964,7 +964,7 @@ const UserList = () => {
                           <span className="font-mono text-gray-800 dark:text-gray-200">{entry.code}</span>
                           <span className="text-gray-500 dark:text-gray-400 ml-2">({entry.module}{entry.access ? ` - ${entry.access}` : ''})</span>
                           {roleDefaultPermissionCodes.includes(entry.code) && (
-                            <span className="ml-2 inline-flex px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-semibold">
+                            <span className="ml-2 inline-flex px-1.5 py-0.5 rounded bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-[10px] font-semibold">
                               role default
                             </span>
                           )}

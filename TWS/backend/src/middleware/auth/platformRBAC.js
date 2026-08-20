@@ -393,27 +393,38 @@ function requirePlatformPermission(permission) {
   return (req, res, next) => {
     const { role } = req.user || {};
     const authContextType = req.authContext?.type;
-    
+
     if (!role) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
         error: 'Unauthorized',
         message: 'No role assigned to user'
       });
     }
-    
+
+    // SECURITY: platform routes require an actual TWSAdmin session. A regular
+    // tenant User can carry role: 'super_admin' too (that value is meaningful
+    // within a tenant org), so the role string alone must never grant platform
+    // access — only authenticateToken's tws_admin auth context can.
+    if (authContextType !== 'tws_admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'Platform admin access required',
+        authContextType
+      });
+    }
+
     // ✅ Issue #1.4 Fix: TWSAdmin users use their ACTUAL stored role for permission checks
     // platform_support gets only support permissions, platform_admin gets admin permissions, etc.
     // No automatic full access - RBAC enforced based on actual role
-    
-    // Map super_admin role to platform_super_admin (for regular Users with super_admin)
-    // super_admin should always have all platform permissions
-    // This allows regular Users with super_admin role to access platform routes
+
+    // Map super_admin role to platform_super_admin (TWSAdmin's forced display role)
     let effectiveRole = role;
     if (role === 'super_admin') {
       effectiveRole = 'platform_super_admin';
     }
-    
+
     if (!PlatformRBAC.hasPermission(effectiveRole, permission)) {
       return res.status(403).json({ 
         success: false,
@@ -438,15 +449,27 @@ function requirePlatformPermission(permission) {
 function requirePlatformRole(allowedRoles) {
   return (req, res, next) => {
     const { role } = req.user || {};
-    
+    const authContextType = req.authContext?.type;
+
     if (!role) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
         error: 'Unauthorized',
         message: 'No role assigned to user'
       });
     }
-    
+
+    // SECURITY: same TWSAdmin-only restriction as requirePlatformPermission —
+    // a tenant User's role string must never satisfy a platform role check.
+    if (authContextType !== 'tws_admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'Platform admin access required',
+        authContextType
+      });
+    }
+
     const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
     
     if (!roles.includes(role)) {

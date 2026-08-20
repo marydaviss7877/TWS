@@ -12,7 +12,7 @@ const GanttLegend = ({ settings }) => {
       
       {/* Category Colors */}
       <div className="flex items-center gap-2">
-        <div className="w-4 h-4 bg-purple-500 rounded"></div>
+        <div className="w-4 h-4 bg-accent-500 rounded"></div>
         <span className="text-gray-600">Planning</span>
       </div>
       <div className="flex items-center gap-2">

@@ -214,7 +214,7 @@ const ClientsContracts = () => {
     switch (type) {
       case 'development': return 'text-blue-600 dark:text-blue-400';
       case 'maintenance': return 'text-green-600 dark:text-green-400';
-      case 'consulting': return 'text-purple-600 dark:text-purple-400';
+      case 'consulting': return 'text-accent-600 dark:text-accent-400';
       case 'support': return 'text-orange-600 dark:text-orange-400';
       default: return 'text-gray-600 dark:text-gray-400';
     }
@@ -243,7 +243,7 @@ const ClientsContracts = () => {
       label: 'Total Contracts', 
       value: stats.totalContracts.toString(), 
       icon: DocumentCheckIcon, 
-      iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+      iconBg: 'bg-gradient-to-br from-blue-500 to-primary-600',
       change: '+8%'
     },
     { 
@@ -257,7 +257,7 @@ const ClientsContracts = () => {
       label: 'Total Value', 
       value: '$' + (stats.totalValue / 1000000).toFixed(1) + 'M', 
       icon: CurrencyDollarIcon, 
-      iconBg: 'bg-gradient-to-br from-purple-500 to-pink-600',
+      iconBg: 'bg-gradient-to-br from-accent-500 to-pink-600',
       change: '+15%'
     },
     { 
@@ -359,7 +359,7 @@ const ClientsContracts = () => {
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">This Month</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.thisMonth}</p>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-primary-600 rounded-xl flex items-center justify-center">
               <CalendarIcon className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -416,7 +416,7 @@ const ClientsContracts = () => {
                 <tr key={contract._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-primary-600 rounded-lg flex items-center justify-center">
                         <DocumentCheckIcon className="w-5 h-5 text-white" />
                       </div>
                       <div className="ml-4">

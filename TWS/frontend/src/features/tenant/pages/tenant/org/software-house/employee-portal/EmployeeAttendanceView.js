@@ -21,9 +21,9 @@ const STATUS_META = {
   present: { label: 'Present', dot: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
   late: { label: 'Late', dot: 'bg-amber-500', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
   absent: { label: 'Absent', dot: 'bg-red-500', badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
-  'work-from-home': { label: 'WFH', dot: 'bg-indigo-500', badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' },
+  'work-from-home': { label: 'WFH', dot: 'bg-primary-500', badge: 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' },
   'on-leave': { label: 'On Leave', dot: 'bg-sky-500', badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' },
-  holiday: { label: 'Holiday', dot: 'bg-violet-500', badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' },
+  holiday: { label: 'Holiday', dot: 'bg-accent-500', badge: 'bg-accent-100 text-accent-700 dark:bg-accent-900/30 dark:text-accent-300' },
   sick: { label: 'Sick', dot: 'bg-cyan-500', badge: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300' },
   default: { label: 'Unknown', dot: 'bg-gray-400', badge: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200' }
 };
@@ -274,7 +274,7 @@ const EmployeeAttendanceView = ({ tenantSlug }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="tws-loading-pulse rounded-full h-8 w-8 border-b-2 border-purple-600" />
+        <div className="tws-loading-pulse rounded-full h-8 w-8 border-b-2 border-accent-600" />
       </div>
     );
   }
@@ -305,7 +305,7 @@ const EmployeeAttendanceView = ({ tenantSlug }) => {
               setSelectedMonth(e.target.value);
               setSelectedDate(`${e.target.value}-01`);
             }}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
         </div>
       </div>
@@ -369,7 +369,7 @@ const EmployeeAttendanceView = ({ tenantSlug }) => {
                 <span>{formatTime(todayRecord.checkOut?.timestamp)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-2"><ClockIcon className="w-4 h-4 text-purple-500" /> Hours</span>
+                <span className="inline-flex items-center gap-2"><ClockIcon className="w-4 h-4 text-accent-500" /> Hours</span>
                 <span>{todayRecord.durationMinutes ? `${(todayRecord.durationMinutes / 60).toFixed(2)} hrs` : 'N/A'}</span>
               </div>
             </div>
@@ -384,7 +384,7 @@ const EmployeeAttendanceView = ({ tenantSlug }) => {
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Present Rate</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{monthlyPresentRate}%</p>
             </div>
-            <CalendarIcon className="h-8 w-8 text-purple-600" />
+            <CalendarIcon className="h-8 w-8 text-accent-600" />
           </div>
         </div>
         <div className="glass-card-premium p-5">
@@ -444,12 +444,12 @@ const EmployeeAttendanceView = ({ tenantSlug }) => {
                   onClick={() => setSelectedDate(day.dateKey)}
                   className={`h-16 rounded-xl border transition-all p-2 text-left ${
                     day.isSelected
-                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-500'
+                      ? 'border-accent-500 bg-accent-50 dark:bg-accent-900/30'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-accent-300 dark:hover:border-accent-500'
                   }`}
                 >
                   <div className="flex items-start justify-between">
-                    <span className={`text-sm font-semibold ${day.isToday ? 'text-purple-600 dark:text-purple-300' : 'text-gray-700 dark:text-gray-200'}`}>{day.dayNumber}</span>
+                    <span className={`text-sm font-semibold ${day.isToday ? 'text-accent-600 dark:text-accent-300' : 'text-gray-700 dark:text-gray-200'}`}>{day.dayNumber}</span>
                     {day.record && <span className={`w-2 h-2 rounded-full ${day.record.statusDot}`} />}
                   </div>
                   <p className="mt-2 text-[10px] text-gray-500 dark:text-gray-400 truncate">{day.record ? day.record.statusLabel : 'No log'}</p>
@@ -503,7 +503,7 @@ const EmployeeAttendanceView = ({ tenantSlug }) => {
                   type="button"
                   onClick={submitCorrectionRequest}
                   disabled={correctionLoading}
-                  className="mt-2 w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+                  className="mt-2 w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-accent-600 text-white hover:bg-accent-700 disabled:opacity-50"
                 >
                   {correctionLoading ? 'Submitting...' : 'Submit Correction Request'}
                 </button>
@@ -535,7 +535,7 @@ const EmployeeAttendanceView = ({ tenantSlug }) => {
               {attendance.length > 0 ? attendance.map((record, index) => (
                 <tr
                   key={index}
-                  className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/40 ${selectedDate === record.dateKey ? 'bg-purple-50 dark:bg-purple-900/20' : ''}`}
+                  className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/40 ${selectedDate === record.dateKey ? 'bg-accent-50 dark:bg-accent-900/20' : ''}`}
                   onClick={() => setSelectedDate(record.dateKey)}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">

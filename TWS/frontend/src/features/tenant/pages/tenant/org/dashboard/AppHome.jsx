@@ -65,10 +65,10 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
       className={cn(
         `apphome-card group relative ${LAUNCHER_UI.cardRadius} transition-all duration-200 select-none overflow-visible`,
         isActive
-          ? 'bg-indigo-50 dark:bg-indigo-900/30 ring-2 ring-indigo-400/60 shadow-md'
+          ? 'bg-primary-50 dark:bg-primary-900/30 ring-2 ring-primary-400/60 shadow-md'
           : 'bg-[#f7f9ff] dark:bg-gray-800/60 border border-[#d8def5] dark:border-gray-700/70 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:bg-[#f2f5ff] dark:hover:bg-gray-800',
         'backdrop-blur-sm',
-        isFav && 'border-t-2 border-indigo-500 dark:border-indigo-400'
+        isFav && 'border-t-2 border-primary-500 dark:border-primary-400'
       )}
     >
       {/* Bookmark ribbon — hangs from the top edge of the card */}
@@ -83,9 +83,9 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
         aria-label={isFav ? 'Remove bookmark' : 'Bookmark this app'}
       >
         {isFav ? (
-          <BookmarkSolidIcon className="h-6 w-[18px] text-indigo-500 dark:text-indigo-400 drop-shadow-sm" />
+          <BookmarkSolidIcon className="h-6 w-[18px] text-primary-500 dark:text-primary-400 drop-shadow-sm" />
         ) : (
-          <BookmarkOutlineIcon className="h-6 w-[18px] text-gray-300 dark:text-gray-600 hover:text-indigo-400 transition-colors duration-150" />
+          <BookmarkOutlineIcon className="h-6 w-[18px] text-gray-300 dark:text-gray-600 hover:text-primary-400 transition-colors duration-150" />
         )}
       </button>
 
@@ -93,7 +93,7 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
         type="button"
         onClick={() => { setPressed(true); setTimeout(() => setPressed(false), 200); onNavigate(item.path); }}
         className={cn(
-          `w-full flex flex-col items-center ${LAUNCHER_UI.cardGap} ${LAUNCHER_UI.cardPadding} transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-indigo-500`,
+          `w-full flex flex-col items-center ${LAUNCHER_UI.cardGap} ${LAUNCHER_UI.cardPadding} transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-500`,
           pressed && 'scale-95'
         )}
         aria-label={`Open ${item.label}`}
@@ -113,7 +113,7 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
       <div className="text-center w-full">
         <p className={cn(
           `${LAUNCHER_UI.titleSize} font-semibold leading-tight truncate`,
-          isActive ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-800 dark:text-gray-100'
+          isActive ? 'text-primary-700 dark:text-primary-300' : 'text-gray-800 dark:text-gray-100'
         )}>
           {item.label}
         </p>
@@ -126,7 +126,7 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
 
       {/* Active dot */}
       {isActive && (
-        <span className="absolute bottom-2.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-indigo-500 shadow-sm shadow-indigo-400" />
+        <span className="absolute bottom-2.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-primary-500 shadow-sm shadow-primary-400" />
       )}
       </button>
     </div>
@@ -137,7 +137,7 @@ const AppCard = React.memo(function AppCard({ item, isActive, isFav, onNavigate,
 const SectionLabel = ({ emoji, title, count, bookmarkSection }) => (
   <div className="flex items-center gap-2.5 mb-5">
     {bookmarkSection
-      ? <BookmarkSolidIcon className="h-4 w-4 text-indigo-500 dark:text-indigo-400 flex-shrink-0" />
+      ? <BookmarkSolidIcon className="h-4 w-4 text-primary-500 dark:text-primary-400 flex-shrink-0" />
       : emoji && <span className="text-base leading-none">{emoji}</span>
     }
     <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
@@ -421,7 +421,7 @@ const AppHome = () => {
               'py-3.5 pl-13 pr-14 text-sm text-[#0d0e24] dark:text-gray-100',
               'placeholder:text-[#94a3b8] dark:placeholder-gray-500',
               'shadow-sm outline-none transition-all duration-200',
-              'focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:shadow-lg focus:border-indigo-300 dark:focus:border-indigo-600'
+              'focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:shadow-lg focus:border-primary-300 dark:focus:border-primary-600'
             )}
             style={{ paddingLeft: '3.25rem' }}
             autoComplete="off"
@@ -484,7 +484,7 @@ const AppHome = () => {
                 <button
                   type="button"
                   onClick={() => setSearch('')}
-                  className="mt-4 rounded-full px-4 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                  className="mt-4 rounded-full px-4 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
                 >
                   Clear search
                 </button>
@@ -501,7 +501,7 @@ const AppHome = () => {
                       <button
                         type="button"
                         onClick={clearRecent}
-                        className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline -mt-3"
+                        className="text-xs font-medium text-primary-600 dark:text-primary-400 hover:underline -mt-3"
                       >
                         Clear Recent
                       </button>

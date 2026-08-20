@@ -215,7 +215,7 @@ const EmployeeList = () => {
     { label: 'Total Employees', value: stats.total.toString(), icon: UserGroupIcon, iconBg: 'bg-blue-50 dark:bg-blue-900/20', iconColor: 'text-blue-600 dark:text-blue-400' },
     { label: 'Active', value: stats.active.toString(), icon: UserIcon, iconBg: 'bg-green-50 dark:bg-green-900/20', iconColor: 'text-green-600 dark:text-green-400' },
     { label: 'On Leave', value: stats.onLeave.toString(), icon: UserIcon, iconBg: 'bg-amber-50 dark:bg-amber-900/20', iconColor: 'text-amber-600 dark:text-amber-400' },
-    { label: 'Departments', value: stats.departments.toString(), icon: UserGroupIcon, iconBg: 'bg-purple-50 dark:bg-purple-900/20', iconColor: 'text-purple-600 dark:text-purple-400' }
+    { label: 'Departments', value: stats.departments.toString(), icon: UserGroupIcon, iconBg: 'bg-accent-50 dark:bg-accent-900/20', iconColor: 'text-accent-600 dark:text-accent-400' }
   ];
 
   if (loading) {

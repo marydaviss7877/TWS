@@ -29,7 +29,7 @@ import ProfileAvatar from '../../../../../../shared/components/ui/ProfileAvatar'
 /* ─── constants ────────────────────────────────────────────────────────────── */
 
 const PROJECT_ROLES = [
-  { value: 'owner',       label: 'Owner',       color: 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' },
+  { value: 'owner',       label: 'Owner',       color: 'bg-accent-100 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300' },
   { value: 'manager',     label: 'Manager',     color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' },
   { value: 'contributor', label: 'Contributor', color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' },
   { value: 'client',      label: 'Client',      color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' },
@@ -684,7 +684,7 @@ const ProjectResources = () => {
         {/* ── KPI row ─────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { icon: UsersIcon,                label: 'Team Members', value: members.length,  color: 'bg-violet-500' },
+            { icon: UsersIcon,                label: 'Team Members', value: members.length,  color: 'bg-accent-500' },
             { icon: ClipboardDocumentListIcon, label: 'Total Tasks',  value: totalTasks,      color: 'bg-blue-500' },
             { icon: CheckCircleSolid,          label: 'Completed',   value: doneTasks,        color: 'bg-emerald-500' },
             { icon: ClockIcon,                 label: 'In Progress', value: activeTasks,      color: 'bg-amber-500' },
