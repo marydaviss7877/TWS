@@ -21,7 +21,7 @@
   --theme-primary-800: var(--tenant-primary-800, #081f3a);
   --theme-primary-900: var(--tenant-primary-900, #061a2d);
   --theme-primary-950: var(--tenant-primary-950, #041421);
- 
+
   /* Secondary Color Variables */
   --theme-secondary: var(--tenant-secondary, #10B981);
   --theme-secondary-50: var(--tenant-secondary-50, #ecfdf5);
@@ -30,12 +30,12 @@
   --theme-secondary-300: var(--tenant-secondary-300, #6ee7b7);
   --theme-secondary-400: var(--tenant-secondary-400, #34d399);
   --theme-secondary-500: var(--tenant-secondary-500, #10b981);
-  --theme-secondary-600: var(--tenant-secondary-600, #0a9b6d);
-  --theme-secondary-700: var(--tenant-secondary-700, #087e59);
-  --theme-secondary-800: var(--tenant-secondary-800, #066a4d);
+  --theme-secondary-600: var(--tenant-secondary-600, #059669);
+  --theme-secondary-700: var(--tenant-secondary-700, #047857);
+  --theme-secondary-800: var(--tenant-secondary-800, #065f46);
   --theme-secondary-900: var(--tenant-secondary-900, #064e3b);
   --theme-secondary-950: var(--tenant-secondary-950, #022c22);
- 
+
   /* Accent Color Variables */
   --theme-accent: var(--tenant-accent, #F04E25);
   --theme-accent-50: var(--tenant-accent-50, #fff1ee);
@@ -49,34 +49,11 @@
   --theme-accent-800: var(--tenant-accent-800, #962a12);
   --theme-accent-900: var(--tenant-accent-900, #731f10);
   --theme-accent-950: var(--tenant-accent-950, #4f180d);
-
-  /* Font Variables */
-  --theme-heading-font: var(--portal-font-family);
-  --theme-body-font: var(--portal-font-family);
 }
 
 /* Also define in .tenant-portal for scoped access (inherits from :root) */
 .tenant-portal {
   /* These will inherit from :root, but can be overridden if needed */
-}
-
-/* Apply theme fonts to appropriate elements */
-.tenant-portal h1,
-.tenant-portal h2,
-.tenant-portal h3,
-.tenant-portal h4,
-.tenant-portal h5,
-.tenant-portal h6,
-.tenant-portal .font-heading {
-  font-family: var(--theme-heading-font);
-}
-
-.tenant-portal body,
-.tenant-portal p,
-.tenant-portal span,
-.tenant-portal div,
-.tenant-portal .font-body {
-  font-family: var(--theme-body-font);
 }
 
 /* Utility classes for theme colors */

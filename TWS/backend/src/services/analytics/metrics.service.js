@@ -101,6 +101,30 @@ class MetricsService {
       registers: [this.register]
     });
 
+    // LLM telemetry deliberately uses bounded, operational labels only. Tenant,
+    // user, prompt, and response data must never become Prometheus labels.
+    this.llmCalls = new client.Counter({
+      name: 'llm_calls_total',
+      help: 'Total number of calls to large language model providers',
+      labelNames: ['provider', 'model', 'operation', 'status', 'error_code'],
+      registers: [this.register]
+    });
+
+    this.llmDuration = new client.Histogram({
+      name: 'llm_call_duration_seconds',
+      help: 'Large language model call duration in seconds',
+      labelNames: ['provider', 'model', 'operation', 'status'],
+      buckets: [0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 30, 60],
+      registers: [this.register]
+    });
+
+    this.llmTokens = new client.Counter({
+      name: 'llm_tokens_total',
+      help: 'Tokens reported by large language model providers',
+      labelNames: ['provider', 'model', 'operation', 'type'],
+      registers: [this.register]
+    });
+
     // Memory usage metric
     this.memoryUsage = new client.Gauge({
       name: 'memory_usage_bytes',
@@ -225,6 +249,22 @@ class MetricsService {
   recordHttpRequest(method, route, statusCode, duration) {
     this.apiRequests.inc({ method, route, status_code: statusCode });
     this.responseTime.observe({ method, route }, duration);
+  }
+
+  recordLlmCall({ provider, model, operation, status, errorCode = 'none', durationSeconds = 0, usage = {} }) {
+    const labels = { provider, model, operation };
+    this.llmCalls.inc({ ...labels, status, error_code: errorCode });
+    this.llmDuration.observe({ ...labels, status }, Math.max(0, Number(durationSeconds) || 0));
+
+    const tokenTypes = {
+      input: usage.inputTokens,
+      output: usage.outputTokens,
+      total: usage.totalTokens
+    };
+    Object.entries(tokenTypes).forEach(([type, value]) => {
+      const tokens = Math.max(0, Number(value) || 0);
+      if (tokens > 0) this.llmTokens.inc({ ...labels, type }, tokens);
+    });
   }
 
   incrementDeprecatedAttendanceRequests(endpoint, method = 'POST') {

@@ -319,10 +319,10 @@ const SupraAdminLayout = ({ children }) => {
           <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-gray-200/50 dark:border-gray-700/50">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center overflow-hidden bg-white dark:bg-gray-800 shadow-lg">
-                <img 
-                  src="/logo.svg" 
-                  alt="TWS Logo" 
-                  className="w-full h-full object-contain p-1"
+                <img
+                  src="/logo.svg"
+                  alt="HousesBase logo"
+                  className="w-full h-full object-contain p-1.5"
                 />
               </div>
               <div>
@@ -378,10 +378,10 @@ const SupraAdminLayout = ({ children }) => {
           <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-gray-200/50 dark:border-gray-700/50">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center overflow-hidden bg-white dark:bg-gray-800 shadow-lg">
-                <img 
-                  src="/logo.svg" 
-                  alt="TWS Logo" 
-                  className="w-full h-full object-contain p-1"
+                <img
+                  src="/logo.svg"
+                  alt="HousesBase logo"
+                  className="w-full h-full object-contain p-1.5"
                 />
               </div>
               <div>

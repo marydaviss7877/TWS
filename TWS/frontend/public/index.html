@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/logo.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="%PUBLIC_URL%/favicon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
-    <meta name="theme-color" content="#F59E0B" />
+    <meta name="theme-color" content="#103D67" />
     <meta name="description" content="WolfStack Project Management Portal - Empower Your Business with Comprehensive Project Management" />
     <!-- CSP temporarily disabled for development - will be re-enabled for production -->
     <!-- <meta http-equiv="Content-Security-Policy" content="..." /> -->
     <title>WolfStack Project Management Portal</title>
-    <!-- Portal typography: Plus Jakarta Sans, weights 300–800 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300..800&display=swap" rel="stylesheet" />
+    <!-- Portal typography: Geist (self-hosted, src/assets/fonts.css) -->
     <script>
       // Apply tenant theme immediately before React hydration to prevent flash
       (function() {
@@ -34,16 +34,12 @@
                 const primaryColor = themeData.customColors?.primary || themeData.colors?.primary || '#6366F1';
                 const secondaryColor = themeData.customColors?.secondary || themeData.colors?.secondary || '#10B981';
                 const accentColor = themeData.customColors?.accent || themeData.colors?.accent || '#A855F7';
-                const headingFont = "'Plus Jakarta Sans', 'Inter', -apple-system, 'Segoe UI', sans-serif";
-                const bodyFont = "'Plus Jakarta Sans', 'Inter', -apple-system, 'Segoe UI', sans-serif";
-                
+
                 // Apply basic theme variables immediately
                 const root = document.documentElement;
                 root.style.setProperty('--tenant-primary', primaryColor);
                 root.style.setProperty('--tenant-secondary', secondaryColor);
                 root.style.setProperty('--tenant-accent', accentColor);
-                root.style.setProperty('--tenant-heading-font', headingFont);
-                root.style.setProperty('--tenant-body-font', bodyFont);
                 
                 // Add tenant-portal class to body
                 document.body.classList.add('tenant-portal');

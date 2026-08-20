@@ -16,6 +16,7 @@ import {
   UserGroupIcon
 } from '@heroicons/react/24/outline';
 import SoftwareHouseNavbar from '../../../features/auth/components/SoftwareHouseNavbar';
+import BrandMark from '../../../shared/components/ui/BrandMark';
 import './SoftwareHousePremium.css';
 
 const flow = [
@@ -101,7 +102,7 @@ const SoftwareHouseLanding = () => {
                   Work today is <span>broken.</span>
                 </h1>
                 <p className="shx-hero-lede">
-                  Your team switches between projects, chat, time, payroll, invoices and client updates. Every handoff creates another gap. TWS turns that operational entropy into one visible system.
+                  Your team switches between projects, chat, time, payroll, invoices and client updates. Every handoff creates another gap. HousesBase turns that operational entropy into one visible system.
                 </p>
                 <div className="shx-hero-actions">
                   <Link to="/signup" className="shx-button shx-button-primary">
@@ -133,7 +134,7 @@ const SoftwareHouseLanding = () => {
                   </div>
                   <div className="shx-cockpit-body">
                     <aside className="shx-mini-nav">
-                      <div className="shx-mini-brand">T</div>
+                      <div className="shx-mini-brand">H</div>
                       {[ChartBarIcon, CodeBracketIcon, ClockIcon, UserGroupIcon, BanknotesIcon, DocumentTextIcon].map((Icon, i) => (
                         <span key={i} className={i === 0 ? 'active' : ''}><Icon /></span>
                       ))}
@@ -211,7 +212,7 @@ const SoftwareHouseLanding = () => {
                 <div className="shx-chaos-to-order">
                   <div>{['Tasks', 'Chat', 'Time', 'Payroll', 'Invoices'].map((x, i) => <span key={x} style={{ '--i': i }}>{x}</span>)}</div>
                   <ArrowRightIcon />
-                  <strong>TWS</strong>
+                  <strong>H</strong>
                 </div>
                 <div className="shx-leak-panel" aria-label="Operational leakage example">
                   <div className="shx-leak-head">
@@ -339,7 +340,7 @@ const SoftwareHouseLanding = () => {
           <div className="shx-shell">
             <div className="shx-footer-main">
               <div className="shx-footer-promise">
-                <div className="shx-footer-brand"><strong>T</strong><span><b>TWS</b>Software House OS</span></div>
+                <div className="shx-footer-brand"><span className="shx-footer-mark"><BrandMark size={22} title="HousesBase" /></span><span><b>HousesBase</b>Software House OS</span></div>
                 <h3>The whole house,<br />finally in sync.</h3>
                 <p>One operating truth for the teams building tomorrow.</p>
                 <div className="shx-footer-status"><i /> All systems operational</div>
@@ -351,7 +352,7 @@ const SoftwareHouseLanding = () => {
               </div>
             </div>
             <div className="shx-footer-bottom">
-              <p>© {new Date().getFullYear()} TWS · An official Delta Labs product</p>
+              <p>© {new Date().getFullYear()} HousesBase · An official Delta Labs product</p>
               <a className="shx-footer-powered" href="https://deltalabs.tech" target="_blank" rel="noopener noreferrer">Powered by Delta Labs <ArrowUpRightIcon /></a>
               <div><a href="#story">Privacy</a><a href="#story">Terms</a></div>
             </div>

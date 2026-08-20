@@ -40,7 +40,7 @@
     box-sizing: border-box;
     background-color: var(--sh-login-bg);
     color: var(--sh-login-text);
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--portal-font-family);
     transition: background-color 0.35s ease, color 0.35s ease;
 }
 
@@ -80,16 +80,16 @@
 }
 
 .sh-logo-icon {
-    width: 36px;
-    height: 36px;
     flex-shrink: 0;
-    border-radius: 9px;
-    background: #1F3A63;
-    color: #F4F6F9;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 14px rgba(31, 58, 99, 0.35);
+}
+
+.sh-logo-icon svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
 }
 
 .sh-heading {
@@ -125,7 +125,7 @@
     font-weight: 700;
     text-align: center;
     transition: all 0.25s ease;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--portal-font-family);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     display: flex;
@@ -201,7 +201,7 @@
     border: 1px solid var(--sh-login-input-border);
     border-radius: 10px;
     color: var(--sh-login-text);
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--portal-font-family);
     font-size: 0.875rem;
     box-sizing: border-box;
     transition: all 0.25s ease;
@@ -237,7 +237,7 @@
     color: #fff;
     border: none;
     border-radius: 10px;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--portal-font-family);
     font-size: 0.85rem;
     font-weight: 700;
     cursor: pointer;

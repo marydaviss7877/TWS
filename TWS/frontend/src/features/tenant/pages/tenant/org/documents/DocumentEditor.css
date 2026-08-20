@@ -94,7 +94,7 @@
   background: var(--tenant-bg);
   border: 1px solid var(--tenant-border);
   border-radius: 0.5rem;
-  font-family: ui-monospace, "SF Mono", monospace;
+  font-family: var(--wolfstack-font-family-mono, ui-monospace, "SF Mono", monospace) !important;
   font-size: 0.9em;
 }
 

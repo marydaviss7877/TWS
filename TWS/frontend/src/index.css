@@ -150,10 +150,10 @@ svg.tws-loading-pulse {
   --wolfstack-spacing-2xl: 3rem;
 
   /* Premium Typography */
-  --portal-font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --portal-font-family: 'Geist', -apple-system, 'Segoe UI', sans-serif;
   --wolfstack-font-family: var(--portal-font-family);
   --wolfstack-font-family-heading: var(--portal-font-family);
-  --wolfstack-font-family-mono: var(--portal-font-family);
+  --wolfstack-font-family-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
   --wolfstack-font-size-xs: 0.75rem;
   --wolfstack-font-size-sm: 0.875rem;
   --wolfstack-font-size-base: 1rem;
@@ -183,11 +183,22 @@ svg.tws-loading-pulse {
 /*
  * One typography stack across the complete portal. `!important` intentionally
  * neutralizes legacy page-level and third-party component font declarations.
+ * The block below it (higher specificity or later in source) carves out
+ * code/pre/kbd/samp and the Tailwind `font-mono` utility so tabular data,
+ * IDs, and code blocks render in JetBrains Mono, not Geist.
  */
 html,
 body,
 body * {
   font-family: var(--portal-font-family) !important;
+}
+
+code,
+pre,
+kbd,
+samp,
+.font-mono {
+  font-family: var(--wolfstack-font-family-mono) !important;
 }
 
 body {
@@ -212,10 +223,6 @@ body.light-mode {
 .dark body {
   background: linear-gradient(135deg, #07111c 0%, #0D1628 45%, #101E35 100%);
   color: #EDF4FF;
-}
-
-code {
-  font-family: var(--wolfstack-font-family-mono);
 }
 
 /* Premium Modern Components */

@@ -2,6 +2,7 @@ const AgentConversation = require('../../models/ai/AgentConversation');
 const AgentDailyUsage = require('../../models/ai/AgentDailyUsage');
 const toolRegistry = require('./agentToolRegistry');
 const TenantAuditLog = require('../../models/tenant/TenantAuditLog');
+const { withLlmTelemetry } = require('./llmTelemetry');
 
 const clean = (value, max = 12000) => String(value || '')
   .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
@@ -68,32 +69,40 @@ Current visible module: ${clean(context.pageContext?.module, 100) || 'unknown'}.
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.model)}:generateContent`, {
-        method: 'POST',
-        signal: controller.signal,
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: this.systemInstruction(context) }] },
-          contents,
-          tools: [{ functionDeclarations: toolRegistry.declarations(context) }],
-          generationConfig: { maxOutputTokens: 2400 }
-        })
+      const result = await withLlmTelemetry({
+        provider: 'google',
+        model: this.model,
+        operation: 'central_agent',
+        getUsage: (value) => value.usage
+      }, async () => {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.model)}:generateContent`, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: this.systemInstruction(context) }] },
+            contents,
+            tools: [{ functionDeclarations: toolRegistry.declarations(context) }],
+            generationConfig: { maxOutputTokens: 2400 }
+          })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const error = new Error('Gemini request failed');
+          error.code = 'GEMINI_REQUEST_FAILED';
+          error.status = response.status;
+          throw error;
+        }
+        const content = payload?.candidates?.[0]?.content;
+        if (!content?.parts?.length) {
+          const error = new Error('Gemini returned no usable response');
+          error.code = 'GEMINI_EMPTY_RESPONSE';
+          throw error;
+        }
+        return { content, usage: payload.usageMetadata || {} };
       });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const error = new Error('Gemini request failed');
-        error.code = 'GEMINI_REQUEST_FAILED';
-        error.status = response.status;
-        throw error;
-      }
-      const content = payload?.candidates?.[0]?.content;
-      if (!content?.parts?.length) {
-        const error = new Error('Gemini returned no usable response');
-        error.code = 'GEMINI_EMPTY_RESPONSE';
-        throw error;
-      }
-      await this.recordUsage(context, payload.usageMetadata?.totalTokenCount);
-      return { content, usage: payload.usageMetadata || {} };
+      await this.recordUsage(context, result.usage.totalTokenCount);
+      return result;
     } catch (error) {
       if (error.name === 'AbortError') {
         error.code = 'GEMINI_TIMEOUT';

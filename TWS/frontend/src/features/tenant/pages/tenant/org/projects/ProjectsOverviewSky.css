@@ -91,7 +91,7 @@
   margin: 0 auto;
   padding-top: 14px;
   color: #10213d;
-  font-family: 'DM Sans', Inter, sans-serif;
+  font-family: var(--portal-font-family);
 }
 .projects-sky-hero {
   position: relative;

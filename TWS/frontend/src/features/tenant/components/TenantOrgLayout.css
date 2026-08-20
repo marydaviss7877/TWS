@@ -2,7 +2,7 @@
 @import '../../../shared/styles/design-tokens.css';
 
 .tenant-org-layout {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family: var(--portal-font-family);
   min-height: 100vh;
 }
 

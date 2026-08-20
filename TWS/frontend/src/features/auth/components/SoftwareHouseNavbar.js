@@ -48,10 +48,10 @@ const SoftwareHouseNavbar = ({
         <div className="sh-nav-inner">
           <Link to={isTenantOrAdminContext ? '/login' : '/'} className="sh-brand" onClick={() => setMobileOpen(false)}>
             <span className="sh-brand-mark" aria-hidden="true">
-              <BrandMark simple size={18} />
+              <BrandMark size={26} />
             </span>
             <span className="sh-brand-lockup">
-              <span className="sh-brand-wordmark">HouseBase</span>
+              <span className="sh-brand-wordmark">HousesBase</span>
               <span className="sh-brand-badge">Software House OS</span>
             </span>
           </Link>

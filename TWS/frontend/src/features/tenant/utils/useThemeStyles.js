@@ -10,21 +10,21 @@ export const useThemeStyles = () => {
 
   // Get actual color values from theme (not CSS variables)
   const getPrimaryColor = (shade = 500) => {
-    const baseColor = theme?.customColors?.primary || theme?.colors?.primary || '#6366F1';
+    const baseColor = theme?.colors?.primary || '#103D67';
     if (shade === 500) return baseColor;
     const shades = generateColorShades(baseColor);
     return shades[shade] || baseColor;
   };
 
   const getSecondaryColor = (shade = 500) => {
-    const baseColor = theme?.customColors?.secondary || theme?.colors?.secondary || '#10B981';
+    const baseColor = theme?.colors?.secondary || '#10B981';
     if (shade === 500) return baseColor;
     const shades = generateColorShades(baseColor);
     return shades[shade] || baseColor;
   };
 
   const getAccentColor = (shade = 500) => {
-    const baseColor = theme?.customColors?.accent || theme?.colors?.accent || '#A855F7';
+    const baseColor = theme?.colors?.accent || '#F04E25';
     if (shade === 500) return baseColor;
     const shades = generateColorShades(baseColor);
     return shades[shade] || baseColor;

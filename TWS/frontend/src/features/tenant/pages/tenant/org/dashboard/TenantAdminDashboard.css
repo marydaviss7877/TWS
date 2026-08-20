@@ -1516,7 +1516,7 @@
   justify-content: center;
 }
 .tad-health__num {
-  font-family: var(--wolfstack-font-family-mono, monospace);
+  font-family: var(--wolfstack-font-family-mono, monospace) !important;
   font-weight: 800;
   font-size: 0.85rem;
   line-height: 1;
@@ -1592,7 +1592,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--tad-text-subtle);
-  font-family: var(--wolfstack-font-family-mono, monospace);
+  font-family: var(--wolfstack-font-family-mono, monospace) !important;
 }
 .tad-stat__value {
   margin: 0;
@@ -1600,7 +1600,7 @@
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--tad-text);
-  font-family: var(--wolfstack-font-family-mono, monospace);
+  font-family: var(--wolfstack-font-family-mono, monospace) !important;
   font-variant-numeric: tabular-nums;
 }
 .tad-stat__sub {
@@ -1616,7 +1616,7 @@
   gap: 0.2rem;
   font-size: 0.65rem;
   font-weight: 700;
-  font-family: var(--wolfstack-font-family-mono, monospace);
+  font-family: var(--wolfstack-font-family-mono, monospace) !important;
   white-space: nowrap;
 }
 .tad-trend--up { color: var(--tad-good); }
@@ -1718,7 +1718,7 @@
   margin: 0.15rem 0 0;
   font-size: 0.6875rem;
   color: var(--tad-text-subtle);
-  font-family: var(--wolfstack-font-family-mono, monospace);
+  font-family: var(--wolfstack-font-family-mono, monospace) !important;
 }
 .tad-panel__caption {
   margin: 0.5rem 0 0;
@@ -1819,7 +1819,7 @@
   justify-content: center;
 }
 .tad-donut__num {
-  font-family: var(--wolfstack-font-family-mono, monospace);
+  font-family: var(--wolfstack-font-family-mono, monospace) !important;
   font-weight: 800;
   font-size: 1.3rem;
   color: var(--tad-text);
@@ -1859,7 +1859,7 @@
   white-space: nowrap;
 }
 .tad-donut-legend__val {
-  font-family: var(--wolfstack-font-family-mono, monospace);
+  font-family: var(--wolfstack-font-family-mono, monospace) !important;
   font-weight: 700;
   color: var(--tad-text);
 }
@@ -1926,7 +1926,7 @@
   font-weight: 700;
   padding: 0.15rem 0.5rem;
   border-radius: 0.4rem;
-  font-family: var(--wolfstack-font-family-mono, monospace);
+  font-family: var(--wolfstack-font-family-mono, monospace) !important;
   text-transform: capitalize;
 }
 .tad-tag--high { background: var(--tad-bad-soft); color: var(--tad-bad); }
@@ -1963,7 +1963,7 @@
   margin: 0;
 }
 .tad-fin-row dd b {
-  font-family: var(--wolfstack-font-family-mono, monospace);
+  font-family: var(--wolfstack-font-family-mono, monospace) !important;
   color: var(--tad-text);
 }
 
@@ -1992,7 +1992,7 @@
   justify-content: center;
 }
 .tad-ring-lg__num {
-  font-family: var(--wolfstack-font-family-mono, monospace);
+  font-family: var(--wolfstack-font-family-mono, monospace) !important;
   font-weight: 800;
   font-size: 1.25rem;
   color: var(--tad-text);
@@ -2019,7 +2019,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 700;
-  font-family: var(--wolfstack-font-family-mono, monospace);
+  font-family: var(--wolfstack-font-family-mono, monospace) !important;
   padding: 0 1.25rem 0.6rem;
   border-bottom: 1px solid var(--tad-border);
 }
@@ -2048,7 +2048,7 @@
   font-weight: 700;
   padding: 0.15rem 0.5rem;
   border-radius: 0.4rem;
-  font-family: var(--wolfstack-font-family-mono, monospace);
+  font-family: var(--wolfstack-font-family-mono, monospace) !important;
   text-transform: capitalize;
 }
 .tad-health-pill--ok { background: var(--tad-good-soft); color: var(--tad-good); }

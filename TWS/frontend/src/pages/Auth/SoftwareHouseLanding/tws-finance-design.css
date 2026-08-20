@@ -71,7 +71,7 @@
   background: #fff;
 }
 .tws-finance-page .tws-coa-screenshot .tws-coa-header-title {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--portal-font-family);
   font-size: 18px;
   font-weight: 600;
   color: #0f172a;
@@ -199,7 +199,7 @@
   background: #fff;
 }
 .tws-finance-page .tws-screenshot .tws-ss-header-title {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--portal-font-family);
   font-size: 16px;
   font-weight: 600;
   color: #0f172a;

@@ -18,7 +18,7 @@
 .sh-hrm-page {
     background-color: var(--sh-hrm-bg);
     color: var(--sh-hrm-text);
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--portal-font-family);
     overflow-x: hidden;
     position: relative;
 }
@@ -86,7 +86,7 @@
     background: rgba(168, 85, 247, 0.1);
     border: 1px solid var(--sh-hrm-border);
     color: var(--sh-hrm-accent);
-    font-family: 'Sora', sans-serif;
+    font-family: var(--portal-font-family);
     font-weight: 800;
     font-size: 10px;
     letter-spacing: 0.2em;
@@ -96,7 +96,7 @@
 }
 
 .sh-hrm-title {
-    font-family: 'Sora', sans-serif;
+    font-family: var(--portal-font-family);
     font-size: clamp(3rem, 10vw, 6.5rem);
     font-weight: 950;
     letter-spacing: -0.04em;
@@ -203,7 +203,7 @@
 }
 
 .sh-role-badge {
-    font-family: 'Sora', sans-serif;
+    font-family: var(--portal-font-family);
     font-weight: 800;
     font-size: 14px;
 }
@@ -262,7 +262,7 @@
     padding: 1.25rem 3.5rem;
     border-radius: 0;
     /* Premium/Sharp edge */
-    font-family: 'Sora', sans-serif;
+    font-family: var(--portal-font-family);
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.1em;

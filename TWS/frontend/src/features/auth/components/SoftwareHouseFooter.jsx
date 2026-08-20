@@ -8,8 +8,8 @@ const SoftwareHouseFooter = ({ moduleName, compact = false, children }) => (
   <footer className={`sh-public-footer ${compact ? 'sh-public-footer--compact' : ''}`}>
     <div className="sh-public-footer__inner">
       <div className="sh-public-footer__brand">
-        <Link to="/" aria-label="HouseBase — Software House OS">
-          <strong><BrandMark simple size={20} /></strong><span><b>HouseBase</b><small>{moduleName || 'Software House OS'}</small></span>
+        <Link to="/" aria-label="HousesBase — Software House OS">
+          <strong><BrandMark size={24} /></strong><span><b>HousesBase</b><small>{moduleName || 'Software House OS'}</small></span>
         </Link>
         {!compact && <p>Projects, people and finance—one operating truth for software delivery.</p>}
         <span className="sh-public-footer__status"><i /> Systems operational</span>
@@ -25,7 +25,7 @@ const SoftwareHouseFooter = ({ moduleName, compact = false, children }) => (
       {compact && <nav><Link to="/">Platform</Link><Link to="/projects">Projects</Link><Link to="/hrm">HRM</Link><Link to="/finance">Finance</Link></nav>}
     </div>
     <div className="sh-public-footer__bottom">
-      <span>© {new Date().getFullYear()} HouseBase · An official Delta Labs product</span>
+      <span>© {new Date().getFullYear()} HousesBase · An official Delta Labs product</span>
       <div className="sh-public-footer__meta">
         {children || <span>Software House Operating System</span>}
         <a href="https://deltalabs.tech" target="_blank" rel="noopener noreferrer">

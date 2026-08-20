@@ -5,6 +5,7 @@ import {
   CheckIcon,
   ChevronDownIcon,
   ClipboardDocumentListIcon,
+  InformationCircleIcon,
   MagnifyingGlassIcon,
   PaperAirplaneIcon,
   SparklesIcon,
@@ -161,6 +162,13 @@ const NucleusAgent = ({ tenantSlug }) => {
             </div>
           </header>
 
+          <div className="relative flex gap-2.5 border-b border-blue-100 bg-blue-50/90 px-4 py-3 text-xs leading-5 text-blue-950 dark:border-blue-200/20 dark:bg-blue-950/35 dark:text-blue-100" role="note" aria-label="AI transparency notice">
+            <InformationCircleIcon className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" aria-hidden="true" />
+            <p>
+              <span className="font-bold">AI-powered.</span> Your message and relevant workspace context are sent to Google Gemini. Responses can be inaccurate; review them before relying on them. Data changes always require your approval.
+            </p>
+          </div>
+
           <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_90%_0%,rgba(59,130,246,0.11),transparent_34%)] px-4 py-4 dark:bg-[radial-gradient(circle_at_90%_0%,rgba(147,197,253,0.22),transparent_42%)]">
             {messages.length === 0 && (
               <div className="flex h-full flex-col justify-between">
@@ -254,7 +262,6 @@ const NucleusAgent = ({ tenantSlug }) => {
               />
               <button type="submit" disabled={loading || input.trim().length < 2} className="mb-0.5 rounded-xl bg-blue-600 p-2.5 text-white shadow-[0_8px_18px_-8px_rgba(37,99,235,0.9)] transition-[background-color,transform] hover:bg-blue-700 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-35 disabled:shadow-none dark:bg-white dark:text-blue-800 dark:hover:bg-blue-50 dark:focus-visible:ring-offset-blue-900" aria-label="Send message"><PaperAirplaneIcon className="h-4 w-4" /></button>
             </div>
-            <p className="mt-2 px-1 text-[10px] font-medium text-slate-500 dark:text-slate-400">Review proposed changes before approval. Nucleus can make mistakes.</p>
           </form>
         </section>
       )}

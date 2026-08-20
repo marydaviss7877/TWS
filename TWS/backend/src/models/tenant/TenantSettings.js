@@ -102,29 +102,6 @@ const tenantSettingsSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     }
-  },
-  
-  // Theme Settings
-  theme: {
-    name: {
-      type: String,
-      default: 'default',
-      enum: ['default', 'light', 'dark', 'blue', 'green', 'purple', 'orange', 'red', 'custom']
-    },
-    colors: {
-      primary: { type: String, default: '#6366F1' },
-      secondary: { type: String, default: '#10B981' },
-      accent: { type: String, default: '#A855F7' }
-    },
-    fonts: {
-      heading: { type: String, default: 'Geist' },
-      body: { type: String, default: 'Inter' }
-    },
-    customColors: {
-      primary: String,
-      secondary: String,
-      accent: String
-    }
   }
 }, {
   timestamps: true
@@ -175,38 +152,6 @@ tenantSettingsSchema.methods.updateNotifications = function(notificationData) {
 tenantSettingsSchema.methods.updateSecurity = function(securityData) {
   this.security = { ...this.security, ...securityData };
   return this.save();
-};
-
-// Method to update theme settings
-tenantSettingsSchema.methods.updateTheme = function(themeData) {
-  console.log('🔧 updateTheme called with:', JSON.stringify(themeData, null, 2));
-  console.log('🔧 Current theme before update:', JSON.stringify(this.theme, null, 2));
-  
-  // Properly merge nested objects (colors, fonts, customColors)
-  if (themeData.name !== undefined) {
-    this.theme.name = themeData.name;
-  }
-  if (themeData.colors) {
-    this.theme.colors = { ...this.theme.colors, ...themeData.colors };
-  }
-  if (themeData.fonts) {
-    this.theme.fonts = { ...this.theme.fonts, ...themeData.fonts };
-  }
-  if (themeData.customColors) {
-    // If customColors is an empty object, clear it; otherwise merge
-    if (Object.keys(themeData.customColors).length === 0) {
-      this.theme.customColors = {};
-    } else {
-      this.theme.customColors = { ...this.theme.customColors, ...themeData.customColors };
-    }
-  }
-  
-  console.log('🔧 Theme after update (before save):', JSON.stringify(this.theme, null, 2));
-  
-  return this.save().then(saved => {
-    console.log('✅ Theme saved to database:', JSON.stringify(saved.theme, null, 2));
-    return saved;
-  });
 };
 
 const TenantSettings = mongoose.model('TenantSettings', tenantSettingsSchema);

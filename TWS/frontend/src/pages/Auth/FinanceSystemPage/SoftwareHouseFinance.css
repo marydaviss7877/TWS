@@ -20,7 +20,7 @@
 .sh-finance-page {
     background-color: var(--sh-finance-bg);
     color: var(--sh-finance-text);
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--portal-font-family);
     overflow-x: hidden;
 }
 
@@ -60,7 +60,7 @@
 }
 
 .sh-finance-title {
-    font-family: 'Sora', sans-serif;
+    font-family: var(--portal-font-family);
     font-size: clamp(3rem, 8vw, 6rem);
     font-weight: 800;
     letter-spacing: -0.03em;
@@ -116,7 +116,7 @@
 }
 
 .sh-ledger-metric {
-    font-family: 'Sora', sans-serif;
+    font-family: var(--portal-font-family);
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--sh-finance-accent);

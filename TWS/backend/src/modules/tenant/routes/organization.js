@@ -3732,59 +3732,6 @@ router.put('/settings/security', verifyERPToken, denyClientSettingsAccess, requi
   }
 });
 
-// Get theme settings
-router.get('/settings/theme', verifyERPToken, denyClientSettingsAccess, async (req, res) => {
-  try {
-    const tenantContext = await buildTenantContext(req);
-    const { tenantId, orgId } = tenantContext;
-    const settings = await TenantSettings.getOrCreate(tenantId, orgId);
-
-    const themeResponse = settings.theme || {
-      name: 'default',
-      colors: { primary: '#6366F1', secondary: '#10B981', accent: '#A855F7' },
-      fonts: { heading: 'Geist', body: 'Inter' }
-    };
-
-    res.json({
-      success: true,
-      data: {
-        theme: themeResponse
-      }
-    });
-  } catch (error) {
-    console.error('❌ Get theme settings error:', error);
-    console.error('❌ Error stack:', error.stack);
-    res.status(500).json({ success: false, message: 'Failed to fetch theme settings', error: error.message });
-  }
-});
-
-// Update theme settings
-router.put('/settings/theme', verifyERPToken, denyClientSettingsAccess, requireSettingsAdmin, async (req, res) => {
-  try {
-    const tenantContext = await buildTenantContext(req);
-    const { tenantId, orgId } = tenantContext;
-
-    const settings = await TenantSettings.getOrCreate(tenantId, orgId);
-    await settings.updateTheme(req.body);
-    
-    // Reload from database to get the updated theme
-    await settings.save();
-    const updatedSettings = await TenantSettings.findById(settings._id);
-
-    res.json({
-      success: true,
-      message: 'Theme settings updated successfully',
-      data: {
-        theme: updatedSettings.theme
-      }
-    });
-  } catch (error) {
-    console.error('❌ Update theme settings error:', error);
-    console.error('❌ Error stack:', error.stack);
-    res.status(500).json({ success: false, message: 'Failed to update theme settings', error: error.message });
-  }
-});
-
 // Update settings (legacy route - for backward compatibility)
 router.put('/settings', verifyERPToken, denyClientSettingsAccess, requireSettingsAdmin, async (req, res) => {
   try {

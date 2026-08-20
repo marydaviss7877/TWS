@@ -36,7 +36,7 @@ const SoftwareHouseLogin = () => {
 
     useEffect(() => {
         const previousTitle = document.title;
-        document.title = 'Sign in | HouseBase';
+        document.title = 'Sign in | HousesBase';
         return () => {
             document.title = previousTitle;
         };
@@ -235,14 +235,14 @@ const SoftwareHouseLogin = () => {
                     {/* Logo */}
                     <div className="sh-logo-area">
                         <div className="sh-logo-icon">
-                            <BrandMark simple size={18} />
+                            <BrandMark size={26} />
                         </div>
-                        <div style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '0.04em' }}>HouseBase</div>
+                        <div style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '0.04em' }}>HousesBase</div>
                     </div>
 
                     <h1 className="sh-heading">
                         {isAdmin
-                            ? 'Sign in to HouseBase Admin'
+                            ? 'Sign in to HousesBase Admin'
                             : workspaceName
                                 ? `Sign in to ${workspaceName}\u2019s workspace`
                                 : 'Sign in'}
