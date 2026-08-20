@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../app/providers/AuthContext';
 import { useTheme } from '../../../app/providers/ThemeContext';
-import SoftwareHouseNavbar from '../../../features/auth/components/SoftwareHouseNavbar';
+import { AuthMarketingNav } from '../../../marketing/components/MarketingShell';
 import './SoftwareHouseLogin.css';
 import {
     UserIcon,
@@ -227,7 +227,7 @@ const SoftwareHouseLogin = () => {
 
     return (
         <div className={`sh-login-container${!isDarkMode ? ' day-mode' : ''}`}>
-            <SoftwareHouseNavbar isDarkMode={isDarkMode} />
+            <AuthMarketingNav compact={!canSignUp} />
 
             <div className="sh-login-stage">
                 <div className="sh-form-wrapper">

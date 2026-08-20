@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../../../app/providers/ThemeContext';
-import SoftwareHouseNavbar from '../../../features/auth/components/SoftwareHouseNavbar';
+import { AuthMarketingNav } from '../../../marketing/components/MarketingShell';
 import SoftwareHouseFooter from '../../../features/auth/components/SoftwareHouseFooter';
 import './SoftwareHouseSignup.css';
 import {
@@ -128,7 +128,7 @@ const SoftwareHouseSignup = () => {
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = 'Signup | HouseBase';
+    document.title = 'Sign up | HousesBase';
     return () => {
       document.title = previousTitle;
     };
@@ -412,6 +412,7 @@ const SoftwareHouseSignup = () => {
   if (success) {
     return (
       <div className={`sh-signup-container ${!isDarkMode ? 'day-mode' : ''}`}>
+        <AuthMarketingNav />
         <div className="sh-signup-left">
           <div className="sh-signup-wrapper">
             <div className="sh-success-wrapper sh-animate-fade-up">
@@ -432,7 +433,7 @@ const SoftwareHouseSignup = () => {
   if (otpStep) {
     return (
       <div className={`sh-signup-container ${!isDarkMode ? 'day-mode' : ''}`}>
-        <SoftwareHouseNavbar isDarkMode={isDarkMode} />
+        <AuthMarketingNav />
         <div className="sh-signup-left">
           <div className="sh-signup-wrapper">
             <h1 className="sh-signup-heading">Check your <span style={{ color: 'var(--sh-signup-accent)' }}>inbox.</span></h1>
@@ -510,7 +511,7 @@ const SoftwareHouseSignup = () => {
 
   return (
     <div className={`sh-signup-container ${!isDarkMode ? 'day-mode' : ''}`}>
-      <SoftwareHouseNavbar isDarkMode={isDarkMode} />
+      <AuthMarketingNav />
 
       <div className="sh-signup-left">
         <div className="sh-signup-wrapper">

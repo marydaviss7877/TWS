@@ -15,12 +15,23 @@ import SoftwareHouseSignup from './pages/Auth/SoftwareHouseSignup/SoftwareHouseS
 import SoftwareHouseLogin from './pages/Auth/SoftwareHouseLogin/SoftwareHouseLogin';
 import FindWorkspace from './pages/Auth/FindWorkspace/FindWorkspace';
 import SoftwareHouseForgotPassword from './pages/Auth/SoftwareHouseForgotPassword/SoftwareHouseForgotPassword';
-import SoftwareHouseLanding from './pages/Auth/SoftwareHouseLanding/SoftwareHouseLanding';
 import InviteAccept from './pages/Auth/InviteAccept/InviteAccept';
 import FinanceSystemPage from './pages/Auth/FinanceSystemPage/FinanceSystemPage';
 import HRMSystemPage from './pages/Auth/HRMSystemPage/HRMSystemPage';
 import ProjectSystemPage from './pages/Auth/ProjectSystemPage/ProjectSystemPage';
 import Changelog from './pages/Auth/Changelog/Changelog';
+import MarketingHome from './marketing/pages/MarketingHome';
+import {
+  AboutPage,
+  ContactPage,
+  LegalPage,
+  ModulePage,
+  PricingPage,
+  ProductOverview,
+  ResourcesPage,
+  SecurityPage,
+  SolutionPage,
+} from './marketing/pages/MarketingPages';
 
 // ── Shared UI ─────────────────────────────────────────────────────────────────
 import LoadingSpinner from './shared/components/feedback/LoadingSpinner';
@@ -325,6 +336,22 @@ function App() {
               <Route path="/hrm" element={<HRMSystemPage />} />
               <Route path="/projects" element={<ProjectSystemPage />} />
               <Route path="/changelog" element={<Changelog />} />
+              <Route path="/product" element={<ProductOverview />} />
+              <Route path="/product/projects" element={<ModulePage type="projects" />} />
+              <Route path="/product/people" element={<ModulePage type="people" />} />
+              <Route path="/product/finance" element={<ModulePage type="finance" />} />
+              <Route path="/product/clients" element={<ModulePage type="clients" />} />
+              <Route path="/product/documents" element={<ModulePage type="documents" />} />
+              <Route path="/product/nucleus" element={<ModulePage type="nucleus" />} />
+              <Route path="/solutions/software-houses" element={<SolutionPage type="software" />} />
+              <Route path="/solutions/digital-agencies" element={<SolutionPage type="agency" />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/security" element={<SecurityPage />} />
+              <Route path="/resources" element={<ResourcesPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/privacy" element={<LegalPage type="privacy" />} />
+              <Route path="/terms" element={<LegalPage type="terms" />} />
               <Route path="/software-house/finance" element={<Navigate to="/finance" replace />} />
               <Route path="/software-house/hrm" element={<Navigate to="/hrm" replace />} />
               <Route path="/software-house/projects" element={<Navigate to="/projects" replace />} />
@@ -586,14 +613,14 @@ function App() {
               />
             ) : (
               <>
-                <Route path="/" element={<SoftwareHouseLanding />} />
+                <Route path="/" element={<MarketingHome />} />
                 <Route path="/dashboard" element={<Navigate to="/" replace />} />
                 <Route path="*" element={<PageNotFound />} />
               </>
             )
           ) : (
             <>
-              <Route path="/" element={<SoftwareHouseLanding />} />
+              <Route path="/" element={<MarketingHome />} />
               <Route path="/landing" element={<Navigate to="/" replace />} />
               <Route path="/dashboard" element={<Navigate to="/" replace />} />
               <Route path="*" element={<PageNotFound />} />

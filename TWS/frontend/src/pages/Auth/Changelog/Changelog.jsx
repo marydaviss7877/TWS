@@ -1,113 +1,70 @@
 import React from 'react';
-import { CheckIcon } from '@heroicons/react/24/outline';
-import SoftwareHouseNavbar from '../../../features/auth/components/SoftwareHouseNavbar';
-import SoftwareHouseFooter from '../../../features/auth/components/SoftwareHouseFooter';
-import { Timeline } from '../../../components/ui/Timeline/Timeline';
-import './Changelog.css';
-
-function UpdateList({ items }) {
-  return (
-    <ul className="changelog-update-list">
-      {items.map((item) => (
-        <li key={item}>
-          <CheckIcon />
-          <span>{item}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
+import { MarketingLayout, Reveal } from '../../../marketing/components/MarketingShell';
 
 const entries = [
   {
-    title: 'August 2026',
-    content: (
-      <div>
-        <p className="changelog-entry-lede">
-          Introduced Nucleus, a central AI agent available across every workspace.
-        </p>
-        <UpdateList
-          items={[
-            'Launched Nucleus, a central AI agent replacing the old per-project assistant',
-            'Added bulk task creation from Nucleus',
-            'Redesigned the Nucleus interface, including a refreshed dark theme',
-            'Rebranded to housesbase.com',
-            'Added a "find your workspace" lookup by email on the login page',
-            'Tightened role-based permissions and tenant session isolation platform-wide',
-          ]}
-        />
-      </div>
-    ),
+    date: 'August 2026',
+    title: 'Nucleus arrives across HousesBase',
+    category: 'New',
+    summary: 'A central AI assistant for project work, plus workspace discovery and stronger session isolation.',
+    changes: [
+      'Launched Nucleus as a central assistant across the company workspace',
+      'Added bulk task creation from Nucleus',
+      'Refreshed the Nucleus interface',
+      'Moved the public brand to housesbase.com',
+      'Added workspace discovery by work email',
+      'Tightened role-aware access and workspace session isolation',
+    ],
   },
   {
-    title: 'July 2026',
-    content: (
-      <div>
-        <p className="changelog-entry-lede">
-          Sheets shipped, plus a round of updates to Portfolio, Finance, and HR.
-        </p>
-        <UpdateList
-          items={[
-            'Launched Sheets — spreadsheets built directly into your workspace',
-            'Added xlsx import and export to Sheets',
-            'Expanded the Portfolio, Finance, and HR modules',
-            'Hardened document exports with sanitized HTML and safer external links',
-            'Refreshed the shared UI system across the app',
-          ]}
-        />
-      </div>
-    ),
+    date: 'July 2026',
+    title: 'Sheets joins the workspace',
+    category: 'New',
+    summary: 'Spreadsheets now live beside documents, projects and company operations.',
+    changes: [
+      'Launched Sheets inside HousesBase',
+      'Added XLSX import and export',
+      'Expanded Portfolio, Finance and HR workflows',
+      'Improved document exports with sanitized HTML and safer external links',
+      'Refreshed the shared interface system',
+    ],
   },
   {
-    title: 'May 2026',
-    content: (
-      <div>
-        <p className="changelog-entry-lede">Cleaner workspace URLs across the board.</p>
-        <UpdateList
-          items={[
-            'Workspace URLs simplified — no more slug/org clutter in the path',
-            'Tenant workspaces now resolve entirely from your subdomain',
-          ]}
-        />
-      </div>
-    ),
+    date: 'May 2026',
+    title: 'Cleaner workspace addresses',
+    category: 'Improved',
+    summary: 'Company workspaces now use simpler paths built around their own subdomain.',
+    changes: ['Simplified workspace URLs', 'Resolved company workspaces directly from their subdomain'],
   },
   {
-    title: 'April 2026',
-    content: (
-      <div>
-        <p className="changelog-entry-lede">
-          A navigation and admin overhaul, plus a friendlier Finance module.
-        </p>
-        <UpdateList
-          items={[
-            'Redesigned org navigation and the admin dashboard',
-            'Finance: invoices and bills moved from popups to full-page forms',
-            'Added permission and role catalogs, plus idle-session protection',
-          ]}
-        />
-      </div>
-    ),
+    date: 'April 2026',
+    title: 'Navigation and administration refresh',
+    category: 'Improved',
+    summary: 'A clearer operating shell and more focused Finance workflows.',
+    changes: [
+      'Redesigned company navigation and the administration dashboard',
+      'Moved invoices and bills from popups to full-page forms',
+      'Added permission and role catalogs with idle-session protection',
+    ],
   },
 ];
 
 export default function Changelog() {
   return (
-    <div className="changelog-page">
-      <SoftwareHouseNavbar isDarkMode={false} fixed showThemeToggle={false} />
-      <main className="changelog-main">
-        <section className="changelog-hero">
-          <span className="changelog-eyebrow">RELEASE NOTES</span>
-          <h1>What&apos;s new in TWS</h1>
-          <p>Everything we&apos;ve shipped for your workspace, most recent first.</p>
-        </section>
-        <Timeline
-          title="Changelog"
-          description="A running record of what shipped, updated whenever something new goes out."
-          data={entries}
-        />
-      </main>
-      <SoftwareHouseFooter moduleName="Changelog" />
-    </div>
+    <MarketingLayout title="HousesBase Changelog" description="New, improved and fixed across HousesBase.">
+      <section className="mk-page-hero">
+        <div className="mk-shell"><Reveal><p className="mk-eyebrow">Changelog</p><h1>What is new in HousesBase.</h1><p>Customer-facing updates to the platform, most recent first.</p></Reveal></div>
+      </section>
+      <section className="mk-section">
+        <div className="mk-shell mk-changelog">
+          {entries.map((entry) => (
+            <Reveal as="article" key={entry.date}>
+              <div><time>{entry.date}</time><span>{entry.category}</span></div>
+              <div><h2>{entry.title}</h2><p>{entry.summary}</p><ul>{entry.changes.map((change) => <li key={change}>{change}</li>)}</ul></div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+    </MarketingLayout>
   );
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { EnvelopeIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../../../app/providers/ThemeContext';
-import SoftwareHouseNavbar from '../../../features/auth/components/SoftwareHouseNavbar';
+import { AuthMarketingNav } from '../../../marketing/components/MarketingShell';
 import { BASE_DOMAIN } from '../../../shared/utils/subdomain';
 import './FindWorkspace.css';
 
@@ -18,7 +18,7 @@ const FindWorkspace = () => {
 
   useEffect(() => {
     const previousTitle = document.title;
-    document.title = 'Find Your Workspace | HouseBase';
+    document.title = 'Find Your Workspace | HousesBase';
     return () => {
       document.title = previousTitle;
     };
@@ -69,7 +69,7 @@ const FindWorkspace = () => {
 
   return (
     <div className={`sh-workspace-container${!isDarkMode ? ' day-mode' : ''}`}>
-      <SoftwareHouseNavbar isDarkMode={isDarkMode} />
+      <AuthMarketingNav />
 
       <div className="sh-workspace-card">
         <h1 className="sh-workspace-title">Find your workspace</h1>
